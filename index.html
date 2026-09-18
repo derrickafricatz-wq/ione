@@ -604,31 +604,56 @@ body.landscape-mode #brandVideo {
   }
   
 
-/* ================= MINISTRY ACCESS + SADAKA YAKO ================= */
-.ministry-access-overlay,.sadaka-overlay{
+/* ================= MINISTRY ACCESS + AFRILINK MARKETING ================= */
+.ministry-access-overlay,.afrilink-overlay{
   position:fixed;inset:0;z-index:100500;display:none;align-items:center;justify-content:center;
-  padding:20px;box-sizing:border-box;background:rgba(0,0,0,.86);backdrop-filter:blur(10px);
+  padding:18px;box-sizing:border-box;background:rgba(0,0,0,.90);backdrop-filter:blur(12px);
 }
-.ministry-access-card,.sadaka-card{
-  width:min(470px,100%);box-sizing:border-box;border:1px solid #00ffff;border-radius:24px;
-  background:linear-gradient(145deg,#101b1f,#05090a);color:#fff;padding:25px 20px 22px;
-  box-shadow:0 22px 55px rgba(0,0,0,.65),0 0 35px rgba(0,255,255,.10);
+.ministry-access-card,.afrilink-card{
+  width:min(720px,100%);max-height:94vh;overflow:auto;box-sizing:border-box;border:1px solid #00ffff;border-radius:26px;
+  background:linear-gradient(145deg,#101b1f,#05090a);color:#fff;padding:22px 18px 20px;
+  box-shadow:0 22px 55px rgba(0,0,0,.65),0 0 40px rgba(0,255,255,.12);
 }
-.ministry-kicker,.sadaka-kicker{color:#7f9198;text-align:center;font:900 10px/1 Arial,sans-serif;letter-spacing:2.5px;margin-bottom:9px}
-.ministry-access-card h2,.sadaka-card h2{margin:0;color:#00ffff;text-align:center;font:900 clamp(23px,6vw,31px)/1.15 'Russo One',Arial,sans-serif;letter-spacing:.5px}
-.ministry-access-card p,.sadaka-card p{color:#b9c7cc;text-align:center;font:14px/1.55 Arial,sans-serif;margin:13px 0 18px}
-.ministry-access-label,.sadaka-label{display:block;color:#00ffff;font:900 11px/1 Arial,sans-serif;letter-spacing:1.5px;margin:13px 0 7px}
-.ministry-access-input,.sadaka-input{width:100%;height:54px;padding:0 15px;box-sizing:border-box;border:1px solid #31545a;border-radius:13px;background:#05090a;color:#fff;font-size:17px;outline:none}
-.ministry-access-input:focus,.sadaka-input:focus{border-color:#00ffff;box-shadow:0 0 0 3px rgba(0,255,255,.10)}
-.ministry-access-actions,.sadaka-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:17px}
-.ministry-access-actions button,.sadaka-actions button{min-height:52px;border-radius:13px;font-weight:900;cursor:pointer;touch-action:manipulation}
-.ministry-unlock,.sadaka-submit{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;box-shadow:0 6px 0 #005858}
-.ministry-cancel,.sadaka-cancel{border:1px solid #334a50;background:#111;color:#fff}
-.ministry-access-status,.sadaka-status{min-height:20px;margin-top:13px;text-align:center;color:#9eb0b5;font:700 12px/1.4 Arial,sans-serif}
-.sadaka-heart{font-size:30px;text-align:center;margin:4px 0 4px}
-.sadaka-note{font-size:12px!important;color:#829298!important;margin:8px 0 0!important}
-.sadaka-processing{opacity:.7;pointer-events:none}
-@media(max-width:420px){.ministry-access-card,.sadaka-card{padding:22px 16px 18px;border-radius:20px}}
+.ministry-kicker,.afrilink-kicker{color:#7f9198;text-align:center;font:900 10px/1 Arial,sans-serif;letter-spacing:2.5px;margin-bottom:9px}
+.ministry-access-card h2,.afrilink-card h2{margin:0;color:#00ffff;text-align:center;font:900 clamp(23px,6vw,34px)/1.15 'Russo One',Arial,sans-serif;letter-spacing:.5px}
+.ministry-access-card p,.afrilink-card p{color:#b9c7cc;text-align:center;font:14px/1.55 Arial,sans-serif;margin:12px 0 17px}
+.ministry-access-label,.afrilink-label{display:block;color:#00ffff;font:900 11px/1 Arial,sans-serif;letter-spacing:1.5px;margin:12px 0 7px}
+.ministry-access-input,.afrilink-input{width:100%;height:52px;padding:0 15px;box-sizing:border-box;border:1px solid #31545a;border-radius:13px;background:#05090a;color:#fff;font-size:16px;outline:none}
+.ministry-access-input:focus,.afrilink-input:focus{border-color:#00ffff;box-shadow:0 0 0 3px rgba(0,255,255,.10)}
+.ministry-access-actions,.afrilink-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
+.ministry-access-actions button,.afrilink-actions button{min-height:50px;border-radius:13px;font-weight:900;cursor:pointer;touch-action:manipulation}
+.ministry-unlock,.afrilink-primary{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;box-shadow:0 6px 0 #005858}
+.ministry-cancel,.afrilink-secondary{border:1px solid #334a50;background:#111;color:#fff}
+.ministry-access-status,.afrilink-status{min-height:20px;margin-top:11px;text-align:center;color:#9eb0b5;font:700 12px/1.4 Arial,sans-serif}
+.afrilink-brand-mark{width:64px;height:64px;margin:0 auto 8px;border:1px solid #00ffff;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#00ffff;font:900 17px 'Russo One',Arial,sans-serif;box-shadow:0 0 24px rgba(0,255,255,.14)}
+.afrilink-home-note{margin:8px auto 15px!important;max-width:590px}
+.afrilink-dashboard{display:grid;grid-template-columns:1fr;gap:12px}
+.afrilink-upload-box{border:1px dashed #2f5b63;border-radius:18px;background:rgba(0,255,255,.035);padding:14px}
+.afrilink-upload-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.afrilink-file{display:none}
+.afrilink-upload-btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 18px;border-radius:13px;border:1px solid #00ffff;background:#00ffff;color:#001010;font-weight:900;cursor:pointer;box-shadow:0 5px 0 #006767}
+.afrilink-hint{color:#829298;font:12px/1.4 Arial,sans-serif;margin-top:9px}
+.afrilink-client{color:#9eb0b5;font:800 10px/1 Arial,sans-serif;letter-spacing:1.8px;text-align:center;margin:2px 0 0}
+.afrilink-billboard-wrap{border:1px solid #21464d;border-radius:20px;padding:10px;background:#020607;overflow:hidden}
+.afrilink-billboard-head{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:4px 3px 9px}
+.afrilink-billboard-title{color:#fff;font:900 14px/1.2 'Russo One',Arial,sans-serif;letter-spacing:.7px}
+.afrilink-counter{color:#00ffff;font:900 11px Arial,sans-serif}
+.afrilink-billboard{position:relative;width:100%;aspect-ratio:16/9;min-height:170px;border-radius:14px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}
+.afrilink-slide{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity .55s ease;background:#000}
+.afrilink-slide.show{opacity:1}
+.afrilink-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:25px;color:#5f747a;font:800 13px/1.5 Arial,sans-serif}
+.afrilink-content-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:10px;margin-top:12px}
+.afrilink-item{position:relative;border:1px solid #1e3d43;border-radius:13px;overflow:hidden;background:#070b0d}
+.afrilink-item img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#000}
+.afrilink-item-meta{padding:7px;font:800 10px/1.3 Arial,sans-serif;color:#aebdc1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.afrilink-delete{position:absolute;right:5px;top:5px;width:29px;height:29px;border:1px solid rgba(255,255,255,.35);border-radius:50%;background:rgba(0,0,0,.75);color:#fff;font-weight:900;cursor:pointer}
+.afrilink-close{width:100%;min-height:48px;margin-top:12px;border:1px solid #334a50;border-radius:13px;background:#111;color:#fff;font-weight:900;cursor:pointer}
+.afrilink-loading{padding:20px;text-align:center;color:#9eb0b5;font:700 13px Arial,sans-serif}
+@media(max-width:520px){
+  .ministry-access-card,.afrilink-card{padding:20px 13px 16px;border-radius:20px}
+  .afrilink-content-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .afrilink-billboard{min-height:150px}
+}
 
 /* ================= HEAVENS BOOKSTORE ================= */
 #heavensBookstore{
@@ -774,23 +799,39 @@ Install App
   </div>
 </div>
 
-<!-- SADAKA YAKO -->
-<div id="sadakaOverlay" class="sadaka-overlay" aria-hidden="true">
-  <div class="sadaka-card" role="dialog" aria-modal="true" aria-labelledby="sadakaTitle">
-    <div class="sadaka-heart">♥</div>
-    <div class="sadaka-kicker">MBINGU DUNIANI • CHURCH GIVING</div>
-    <h2 id="sadakaTitle">SADAKA YAKO</h2>
-    <p>To support the ministry. Enter your mobile-money number and the amount you would like to give.</p>
-    <label class="sadaka-label" for="sadakaPhone">MOBILE-MONEY NUMBER</label>
-    <input id="sadakaPhone" class="sadaka-input" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX">
-    <label class="sadaka-label" for="sadakaAmount">SADAKA (TZS)</label>
-    <input id="sadakaAmount" class="sadaka-input" type="number" min="1" step="1" inputmode="numeric" placeholder="Enter amount">
-    <div class="sadaka-actions">
-      <button id="sadakaCancel" class="sadaka-cancel" type="button">CANCEL</button>
-      <button id="sadakaSubmit" class="sadaka-submit" type="button">TOA SADAKA</button>
+<!-- AFRILINK MARKETING HOME -->
+<div id="afrilinkOverlay" class="afrilink-overlay" aria-hidden="true">
+  <div class="afrilink-card" role="dialog" aria-modal="true" aria-labelledby="afrilinkTitle">
+    <div class="afrilink-brand-mark">AF</div>
+    <div class="afrilink-kicker">AFRILINK • HOME OF MARKETING</div>
+    <h2 id="afrilinkTitle">AFRILINK</h2>
+    <p class="afrilink-home-note">Your business content lives on your own billboard. Upload your marketing images and they will play continuously, one after another, then loop again.</p>
+    <div id="afrilinkClientId" class="afrilink-client">CLIENT BILLBOARD • CONNECTING…</div>
+
+    <div class="afrilink-dashboard">
+      <div class="afrilink-upload-box">
+        <label class="afrilink-label" for="afrilinkFiles">BUSINESS CONTENT</label>
+        <div class="afrilink-upload-row">
+          <input id="afrilinkFiles" class="afrilink-file" type="file" accept="image/*" multiple>
+          <label for="afrilinkFiles" class="afrilink-upload-btn">＋ UPLOAD CONTENT</label>
+        </div>
+        <div class="afrilink-hint">Select one or many business images. Seven images will play 1 → 7 → 1 → 7 continuously on your billboard.</div>
+      </div>
+
+      <div class="afrilink-billboard-wrap">
+        <div class="afrilink-billboard-head">
+          <div class="afrilink-billboard-title">MY AFRILINK BILLBOARD</div>
+          <div id="afrilinkCounter" class="afrilink-counter">0 / 0</div>
+        </div>
+        <div id="afrilinkBillboard" class="afrilink-billboard">
+          <div id="afrilinkEmpty" class="afrilink-empty">No marketing content yet.<br>Upload your first business image.</div>
+        </div>
+        <div id="afrilinkContentList" class="afrilink-content-list"></div>
+      </div>
     </div>
-    <div id="sadakaStatus" class="sadaka-status"></div>
-    <p class="sadaka-note">Your PIN is entered only on the secure mobile-money prompt sent to your phone.</p>
+
+    <div id="afrilinkStatus" class="afrilink-status"></div>
+    <button id="afrilinkClose" class="afrilink-close" type="button">CLOSE AFRILINK</button>
   </div>
 </div>
 
@@ -920,8 +961,9 @@ function getMedia(id){
     SERMON TRANSCRIPT
   </button>
 
-  <button class="smart-item" id="openSadaka">
-    SADAKA YAKO
+  <button class="smart-item" id="openAfrilink">
+    AFRILINK
+    <small>HOME OF MARKETING</small>
   </button>
   
   <button class="smart-item" id="openHealth">
@@ -1057,7 +1099,8 @@ const guideLanguages={
   "SYSTEM KEYPAD: Fungua keypad kutumia namba na OK kuchagua masomo na video.",
   "SERMON TRANSCRIPT: Eneo hili ni la waandishi wa huduma walioidhinishwa. Ingiza ministry access key ili kufungua transcript.",
   "SAVE: Bonyeza SAVE kuhifadhi transcript yako tayari kwa kutengeneza kitabu.",
-  "SADAKA YAKO: Weka namba ya simu na kiasi cha sadaka; prompt salama ya mobile-money itatumwa kwenye simu yako. PIN inawekwa kwenye prompt ya simu, si ndani ya app.",
+  "AFRILINK: Fungua HOME OF MARKETING kupakia picha za biashara kwenye billboard yako binafsi.",
+  "MY BILLBOARD: Kila picha unayopakia inaongezwa kwenye billboard yako na hucheza kwa mpangilio wake, kisha hu-loop tena.",
   "CREATE BOOK: Chagua sermon moja au zaidi kutoka SAVED SERMONS, kisha bonyeza CREATE BOOK.",
   "CHAPTER UPLOAD: Kwenye kila chapter kuna kitufe kifupi cha UPLOAD. Tumia hicho kuongeza ukurasa wa picha ndani ya chapter.",
   "IMAGE PAGE: Baada ya kupakia picha, chagua ukubwa wa ukurasa. Kisha unaweza kusogeza, kuzoom, kubadilisha picha au kuondoa picha.",
@@ -1078,7 +1121,8 @@ const guideLanguages={
   "SYSTEM KEYPAD: Open the keypad and use number keys plus OK to choose lessons and videos.",
   "SERMON TRANSCRIPT: This area is reserved for authorized ministry authors. Enter the ministry access key to open the transcript.",
   "SAVE: Press SAVE to keep the sermon transcript ready for book creation.",
-  "SADAKA YAKO: Enter your mobile-money number and donation amount; a secure payment prompt is sent to your phone. Enter your PIN only on that phone prompt.",
+  "AFRILINK: Open HOME OF MARKETING to upload your business marketing images to your own billboard.",
+  "MY BILLBOARD: Every uploaded image is added to your billboard, plays in order, and loops continuously.",
   "CREATE BOOK: Select one or more sermons from SAVED SERMONS, then press CREATE BOOK.",
   "CHAPTER UPLOAD: Every chapter has a compact UPLOAD button. Use it to add a dedicated image page inside that chapter.",
   "IMAGE PAGE: After uploading, choose a page size. Then you can move, zoom, resize, replace or remove the image.",
@@ -1377,7 +1421,7 @@ smartPanel.addEventListener("click",resetTimer);
 
 const openControls = document.getElementById("openControls");
 const openTranscript = document.getElementById("openTranscript");
-const openSadaka = document.getElementById("openSadaka");
+const openAFRILINK = document.getElementById("openAFRILINK");
 const openHealth = document.getElementById("openHealth");
 
 const transcriptPanel = document.getElementById("transcriptPanel");
@@ -1745,84 +1789,233 @@ ministryAccessKey.addEventListener("keydown",e=>{if(e.key==="Enter")document.get
   alert("Sermon saved successfully with its transcript images.");
 };
 
-/* ================= SADAKA YAKO / BLMPAY ================= */
-function normalizeTzPhone(value){
-  let p=String(value||"").replace(/[^0-9+]/g,"");
-  if(p.startsWith("+255")) p=p.slice(1);
-  else if(p.startsWith("0")) p="255"+p.slice(1);
-  return p;
-}
-function validTzPhone(p){return /^255[67][0-9]{8}$/.test(p);}
+/* ================= AFRILINK MARKETING HOME ================= */
+const AFRILINK_BUCKET = "afrilink-marketing";
+const AFRILINK_TABLE = "afrilink_billboard_items";
+let afrilinkItems = [];
+let afrilinkSlideIndex = 0;
+let afrilinkLoopTimer = null;
+let afrilinkSessionUserId = "";
 
-async function startSadakaPayment(){
-  const phoneInput=document.getElementById("sadakaPhone");
-  const amountInput=document.getElementById("sadakaAmount");
-  const statusEl=document.getElementById("sadakaStatus");
-  const submit=document.getElementById("sadakaSubmit");
-  const phone=normalizeTzPhone(phoneInput.value.trim());
-  const amount=Math.round(Number(String(amountInput.value||"").replace(/[\s,]/g,"")));
-  if(!validTzPhone(phone)){statusEl.textContent="Enter a valid Tanzanian mobile-money number.";phoneInput.focus();return;}
-  if(!Number.isFinite(amount)||amount<=0){statusEl.textContent="Enter a valid sadaka amount.";amountInput.focus();return;}
-  submit.classList.add("sadaka-processing");submit.textContent="SENDING…";statusEl.textContent="Creating your secure BLMPay prompt…";
-  try{
-    const session=await ensureHeavensAnonymousSession();
-    const {data,error}=await heavensSupabase.functions.invoke("heavens-blmpay-donation",{body:{phone_number:phone,amount}});
-    if(error){
-      console.error("Sadaka Edge Function invoke error:",error);
-      const detail = String(error?.message || error || "");
-      if(/failed to send a request/i.test(detail)){
-        throw new Error("Sadaka payment service is not reachable. Please make sure the heavens-blmpay-donation Edge Function is deployed in Supabase.");
-      }
-      throw error;
-    }
-    if(!data||!data.success){
-      const apiDetail = data?.blmpay?.message || data?.blmpay?.error || data?.blmpay?.code || data?.error;
-      throw new Error(apiDetail ? String(apiDetail) : "BLMPay could not create the donation request.");
-    }
-    const ref=String(data.reference||"");
-    statusEl.textContent="PAYMENT REQUEST SENT ✓ Complete the prompt on your phone.";
-    if(ref){await pollSadakaPayment(ref,statusEl);}
-  }catch(err){
-    console.error("Sadaka payment error:",err);
-    statusEl.textContent="Payment request could not be sent: "+(err?.message||err);
-  }finally{submit.classList.remove("sadaka-processing");submit.textContent="TOA SADAKA";}
+function clearAfrilinkLoop(){
+  if(afrilinkLoopTimer){clearInterval(afrilinkLoopTimer);afrilinkLoopTimer=null;}
 }
 
-async function pollSadakaPayment(reference,statusEl){
-  let tries=0;
-  const poll=async()=>{
-    tries++;
-    try{
-      const {data,error}=await heavensSupabase.functions.invoke("heavens-blmpay-donation-status",{body:{reference}});
-      if(error) throw error;
-      const status=String(data?.status||"").toLowerCase();
-      if(["completed","paid"].includes(status)){
-        statusEl.textContent="SADAKA IMEPOKELEWA ✓ Asante kwa kuunga mkono kazi ya Mungu.";
-        return;
-      }
-      if(["failed","voided","cancelled","expired"].includes(status)){
-        statusEl.textContent="Sadaka haikukamilika. Hakuna malipo yaliyothibitishwa na BLMPay.";
-        return;
-      }
-    }catch(e){console.warn("Sadaka status check:",e);}
-    if(tries<40)setTimeout(poll,3000);
-    else statusEl.textContent="Bado tunasubiri uthibitisho wa BLMPay. Unaweza kufunga paneli; usirudie malipo bila kuangalia kwanza.";
+function escapeAfrilinkText(value){
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+
+async function prepareAfrilinkSession(){
+  const session=await ensureHeavensAnonymousSession();
+  if(!session || !session.user || !session.user.id) throw new Error("Could not create your secure AFRILINK client session.");
+  afrilinkSessionUserId=session.user.id;
+  const idEl=document.getElementById("afrilinkClientId");
+  if(idEl) idEl.textContent="CLIENT BILLBOARD • "+session.user.id.slice(0,8).toUpperCase();
+  return session;
+}
+
+function afrilinkPublicUrl(path){
+  return heavensSupabase.storage.from(AFRILINK_BUCKET).getPublicUrl(path).data.publicUrl;
+}
+
+function renderAfrilinkBillboard(){
+  const billboard=document.getElementById("afrilinkBillboard");
+  const empty=document.getElementById("afrilinkEmpty");
+  const counter=document.getElementById("afrilinkCounter");
+  if(!billboard) return;
+  clearAfrilinkLoop();
+  billboard.querySelectorAll(".afrilink-slide").forEach(el=>el.remove());
+  afrilinkSlideIndex=0;
+  if(!afrilinkItems.length){
+    if(empty) empty.style.display="flex";
+    if(counter) counter.textContent="0 / 0";
+    return;
+  }
+  if(empty) empty.style.display="none";
+
+  afrilinkItems.forEach((item,i)=>{
+    const img=document.createElement("img");
+    img.className="afrilink-slide";
+    img.alt=item.title || "AFRILINK business content";
+    img.src=afrilinkPublicUrl(item.image_path);
+    billboard.appendChild(img);
+  });
+
+  const slides=[...billboard.querySelectorAll(".afrilink-slide")];
+  const show=(index)=>{
+    if(!slides.length) return;
+    slides.forEach((el,i)=>el.classList.toggle("show",i===index));
+    afrilinkSlideIndex=index;
+    if(counter) counter.textContent=(index+1)+" / "+slides.length;
   };
-  poll();
+  show(0);
+  if(slides.length>1){
+    afrilinkLoopTimer=setInterval(()=>show((afrilinkSlideIndex+1)%slides.length),5000);
+  }
 }
 
-openSadaka.onclick=()=>{
-  smartPanel.classList.remove("show");
-  const overlay=document.getElementById("sadakaOverlay");
-  document.getElementById("sadakaStatus").textContent="";
-  overlay.style.display="flex";overlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>document.getElementById("sadakaPhone").focus(),80);
-};
-document.getElementById("sadakaCancel").onclick=()=>{const o=document.getElementById("sadakaOverlay");o.style.display="none";o.setAttribute("aria-hidden","true");heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
-document.getElementById("sadakaOverlay").addEventListener("click",e=>{if(e.target.id==="sadakaOverlay")document.getElementById("sadakaCancel").click();});
-document.getElementById("sadakaSubmit").onclick=startSadakaPayment;
+function renderAfrilinkContentList(){
+  const list=document.getElementById("afrilinkContentList");
+  if(!list) return;
+  list.innerHTML="";
+  if(!afrilinkItems.length) return;
+  afrilinkItems.forEach((item,index)=>{
+    const card=document.createElement("div");
+    card.className="afrilink-item";
+    const img=document.createElement("img");
+    img.src=afrilinkPublicUrl(item.image_path);
+    img.alt=item.title || "Business content";
+    const meta=document.createElement("div");
+    meta.className="afrilink-item-meta";
+    meta.textContent=item.title || ("CONTENT "+(index+1));
+    const del=document.createElement("button");
+    del.className="afrilink-delete";
+    del.type="button";
+    del.title="Delete content";
+    del.textContent="×";
+    del.onclick=()=>deleteAfrilinkItem(item);
+    card.appendChild(img);card.appendChild(meta);card.appendChild(del);list.appendChild(card);
+  });
+}
 
- document.getElementById("clearTranscript").onclick = () => {
+async function loadAfrilinkItems(){
+  const status=document.getElementById("afrilinkStatus");
+  if(status) status.textContent="Loading your billboard…";
+  try{
+    await prepareAfrilinkSession();
+    const {data,error}=await heavensSupabase
+      .from(AFRILINK_TABLE)
+      .select("id,owner_id,image_path,title,sort_order,created_at")
+      .eq("owner_id",afrilinkSessionUserId)
+      .eq("active",true)
+      .order("sort_order",{ascending:true})
+      .order("created_at",{ascending:true});
+    if(error) throw error;
+    afrilinkItems=Array.isArray(data)?data:[];
+    renderAfrilinkBillboard();
+    renderAfrilinkContentList();
+    if(status) status.textContent=afrilinkItems.length ? (afrilinkItems.length+" marketing content "+(afrilinkItems.length===1?"item":"items")+" on your billboard.") : "Your billboard is ready — upload your first business image.";
+  }catch(err){
+    console.error("AFRILINK load error:",err);
+    if(status) status.textContent="AFRILINK setup is not complete yet. Create the AFRILINK table and storage bucket in Supabase, then reopen this panel.";
+    afrilinkItems=[];renderAfrilinkBillboard();renderAfrilinkContentList();
+  }
+}
+
+function readAfrilinkImage(file){
+  return new Promise((resolve,reject)=>{
+    if(!file || !file.type.startsWith("image/")) return reject(new Error("Only image files are allowed."));
+    if(file.size>10*1024*1024) return reject(new Error("Each image must be 10 MB or smaller."));
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(new Error("Could not read the image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function optimizeAfrilinkImage(file){
+  // Keep marketing text sharp while reducing very large phone photos.
+  const src=await readAfrilinkImage(file);
+  const img=new Image();
+  img.src=src;
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(new Error("Could not decode the image."));});
+  const maxW=1800,maxH=1100;
+  const scale=Math.min(1,maxW/img.naturalWidth,maxH/img.naturalHeight);
+  const canvas=document.createElement("canvas");
+  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#000";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",0.86));
+  if(!blob) throw new Error("Could not prepare the image.");
+  return blob;
+}
+
+async function uploadAfrilinkFiles(fileList){
+  const files=[...fileList];
+  if(!files.length) return;
+  const input=document.getElementById("afrilinkFiles");
+  const status=document.getElementById("afrilinkStatus");
+  try{
+    await prepareAfrilinkSession();
+    if(status) status.textContent="Preparing your marketing content…";
+    const baseOrder=afrilinkItems.length;
+    for(let i=0;i<files.length;i++){
+      const file=files[i];
+      if(!file.type.startsWith("image/")) throw new Error(file.name+" is not an image.");
+      if(file.size>10*1024*1024) throw new Error(file.name+" is larger than 10 MB.");
+      if(status) status.textContent="Uploading "+(i+1)+" of "+files.length+"…";
+      const blob=await optimizeAfrilinkImage(file);
+      const safeName=(file.name||"content").replace(/[^a-zA-Z0-9._-]/g,"_").replace(/\.[^.]+$/,"" );
+      const path=afrilinkSessionUserId+"/"+crypto.randomUUID()+"-"+safeName+".jpg";
+      const {error:uploadError}=await heavensSupabase.storage.from(AFRILINK_BUCKET).upload(path,blob,{contentType:"image/jpeg",upsert:false,cacheControl:"31536000"});
+      if(uploadError) throw uploadError;
+      const {data,error:rowError}=await heavensSupabase.from(AFRILINK_TABLE).insert({
+        owner_id:afrilinkSessionUserId,
+        image_path:path,
+        title:file.name||("CONTENT "+(baseOrder+i+1)),
+        sort_order:baseOrder+i,
+        active:true
+      }).select("id,owner_id,image_path,title,sort_order,created_at").single();
+      if(rowError){
+        await heavensSupabase.storage.from(AFRILINK_BUCKET).remove([path]);
+        throw rowError;
+      }
+      afrilinkItems.push(data);
+    }
+    renderAfrilinkBillboard();renderAfrilinkContentList();
+    if(status) status.textContent=files.length+" content "+(files.length===1?"item":"items")+" uploaded to your billboard.";
+  }catch(err){
+    console.error("AFRILINK upload error:",err);
+    if(status) status.textContent="Upload failed: "+(err?.message||err);
+  }finally{
+    if(input) input.value="";
+  }
+}
+
+async function deleteAfrilinkItem(item){
+  const status=document.getElementById("afrilinkStatus");
+  if(!item || !item.id) return;
+  if(!confirm("Remove this marketing content from your billboard?")) return;
+  try{
+    await prepareAfrilinkSession();
+    const {error:dbError}=await heavensSupabase.from(AFRILINK_TABLE).delete().eq("id",item.id).eq("owner_id",afrilinkSessionUserId);
+    if(dbError) throw dbError;
+    if(item.image_path) await heavensSupabase.storage.from(AFRILINK_BUCKET).remove([item.image_path]);
+    afrilinkItems=afrilinkItems.filter(x=>x.id!==item.id);
+    afrilinkItems.forEach((x,i)=>x.sort_order=i);
+    for(const x of afrilinkItems){
+      await heavensSupabase.from(AFRILINK_TABLE).update({sort_order:x.sort_order}).eq("id",x.id).eq("owner_id",afrilinkSessionUserId);
+    }
+    renderAfrilinkBillboard();renderAfrilinkContentList();
+    if(status) status.textContent="Content removed from your billboard.";
+  }catch(err){
+    console.error("AFRILINK delete error:",err);
+    if(status) status.textContent="Could not remove content: "+(err?.message||err);
+  }
+}
+
+const openAfrilink=document.getElementById("openAfrilink");
+const afrilinkOverlay=document.getElementById("afrilinkOverlay");
+if(openAfrilink){
+  openAfrilink.onclick=()=>{
+    smartPanel.classList.remove("show");
+    afrilinkOverlay.style.display="flex";
+    afrilinkOverlay.setAttribute("aria-hidden","false");
+    loadAfrilinkItems();
+  };
+}
+document.getElementById("afrilinkClose").onclick=()=>{
+  clearAfrilinkLoop();
+  afrilinkOverlay.style.display="none";
+  afrilinkOverlay.setAttribute("aria-hidden","true");
+  heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);
+};
+afrilinkOverlay.addEventListener("click",e=>{if(e.target===afrilinkOverlay)document.getElementById("afrilinkClose").click();});
+document.getElementById("afrilinkFiles").addEventListener("change",e=>uploadAfrilinkFiles(e.target.files));
+
+document.getElementById("clearTranscript").onclick = () => {
   currentTranscript = "";
   transcriptText.innerHTML = "";
   localStorage.removeItem("savedSermonTranscriptHTML");
