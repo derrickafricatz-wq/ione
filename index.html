@@ -936,7 +936,7 @@ body.landscape-mode #brandVideo {
 @media(max-width:600px){.hr-page-text{font-size:18px;line-height:1.75}.hr-page-chapter{padding-top:28%}}
 
 
-.afl-video-call{color:#72c7ff!important;border-color:#72c7ff!important}.afl-video-card{width:min(760px,100%);padding:14px}.afl-call-video-stage{position:relative;width:100%;height:min(58vh,520px);min-height:280px;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 30%,#12363d,#030708 65%);border:1px solid #21484f;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 18px 50px rgba(0,0,0,.55);margin-bottom:14px}.afl-remote-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#020506}.afl-local-video{position:absolute;right:14px;bottom:14px;width:min(31%,190px);aspect-ratio:3/4;object-fit:cover;border-radius:14px;border:2px solid rgba(0,255,255,.75);background:#071012;box-shadow:0 10px 28px rgba(0,0,0,.55);display:none}.afl-video-placeholder{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:4px}.afl-video-placeholder .afl-call-orb{margin:0}.afl-video-placeholder-text{color:#7e969b;font:900 10px/1 'Russo One',sans-serif;letter-spacing:3px}.afl-video-status-pill{position:absolute;left:12px;top:12px;padding:7px 9px;border:1px solid rgba(0,255,255,.35);border-radius:10px;background:rgba(0,0,0,.46);color:#bcebed;font-size:8px;font-weight:900;letter-spacing:1.2px;backdrop-filter:blur(8px)}.afl-call-overlay.incoming .afl-video-status-pill{color:#59ff8a;border-color:rgba(89,255,138,.35)}.afl-call-overlay:not(.video-mode) .afl-call-video-stage{display:none}.afl-call-overlay.video-mode .afl-call-card-pro{padding-top:14px}.afl-call-overlay.video-mode .afl-call-orb{display:none}.afl-call-overlay.video-mode .afl-call-title{font-size:20px}.afl-call-overlay.video-mode .afl-call-meta{margin:7px 0 10px}.afl-call-overlay.video-mode .afl-call-timer{margin:2px 0 12px}.afl-call-overlay.video-mode .afl-call-note{margin-top:10px}.afl-owner-video-call{font-size:15px!important}
+.afl-video-call{color:#72c7ff!important;border-color:#72c7ff!important}.afl-video-card{width:min(760px,100%);padding:14px}.afl-call-video-stage{position:relative;width:100%;height:min(58vh,520px);min-height:280px;border-radius:18px;overflow:hidden;background:radial-gradient(circle at 50% 30%,#12363d,#030708 65%);border:1px solid #21484f;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 18px 50px rgba(0,0,0,.55);margin-bottom:14px}.afl-remote-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#020506}.afl-local-video{position:absolute;right:14px;bottom:14px;width:min(31%,190px);aspect-ratio:3/4;object-fit:cover;border-radius:14px;border:2px solid rgba(0,255,255,.75);background:#071012;box-shadow:0 10px 28px rgba(0,0,0,.55);display:none}.afl-video-placeholder{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:4px}.afl-video-placeholder .afl-call-orb{margin:0}.afl-video-placeholder-text{color:#7e969b;font:900 10px/1 'Russo One',sans-serif;letter-spacing:3px}.afl-video-status-pill{position:absolute;left:12px;top:12px;padding:7px 9px;border:1px solid rgba(0,255,255,.35);border-radius:10px;background:rgba(0,0,0,.46);color:#bcebed;font-size:8px;font-weight:900;letter-spacing:1.2px;backdrop-filter:blur(8px)}.afl-call-overlay.incoming .afl-video-status-pill{color:#59ff8a;border-color:rgba(89,255,138,.35)}.afl-call-overlay:not(.video-mode) .afl-call-video-stage{display:none}.afl-call-overlay.video-mode .afl-call-card-pro{padding-top:14px}.afl-call-overlay.video-mode .afl-call-orb{display:none}.afl-call-overlay.video-mode .afl-call-title{font-size:20px}.afl-call-overlay.video-mode .afl-call-meta{margin:7px 0 10px}.afl-call-overlay.video-mode .afl-call-timer{margin:2px 0 12px}.afl-call-overlay.video-mode .afl-call-note{margin-top:10px}.afl-owner-video-call{font-size:15px!important}.afl-camera-switch{color:#00ffff!important;border-color:rgba(0,255,255,.55)!important;background:rgba(0,255,255,.08)!important}.afl-camera-switch:active{transform:scale(.97)}
 
 
 .afl-discovery{padding:10px 0 12px;border-bottom:1px solid #1d3034;margin-bottom:10px;position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#050809 0%,rgba(5,8,9,.96) 80%,rgba(5,8,9,0) 100%)}
@@ -1068,6 +1068,7 @@ Install App
       <button id="aflCallEndBig" type="button" class="afl-call-decline">END CALL</button>
     </div>
     <div id="aflActiveCallActions" class="afl-call-actions" style="display:none">
+      <button id="aflSwitchCamera" type="button" class="afl-call-accept afl-camera-switch" style="display:none">🔄 SWITCH CAMERA</button>
       <button id="aflCallEndActive" type="button" class="afl-call-decline">END CALL</button>
     </div>
     <div class="afl-call-note">Private call • tied to this AFRILINK service conversation</div>
@@ -2719,6 +2720,8 @@ function aflSetVideoStage(show,localStream=null){
 }
 let aflRemoteMediaStream=null;
 let aflRemoteMediaStreamId="";
+let aflCameraFacing="user";
+let aflCameraSwitchBusy=false;
 function aflStopRemoteAudioSink(){
   const audio=document.getElementById("aflCallAudio");
   if(audio){try{audio.pause();}catch(_){}try{audio.srcObject=null;}catch(_){}audio.remove();}
@@ -2766,7 +2769,7 @@ function aflAttachRemoteMedia(stream){
   }
   const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=isVideo?"none":"grid";
 }
-function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
+function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept"),switchBtn=document.getElementById("aflSwitchCamera");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";if(switchBtn){switchBtn.style.display=mode==="active"&&isVideo?"inline-flex":"none";switchBtn.disabled=aflCameraSwitchBusy;if(!aflCameraSwitchBusy)switchBtn.textContent=aflCameraFacing==="user"?"🔄 BACK CAMERA":"🔄 FRONT CAMERA";}document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
 function aflStartCallOverlayTimer(startAt=null){clearInterval(aflCallState.overlayTimer);const started=Number(startAt)||Date.now();aflCallState.timerStartedAt=started;const tick=()=>{const el=document.getElementById("aflIncomingCallTimer");if(el)el.textContent=aflFormatCallTime((Date.now()-started)/1000);};tick();aflCallState.overlayTimer=setInterval(tick,1000);}
 function aflStopCallOverlayTimer(){clearInterval(aflCallState.overlayTimer);aflCallState.overlayTimer=null;aflCallState.timerStartedAt=null;}
 function aflShowOutgoingCallScreen(call){aflSetCallOverlay("outgoing",aflIsVideoCall(call)?"VIDEO CALLING…":"CALLING…",call.receiver_busy?"The brand is currently on another call. Your call is waiting.":"Waiting for the other person to answer.",call);aflStartCallOverlayTimer(call?.created_at?Date.parse(call.created_at):Date.now());}
@@ -2775,7 +2778,7 @@ function aflHideCallOverlay(){aflStopCallOverlayTimer();aflSetVideoStage(false);
 async function aflInsertCallSignal(callId,senderId,type,payload){const {error}=await heavensSupabase.from("afrilink_voice_signals").insert({call_id:callId,sender_id:senderId,signal_type:type,payload});if(error)throw error;}
 async function aflLoadCallSignals(callId,uid){const {data,error}=await heavensSupabase.from("afrilink_voice_signals").select("*").eq("call_id",callId).order("created_at",{ascending:true});if(error)return;for(const sig of data||[])await aflHandleCallSignal(sig,uid);}
 async function aflSubscribeCallSignals(call,uid){if(aflCallState.channel){try{await heavensSupabase.removeChannel(aflCallState.channel);}catch(_){}aflCallState.channel=null;}aflCallState.channel=heavensSupabase.channel("afl-call-"+call.id+"-"+uid+"-"+Date.now()).on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_voice_signals",filter:"call_id=eq."+call.id},payload=>aflHandleCallSignal(payload.new,uid)).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK call signaling status:",status);});await new Promise(r=>setTimeout(r,250));await aflLoadCallSignals(call.id,uid);}
-async function aflSetupPeer(call,uid,role){if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});aflCallState.pc=pc;aflCallState.call=call;aflCallState.role=role;aflCallState.inquiryId=call.inquiry_id;pc._pendingIce=[];pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};pc.ontrack=e=>{
+async function aflSetupPeer(call,uid,role){if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}aflCameraFacing="user";aflCameraSwitchBusy=false;const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});aflCallState.pc=pc;aflCallState.call=call;aflCallState.role=role;aflCallState.inquiryId=call.inquiry_id;pc._pendingIce=[];pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};pc.ontrack=e=>{
   // Keep one remote MediaStream for the whole call. Browsers can fire ontrack
   // separately for audio and video; never create a second playback sink for either.
   if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();
@@ -2794,7 +2797,7 @@ async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voi
   if(!receiverId)throw new Error("The other participant is unavailable.");
   if(String(receiverId)===String(uid))throw new Error("The caller and receiver are using the same AFRILINK session. Use separate sessions/devices for a call test.");
   if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection)throw new Error("Calling is not supported on this browser.");
-  const type=callType==="video"?"video":"voice";
+  const type=callType==="video"?"video":"voice";aflCameraFacing="user";aflCameraSwitchBusy=false;
   const {data:busyCall}=await heavensSupabase.from("afrilink_voice_calls").select("id").eq("receiver_id",receiverId).eq("status","accepted").limit(1).maybeSingle();
   const receiverBusy=!!busyCall;
   const {data:call,error}=await heavensSupabase.from("afrilink_voice_calls").insert({inquiry_id:inquiryId,owner_id:ownerId,client_id:clientId,caller_id:uid,receiver_id:receiverId,status:"ringing",call_type:type,receiver_busy:receiverBusy}).select("*").single();
@@ -2819,6 +2822,43 @@ async function aflCreateVoiceCall(inquiryId,ownerId,clientId,callerRole){
 }
 async function aflCreateVideoCall(inquiryId,ownerId,clientId,callerRole){
   return aflCreateCall(inquiryId,ownerId,clientId,callerRole,"video");
+}
+
+async function aflSwitchCamera(){
+  const call=aflCallState.call,pc=aflCallState.pc;
+  if(!call||!pc||!aflIsVideoCall(call)||aflCameraSwitchBusy)return;
+  const oldStream=pc._localStream;
+  const oldVideo=oldStream?.getVideoTracks?.()[0];
+  if(!oldVideo)return;
+  const nextFacing=aflCameraFacing==="user"?"environment":"user";
+  const btn=document.getElementById("aflSwitchCamera");
+  aflCameraSwitchBusy=true;
+  if(btn){btn.disabled=true;btn.textContent=nextFacing==="environment"?"🔄 BACK CAMERA…":"🔄 FRONT CAMERA…";}
+  let newStream=null;
+  try{
+    const base={width:{ideal:720},height:{ideal:960},facingMode:{exact:nextFacing}};
+    try{newStream=await navigator.mediaDevices.getUserMedia({video:base});}
+    catch(_){newStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:720},height:{ideal:960},facingMode:nextFacing}});}
+    const newVideo=newStream.getVideoTracks?.()[0];
+    if(!newVideo)throw new Error("Camera switch failed.");
+    const sender=pc.getSenders().find(x=>x.track?.kind==="video");
+    if(!sender)throw new Error("Video camera is not available on this call.");
+    await sender.replaceTrack(newVideo);
+    if(oldStream){try{oldStream.removeTrack(oldVideo);}catch(_){}try{oldVideo.stop();}catch(_){}}
+    oldStream.addTrack(newVideo);
+    pc._localStream=oldStream;
+    aflCameraFacing=nextFacing;
+    const local=document.getElementById("aflLocalVideo");
+    if(local){local.srcObject=oldStream;local.muted=true;local.volume=0;local.play().catch(()=>{});}
+    if(btn)btn.textContent=aflCameraFacing==="user"?"🔄 BACK CAMERA":"🔄 FRONT CAMERA";
+  }catch(e){
+    try{newStream?.getTracks?.().forEach(t=>t.stop());}catch(_){}
+    if(btn)btn.textContent=aflCameraFacing==="user"?"🔄 BACK CAMERA":"🔄 FRONT CAMERA";
+    alert(e?.message||"Could not switch camera. Please check camera permission.");
+  }finally{
+    aflCameraSwitchBusy=false;
+    if(btn)btn.disabled=false;
+  }
 }
 
 function aflShowCallStatus(text,active=false){if(active&&aflCallState.call)aflShowActiveCallScreen(aflCallState.call);let box=document.getElementById("aflActiveCallBar");if(!box){box=document.createElement("div");box.id="aflActiveCallBar";box.className="afl-active-call";box.innerHTML=`<span class="afl-active-call-text"></span><button type="button">END CALL</button>`;box.querySelector("button").onclick=()=>aflFinishCall("ended");document.body.appendChild(box);}box.querySelector(".afl-active-call-text").textContent=text;box.style.display="flex";}
@@ -2965,7 +3005,7 @@ document.getElementById("aflServiceClose").onclick=()=>{aflServiceOverlay.style.
 document.getElementById("aflServiceSubmit").onclick=aflSubmitService;
 document.getElementById("aflChatSend").onclick=aflSendClientChat;
 document.getElementById("aflChatRefresh").onclick=()=>aflActiveService.inquiry&&aflLoadChat(aflActiveService.inquiry.id);
-document.getElementById("aflChatMic").onclick=()=>aflToggleVoiceRecorder("client");document.getElementById("aflChatCall").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVoiceCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the voice call."));};document.getElementById("aflChatVideo").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVideoCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the video call."));};document.getElementById("aflCallAccept").onclick=()=>aflAcceptIncomingCall();document.getElementById("aflCallDecline").onclick=()=>aflDeclineIncomingCall();document.getElementById("aflCallEndBig").onclick=()=>aflFinishCall("ended");document.getElementById("aflCallEndActive").onclick=()=>aflFinishCall("ended");
+document.getElementById("aflChatMic").onclick=()=>aflToggleVoiceRecorder("client");document.getElementById("aflChatCall").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVoiceCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the voice call."));};document.getElementById("aflChatVideo").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVideoCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the video call."));};document.getElementById("aflCallAccept").onclick=()=>aflAcceptIncomingCall();document.getElementById("aflCallDecline").onclick=()=>aflDeclineIncomingCall();document.getElementById("aflCallEndBig").onclick=()=>aflFinishCall("ended");document.getElementById("aflCallEndActive").onclick=()=>aflFinishCall("ended");document.getElementById("aflSwitchCamera").onclick=()=>aflSwitchCamera();
 document.getElementById("aflChatInput").addEventListener("keydown",e=>{if(e.key==="Enter")aflSendClientChat();});
 document.getElementById("aflBillboardSearch").addEventListener("input",e=>{aflFeedSearch=e.target.value;aflApplyFeedFilter();});
 document.getElementById("aflBillboardCategory").addEventListener("change",e=>{aflFeedCategory=e.target.value;aflApplyFeedFilter();});
