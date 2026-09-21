@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>i|one</title>
+<title>mbingu-duniani</title>
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00ffff">
@@ -2725,26 +2725,76 @@ let aflRemoteMediaStream=null;
 let aflRemoteMediaStreamId="";
 let aflCameraFacing="user";
 let aflCameraSwitchBusy=false;
+let aflRemoteAudioContext=null;
+let aflRemoteAudioSource=null;
+let aflRemoteAudioGain=null;
+let aflRemoteAudioStreamId="";
+let aflAudioUnlocked=false;
+async function aflUnlockCallAudio(){
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    if(AC){
+      if(!aflRemoteAudioContext)aflRemoteAudioContext=new AC();
+      if(aflRemoteAudioContext.state!=="running")await aflRemoteAudioContext.resume();
+      aflAudioUnlocked=true;
+    }
+  }catch(e){console.warn("AFRILINK audio unlock:",e);}
+}
 function aflStopRemoteAudioSink(){
+  try{aflRemoteAudioSource?.disconnect();}catch(_){}
+  try{aflRemoteAudioGain?.disconnect();}catch(_){}
+  aflRemoteAudioSource=null;aflRemoteAudioGain=null;aflRemoteAudioStreamId="";
   const audio=document.getElementById("aflCallAudio");
   if(audio){try{audio.pause();}catch(_){}try{audio.srcObject=null;}catch(_){}audio.remove();}
+}
+function aflPlayRemoteAudio(stream){
+  if(!stream)return;
+  const audioTracks=stream.getAudioTracks?.()||[];
+  if(!audioTracks.length)return;
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(AC){
+    try{
+      if(!aflRemoteAudioContext)aflRemoteAudioContext=new AC();
+      if(aflRemoteAudioContext.state!=="running")aflRemoteAudioContext.resume().catch(()=>{});
+      if(aflRemoteAudioStreamId!==String(stream.id||"")){
+        try{aflRemoteAudioSource?.disconnect();}catch(_){}
+        try{aflRemoteAudioGain?.disconnect();}catch(_){}
+        aflRemoteAudioSource=aflRemoteAudioContext.createMediaStreamSource(stream);
+        aflRemoteAudioGain=aflRemoteAudioContext.createGain();
+        aflRemoteAudioGain.gain.value=1;
+        aflRemoteAudioSource.connect(aflRemoteAudioGain);
+        aflRemoteAudioGain.connect(aflRemoteAudioContext.destination);
+        aflRemoteAudioStreamId=String(stream.id||"");
+      }
+      return;
+    }catch(e){console.warn("AFRILINK WebAudio sink fallback:",e);}
+  }
+  let audio=document.getElementById("aflCallAudio");
+  if(!audio){audio=document.createElement("audio");audio.id="aflCallAudio";audio.autoplay=true;audio.playsInline=true;audio.controls=false;audio.muted=false;audio.volume=1;audio.style.display="none";document.body.appendChild(audio);}
+  audio.srcObject=stream;audio.play().catch(()=>{});
 }
 function aflStopRemoteMedia(){
   aflStopRemoteAudioSink();
   const v=document.getElementById("aflRemoteVideo");
-  if(v){try{v.pause();}catch(_){}try{v.srcObject=null;}catch(_){}v.style.display="none";}
+  if(v){try{v.pause();}catch(_){}try{v.srcObject=null;}catch(_){}v.muted=true;v.style.display="none";}
   aflRemoteMediaStream=null;
   aflRemoteMediaStreamId="";
 }
 function aflGetOrCreateRemoteStream(stream){
   if(!stream)return null;
-  if(aflRemoteMediaStream===stream)return stream;
   const streamId=String(stream.id||"");
-  if(aflRemoteMediaStream && streamId && aflRemoteMediaStreamId===streamId)return aflRemoteMediaStream;
-  const stable=new MediaStream();
-  for(const track of (stream.getTracks?.()||[])){
-    try{stable.addTrack(track);}catch(_){}
+  if(aflRemoteMediaStream===stream)return stream;
+  // Browsers may fire audio and video in separate ontrack events using the same
+  // MediaStream. Merge every new track instead of returning the first partial
+  // stream. This is critical on phones where audio arrives before video.
+  if(aflRemoteMediaStream && streamId && aflRemoteMediaStreamId===streamId){
+    for(const track of (stream.getTracks?.()||[])){
+      if(track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){try{aflRemoteMediaStream.addTrack(track);}catch(_){} }
+    }
+    return aflRemoteMediaStream;
   }
+  const stable=new MediaStream();
+  for(const track of (stream.getTracks?.()||[])){try{stable.addTrack(track);}catch(_){} }
   aflRemoteMediaStream=stable;
   aflRemoteMediaStreamId=streamId;
   return stable;
@@ -2753,23 +2803,17 @@ function aflAttachRemoteMedia(stream){
   const stable=aflGetOrCreateRemoteStream(stream);if(!stable)return;
   const v=document.getElementById("aflRemoteVideo");
   const isVideo=!!stable.getVideoTracks?.().length;
+  // One and only one remote audio output. The video element is deliberately muted;
+  // Web Audio owns the remote voice so Android autoplay/route differences cannot
+  // create a second playback path and echo.
   if(isVideo){
-    // Video carries the remote audio. Never keep a second <audio> sink alive.
-    aflStopRemoteAudioSink();
     if(v){
       if(v.srcObject!==stable)v.srcObject=stable;
-      v.muted=false;v.volume=1;v.autoplay=true;v.playsInline=true;v.style.display="block";
+      v.muted=true;v.volume=0;v.autoplay=true;v.playsInline=true;v.style.display="block";
       v.play().catch(()=>{});
     }
-  }else{
-    if(v){try{v.pause();}catch(_){}v.srcObject=null;v.style.display="none";}
-    let audio=document.getElementById("aflCallAudio");
-    if(!audio){
-      audio=document.createElement("audio");audio.id="aflCallAudio";audio.autoplay=true;audio.playsInline=true;audio.controls=false;audio.muted=false;audio.volume=1;audio.style.display="none";document.body.appendChild(audio);
-    }
-    if(audio.srcObject!==stable)audio.srcObject=stable;
-    audio.play().catch(()=>{});
-  }
+  }else if(v){try{v.pause();}catch(_){}v.srcObject=null;v.muted=true;v.style.display="none";}
+  aflPlayRemoteAudio(stable);
   const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=isVideo?"none":"grid";
 }
 function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";const cameraButtons=["aflFrontCameraOutgoing","aflRearCameraOutgoing","aflFrontCameraActive","aflRearCameraActive"];cameraButtons.forEach(id=>{const b=document.getElementById(id);if(b){b.style.display=(isVideo&&(mode==="outgoing"||mode==="active"))?"inline-flex":"none";b.disabled=aflCameraSwitchBusy;}});document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
@@ -2781,11 +2825,62 @@ function aflHideCallOverlay(){aflStopCallOverlayTimer();aflSetVideoStage(false);
 async function aflInsertCallSignal(callId,senderId,type,payload){const {error}=await heavensSupabase.from("afrilink_voice_signals").insert({call_id:callId,sender_id:senderId,signal_type:type,payload});if(error)throw error;}
 async function aflLoadCallSignals(callId,uid){const {data,error}=await heavensSupabase.from("afrilink_voice_signals").select("*").eq("call_id",callId).order("created_at",{ascending:true});if(error)return;for(const sig of data||[])await aflHandleCallSignal(sig,uid);}
 async function aflSubscribeCallSignals(call,uid){if(aflCallState.channel){try{await heavensSupabase.removeChannel(aflCallState.channel);}catch(_){}aflCallState.channel=null;}aflCallState.channel=heavensSupabase.channel("afl-call-"+call.id+"-"+uid+"-"+Date.now()).on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_voice_signals",filter:"call_id=eq."+call.id},payload=>aflHandleCallSignal(payload.new,uid)).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK call signaling status:",status);});await new Promise(r=>setTimeout(r,250));await aflLoadCallSignals(call.id,uid);}
-async function aflSetupPeer(call,uid,role){if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}aflCameraFacing="user";aflCameraSwitchBusy=false;aflRemoteMediaStream=null;aflRemoteMediaStreamId="";const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});aflCallState.pc=pc;aflCallState.call=call;aflCallState.role=role;aflCallState.inquiryId=call.inquiry_id;pc._pendingIce=[];pc._iceRestarting=false;pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};pc.ontrack=e=>{if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){}}aflAttachRemoteMedia(aflRemoteMediaStream);};pc.onconnectionstatechange=()=>{const state=pc.connectionState;if(state==="connected"){pc._iceRestarting=false;return;}if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE restart:",e));}};pc.oniceconnectionstatechange=()=>{const state=pc.iceConnectionState;if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));}};const audio={echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1};const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:"user",width:{ideal:720},height:{ideal:960}}}:{audio};const stream=await navigator.mediaDevices.getUserMedia(constraints);for(const track of stream.getTracks()){if(!pc.getSenders().some(sender=>sender.track?.kind===track.kind)){pc.addTrack(track,stream);}}pc._localStream=stream;if(aflIsVideoCall(call))aflSetVideoStage(true,stream);await aflSubscribeCallSignals(call,uid);return pc;}
+async function aflSetupPeer(call,uid,role){
+  if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}
+  aflCameraFacing="user";aflCameraSwitchBusy=false;aflRemoteMediaStream=null;aflRemoteMediaStreamId="";
+  await aflUnlockCallAudio();
+  const pc=new RTCPeerConnection({iceServers:[
+    {urls:"stun:stun.l.google.com:19302"},
+    {urls:"stun:stun.cloudflare.com:3478"},
+    {urls:"stun:global.stun.twilio.com:3478"}
+  ],bundlePolicy:"max-bundle",rtcpMuxPolicy:"require"});
+  aflCallState.pc=pc;aflCallState.call=call;aflCallState.role=role;aflCallState.inquiryId=call.inquiry_id;
+  pc._pendingIce=[];pc._iceRestarting=false;pc._videoSender=null;pc._audioSender=null;
+  pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};
+  pc.ontrack=e=>{
+    const incoming=e.streams?.[0];
+    if(incoming){
+      aflAttachRemoteMedia(incoming);
+      return;
+    }
+    if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();
+    if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){}}
+    aflAttachRemoteMedia(aflRemoteMediaStream);
+  };
+  pc.onconnectionstatechange=()=>{
+    const state=pc.connectionState;
+    if(state==="connected"){pc._iceRestarting=false;return;}
+    // Never turn a transient WebRTC state into a database 'ended' call.
+    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){
+      aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE restart:",e));
+    }
+  };
+  pc.oniceconnectionstatechange=()=>{
+    const state=pc.iceConnectionState;
+    if(state==="connected"||state==="completed")pc._iceRestarting=false;
+    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){
+      aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));
+    }
+  };
+  const audio={echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},channelCount:{ideal:1}};
+  const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:"user",width:{ideal:720},height:{ideal:960}}}:{audio};
+  const stream=await navigator.mediaDevices.getUserMedia(constraints);
+  for(const track of stream.getTracks()){
+    const sender=pc.addTrack(track,stream);
+    if(track.kind==="audio")pc._audioSender=sender;
+    if(track.kind==="video")pc._videoSender=sender;
+  }
+  pc._localStream=stream;
+  if(aflIsVideoCall(call))aflSetVideoStage(true,stream);
+  await aflSubscribeCallSignals(call,uid);
+  return pc;
+}
+
 async function aflTryIceRestart(pc,uid){if(!pc||pc.connectionState==="closed"||pc._iceRestarting||!aflCallState.call||aflCallState.role!=="caller")return;pc._iceRestarting=true;try{const offer=await pc.createOffer({iceRestart:true});await pc.setLocalDescription(offer);await aflInsertCallSignal(aflCallState.call.id,uid,"offer",{type:offer.type,sdp:offer.sdp});}finally{setTimeout(()=>{if(pc)pc._iceRestarting=false;},5000);}}
 async function aflFlushPendingIce(){const pc=aflCallState.pc;if(!pc||!pc.remoteDescription)return;const list=pc._pendingIce||[];pc._pendingIce=[];for(const candidate of list){try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(_){} }}
 async function aflHandleCallSignal(sig,uid){if(!sig||!aflCallState.pc||!aflCallState.call||sig.call_id!==aflCallState.call.id||String(sig.sender_id)===String(uid))return;if(sig.id&&aflSeenCallSignalIds.has(sig.id))return;if(sig.id)aflSeenCallSignalIds.add(sig.id);try{const pc=aflCallState.pc;if(sig.signal_type==="offer"){if(aflCallState.role!=="receiver")return;if(pc.signalingState!=="stable"&&pc.signalingState!=="have-local-offer"){try{await pc.setLocalDescription({type:"rollback"});}catch(_){} }await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await aflInsertCallSignal(sig.call_id,uid,"answer",{type:answer.type,sdp:answer.sdp});}else if(sig.signal_type==="answer"&&aflCallState.role==="caller"){if(pc.signalingState!=="have-local-offer")return;await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();}else if(sig.signal_type==="ice"&&sig.payload){if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(sig.payload));}catch(_){}}else{pc._pendingIce.push(sig.payload);}}}catch(e){console.warn("AFRILINK call signal:",e);}}
 async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voice"){
+  await aflUnlockCallAudio();
   if(aflCallState.call)throw new Error("A call is already active. End it before starting another call.");
   const s=await ensureHeavensAnonymousSession(),uid=s?.user?.id;
   if(!uid)throw new Error("Secure call unavailable.");
@@ -2827,45 +2922,40 @@ async function aflSwitchCamera(targetFacing=null){
   if(nextFacing===aflCameraFacing)return;
   const oldStream=pc._localStream;
   const oldVideo=oldStream?.getVideoTracks?.()[0];
-  const oldConstraints=oldVideo?.getSettings?oldVideo.getSettings():{};
+  const sender=pc._videoSender||pc.getTransceivers?.().find(x=>x.sender?.track?.kind==="video")?.sender||pc.getSenders?.().find(x=>x.track?.kind==="video");
+  if(!sender)throw new Error("Video camera is not available on this call.");
   const buttons=["aflFrontCameraOutgoing","aflRearCameraOutgoing","aflFrontCameraActive","aflRearCameraActive"].map(id=>document.getElementById(id)).filter(Boolean);
   aflCameraSwitchBusy=true;buttons.forEach(b=>b.disabled=true);
-  let newStream=null;
+  let newStream=null,newVideo=null;
   try{
-    // Release the current camera first. On many Android devices two simultaneous
-    // getUserMedia camera requests cause OverconstrainedError/NotReadableError.
-    if(oldVideo){try{oldVideo.stop();}catch(_){}try{oldStream.removeTrack(oldVideo);}catch(_){}}
-    const exact={width:{ideal:720},height:{ideal:960},facingMode:{exact:nextFacing}};
-    try{newStream=await navigator.mediaDevices.getUserMedia({video:exact});}
+    // Ask for the requested camera first. This keeps the current camera alive if
+    // Android refuses the second camera request.
+    try{newStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:720},height:{ideal:960},facingMode:{exact:nextFacing}}});}
     catch(_){newStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:720},height:{ideal:960},facingMode:nextFacing}});}
-    const newVideo=newStream.getVideoTracks?.()[0];
+    newVideo=newStream.getVideoTracks?.()[0];
     if(!newVideo)throw new Error("The selected camera is not available.");
-    const sender=pc.getSenders().find(x=>x.track?.kind==="video")||pc.getTransceivers?.().find(x=>x.sender?.track?.kind==="video")?.sender;
-    if(!sender)throw new Error("Video camera is not available on this call.");
     await sender.replaceTrack(newVideo);
+    pc._videoSender=sender;
+    if(oldVideo){try{oldVideo.stop();}catch(_){}try{oldStream.removeTrack(oldVideo);}catch(_){}}
     if(oldStream)oldStream.addTrack(newVideo);else pc._localStream=new MediaStream([newVideo]);
     aflCameraFacing=nextFacing;
     const local=document.getElementById("aflLocalVideo");
     if(local){local.srcObject=pc._localStream;local.muted=true;local.volume=0;local.play().catch(()=>{});}
   }catch(e){
     try{newStream?.getTracks?.().forEach(t=>t.stop());}catch(_){}
-    // Try to restore the original camera if switching failed.
-    try{
-      if(oldVideo&&pc._localStream){const restoreFacing=oldConstraints?.facingMode||aflCameraFacing;const restored=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:720},height:{ideal:960},facingMode:restoreFacing}});const rt=restored.getVideoTracks?.()[0];const sender=pc.getSenders().find(x=>x.track?.kind==="video")||pc.getTransceivers?.().find(x=>x.sender?.track?.kind==="video")?.sender;if(rt&&sender){await sender.replaceTrack(rt);pc._localStream.addTrack(rt);aflCameraFacing=restoreFacing==="environment"?"environment":"user";const local=document.getElementById("aflLocalVideo");if(local)local.srcObject=pc._localStream;}}
-    }catch(_){}
     console.warn("AFRILINK camera switch:",e);
     alert("Could not start video source. Please try the other camera again.");
   }finally{
     aflCameraSwitchBusy=false;buttons.forEach(b=>b.disabled=false);
   }
-  // Keep the two explicit choices visible while outgoing/active.
   const mode=aflIncomingCallOverlay?.classList.contains("outgoing")?"outgoing":"active";
   const current=aflCallState.call;
-  if(current)aflSetCallOverlay(mode,mode==="outgoing"?(aflIsVideoCall(current)?"VIDEO CALLING…":"CALLING…"):(aflIsVideoCall(current)?"VIDEO CALL ACTIVE":"VOICE CALL ACTIVE"),mode==="outgoing"?"Waiting for the other person to answer.":`\${current.caller_id===current.owner_id?"Client":"Brand"} • private AFRILINK ${aflIsVideoCall(current)?"video":"voice"} call`,current);
+  if(current)aflSetCallOverlay(mode,mode==="outgoing"?(aflIsVideoCall(current)?"VIDEO CALLING…":"CALLING…"):(aflIsVideoCall(current)?"VIDEO CALL ACTIVE":"VOICE CALL ACTIVE"),mode==="outgoing"?"Waiting for the other person to answer.":`${current.caller_id===current.owner_id?"Client":"Brand"} • private AFRILINK ${aflIsVideoCall(current)?"video":"voice"} call`,current);
 }
 
 function aflShowCallStatus(text,active=false){if(active&&aflCallState.call)aflShowActiveCallScreen(aflCallState.call);let box=document.getElementById("aflActiveCallBar");if(!box){box=document.createElement("div");box.id="aflActiveCallBar";box.className="afl-active-call";box.innerHTML=`<span class="afl-active-call-text"></span><button type="button">END CALL</button>`;box.querySelector("button").onclick=()=>aflFinishCall("ended");document.body.appendChild(box);}box.querySelector(".afl-active-call-text").textContent=text;box.style.display="flex";}
 async function aflAcceptIncomingCall(){
+  await aflUnlockCallAudio();
   const incoming=aflPendingIncomingCall;if(!incoming)return;
   const current=aflCallState.call;if(current)await aflFinishCall("ended",true);
   aflPendingIncomingCall=null;
@@ -3008,7 +3098,7 @@ document.getElementById("aflServiceClose").onclick=()=>{aflServiceOverlay.style.
 document.getElementById("aflServiceSubmit").onclick=aflSubmitService;
 document.getElementById("aflChatSend").onclick=aflSendClientChat;
 document.getElementById("aflChatRefresh").onclick=()=>aflActiveService.inquiry&&aflLoadChat(aflActiveService.inquiry.id);
-document.getElementById("aflChatMic").onclick=()=>aflToggleVoiceRecorder("client");document.getElementById("aflChatCall").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVoiceCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the voice call."));};document.getElementById("aflChatVideo").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVideoCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the video call."));};document.getElementById("aflCallAccept").onclick=()=>aflAcceptIncomingCall();document.getElementById("aflCallDecline").onclick=()=>aflDeclineIncomingCall();document.getElementById("aflCallEndBig").onclick=()=>aflFinishCall("ended");document.getElementById("aflCallEndActive").onclick=()=>aflFinishCall("ended");document.getElementById("aflFrontCameraOutgoing").onclick=()=>aflSwitchCamera("user");document.getElementById("aflRearCameraOutgoing").onclick=()=>aflSwitchCamera("environment");document.getElementById("aflFrontCameraActive").onclick=()=>aflSwitchCamera("user");document.getElementById("aflRearCameraActive").onclick=()=>aflSwitchCamera("environment");
+document.getElementById("aflChatMic").onclick=()=>aflToggleVoiceRecorder("client");document.getElementById("aflChatCall").onclick=()=>{aflUnlockCallAudio().catch(()=>{});const q=aflActiveService.inquiry;if(q)aflCreateVoiceCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the voice call."));};document.getElementById("aflChatVideo").onclick=()=>{aflUnlockCallAudio().catch(()=>{});const q=aflActiveService.inquiry;if(q)aflCreateVideoCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the video call."));};document.getElementById("aflCallAccept").onclick=()=>aflAcceptIncomingCall();document.getElementById("aflCallDecline").onclick=()=>aflDeclineIncomingCall();document.getElementById("aflCallEndBig").onclick=()=>aflFinishCall("ended");document.getElementById("aflCallEndActive").onclick=()=>aflFinishCall("ended");document.getElementById("aflFrontCameraOutgoing").onclick=()=>aflSwitchCamera("user");document.getElementById("aflRearCameraOutgoing").onclick=()=>aflSwitchCamera("environment");document.getElementById("aflFrontCameraActive").onclick=()=>aflSwitchCamera("user");document.getElementById("aflRearCameraActive").onclick=()=>aflSwitchCamera("environment");
 document.getElementById("aflChatInput").addEventListener("keydown",e=>{if(e.key==="Enter")aflSendClientChat();});
 document.getElementById("aflBillboardSearch").addEventListener("input",e=>{aflFeedSearch=e.target.value;aflApplyFeedFilter();});
 document.getElementById("aflBillboardCategory").addEventListener("change",e=>{aflFeedCategory=e.target.value;aflApplyFeedFilter();});
