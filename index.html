@@ -1065,10 +1065,13 @@ Install App
       <button id="aflCallAccept" type="button" class="afl-call-accept">ACCEPT CALL</button>
     </div>
     <div id="aflOutgoingCallActions" class="afl-call-actions" style="display:none">
+      <button id="aflFrontCameraOutgoing" type="button" class="afl-call-accept afl-camera-switch" style="display:none">FRONT CAMERA</button>
+      <button id="aflRearCameraOutgoing" type="button" class="afl-call-accept afl-camera-switch" style="display:none">REAR CAMERA</button>
       <button id="aflCallEndBig" type="button" class="afl-call-decline">END CALL</button>
     </div>
     <div id="aflActiveCallActions" class="afl-call-actions" style="display:none">
-      <button id="aflSwitchCamera" type="button" class="afl-call-accept afl-camera-switch" style="display:none">🔄 SWITCH CAMERA</button>
+      <button id="aflFrontCameraActive" type="button" class="afl-call-accept afl-camera-switch" style="display:none">FRONT CAMERA</button>
+      <button id="aflRearCameraActive" type="button" class="afl-call-accept afl-camera-switch" style="display:none">REAR CAMERA</button>
       <button id="aflCallEndActive" type="button" class="afl-call-decline">END CALL</button>
     </div>
     <div class="afl-call-note">Private call • tied to this AFRILINK service conversation</div>
@@ -2769,7 +2772,7 @@ function aflAttachRemoteMedia(stream){
   }
   const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=isVideo?"none":"grid";
 }
-function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept"),switchBtn=document.getElementById("aflSwitchCamera");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";if(switchBtn){switchBtn.style.display=mode==="active"&&isVideo?"inline-flex":"none";switchBtn.disabled=aflCameraSwitchBusy;if(!aflCameraSwitchBusy)switchBtn.textContent=aflCameraFacing==="user"?"🔄 BACK CAMERA":"🔄 FRONT CAMERA";}document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
+function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";const cameraButtons=["aflFrontCameraOutgoing","aflRearCameraOutgoing","aflFrontCameraActive","aflRearCameraActive"];cameraButtons.forEach(id=>{const b=document.getElementById(id);if(b){b.style.display=(isVideo&&(mode==="outgoing"||mode==="active"))?"inline-flex":"none";b.disabled=aflCameraSwitchBusy;}});document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
 function aflStartCallOverlayTimer(startAt=null){clearInterval(aflCallState.overlayTimer);const started=Number(startAt)||Date.now();aflCallState.timerStartedAt=started;const tick=()=>{const el=document.getElementById("aflIncomingCallTimer");if(el)el.textContent=aflFormatCallTime((Date.now()-started)/1000);};tick();aflCallState.overlayTimer=setInterval(tick,1000);}
 function aflStopCallOverlayTimer(){clearInterval(aflCallState.overlayTimer);aflCallState.overlayTimer=null;aflCallState.timerStartedAt=null;}
 function aflShowOutgoingCallScreen(call){aflSetCallOverlay("outgoing",aflIsVideoCall(call)?"VIDEO CALLING…":"CALLING…",call.receiver_busy?"The brand is currently on another call. Your call is waiting.":"Waiting for the other person to answer.",call);aflStartCallOverlayTimer(call?.created_at?Date.parse(call.created_at):Date.now());}
@@ -2778,17 +2781,10 @@ function aflHideCallOverlay(){aflStopCallOverlayTimer();aflSetVideoStage(false);
 async function aflInsertCallSignal(callId,senderId,type,payload){const {error}=await heavensSupabase.from("afrilink_voice_signals").insert({call_id:callId,sender_id:senderId,signal_type:type,payload});if(error)throw error;}
 async function aflLoadCallSignals(callId,uid){const {data,error}=await heavensSupabase.from("afrilink_voice_signals").select("*").eq("call_id",callId).order("created_at",{ascending:true});if(error)return;for(const sig of data||[])await aflHandleCallSignal(sig,uid);}
 async function aflSubscribeCallSignals(call,uid){if(aflCallState.channel){try{await heavensSupabase.removeChannel(aflCallState.channel);}catch(_){}aflCallState.channel=null;}aflCallState.channel=heavensSupabase.channel("afl-call-"+call.id+"-"+uid+"-"+Date.now()).on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_voice_signals",filter:"call_id=eq."+call.id},payload=>aflHandleCallSignal(payload.new,uid)).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK call signaling status:",status);});await new Promise(r=>setTimeout(r,250));await aflLoadCallSignals(call.id,uid);}
-async function aflSetupPeer(call,uid,role){if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}aflCameraFacing="user";aflCameraSwitchBusy=false;const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});aflCallState.pc=pc;aflCallState.call=call;aflCallState.role=role;aflCallState.inquiryId=call.inquiry_id;pc._pendingIce=[];pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};pc.ontrack=e=>{
-  // Keep one remote MediaStream for the whole call. Browsers can fire ontrack
-  // separately for audio and video; never create a second playback sink for either.
-  if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();
-  if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){
-    try{aflRemoteMediaStream.addTrack(e.track);}catch(_){}
-  }
-  aflAttachRemoteMedia(aflRemoteMediaStream);
-};pc.onconnectionstatechange=()=>{if(["failed","closed"].includes(pc.connectionState)&&aflCallState.call?.status==="accepted")aflFinishCall("ended");};const audio={echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1};const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:"user",width:{ideal:720},height:{ideal:960}}}:{audio};const stream=await navigator.mediaDevices.getUserMedia(constraints);for(const track of stream.getTracks()){if(!pc.getSenders().some(sender=>sender.track?.kind===track.kind)){pc.addTrack(track,stream);}}pc._localStream=stream;if(aflIsVideoCall(call))aflSetVideoStage(true,stream);await aflSubscribeCallSignals(call,uid);return pc;}
+async function aflSetupPeer(call,uid,role){if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}aflCameraFacing="user";aflCameraSwitchBusy=false;aflRemoteMediaStream=null;aflRemoteMediaStreamId="";const pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun.cloudflare.com:3478"}]});aflCallState.pc=pc;aflCallState.call=call;aflCallState.role=role;aflCallState.inquiryId=call.inquiry_id;pc._pendingIce=[];pc._iceRestarting=false;pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};pc.ontrack=e=>{if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){}}aflAttachRemoteMedia(aflRemoteMediaStream);};pc.onconnectionstatechange=()=>{const state=pc.connectionState;if(state==="connected"){pc._iceRestarting=false;return;}if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE restart:",e));}};pc.oniceconnectionstatechange=()=>{const state=pc.iceConnectionState;if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));}};const audio={echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1};const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:"user",width:{ideal:720},height:{ideal:960}}}:{audio};const stream=await navigator.mediaDevices.getUserMedia(constraints);for(const track of stream.getTracks()){if(!pc.getSenders().some(sender=>sender.track?.kind===track.kind)){pc.addTrack(track,stream);}}pc._localStream=stream;if(aflIsVideoCall(call))aflSetVideoStage(true,stream);await aflSubscribeCallSignals(call,uid);return pc;}
+async function aflTryIceRestart(pc,uid){if(!pc||pc.connectionState==="closed"||pc._iceRestarting||!aflCallState.call||aflCallState.role!=="caller")return;pc._iceRestarting=true;try{const offer=await pc.createOffer({iceRestart:true});await pc.setLocalDescription(offer);await aflInsertCallSignal(aflCallState.call.id,uid,"offer",{type:offer.type,sdp:offer.sdp});}finally{setTimeout(()=>{if(pc)pc._iceRestarting=false;},5000);}}
 async function aflFlushPendingIce(){const pc=aflCallState.pc;if(!pc||!pc.remoteDescription)return;const list=pc._pendingIce||[];pc._pendingIce=[];for(const candidate of list){try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(_){} }}
-async function aflHandleCallSignal(sig,uid){if(!sig||!aflCallState.pc||!aflCallState.call||sig.call_id!==aflCallState.call.id||String(sig.sender_id)===String(uid))return;if(sig.id&&aflSeenCallSignalIds.has(sig.id))return;if(sig.id)aflSeenCallSignalIds.add(sig.id);try{const pc=aflCallState.pc;if(sig.signal_type==="offer"&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();if(aflCallState.role==="receiver"){const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await aflInsertCallSignal(sig.call_id,uid,"answer",{type:answer.type,sdp:answer.sdp});}}else if(sig.signal_type==="answer"&&aflCallState.role==="caller"&&!pc.currentRemoteDescription){await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();}else if(sig.signal_type==="ice"&&sig.payload){if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(sig.payload));}catch(_){}}else{pc._pendingIce.push(sig.payload);}}}catch(e){console.warn("AFRILINK call signal:",e);}}
+async function aflHandleCallSignal(sig,uid){if(!sig||!aflCallState.pc||!aflCallState.call||sig.call_id!==aflCallState.call.id||String(sig.sender_id)===String(uid))return;if(sig.id&&aflSeenCallSignalIds.has(sig.id))return;if(sig.id)aflSeenCallSignalIds.add(sig.id);try{const pc=aflCallState.pc;if(sig.signal_type==="offer"){if(aflCallState.role!=="receiver")return;if(pc.signalingState!=="stable"&&pc.signalingState!=="have-local-offer"){try{await pc.setLocalDescription({type:"rollback"});}catch(_){} }await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await aflInsertCallSignal(sig.call_id,uid,"answer",{type:answer.type,sdp:answer.sdp});}else if(sig.signal_type==="answer"&&aflCallState.role==="caller"){if(pc.signalingState!=="have-local-offer")return;await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();}else if(sig.signal_type==="ice"&&sig.payload){if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(sig.payload));}catch(_){}}else{pc._pendingIce.push(sig.payload);}}}catch(e){console.warn("AFRILINK call signal:",e);}}
 async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voice"){
   if(aflCallState.call)throw new Error("A call is already active. End it before starting another call.");
   const s=await ensureHeavensAnonymousSession(),uid=s?.user?.id;
@@ -2824,41 +2820,48 @@ async function aflCreateVideoCall(inquiryId,ownerId,clientId,callerRole){
   return aflCreateCall(inquiryId,ownerId,clientId,callerRole,"video");
 }
 
-async function aflSwitchCamera(){
+async function aflSwitchCamera(targetFacing=null){
   const call=aflCallState.call,pc=aflCallState.pc;
   if(!call||!pc||!aflIsVideoCall(call)||aflCameraSwitchBusy)return;
+  const nextFacing=targetFacing||((aflCameraFacing==="user")?"environment":"user");
+  if(nextFacing===aflCameraFacing)return;
   const oldStream=pc._localStream;
   const oldVideo=oldStream?.getVideoTracks?.()[0];
-  if(!oldVideo)return;
-  const nextFacing=aflCameraFacing==="user"?"environment":"user";
-  const btn=document.getElementById("aflSwitchCamera");
-  aflCameraSwitchBusy=true;
-  if(btn){btn.disabled=true;btn.textContent=nextFacing==="environment"?"🔄 BACK CAMERA…":"🔄 FRONT CAMERA…";}
+  const oldConstraints=oldVideo?.getSettings?oldVideo.getSettings():{};
+  const buttons=["aflFrontCameraOutgoing","aflRearCameraOutgoing","aflFrontCameraActive","aflRearCameraActive"].map(id=>document.getElementById(id)).filter(Boolean);
+  aflCameraSwitchBusy=true;buttons.forEach(b=>b.disabled=true);
   let newStream=null;
   try{
-    const base={width:{ideal:720},height:{ideal:960},facingMode:{exact:nextFacing}};
-    try{newStream=await navigator.mediaDevices.getUserMedia({video:base});}
+    // Release the current camera first. On many Android devices two simultaneous
+    // getUserMedia camera requests cause OverconstrainedError/NotReadableError.
+    if(oldVideo){try{oldVideo.stop();}catch(_){}try{oldStream.removeTrack(oldVideo);}catch(_){}}
+    const exact={width:{ideal:720},height:{ideal:960},facingMode:{exact:nextFacing}};
+    try{newStream=await navigator.mediaDevices.getUserMedia({video:exact});}
     catch(_){newStream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:720},height:{ideal:960},facingMode:nextFacing}});}
     const newVideo=newStream.getVideoTracks?.()[0];
-    if(!newVideo)throw new Error("Camera switch failed.");
-    const sender=pc.getSenders().find(x=>x.track?.kind==="video");
+    if(!newVideo)throw new Error("The selected camera is not available.");
+    const sender=pc.getSenders().find(x=>x.track?.kind==="video")||pc.getTransceivers?.().find(x=>x.sender?.track?.kind==="video")?.sender;
     if(!sender)throw new Error("Video camera is not available on this call.");
     await sender.replaceTrack(newVideo);
-    if(oldStream){try{oldStream.removeTrack(oldVideo);}catch(_){}try{oldVideo.stop();}catch(_){}}
-    oldStream.addTrack(newVideo);
-    pc._localStream=oldStream;
+    if(oldStream)oldStream.addTrack(newVideo);else pc._localStream=new MediaStream([newVideo]);
     aflCameraFacing=nextFacing;
     const local=document.getElementById("aflLocalVideo");
-    if(local){local.srcObject=oldStream;local.muted=true;local.volume=0;local.play().catch(()=>{});}
-    if(btn)btn.textContent=aflCameraFacing==="user"?"🔄 BACK CAMERA":"🔄 FRONT CAMERA";
+    if(local){local.srcObject=pc._localStream;local.muted=true;local.volume=0;local.play().catch(()=>{});}
   }catch(e){
     try{newStream?.getTracks?.().forEach(t=>t.stop());}catch(_){}
-    if(btn)btn.textContent=aflCameraFacing==="user"?"🔄 BACK CAMERA":"🔄 FRONT CAMERA";
-    alert(e?.message||"Could not switch camera. Please check camera permission.");
+    // Try to restore the original camera if switching failed.
+    try{
+      if(oldVideo&&pc._localStream){const restoreFacing=oldConstraints?.facingMode||aflCameraFacing;const restored=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:720},height:{ideal:960},facingMode:restoreFacing}});const rt=restored.getVideoTracks?.()[0];const sender=pc.getSenders().find(x=>x.track?.kind==="video")||pc.getTransceivers?.().find(x=>x.sender?.track?.kind==="video")?.sender;if(rt&&sender){await sender.replaceTrack(rt);pc._localStream.addTrack(rt);aflCameraFacing=restoreFacing==="environment"?"environment":"user";const local=document.getElementById("aflLocalVideo");if(local)local.srcObject=pc._localStream;}}
+    }catch(_){}
+    console.warn("AFRILINK camera switch:",e);
+    alert("Could not start video source. Please try the other camera again.");
   }finally{
-    aflCameraSwitchBusy=false;
-    if(btn)btn.disabled=false;
+    aflCameraSwitchBusy=false;buttons.forEach(b=>b.disabled=false);
   }
+  // Keep the two explicit choices visible while outgoing/active.
+  const mode=aflIncomingCallOverlay?.classList.contains("outgoing")?"outgoing":"active";
+  const current=aflCallState.call;
+  if(current)aflSetCallOverlay(mode,mode==="outgoing"?(aflIsVideoCall(current)?"VIDEO CALLING…":"CALLING…"):(aflIsVideoCall(current)?"VIDEO CALL ACTIVE":"VOICE CALL ACTIVE"),mode==="outgoing"?"Waiting for the other person to answer.":`\${current.caller_id===current.owner_id?"Client":"Brand"} • private AFRILINK ${aflIsVideoCall(current)?"video":"voice"} call`,current);
 }
 
 function aflShowCallStatus(text,active=false){if(active&&aflCallState.call)aflShowActiveCallScreen(aflCallState.call);let box=document.getElementById("aflActiveCallBar");if(!box){box=document.createElement("div");box.id="aflActiveCallBar";box.className="afl-active-call";box.innerHTML=`<span class="afl-active-call-text"></span><button type="button">END CALL</button>`;box.querySelector("button").onclick=()=>aflFinishCall("ended");document.body.appendChild(box);}box.querySelector(".afl-active-call-text").textContent=text;box.style.display="flex";}
@@ -3005,7 +3008,7 @@ document.getElementById("aflServiceClose").onclick=()=>{aflServiceOverlay.style.
 document.getElementById("aflServiceSubmit").onclick=aflSubmitService;
 document.getElementById("aflChatSend").onclick=aflSendClientChat;
 document.getElementById("aflChatRefresh").onclick=()=>aflActiveService.inquiry&&aflLoadChat(aflActiveService.inquiry.id);
-document.getElementById("aflChatMic").onclick=()=>aflToggleVoiceRecorder("client");document.getElementById("aflChatCall").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVoiceCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the voice call."));};document.getElementById("aflChatVideo").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVideoCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the video call."));};document.getElementById("aflCallAccept").onclick=()=>aflAcceptIncomingCall();document.getElementById("aflCallDecline").onclick=()=>aflDeclineIncomingCall();document.getElementById("aflCallEndBig").onclick=()=>aflFinishCall("ended");document.getElementById("aflCallEndActive").onclick=()=>aflFinishCall("ended");document.getElementById("aflSwitchCamera").onclick=()=>aflSwitchCamera();
+document.getElementById("aflChatMic").onclick=()=>aflToggleVoiceRecorder("client");document.getElementById("aflChatCall").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVoiceCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the voice call."));};document.getElementById("aflChatVideo").onclick=()=>{const q=aflActiveService.inquiry;if(q)aflCreateVideoCall(q.id,q.owner_id,q.client_id,"client").catch(e=>alert(e?.message||"Could not start the video call."));};document.getElementById("aflCallAccept").onclick=()=>aflAcceptIncomingCall();document.getElementById("aflCallDecline").onclick=()=>aflDeclineIncomingCall();document.getElementById("aflCallEndBig").onclick=()=>aflFinishCall("ended");document.getElementById("aflCallEndActive").onclick=()=>aflFinishCall("ended");document.getElementById("aflFrontCameraOutgoing").onclick=()=>aflSwitchCamera("user");document.getElementById("aflRearCameraOutgoing").onclick=()=>aflSwitchCamera("environment");document.getElementById("aflFrontCameraActive").onclick=()=>aflSwitchCamera("user");document.getElementById("aflRearCameraActive").onclick=()=>aflSwitchCamera("environment");
 document.getElementById("aflChatInput").addEventListener("keydown",e=>{if(e.key==="Enter")aflSendClientChat();});
 document.getElementById("aflBillboardSearch").addEventListener("input",e=>{aflFeedSearch=e.target.value;aflApplyFeedFilter();});
 document.getElementById("aflBillboardCategory").addEventListener("change",e=>{aflFeedCategory=e.target.value;aflApplyFeedFilter();});
