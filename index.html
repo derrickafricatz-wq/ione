@@ -2690,6 +2690,13 @@ async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voi
   }
 }
 
+async function aflCreateVoiceCall(inquiryId,ownerId,clientId,callerRole){
+  return aflCreateCall(inquiryId,ownerId,clientId,callerRole,"voice");
+}
+async function aflCreateVideoCall(inquiryId,ownerId,clientId,callerRole){
+  return aflCreateCall(inquiryId,ownerId,clientId,callerRole,"video");
+}
+
 function aflShowCallStatus(text,active=false){if(active&&aflCallState.call)aflShowActiveCallScreen(aflCallState.call);let box=document.getElementById("aflActiveCallBar");if(!box){box=document.createElement("div");box.id="aflActiveCallBar";box.className="afl-active-call";box.innerHTML=`<span class="afl-active-call-text"></span><button type="button">END CALL</button>`;box.querySelector("button").onclick=()=>aflFinishCall("ended");document.body.appendChild(box);}box.querySelector(".afl-active-call-text").textContent=text;box.style.display="flex";}
 async function aflAcceptIncomingCall(){
   const incoming=aflPendingIncomingCall;if(!incoming)return;
@@ -2804,8 +2811,9 @@ async function aflRefreshOwnerInquiries(uid,silent=false){
 function aflStartOwnerRealtime(uid){
   if(aflOwnerChatChannel){heavensSupabase.removeChannel(aflOwnerChatChannel).catch(()=>{});aflOwnerChatChannel=null;}
   if(aflOwnerInboxPollTimer)clearInterval(aflOwnerInboxPollTimer);
-  aflOwnerChatChannel=heavensSupabase.channel("afl-owner-inbox-"+uid+"-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_inquiries"},p=>{if(p.new&&String(p.new.owner_id)===String(uid))aflRefreshOwnerInquiries(uid,true);}).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_inquiry_messages"},p=>{if(p.new&&String(p.new.owner_id)===String(uid))aflRefreshOwnerInquiries(uid,true);}).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_voice_calls"},p=>{if(p.new&&(String(p.new.owner_id)===String(uid)||String(p.new.client_id)===String(uid))){if(p.eventType==="INSERT"&&String(p.new.receiver_id)===String(uid))aflHandleIncomingCall(p.new,uid);aflHandleCallRealtimeUpdate(p.new,uid);aflRefreshOwnerInquiries(uid,true);}}).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK owner realtime status:",status);});
-  aflOwnerInboxPollTimer=setInterval(()=>{if(aflOwnerOverlay.style.display!=="none"){aflRefreshOwnerInquiries(uid,true).catch(()=>{});aflPollIncomingAndCallState(uid).catch(()=>{});}},2500);
+  aflOwnerChatChannel=heavensSupabase.channel("afl-owner-inbox-"+uid+"-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_inquiries"},p=>{if(p.new&&String(p.new.owner_id)===String(uid))aflRefreshOwnerInquiries(uid,true);}).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_inquiry_messages"},p=>{if(p.new&&String(p.new.owner_id)===String(uid))aflRefreshOwnerInquiries(uid,true);}).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_voice_calls"},p=>{if(p.new&&(String(p.new.owner_id)===String(uid)||String(p.new.client_id)===String(uid))){if(p.eventType==="INSERT"&&String(p.new.receiver_id)===String(uid))aflHandleIncomingCall(p.new,uid);aflHandleCallRealtimeUpdate(p.new,uid);}}).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK owner realtime status:",status);});
+  // No periodic inbox refresh. Realtime events update the brand inbox only when data actually changes.
+  // Call-state polling remains scoped to the active call and does not rebuild the inbox UI.
 }
 
 
