@@ -2749,7 +2749,7 @@ function aflEnsureRemoteAudioElement(){
     audio.setAttribute("playsinline","");
     audio.controls=false;
     audio.preload="auto";
-    audio.muted=true;
+    audio.muted=false;
     audio.volume=1;
     audio.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;bottom:-10px;";
     document.body.appendChild(audio);
@@ -2824,25 +2824,29 @@ function aflGetOrCreateRemoteStream(stream){
   return stable;
 }
 function aflAttachRemoteMedia(stream){
-  const stable=aflGetOrCreateRemoteStream(stream);if(!stable)return;
+  if(!stream)return;
+  if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(stream.id||"");}
+  for(const track of (stream.getTracks?.()||[])){
+    if(track && !aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){try{aflRemoteMediaStream.addTrack(track);}catch(_){}}
+  }
+  const stable=aflRemoteMediaStream;
   const v=document.getElementById("aflRemoteVideo");
-  const hasVideo=!!stable.getVideoTracks?.().length;
-  const hasAudio=!!stable.getAudioTracks?.().length;
-  if(hasVideo){
-    if(v){
-      if(v.srcObject!==stable)v.srcObject=stable;
-      // Native video/audio playback is the most reliable path for video calls.
-      // Local preview remains muted, so this does not create a local feedback loop.
-      v.muted=false;v.volume=1;v.autoplay=true;v.playsInline=true;v.style.display="block";
-      const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
-    }
-    aflStopRemoteAudioSink();
-  }else{
-    if(v){try{v.pause();}catch(_){}v.srcObject=null;v.muted=true;v.volume=0;v.style.display="none";}
-    if(hasAudio)aflPlayRemoteAudio(stable);
+  const hasVideo=stable.getVideoTracks().length>0;
+  const hasAudio=stable.getAudioTracks().length>0;
+  if(hasVideo && v){
+    if(v.srcObject!==stable)v.srcObject=stable;
+    v.autoplay=true;v.playsInline=true;v.muted=true;v.volume=0;v.style.display="block";
+    const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
+  }
+  if(hasAudio){
+    const audio=aflEnsureRemoteAudioElement();
+    if(audio.srcObject!==stable)audio.srcObject=stable;
+    audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;
+    const p=audio.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
   }
   const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=hasVideo?"none":"grid";
 }
+
 function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";const cameraButtons=["aflFrontCameraOutgoing","aflRearCameraOutgoing","aflFrontCameraActive","aflRearCameraActive"];cameraButtons.forEach(id=>{const b=document.getElementById(id);if(b){b.style.display=(isVideo&&(mode==="outgoing"||mode==="active"))?"inline-flex":"none";b.disabled=aflCameraSwitchBusy;}});document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
 function aflStartCallOverlayTimer(startAt=null){clearInterval(aflCallState.overlayTimer);const started=Number(startAt)||Date.now();aflCallState.timerStartedAt=started;const tick=()=>{const el=document.getElementById("aflIncomingCallTimer");if(el)el.textContent=aflFormatCallTime((Date.now()-started)/1000);};tick();aflCallState.overlayTimer=setInterval(tick,1000);}
 function aflStopCallOverlayTimer(){clearInterval(aflCallState.overlayTimer);aflCallState.overlayTimer=null;aflCallState.timerStartedAt=null;}
@@ -2865,14 +2869,14 @@ async function aflSetupPeer(call,uid,role){
   pc._pendingIce=[];pc._iceRestarting=false;pc._videoSender=null;pc._audioSender=null;
   pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};
   pc.ontrack=e=>{
-    const incoming=e.streams?.[0];
-    if(incoming){
-      aflAttachRemoteMedia(incoming);
-      return;
-    }
-    if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();
-    if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){}}
+    // Always build one stable REMOTE stream from inbound tracks. Never use the
+    // local preview stream here. Some phones deliver audio/video in separate
+    // track events, so waiting for streams[0] alone can leave one side seeing
+    // only its own camera or hearing nothing.
+    if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(e.streams?.[0]?.id||"");}
+    if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){} }
     aflAttachRemoteMedia(aflRemoteMediaStream);
+    e.track.onunmute=()=>aflAttachRemoteMedia(aflRemoteMediaStream);
   };
   pc.onconnectionstatechange=()=>{
     const state=pc.connectionState;
@@ -2889,11 +2893,18 @@ async function aflSetupPeer(call,uid,role){
       aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));
     }
   };
-  const audio={echoCancellation:{ideal:true},noiseSuppression:{ideal:true},autoGainControl:{ideal:true},channelCount:{ideal:1}};
-  const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:"user",width:{ideal:720},height:{ideal:960}}}:{audio};
+  const audio={echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1};
+  const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}}}:{audio};
   const stream=await navigator.mediaDevices.getUserMedia(constraints);
+  // Establish explicit send/receive media sections before negotiation. This keeps
+  // both directions alive on browsers that otherwise create asymmetric media
+  // sections when audio/video arrive at different times.
+  try{pc.addTransceiver("audio",{direction:"sendrecv"});if(aflIsVideoCall(call))pc.addTransceiver("video",{direction:"sendrecv"});}catch(_){}
   for(const track of stream.getTracks()){
-    const sender=pc.addTrack(track,stream);
+    let sender=null;
+    const tx=pc.getTransceivers().find(t=>t.sender?.track===null && t.receiver?.track?.kind===track.kind && t.direction!=="stopped");
+    if(tx) sender=tx.sender;
+    if(sender) await sender.replaceTrack(track); else sender=pc.addTrack(track,stream);
     if(track.kind==="audio")pc._audioSender=sender;
     if(track.kind==="video")pc._videoSender=sender;
   }
