@@ -2848,10 +2848,24 @@ function aflAttachRemoteMedia(stream){
 }
 
 function aflSetCallOverlay(mode,title,meta,call=null){const ov=aflIncomingCallOverlay;if(!ov)return;const c=call||aflPendingIncomingCall||aflCallState.call,isVideo=aflIsVideoCall(c),busy=!!c?.receiver_busy;ov.classList.remove("incoming","outgoing","active","busy");ov.classList.add(mode);if(busy)ov.classList.add("busy");ov.classList.toggle("video-mode",isVideo);document.getElementById("aflIncomingCallTitle").textContent=title;document.getElementById("aflIncomingCallMeta").textContent=meta;document.getElementById("aflIncomingCallActions").style.display=mode==="incoming"?"flex":"none";document.getElementById("aflOutgoingCallActions").style.display=mode==="outgoing"?"flex":"none";document.getElementById("aflActiveCallActions").style.display=mode==="active"?"flex":"none";const wait=document.getElementById("aflCallWait"),accept=document.getElementById("aflCallAccept");if(wait)wait.style.display=mode==="incoming"&&busy?"block":"none";if(accept)accept.textContent=busy?"END CURRENT & ACCEPT":"ACCEPT CALL";const cameraButtons=["aflFrontCameraOutgoing","aflRearCameraOutgoing","aflFrontCameraActive","aflRearCameraActive"];cameraButtons.forEach(id=>{const b=document.getElementById(id);if(b){b.style.display=(isVideo&&(mode==="outgoing"||mode==="active"))?"inline-flex":"none";b.disabled=aflCameraSwitchBusy;}});document.getElementById("aflIncomingCallTimer").textContent="00:00";aflSetVideoStage(isVideo,aflCallState.pc?._localStream||null);ov.style.display="flex";ov.setAttribute("aria-hidden","false");}
-function aflStartCallOverlayTimer(startAt=null){clearInterval(aflCallState.overlayTimer);const started=Number(startAt)||Date.now();aflCallState.timerStartedAt=started;const tick=()=>{const el=document.getElementById("aflIncomingCallTimer");if(el)el.textContent=aflFormatCallTime((Date.now()-started)/1000);};tick();aflCallState.overlayTimer=setInterval(tick,1000);}
+function aflStartCallOverlayTimer(startAt=null){
+  clearInterval(aflCallState.overlayTimer);
+  const parsed=Number(startAt);
+  const started=Number.isFinite(parsed)&&parsed>0?parsed:Date.now();
+  aflCallState.timerStartedAt=started;
+  const render=()=>{const el=document.getElementById("aflIncomingCallTimer");if(!el)return;const elapsed=Math.max(0,Math.floor((Date.now()-started)/1000));el.textContent=aflFormatCallTime(elapsed);};
+  render();
+  aflCallState.overlayTimer=setInterval(render,1000);
+}
 function aflStopCallOverlayTimer(){clearInterval(aflCallState.overlayTimer);aflCallState.overlayTimer=null;aflCallState.timerStartedAt=null;}
 function aflShowOutgoingCallScreen(call){aflSetCallOverlay("outgoing",aflIsVideoCall(call)?"VIDEO CALLING…":"CALLING…",call.receiver_busy?"The brand is currently on another call. Your call is waiting.":"Waiting for the other person to answer.",call);aflStartCallOverlayTimer(call?.created_at?Date.parse(call.created_at):Date.now());}
-function aflShowActiveCallScreen(call){const who=call?.caller_id===call?.owner_id?"Client":"Brand",started=call?.answered_at?Date.parse(call.answered_at):Date.now();aflSetCallOverlay("active",aflIsVideoCall(call)?"VIDEO CALL ACTIVE":"VOICE CALL ACTIVE",`${who} • private AFRILINK ${aflIsVideoCall(call)?"video":"voice"} call`,call);aflStartCallOverlayTimer(started);}
+function aflShowActiveCallScreen(call){
+  const who=call?.caller_id===call?.owner_id?"Client":"Brand";
+  const parsedAnswered=call?.answered_at?Date.parse(call.answered_at):NaN;
+  const started=Number.isFinite(parsedAnswered)&&parsedAnswered>0?parsedAnswered:(aflCallState.timerStartedAt||Date.now());
+  aflSetCallOverlay("active",aflIsVideoCall(call)?"VIDEO CALL ACTIVE":"VOICE CALL ACTIVE",`${who} • private AFRILINK ${aflIsVideoCall(call)?"video":"voice"} call`,call);
+  aflStartCallOverlayTimer(started);
+}
 function aflHideCallOverlay(){aflStopCallOverlayTimer();aflSetVideoStage(false);aflIncomingCallOverlay.style.display="none";aflIncomingCallOverlay.setAttribute("aria-hidden","true");aflIncomingCallOverlay.classList.remove("incoming","outgoing","active","video-mode","busy");}
 async function aflInsertCallSignal(callId,senderId,type,payload){const {error}=await heavensSupabase.from("afrilink_voice_signals").insert({call_id:callId,sender_id:senderId,signal_type:type,payload});if(error)throw error;}
 async function aflLoadCallSignals(callId,uid){const {data,error}=await heavensSupabase.from("afrilink_voice_signals").select("*").eq("call_id",callId).order("created_at",{ascending:true});if(error)return;for(const sig of data||[])await aflHandleCallSignal(sig,uid);}
