@@ -6986,3 +6986,288 @@ preloadMedia();
   }
 })();
 </script>
+(function(){
+  /* FINAL AFRILINK BOOK + CAMERA PATCH */
+  const s=document.createElement('style');
+  s.textContent=`
+    /* Keep accepted live video INSIDE the chat at all times. */
+    #aflInlineLivePanel{position:relative!important;z-index:30!important;width:100%!important;display:block!important;clear:both!important}
+    #aflInlineLivePanel .afl-live-panel-stage{position:relative!important;width:100%!important;min-height:210px!important;overflow:hidden!important;border-radius:14px!important}
+    #aflInlineLivePanel .afl-call-video-stage{position:relative!important;width:100%!important;height:min(58vw,390px)!important;min-height:210px!important;margin:0!important;display:block!important}
+    #aflInlineLivePanel .afl-call-video-stage video{width:100%!important;height:100%!important;object-fit:cover!important}
+
+    /* Definitive full-panel brand book cover. */
+    #aflOwnerOverlay .afl-service-card{width:100%!important;max-width:100%!important;min-height:calc(100dvh - 18px)!important;padding:8px!important}
+    #aflOwnerOverlay .afl-owner-inquiry-list{min-height:calc(100dvh - 84px)!important;display:block!important}
+    .afl-def-book{position:relative;width:100%;min-height:calc(100dvh - 92px);border-radius:16px;overflow:hidden;background:#020506;border:1px solid rgba(0,255,255,.42);box-shadow:inset 0 1px rgba(255,255,255,.08),0 18px 50px rgba(0,0,0,.65);}
+    .afl-def-book-cover{position:relative;min-height:calc(100dvh - 104px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 12px 20px;overflow:hidden;background:radial-gradient(circle at 50% 15%,rgba(0,255,255,.13),transparent 34%),linear-gradient(145deg,#071417,#020405 60%,#06171a)}
+    .afl-def-book-cover:before{content:"";position:absolute;inset:-30%;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.10) 50%,transparent 60%);animation:aflDefShine 5s linear infinite;pointer-events:none}
+    @keyframes aflDefShine{from{transform:translateX(-45%)}to{transform:translateX(45%)}}
+    .afl-def-book-cover-bg{position:absolute;inset:-8%;background-position:center;background-size:cover;filter:blur(25px) brightness(.25);opacity:.8;transform:scale(1.08)}
+    .afl-def-book-cover-art{position:relative;z-index:2;width:min(88vw,430px);height:min(63dvh,590px);display:flex;align-items:center;justify-content:center}
+    .afl-def-book-cover-art img{width:100%;height:100%;object-fit:contain;display:block;filter:drop-shadow(0 20px 32px rgba(0,0,0,.72))}
+    .afl-def-book-cover-fallback{width:min(88vw,430px);height:min(63dvh,590px);display:grid;place-items:center;text-align:center;padding:35px;border-radius:18px;background:linear-gradient(145deg,#143138,#05090a);border:1px solid rgba(0,255,255,.48);box-shadow:0 25px 55px rgba(0,0,0,.65),0 0 28px rgba(0,255,255,.10);color:#00ffff;font:900 clamp(30px,9vw,58px)/1.02 'Playfair Display',Georgia,serif}
+    .afl-def-book-title{position:relative;z-index:3;margin-top:10px;color:#fff;text-align:center;font:1000 clamp(17px,5vw,27px)/1.1 'Russo One',Arial,sans-serif;letter-spacing:1.5px}
+    .afl-def-book-sub{position:relative;z-index:3;margin-top:7px;color:#90a5aa;text-align:center;font:900 8px/1.3 Arial,sans-serif;letter-spacing:2px}
+    .afl-def-book-enter{position:relative;z-index:4;margin-top:18px;width:min(350px,88vw);min-height:54px;border:1px solid #59ff8a;border-radius:15px;background:linear-gradient(145deg,#153b29,#07130d);color:#59ff8a;font:1000 10px/1 Arial,sans-serif;letter-spacing:1.6px;box-shadow:inset 0 1px rgba(255,255,255,.18),0 0 28px rgba(89,255,138,.18),0 12px 30px rgba(0,0,0,.5);animation:aflDefPulse 1.8s ease-in-out infinite}
+    @keyframes aflDefPulse{50%{filter:brightness(1.22);box-shadow:inset 0 1px rgba(255,255,255,.25),0 0 34px rgba(89,255,138,.30),0 12px 30px rgba(0,0,0,.5)}}
+    .afl-def-book-alert{position:relative;z-index:5;display:none;margin-top:10px;width:min(390px,88vw);min-height:44px;border:1px solid #59ff8a;border-radius:12px;background:#09170f;color:#59ff8a;font:1000 9px/1 Arial,sans-serif;letter-spacing:1px;animation:aflNew3DBreathe 1.15s ease-in-out infinite}
+    .afl-def-book-alert.show{display:block}
+    .afl-def-book-pages{display:none;min-height:calc(100dvh - 110px);padding:8px}
+    .afl-def-book.open .afl-def-book-cover{display:none}
+    .afl-def-book.open .afl-def-book-pages{display:block}
+    .afl-def-book-page{display:none;min-height:calc(100dvh - 130px);padding:12px;border-radius:14px;background:linear-gradient(145deg,#101a1d,#05090a);border:1px solid #294349;box-shadow:inset 0 1px rgba(255,255,255,.06),0 12px 30px rgba(0,0,0,.35);overflow:auto;animation:aflDefPageIn .38s ease both}
+    .afl-def-book-page.current{display:block}
+    @keyframes aflDefPageIn{from{opacity:.25;transform:perspective(900px) rotateY(70deg)}to{opacity:1;transform:none}}
+    .afl-def-client-name{color:#59ff8a;font:1000 12px/1.2 Arial,sans-serif;letter-spacing:1px;margin-bottom:9px}
+    .afl-def-client-name:before{content:"CLIENT • ";color:#00ffff}
+    .afl-def-book-controls{position:sticky;bottom:0;z-index:20;display:flex;justify-content:center;align-items:center;gap:7px;padding:9px;background:linear-gradient(180deg,transparent,#05090a 20%)}
+    .afl-def-nav{min-width:88px;min-height:42px;border-radius:11px;border:1px solid rgba(0,255,255,.5);background:linear-gradient(145deg,#123238,#061012);color:#00ffff;font-weight:1000;font-size:9px}
+    .afl-def-count{min-width:72px;text-align:center;padding:11px 5px;border:1px solid #294349;border-radius:10px;background:#071012;color:#fff;font:900 9px/1 Arial}
+    .afl-def-back{min-width:72px;border-color:#59ff8a;color:#59ff8a}
+    .afl-def-new-page{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:200;display:none;min-width:min(380px,88vw);min-height:46px;border:1px solid #59ff8a;border-radius:12px;background:#09170f;color:#59ff8a;font:1000 9px/1 Arial;letter-spacing:1px;animation:aflNew3DBreathe 1.15s ease-in-out infinite}
+    .afl-def-new-page.show{display:block}
+    @media(max-width:560px){.afl-def-book-cover{min-height:calc(100dvh - 98px)}.afl-def-book-cover-art,.afl-def-book-cover-fallback{height:57dvh}.afl-def-book-page{min-height:calc(100dvh - 120px)}}
+  `;
+  document.head.appendChild(s);
+
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function clientName(card){
+    if(card?.dataset?.clientName)return card.dataset.clientName;
+    for(const row of [...(card?.querySelectorAll('.afl-inquiry-data > div')||[])]){
+      const m=String(row.textContent||'').trim().match(/^NAME\s*:\s*(.+)$/i);
+      if(m&&m[1].trim())return m[1].trim();
+    }
+    const t=card?.querySelector('.afl-inquiry-title')?.textContent||'';
+    return (t.split(' • ')[0]||'CLIENT').trim();
+  }
+
+  async function getCoverUrl(card){
+    const bid=card?.dataset?.billboardId||'';
+    if(!bid)return '';
+    try{
+      const r=await heavensSupabase.from('afrilink_billboard_items').select('image_url').eq('billboard_id',bid).eq('active',true).order('sort_order',{ascending:true}).limit(1).maybeSingle();
+      return r?.data?.image_url||'';
+    }catch(_){return '';}
+  }
+
+  function wirePageButtons(book){
+    const pages=book._pages||[];
+    const show=(idx)=>{
+      if(!pages.length)return;
+      idx=(idx+pages.length)%pages.length;
+      pages.forEach((p,i)=>p.classList.toggle('current',i===idx));
+      book._page=idx;
+      const count=book.querySelector('.afl-def-count');if(count)count.textContent=`PAGE ${idx+1} / ${pages.length}`;
+      const newBtn=book.querySelector('.afl-def-new-page');
+      if(newBtn){newBtn.classList.remove('show');book._newIndex='';}
+      if(pages[idx]){
+        const b=pages[idx].querySelector('.afl-owner-refresh');
+        if(b){b.classList.remove('has-new');b.title='View new messages';}
+        pages[idx].dataset.pendingNewMessageId='';
+      }
+    };
+    book._showPage=show;
+    book.querySelector('.afl-def-prev').onclick=()=>show(book._page-1);
+    book.querySelector('.afl-def-next').onclick=()=>show(book._page+1);
+    book.querySelector('.afl-def-back').onclick=()=>{book.classList.remove('open');book._page=0;};
+    show(book._page||0);
+  }
+
+  async function buildDefBook(){
+    const list=document.getElementById('aflOwnerInquiryList');if(!list)return;
+    const cards=[...list.querySelectorAll('.afl-inquiry-card[data-inquiry-id]')];
+    if(!cards.length)return;
+    /* Remove any older generated book wrappers but keep the real inquiry cards. */
+    cards.forEach(c=>{c.classList.remove('afl-book-current','afl-page-turn-in','afl-page-turn-out');});
+    let book=document.getElementById('aflDefBrandBook');
+    if(book){book.remove();}
+    const first=cards[0];
+    const brand=first.querySelector('.afl-inquiry-title')?.textContent?.split(' • ')[0]||'AFRILINK';
+    book=document.createElement('div');book.id='aflDefBrandBook';book.className='afl-def-book';
+    const cover=document.createElement('section');cover.className='afl-def-book-cover';
+    const bg=document.createElement('div');bg.className='afl-def-book-cover-bg';
+    const art=document.createElement('div');art.className='afl-def-book-cover-art';
+    const fallback=document.createElement('div');fallback.className='afl-def-book-cover-fallback';fallback.textContent=brand;art.appendChild(fallback);
+    const title=document.createElement('div');title.className='afl-def-book-title';title.textContent=brand;
+    const sub=document.createElement('div');sub.className='afl-def-book-sub';sub.textContent='PRIVATE CLIENT INFORMATION • AFRILINK';
+    const enter=document.createElement('button');enter.type='button';enter.className='afl-def-book-enter';enter.textContent='VIEW INFOS';
+    const coverAlert=document.createElement('button');coverAlert.type='button';coverAlert.className='afl-def-book-alert';coverAlert.textContent='NEW INFO';
+    cover.append(bg,art,title,sub,enter,coverAlert);
+    const pagesWrap=document.createElement('div');pagesWrap.className='afl-def-book-pages';
+    const pages=[];
+    cards.forEach((card,i)=>{
+      card.classList.add('afl-def-book-page');
+      card.dataset.defBookIndex=String(i);
+      const oldLabel=card.querySelector('.afl-def-client-name');if(oldLabel)oldLabel.remove();
+      const label=document.createElement('div');label.className='afl-def-client-name';label.textContent=clientName(card);card.dataset.clientName=clientName(card);
+      const head=card.querySelector('.afl-inquiry-head');if(head)head.insertBefore(label,head.firstChild);else card.insertBefore(label,card.firstChild);
+      pagesWrap.appendChild(card);pages.push(card);
+    });
+    const controls=document.createElement('div');controls.className='afl-def-book-controls';controls.innerHTML='<button type="button" class="afl-def-nav afl-def-prev">‹ PREVIOUS</button><div class="afl-def-count">PAGE 1 / '+pages.length+'</div><button type="button" class="afl-def-nav afl-def-next">NEXT ›</button><button type="button" class="afl-def-nav afl-def-back">COVER</button>';
+    const newPage=document.createElement('button');newPage.type='button';newPage.className='afl-def-new-page';
+    book.append(cover,pagesWrap,controls,newPage);
+    list.innerHTML='';list.appendChild(book);book._pages=pages;book._page=0;book._newIndex='';
+    wirePageButtons(book);
+    const open=(idx=0)=>{book.classList.add('open');book._showPage(idx);};
+    enter.onclick=()=>open(book._newIndex===''?0:Number(book._newIndex));
+    coverAlert.onclick=()=>open(Number(book._newIndex||0));
+    newPage.onclick=()=>open(Number(book._newIndex||0));
+    book._openClient=open;
+    const coverUrl=await getCoverUrl(first);
+    if(coverUrl){
+      bg.style.backgroundImage=`url("${coverUrl.replace(/"/g,'&quot;')}")`;
+      art.innerHTML='';const img=document.createElement('img');img.src=coverUrl;img.alt='Brand cover';art.appendChild(img);
+    }
+    /* Any existing incoming state is converted to a named notification. */
+    cards.forEach(card=>{
+      if(card.dataset.pendingNewMessageId){
+        notifyClient(card.dataset.inquiryId);
+      }
+      const vb=card.querySelector('.afl-owner-refresh');
+      if(vb){vb.onclick=(ev)=>{ev.preventDefault();ev.stopPropagation();clearClient(card);open(Number(card.dataset.defBookIndex||0));return false;};}
+    });
+    return book;
+  }
+
+  function clearClient(card){
+    card.dataset.pendingNewMessageId='';
+    const b=card.querySelector('.afl-owner-refresh');if(b){b.classList.remove('has-new');b.textContent='VIEW NEW';}
+  }
+  function notifyClient(inquiryId){
+    const book=document.getElementById('aflDefBrandBook');if(!book)return;
+    const pages=book._pages||[];const idx=pages.findIndex(p=>String(p.dataset.inquiryId)===String(inquiryId));if(idx<0)return;
+    const name=clientName(pages[idx]);
+    book._newIndex=String(idx);
+    const text='NEW INFO FROM '+name;
+    const a=book.querySelector('.afl-def-book-alert');if(a){a.textContent=text;a.classList.add('show');}
+    const n=book.querySelector('.afl-def-new-page');if(n){n.textContent=text;n.classList.add('show');}
+    const vb=pages[idx].querySelector('.afl-owner-refresh');if(vb){vb.classList.add('has-new');vb.title=text;}
+  }
+  window.aflSignalOwnerNewClient=notifyClient;
+
+  /* Rebuild the book whenever the inbox is opened/refreshed. */
+  const currentOpen=window.aflOpenOwnerInquiries;
+  if(typeof currentOpen==='function'){
+    window.aflOpenOwnerInquiries=async function(){
+      await currentOpen.apply(this,arguments);
+      const list=document.getElementById('aflOwnerInquiryList');
+      setTimeout(()=>buildDefBook().catch(e=>console.warn('AFRILINK book:',e)),0);
+    };
+  }
+  const currentRefresh=window.aflRefreshOwnerInquiries;
+  if(typeof currentRefresh==='function'){
+    window.aflRefreshOwnerInquiries=async function(uid,silent=false){
+      await currentRefresh.apply(this,arguments);
+      setTimeout(()=>buildDefBook().catch(e=>console.warn('AFRILINK book refresh:',e)),0);
+    };
+  }
+
+  /* Rebind the two top controls so they always work. */
+  const close=document.getElementById('aflOwnerClose');
+  if(close){close.onclick=()=>{const ov=document.getElementById('aflOwnerOverlay');if(ov){ov.style.display='none';ov.setAttribute('aria-hidden','true');}const t=window.aflOwnerInboxPollTimer;if(t)clearInterval(t);};}
+  const refresh=document.getElementById('aflOwnerRefresh');
+  if(refresh){refresh.onclick=async()=>{try{const ss=await ensureHeavensAnonymousSession();if(ss?.user?.id)await window.aflRefreshOwnerInquiries(ss.user.id,false);}catch(e){console.warn(e);}};}
+
+  /* Make client VIEW NEW reliable: only incoming messages animate. */
+  function clientNotify(){const q=window.aflActiveService?.inquiry;if(!q)return;const b=document.getElementById('aflChatRefresh');if(b){b.classList.add('has-new');b.textContent='VIEW NEW';b.title='New incoming message available';}}
+  const oldClientRealtime=window.aflStartClientChatRealtime;
+  if(typeof oldClientRealtime==='function'){
+    window.aflStartClientChatRealtime=function(inquiryId){
+      oldClientRealtime.apply(this,arguments);
+      setTimeout(()=>{
+        if(window.aflClientChatChannel){/* original realtime remains active */}
+      },0);
+    };
+  }
+
+  /* Camera: accepted inline sessions must never reopen the old overlay. */
+  const oldSwitch=window.aflSwitchCamera;
+  if(typeof oldSwitch==='function'){
+    window.aflSwitchCamera=async function(target){
+      const call=window.aflCallState?.call;const accepted=String(call?.status||'').toLowerCase()==='accepted';
+      const panel=document.getElementById('aflInlineLivePanel');
+      try{return await oldSwitch.apply(this,arguments);}
+      finally{
+        if(accepted||panel){
+          const p=document.getElementById('aflInlineLivePanel');
+          const ov=document.getElementById('aflIncomingCallOverlay');
+          if(ov){ov.style.display='none';ov.setAttribute('aria-hidden','true');}
+          if(p){p.style.display='block';const stage=p.querySelector('.afl-call-video-stage');if(stage)stage.style.display='block';}
+        }
+      }
+    };
+  }
+})();
+<script>
+/* FINAL GUARANTEE PATCH • direct client/brand VIEW NEW delivery */
+(function(){
+  let brandTimer=null;
+  async function startBrandBookWatcher(){
+    if(brandTimer)clearInterval(brandTimer);
+    const session=await ensureHeavensAnonymousSession().catch(()=>null);
+    const uid=session?.user?.id||'';
+    if(!uid)return;
+    brandTimer=setInterval(async()=>{
+      const book=document.getElementById('aflDefBrandBook');
+      if(!book||!book._pages?.length)return;
+      for(const card of book._pages){
+        const qid=card.dataset.inquiryId;
+        if(!qid)continue;
+        try{
+          const r=await heavensSupabase.from('afrilink_inquiry_messages').select('id,sender_id,created_at').eq('inquiry_id',qid).order('created_at',{ascending:false}).limit(1).maybeSingle();
+          const m=r?.data;if(!m)continue;
+          const id=String(m.id||'');
+          if(!card.dataset.bookBaselineMessageId)card.dataset.bookBaselineMessageId=id;
+          if(id!==card.dataset.bookBaselineMessageId && String(m.sender_id||'')!==String(uid)){
+            card.dataset.bookBaselineMessageId=id;
+            card.dataset.pendingNewMessageId=id;
+            if(typeof window.aflSignalOwnerNewClient==='function')window.aflSignalOwnerNewClient(qid);
+          }else if(String(m.sender_id||'')===String(uid)){
+            card.dataset.bookBaselineMessageId=id;
+          }
+        }catch(_){ }
+      }
+    },1200);
+  }
+  window.addEventListener('beforeunload',()=>{if(brandTimer)clearInterval(brandTimer);});
+  const oldOpen=window.aflOpenOwnerInquiries;
+  if(typeof oldOpen==='function'){
+    window.aflOpenOwnerInquiries=async function(){
+      await oldOpen.apply(this,arguments);
+      setTimeout(()=>startBrandBookWatcher(),800);
+    };
+  }
+
+  /* Independent client-side incoming watcher. It never reacts to the client's own messages. */
+  let clientTimer=null;
+  const oldClientStart=window.aflStartClientChatRealtime;
+  if(typeof oldClientStart==='function'){
+    window.aflStartClientChatRealtime=function(inquiryId){
+      oldClientStart.apply(this,arguments);
+      if(clientTimer)clearInterval(clientTimer);
+      ensureHeavensAnonymousSession().then(session=>{
+        const uid=session?.user?.id||'';
+        clientTimer=setInterval(async()=>{
+          const q=window.aflActiveService?.inquiry;
+          if(!q?.id||String(q.id)!==String(inquiryId))return;
+          try{
+            const r=await heavensSupabase.from('afrilink_inquiry_messages').select('id,sender_id,created_at').eq('inquiry_id',inquiryId).order('created_at',{ascending:false}).limit(1).maybeSingle();
+            const m=r?.data;if(!m)return;
+            const id=String(m.id||'');
+            if(!window.aflActiveService._viewNewBaseline)window.aflActiveService._viewNewBaseline=id;
+            if(id!==window.aflActiveService._viewNewBaseline && String(m.sender_id||'')!==String(uid)){
+              window.aflActiveService._viewNewBaseline=id;
+              const b=document.getElementById('aflChatRefresh');
+              if(b){b.classList.add('has-new');b.textContent='VIEW NEW';b.title='New incoming message available';}
+            }else if(String(m.sender_id||'')===String(uid)){
+              window.aflActiveService._viewNewBaseline=id;
+            }
+          }catch(_){ }
+        },1200);
+      }).catch(()=>{});
+    };
+  }
+  window.addEventListener('beforeunload',()=>{if(clientTimer)clearInterval(clientTimer);});
+})();
+</script>
