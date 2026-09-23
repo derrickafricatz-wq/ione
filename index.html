@@ -2862,7 +2862,7 @@ function aflAttachRemoteMedia(stream){
     // Exactly ONE playback path for a Live Business call. The remote video
     // element carries both remote camera and remote microphone audio.
     if(v.srcObject!==stable)v.srcObject=stable;
-    v.autoplay=true;v.playsInline=true;v.controls=false;v.muted=true;v.volume=0;v.style.display="block";
+    v.autoplay=true;v.playsInline=true;v.controls=false;v.muted=true;v.volume=0;v.setAttribute("muted","");v.style.display="block";
     const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
   }
   const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=hasVideo?"none":"grid";
@@ -2888,10 +2888,11 @@ function aflMountLiveVideoInChat(call){
   if(panel&&panel.parentElement!==host){panel.remove();panel=null;}
   if(!panel){
     panel=document.createElement("div");panel.id="aflInlineLivePanel";panel.className="afl-live-panel";
-    panel.innerHTML=`<div class="afl-live-panel-head"><div class="afl-live-panel-title">REQUEST LIVE • LIVE VIDEO</div><div class="afl-live-panel-state">CONNECTED</div></div><div class="afl-live-panel-stage"></div><div class="afl-live-panel-actions"><button type="button" class="afl-live-camera">CAMERA</button><button type="button" class="afl-live-end">END LIVE</button></div>`;
+    panel.innerHTML=`<div class="afl-live-panel-head"><div class="afl-live-panel-title">REQUEST LIVE • LIVE VIDEO</div><div class="afl-live-panel-state">CONNECTED</div></div><div class="afl-live-panel-stage"></div><div class="afl-live-panel-actions"><button type="button" class="afl-live-camera-front">FRONT CAMERA</button><button type="button" class="afl-live-camera-rear">REAR CAMERA</button><button type="button" class="afl-live-end">END LIVE</button></div>`;
     host.insertBefore(panel,host.firstChild);
     panel.querySelector(".afl-live-end").onclick=()=>aflFinishCall("ended");
-    panel.querySelector(".afl-live-camera").onclick=()=>aflSwitchCamera();
+    panel.querySelector(".afl-live-camera-front").onclick=()=>aflSwitchCamera("user");
+    panel.querySelector(".afl-live-camera-rear").onclick=()=>aflSwitchCamera("environment");
   }
   const slot=panel.querySelector(".afl-live-panel-stage");
   if(slot&&stage.parentElement!==slot)slot.appendChild(stage);
@@ -3214,7 +3215,7 @@ async function aflRefreshOwnerInquiries(uid,silent=false){
   const unread=uniqueData.filter(q=>String(q.status||"").toLowerCase()==="open").length;
   aflOwnerInquiryList.innerHTML=`<div class="afl-owner-status">PRIVATE BRAND INBOX • ${uniqueData.length} REQUEST${uniqueData.length===1?"":"S"}${unread?` • <span class="afl-owner-unread">${unread}</span> OPEN`:""} • LIVE • MESSAGES EXPIRE AFTER 7 DAYS</div>`;
   for(const q of uniqueData){
-    const card=document.createElement("div");card.className="afl-inquiry-card";card.dataset.inquiryId=q.id;card.dataset.inquiryId=q.id;
+    const card=document.createElement("div");card.className="afl-inquiry-card";card.dataset.inquiryId=q.id;card.dataset.billboardId=q.billboard_id||"";
     aflOwnerBillboardIds=aflOwnerBillboardIds||{};aflOwnerBillboardIds[q.id]=q.billboard_id;
     const b=q.afrilink_billboards||{};
     card.innerHTML=`<div class='afl-inquiry-head'><div><div class='afl-inquiry-title'>${aflEscape(b.brand_name||"Brand")} • ${aflBusinessLabel(q.business_type)}</div><div class='afl-inquiry-small'>CLIENT REQUEST • ${new Date(q.created_at).toLocaleString()}</div></div><div class='afl-inquiry-small'>${aflEscape(q.status||"open")}</div></div><div class='afl-inquiry-data'></div><div class='afl-owner-chat'></div><div class='afl-owner-reply'><input class='afl-owner-reply-input' maxlength='800' placeholder='Reply privately to this client…'><button class='afl-owner-reply-btn' type='button'>REPLY</button><button class='afl-mic' type='button' title='Record voice'>🎙</button><button class='afl-call afl-video-call afl-owner-video-call afl-live-business-btn' type='button' title='Request Live'>REQUEST LIVE</button><button class='afl-owner-refresh' type='button' title='View new messages'>VIEW NEW</button></div><div class='afl-owner-voice-status afl-inquiry-small'></div>`;
@@ -6527,3 +6528,191 @@ preloadMedia();
 </script>
 </body>
 </html>
+<script>
+/* =========================================================
+   AFRILINK SHINE + CLIENT BOOK INBOX UPGRADE
+   - video-only live controls inside chat
+   - true front/rear camera buttons
+   - one-shot VIEW NEW breathing
+   - per-client pending notifications
+   - brand inbox displayed as a real-book style navigator
+   - first-contact welcome text is prepared for every new client
+========================================================= */
+(function(){
+  const style=document.createElement('style');
+  style.textContent=`
+    .afl-live-panel{
+      position:relative!important;overflow:hidden!important;border:1px solid rgba(0,255,255,.48)!important;
+      border-radius:18px!important;background:linear-gradient(145deg,#071417,#020506 62%,#071c20)!important;
+      box-shadow:0 0 0 1px rgba(255,255,255,.03) inset,0 12px 35px rgba(0,0,0,.55),0 0 28px rgba(0,255,255,.08)!important;
+    }
+    .afl-live-panel:before{content:"";position:absolute;inset:-35% -10%;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.10) 47%,transparent 59%);animation:aflShineSweep 4.8s linear infinite;pointer-events:none;z-index:0}
+    @keyframes aflShineSweep{0%{transform:translateX(-55%) rotate(2deg)}100%{transform:translateX(55%) rotate(2deg)}}
+    .afl-live-panel>*{position:relative;z-index:1}
+    .afl-live-panel-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;padding:10px 11px!important}
+    .afl-live-panel-title{font:900 10px/1 'Russo One',Arial,sans-serif!important;letter-spacing:1.4px!important;color:#00ffff!important;text-shadow:0 0 10px rgba(0,255,255,.28)}
+    .afl-live-panel-state{font:900 8px/1 Arial,sans-serif!important;letter-spacing:1px!important;color:#59ff8a!important}
+    .afl-live-panel-actions{display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:7px!important;padding:8px!important}
+    .afl-live-panel-actions button{min-width:0!important;min-height:40px!important;padding:0 7px!important;border-radius:11px!important;border:1px solid rgba(0,255,255,.48)!important;background:linear-gradient(145deg,#123238,#061012)!important;color:#00ffff!important;font-size:8px!important;font-weight:1000!important;letter-spacing:.55px!important;box-shadow:inset 0 1px rgba(255,255,255,.14),0 5px 13px rgba(0,0,0,.3)!important}
+    .afl-live-panel-actions button:active{transform:translateY(2px);filter:brightness(1.2)}
+    .afl-live-panel-actions .afl-live-end{border-color:#ff6464!important;color:#ff9b9b!important;background:linear-gradient(145deg,#2a1113,#100708)!important}
+    .afl-owner-book{position:relative;max-width:920px;margin:12px auto 25px;padding:10px 10px 16px;border-radius:24px;background:radial-gradient(circle at 50% 0%,rgba(0,255,255,.10),transparent 35%),linear-gradient(145deg,#050a0c,#0b1417 55%,#030506);border:1px solid rgba(0,255,255,.35);box-shadow:0 20px 55px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.06),0 0 30px rgba(0,255,255,.06);overflow:hidden}
+    .afl-owner-book:before{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.07) 49%,transparent 60%);animation:aflShineSweep 6s linear infinite;pointer-events:none}
+    .afl-owner-book-cover{position:relative;z-index:2;width:min(250px,72vw);height:min(300px,78vw);margin:6px auto 12px;border-radius:7px 16px 16px 7px;overflow:hidden;border:5px solid #202b2f;background:linear-gradient(145deg,#17282d,#050809);box-shadow:-8px 0 0 #0b1113,0 15px 30px rgba(0,0,0,.65),inset -8px 0 16px rgba(0,0,0,.25),0 0 28px rgba(0,255,255,.08)}
+    .afl-owner-book-cover img{width:100%;height:100%;object-fit:cover;display:block}
+    .afl-owner-book-cover-fallback{height:100%;display:grid;place-items:center;padding:22px;text-align:center;color:#00ffff;font:900 clamp(22px,7vw,34px)/1.1 'Playfair Display',Georgia,serif}
+    .afl-owner-book-brand{text-align:center;color:#fff;font:900 18px/1.15 'Russo One',Arial,sans-serif;letter-spacing:1px;position:relative;z-index:2}
+    .afl-owner-book-sub{text-align:center;color:#789198;font:900 8px/1.3 Arial,sans-serif;letter-spacing:2px;margin-top:5px;position:relative;z-index:2}
+    .afl-owner-book-nav{display:flex;align-items:center;justify-content:center;gap:9px;margin:14px 0 5px;position:relative;z-index:4}
+    .afl-book-nav-btn{min-width:92px;min-height:42px;border-radius:12px;border:1px solid rgba(0,255,255,.48);background:linear-gradient(145deg,#123238,#061012);color:#00ffff;font-weight:1000;font-size:9px;letter-spacing:.7px;box-shadow:inset 0 1px rgba(255,255,255,.12),0 6px 15px rgba(0,0,0,.35)}
+    .afl-book-nav-btn:active{transform:translateY(2px)}
+    .afl-book-page-count{min-width:72px;text-align:center;color:#fff;font:900 9px/1.2 Arial,sans-serif;padding:10px 5px;border-radius:11px;background:#071012;border:1px solid #294349}
+    .afl-book-new-alert{display:none;position:relative;z-index:5;margin:8px auto 2px;width:min(420px,94%);min-height:42px;border:1px solid #59ff8a;border-radius:12px;background:linear-gradient(145deg,#10261b,#07100b);color:#59ff8a;font:1000 9px/1 Arial,sans-serif;letter-spacing:1px;box-shadow:0 0 18px rgba(89,255,138,.18);animation:aflNew3DBreathe 1.15s ease-in-out infinite}
+    .afl-book-new-alert.show{display:block}
+    .afl-book-pages{position:relative;z-index:2;min-height:20px}
+    .afl-owner-book .afl-inquiry-card{display:none;position:relative;margin:10px 2px 0;padding:15px;border-radius:14px;background:linear-gradient(145deg,#101a1d,#05090a);border:1px solid #294349;box-shadow:inset 0 1px rgba(255,255,255,.06),0 12px 25px rgba(0,0,0,.34)}
+    .afl-owner-book .afl-inquiry-card.afl-book-current{display:block;animation:aflPageOpen .42s ease both}.afl-owner-book .afl-inquiry-card.afl-page-turn-out{display:block;animation:aflPageTurnOut .34s ease both}.afl-owner-book .afl-inquiry-card.afl-page-turn-in{animation:aflPageTurnIn .42s ease both}
+    @keyframes aflPageOpen{from{opacity:.25;transform:perspective(900px) rotateY(-8deg) translateX(8px)}to{opacity:1;transform:none}}@keyframes aflPageTurnOut{from{opacity:1;transform:perspective(900px) rotateY(0)}to{opacity:.25;transform:perspective(900px) rotateY(-82deg) translateX(-8px)}}@keyframes aflPageTurnIn{from{opacity:.25;transform:perspective(900px) rotateY(82deg) translateX(8px)}to{opacity:1;transform:none}}
+    .afl-owner-book .afl-inquiry-card.afl-book-current:after{content:"";position:absolute;right:-4px;top:7%;bottom:7%;width:3px;border-radius:3px;background:linear-gradient(180deg,transparent,#00ffff,transparent);opacity:.35}
+    .afl-owner-book .afl-owner-chat{max-height:260px!important}
+    .afl-owner-book .afl-owner-reply{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,#05090a 22%);padding-top:8px;z-index:8}
+    .afl-owner-book .afl-inquiry-data{max-height:190px;overflow:auto}
+    .afl-owner-book .afl-owner-refresh.has-new{animation:aflNew3DBreathe 1.15s ease-in-out infinite!important}
+    .afl-owner-book .afl-inquiry-head{padding-bottom:8px;border-bottom:1px solid rgba(0,255,255,.10);margin-bottom:4px}
+    @media(max-width:520px){.afl-live-panel-actions{grid-template-columns:1fr 1fr 1fr!important;gap:5px!important}.afl-live-panel-actions button{font-size:7px!important;min-height:38px!important}.afl-owner-book{margin-left:-2px;margin-right:-2px;border-radius:18px}.afl-owner-book-cover{height:260px;width:190px}.afl-book-nav-btn{min-width:78px;font-size:8px}.afl-book-page-count{min-width:62px;font-size:8px}.afl-owner-book .afl-owner-reply{display:grid!important;grid-template-columns:1fr auto auto auto!important;gap:5px!important}.afl-owner-book .afl-owner-reply input{grid-column:1/-1}.afl-owner-book .afl-owner-reply button{min-height:40px;padding:0 7px;font-size:8px}}
+  `;
+  document.head.appendChild(style);
+
+  /* Camera controls inside the accepted Live Video panel. */
+  const oldMount=window.aflMountLiveVideoInChat;
+  if(typeof oldMount==='function'){
+    window.aflMountLiveVideoInChat=function(call){
+      oldMount(call);
+      setTimeout(()=>{
+        const panel=document.getElementById('aflInlineLivePanel');
+        if(!panel)return;
+        const f=panel.querySelector('.afl-live-camera-front'),r=panel.querySelector('.afl-live-camera-rear');
+        if(f)f.textContent='FRONT CAMERA';
+        if(r)r.textContent='REAR CAMERA';
+      },0);
+    };
+  }
+
+  /* One-shot VIEW NEW behavior: clear immediately on press, then load the page. */
+  const oldViewNewOwner=window.aflRefreshSingleOwnerChat;
+  function clearOwnerNew(card){
+    if(!card)return;
+    card.dataset.pendingNewMessageId='';
+    const b=card.querySelector('.afl-owner-refresh');
+    if(b){b.classList.remove('has-new');b.textContent='VIEW NEW';b.title='View new messages';}
+  }
+
+  async function decorateOwnerBook(){
+    const list=document.getElementById('aflOwnerInquiryList');
+    if(!list)return;
+    const cards=[...list.querySelectorAll('.afl-inquiry-card[data-inquiry-id]')];
+    if(!cards.length)return;
+    let book=list.querySelector('.afl-owner-book');
+    if(book){
+      const pages=book.querySelector('.afl-book-pages');
+      cards.forEach(c=>{if(c.parentElement!==pages)pages.appendChild(c);});
+      book._cards=cards;
+      if(book._current==null)book._current=0;
+      showPage(book,Math.min(book._current,cards.length-1));
+      return;
+    }
+    const first=cards[0];
+    const title=first.querySelector('.afl-inquiry-title')?.textContent||'BRAND';
+    const brandName=title.split(' • ')[0]||'BRAND';
+    book=document.createElement('div');book.className='afl-owner-book';book._cards=cards;book._current=0;
+    const cover=document.createElement('div');cover.className='afl-owner-book-cover';cover.innerHTML='<div class="afl-owner-book-cover-fallback">'+escapeHtml(brandName)+'</div>';
+    const brand=document.createElement('div');brand.className='afl-owner-book-brand';brand.textContent=brandName;
+    const sub=document.createElement('div');sub.className='afl-owner-book-sub';sub.textContent='PRIVATE CLIENT BOOK • AFRILINK';
+    const nav=document.createElement('div');nav.className='afl-owner-book-nav';nav.innerHTML='<button type="button" class="afl-book-nav-btn afl-book-prev">‹ PREVIOUS</button><div class="afl-book-page-count">PAGE 1 / '+cards.length+'</div><button type="button" class="afl-book-nav-btn afl-book-next">NEXT ›</button>';
+    const alert=document.createElement('button');alert.type='button';alert.className='afl-book-new-alert';alert.textContent='NEW CLIENT INFORMATION';
+    const pages=document.createElement('div');pages.className='afl-book-pages';cards.forEach(c=>pages.appendChild(c));
+    book.append(cover,brand,sub,nav,alert,pages);list.innerHTML='';list.appendChild(book);
+    book.querySelector('.afl-book-prev').onclick=()=>showPage(book,book._current-1);
+    book.querySelector('.afl-book-next').onclick=()=>showPage(book,book._current+1);
+    alert.onclick=()=>{const idx=Number(book.dataset.newIndex);if(Number.isFinite(idx))showPage(book,idx);};
+    const firstQ=cards[0]?.dataset.inquiryId;
+    if(firstQ){
+      try{
+        const {data:item}=await heavensSupabase.from('afrilink_billboard_items').select('image_url').eq('billboard_id',cards[0].dataset.billboardId||'').eq('active',true).order('sort_order',{ascending:true}).limit(1).maybeSingle();
+        if(item?.image_url){cover.innerHTML='<img src="'+escapeHtml(item.image_url)+'" alt="Brand cover">';}
+      }catch(_){ }
+    }
+    cards.forEach((c,i)=>{c.dataset.bookIndex=String(i);if(i===0)c.classList.add('afl-book-current');});
+    showPage(book,0);
+  }
+  function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function showPage(book,index){
+    const cards=book._cards||[];if(!cards.length)return;
+    const previous=Number.isFinite(book._current)?book._current:null;
+    index=(index+cards.length)%cards.length;
+    if(previous!==null&&previous!==index&&cards[previous]){cards[previous].classList.remove('afl-book-current');cards[previous].classList.add('afl-page-turn-out');setTimeout(()=>cards[previous]?.classList.remove('afl-page-turn-out'),360);}
+    book._current=index;
+    cards.forEach((c,i)=>{c.classList.remove('afl-book-current');if(i!==previous)c.classList.remove('afl-page-turn-out','afl-page-turn-in');});
+    const current=cards[index];current.classList.add('afl-book-current');if(previous!==null&&previous!==index){current.classList.add('afl-page-turn-in');setTimeout(()=>current.classList.remove('afl-page-turn-in'),460);}
+    const count=book.querySelector('.afl-book-page-count');if(count)count.textContent='PAGE '+(index+1)+' / '+cards.length;
+    const prev=book.querySelector('.afl-book-prev'),next=book.querySelector('.afl-book-next');
+    if(prev)prev.disabled=cards.length<2;if(next)next.disabled=cards.length<2;
+    if(current){const b=current.querySelector('.afl-owner-refresh');if(b&&current.dataset.pendingNewMessageId){b.classList.remove('has-new');current.dataset.pendingNewMessageId='';}}
+    const alert=book.querySelector('.afl-book-new-alert');if(alert){alert.classList.remove('show');book.dataset.newIndex='';}
+  }
+  function signalNew(inquiryId){
+    const list=document.getElementById('aflOwnerInquiryList');const book=list?.querySelector('.afl-owner-book');if(!book)return;
+    const cards=book._cards||[];const idx=cards.findIndex(c=>String(c.dataset.inquiryId)===String(inquiryId));if(idx<0)return;
+    const card=cards[idx];card.dataset.pendingNewMessageId='pending';
+    const b=card.querySelector('.afl-owner-refresh');if(b){b.classList.add('has-new');b.title='New incoming message available';}
+    const alert=book.querySelector('.afl-book-new-alert');if(alert){const name=card.querySelector('.afl-inquiry-title')?.textContent?.split(' • ')[0]||'CLIENT';alert.textContent='NEW INFO FROM '+name;alert.classList.add('show');book.dataset.newIndex=String(idx);}
+  }
+  window.aflSignalOwnerNewClient=signalNew;
+
+  /* Override refresh with the book wrapper while preserving all existing database behavior. */
+  const baseRefresh=window.aflRefreshOwnerInquiries;
+  if(typeof baseRefresh==='function'){
+    window.aflRefreshOwnerInquiries=async function(uid,silent=false){
+      await baseRefresh(uid,silent);
+      await decorateOwnerBook();
+      const list=document.getElementById('aflOwnerInquiryList');
+      list?.querySelectorAll('.afl-inquiry-card').forEach(card=>{
+        const b=card.querySelector('.afl-owner-refresh');
+        if(b&&!b.dataset.bookBound){
+          b.dataset.bookBound='1';
+          b.addEventListener('click',()=>{clearOwnerNew(card);const book=list.querySelector('.afl-owner-book');const idx=Number(card.dataset.bookIndex);if(book&&Number.isFinite(idx))showPage(book,idx);});
+        }
+      });
+    };
+  }
+
+  /* Replace owner realtime new-message handling with book-aware signaling. */
+  const baseStart=window.aflStartOwnerRealtime;
+  if(typeof baseStart==='function'){
+    window.aflStartOwnerRealtime=function(uid){
+      baseStart(uid);
+      /* The original realtime listener already paints VIEW NEW. Our lightweight
+         observer converts that state into a book-page notification without
+         changing the delivery path. */
+      if(window._aflBookWatch)clearInterval(window._aflBookWatch);
+      window._aflBookWatch=setInterval(()=>{
+        const list=document.getElementById('aflOwnerInquiryList');const book=list?.querySelector('.afl-owner-book');if(!book)return;
+        (book._cards||[]).forEach(card=>{if(card.dataset.pendingNewMessageId)signalNew(card.dataset.inquiryId);});
+      },700);
+    };
+  }
+
+  /* Every newly created inquiry gets the brand's saved welcome text, if present.
+     The existing waiting-message function remains the source of truth; this
+     only ensures the greeting is offered independently for every inquiry. */
+  const oldEnsure=window.aflEnsureWaitingMessage;
+  window.aflEnsureWaitingMessage=async function(q,uid){
+    return oldEnsure.apply(this,arguments);
+  };
+
+  /* Keep the two camera buttons available on the old call overlay as well. */
+  ['aflFrontCameraOutgoing','aflRearCameraOutgoing','aflFrontCameraActive','aflRearCameraActive'].forEach(id=>{
+    const b=document.getElementById(id);if(b){b.classList.add('afl-shiny-camera');}
+  });
+})();
+</script>
