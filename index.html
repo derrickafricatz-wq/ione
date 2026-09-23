@@ -2811,74 +2811,12 @@ let aflRemoteMediaStream=null;
 let aflRemoteMediaStreamId="";
 let aflCameraFacing="user";
 let aflCameraSwitchBusy=false;
-let aflRemoteAudioContext=null;
-let aflRemoteAudioStreamId="";
-let aflAudioUnlocked=false;
-function aflEnsureRemoteAudioElement(){
-  let audio=document.getElementById("aflCallAudio");
-  if(!audio){
-    audio=document.createElement("audio");
-    audio.id="aflCallAudio";
-    audio.autoplay=true;
-    audio.playsInline=true;
-    audio.setAttribute("playsinline","");
-    audio.controls=false;
-    audio.preload="auto";
-    audio.muted=false;
-    audio.volume=1;
-    audio.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-10px;bottom:-10px;";
-    document.body.appendChild(audio);
-  }
-  return audio;
-}
-async function aflUnlockCallAudio(){
-  // Unlock the ONE native audio sink directly from the user's call/accept gesture.
-  // Do not route call audio through Web Audio: on some Android browsers that
-  // path can cause echo, delayed playback, or a silent remote voice.
-  try{
-    const audio=aflEnsureRemoteAudioElement();
-    audio.muted=false;
-    audio.volume=1;
-    audio.autoplay=true;
-    const ap=audio.play();
-    if(ap&&typeof ap.catch==="function")ap.catch(()=>{});
-  }catch(e){console.warn("AFRILINK audio prime:",e);}
-  // Keep the AudioContext only as a best-effort browser unlock; it is NEVER
-  // used as the call's audio playback path.
-  try{
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(AC){
-      if(!aflRemoteAudioContext)aflRemoteAudioContext=new AC();
-      const r=aflRemoteAudioContext.resume();
-      if(r&&typeof r.catch==="function")r.catch(()=>{});
-    }
-  }catch(e){console.warn("AFRILINK audio context:",e);}
-  aflAudioUnlocked=true;
-}
-function aflStopRemoteAudioSink(){
-  aflRemoteAudioStreamId="";
-  const audio=document.getElementById("aflCallAudio");
-  if(audio){try{audio.pause();}catch(_){}try{audio.srcObject=null;}catch(_){}audio.muted=true;audio.volume=1;}
-}
-function aflPlayRemoteAudio(stream){
-  if(!stream)return;
-  const tracks=stream.getAudioTracks?.()||[];
-  if(!tracks.length)return;
-  const audio=aflEnsureRemoteAudioElement();
-  if(audio.srcObject!==stream)audio.srcObject=stream;
-  audio.muted=false;
-  audio.volume=1;
-  aflRemoteAudioStreamId=String(stream.id||"");
-  const p=audio.play();
-  if(p&&typeof p.catch==="function")p.catch(async e=>{
-    console.warn("AFRILINK remote audio play:",e);
-    try{await aflUnlockCallAudio();audio.muted=false;await audio.play();}catch(_){}
-  });
-}
+
 function aflStopRemoteMedia(){
-  aflStopRemoteAudioSink();
   const v=document.getElementById("aflRemoteVideo");
   if(v){try{v.pause();}catch(_){}try{v.srcObject=null;}catch(_){}v.muted=true;v.volume=0;v.style.display="none";}
+  const audio=document.getElementById("aflCallAudio");
+  if(audio){try{audio.pause();}catch(_){}try{audio.srcObject=null;}catch(_){}audio.muted=true;audio.volume=0;}
   aflRemoteMediaStream=null;
   aflRemoteMediaStreamId="";
 }
@@ -2902,30 +2840,17 @@ function aflAttachRemoteMedia(stream){
   if(!stream)return;
   if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(stream.id||"");}
   for(const track of (stream.getTracks?.()||[])){
-    if(track && !aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){try{aflRemoteMediaStream.addTrack(track);}catch(_){}}
+    if(track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){try{aflRemoteMediaStream.addTrack(track);}catch(_){} }
   }
   const stable=aflRemoteMediaStream;
   const v=document.getElementById("aflRemoteVideo");
   const hasVideo=stable.getVideoTracks().length>0;
-  const hasAudio=stable.getAudioTracks().length>0;
-  if(hasVideo && v){
-    // ONE remote playback path for video calls: the remote <video> element
-    // carries both the remote video and remote audio. Keeping a second hidden
-    // <audio> sink alive at the same time can create duplicate/echo-like
-    // playback on some Android browsers.
+  if(v&&hasVideo){
+    // Exactly ONE playback path for a Live Business call. The remote video
+    // element carries both remote camera and remote microphone audio.
     if(v.srcObject!==stable)v.srcObject=stable;
-    v.autoplay=true;v.playsInline=true;v.muted=false;v.volume=1;v.style.display="block";
-    const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{
-      // The accept/start gesture may not have unlocked media on this browser.
-      // Retry the same single video sink; never create a second playback path.
-      try{v.muted=false;v.volume=1;const q=v.play();if(q&&q.catch)q.catch(()=>{});}catch(_){}
-    });
-  } else if(hasAudio){
-    // Kept only as a defensive fallback for a remote audio-only stream.
-    const audio=aflEnsureRemoteAudioElement();
-    if(audio.srcObject!==stable)audio.srcObject=stable;
-    audio.autoplay=true;audio.playsInline=true;audio.muted=false;audio.volume=1;
-    const p=audio.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
+    v.autoplay=true;v.playsInline=true;v.controls=false;v.muted=false;v.volume=1;v.style.display="block";
+    const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
   }
   const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=hasVideo?"none":"grid";
 }
@@ -2942,7 +2867,6 @@ async function aflSubscribeCallSignals(call,uid){if(aflCallState.channel){try{aw
 async function aflSetupPeer(call,uid,role){
   if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}
   aflCameraFacing="user";aflCameraSwitchBusy=false;aflRemoteMediaStream=null;aflRemoteMediaStreamId="";
-  await aflUnlockCallAudio();
   const pc=new RTCPeerConnection({iceServers:[
     {urls:"stun:stun.l.google.com:19302"},
     {urls:"stun:stun.cloudflare.com:3478"},
@@ -2952,10 +2876,8 @@ async function aflSetupPeer(call,uid,role){
   pc._pendingIce=[];pc._iceRestarting=false;pc._videoSender=null;pc._audioSender=null;
   pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};
   pc.ontrack=e=>{
-    // Always build one stable REMOTE stream from inbound tracks. Never use the
-    // local preview stream here. Some phones deliver audio/video in separate
-    // track events, so waiting for streams[0] alone can leave one side seeing
-    // only its own camera or hearing nothing.
+    // Every incoming track is attached to one stable remote MediaStream.
+    // Audio and video may arrive as separate events, so neither is discarded.
     if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(e.streams?.[0]?.id||"");}
     if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){} }
     aflAttachRemoteMedia(aflRemoteMediaStream);
@@ -2964,47 +2886,35 @@ async function aflSetupPeer(call,uid,role){
   pc.onconnectionstatechange=()=>{
     const state=pc.connectionState;
     if(state==="connected"){pc._iceRestarting=false;return;}
-    // Never turn a transient WebRTC state into a database 'ended' call.
-    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){
-      aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE restart:",e));
-    }
+    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE restart:",e));
   };
   pc.oniceconnectionstatechange=()=>{
     const state=pc.iceConnectionState;
     if(state==="connected"||state==="completed")pc._iceRestarting=false;
-    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted"){
-      aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));
-    }
+    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));
   };
   const audio={
-    echoCancellation:(navigator.mediaDevices?.getSupportedConstraints?.().echoCancellation?"remote-only":true),
+    echoCancellation:true,
     noiseSuppression:true,
     autoGainControl:true,
     channelCount:1,
     sampleRate:48000,
     sampleSize:16
   };
-  const constraints=aflIsVideoCall(call)?{audio,video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}}}:{audio};
+  const constraints={audio,video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}}};
   const stream=await navigator.mediaDevices.getUserMedia(constraints);
-  // Establish explicit send/receive media sections before negotiation. This keeps
-  // both directions alive on browsers that otherwise create asymmetric media
-  // sections when audio/video arrive at different times.
-  try{pc.addTransceiver("audio",{direction:"sendrecv"});if(aflIsVideoCall(call))pc.addTransceiver("video",{direction:"sendrecv"});}catch(_){}
-  for(const track of stream.getTracks()){
-    const tx=pc.getTransceivers().find(t=>t.direction!=="stopped" && t.sender && t.sender.track===null && t.receiver?.track?.kind===track.kind);
-    const sender=tx?.sender||pc.getSenders().find(x=>!x.track&&x===tx?.sender)||null;
-    if(sender){
-      await sender.replaceTrack(track);
-    }else{
-      const fallback=pc.addTransceiver(track.kind,{direction:"sendrecv"});
-      await fallback.sender.replaceTrack(track);
-    }
-    const activeSender=sender||pc.getTransceivers().find(t=>t.sender?.track===track)?.sender;
-    if(track.kind==="audio")pc._audioSender=activeSender;
-    if(track.kind==="video")pc._videoSender=activeSender;
-  }
   pc._localStream=stream;
   aflCallState.micMuted=false;aflCallState.cameraOff=false;aflUpdateCallControlLabels();
+  // Caller creates the offer from the actual local tracks. Receiver waits for
+  // the offer, then binds its local tracks to the negotiated media sections
+  // before creating the answer. This avoids asymmetric send/receive sections.
+  if(role==="caller") {
+    for(const track of stream.getTracks()){
+      const sender=pc.addTrack(track,stream);
+      if(track.kind==="audio")pc._audioSender=sender;
+      if(track.kind==="video")pc._videoSender=sender;
+    }
+  }
   if(aflIsVideoCall(call)){
     aflSetVideoStage(true,stream);
     const local=document.getElementById("aflLocalVideo");
@@ -3017,7 +2927,50 @@ async function aflSetupPeer(call,uid,role){
 
 async function aflTryIceRestart(pc,uid){if(!pc||pc.connectionState==="closed"||pc._iceRestarting||!aflCallState.call||aflCallState.role!=="caller")return;pc._iceRestarting=true;try{const offer=await pc.createOffer({iceRestart:true});await pc.setLocalDescription(offer);await aflInsertCallSignal(aflCallState.call.id,uid,"offer",{type:offer.type,sdp:offer.sdp});}finally{setTimeout(()=>{if(pc)pc._iceRestarting=false;},5000);}}
 async function aflFlushPendingIce(){const pc=aflCallState.pc;if(!pc||!pc.remoteDescription)return;const list=pc._pendingIce||[];pc._pendingIce=[];for(const candidate of list){try{await pc.addIceCandidate(new RTCIceCandidate(candidate));}catch(_){} }}
-async function aflHandleCallSignal(sig,uid){if(!sig||!aflCallState.pc||!aflCallState.call||sig.call_id!==aflCallState.call.id||String(sig.sender_id)===String(uid))return;if(sig.id&&aflSeenCallSignalIds.has(sig.id))return;if(sig.id)aflSeenCallSignalIds.add(sig.id);try{const pc=aflCallState.pc;if(sig.signal_type==="offer"){if(aflCallState.role!=="receiver")return;if(pc.signalingState!=="stable"&&pc.signalingState!=="have-local-offer"){try{await pc.setLocalDescription({type:"rollback"});}catch(_){} }await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();const answer=await pc.createAnswer();await pc.setLocalDescription(answer);await aflInsertCallSignal(sig.call_id,uid,"answer",{type:answer.type,sdp:answer.sdp});}else if(sig.signal_type==="answer"&&aflCallState.role==="caller"){if(pc.signalingState!=="have-local-offer")return;await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));await aflFlushPendingIce();if(aflIsVideoCall(aflCallState.call))aflSetVideoStage(true,pc._localStream||null);}else if(sig.signal_type==="ice"&&sig.payload){if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(sig.payload));}catch(_){}}else{pc._pendingIce.push(sig.payload);}}}catch(e){console.warn("AFRILINK call signal:",e);}}
+async function aflHandleCallSignal(sig,uid){
+  if(!sig||!aflCallState.pc||!aflCallState.call||sig.call_id!==aflCallState.call.id||String(sig.sender_id)===String(uid))return;
+  if(sig.id&&aflSeenCallSignalIds.has(sig.id))return;
+  if(sig.id)aflSeenCallSignalIds.add(sig.id);
+  try{
+    const pc=aflCallState.pc;
+    if(sig.signal_type==="offer"){
+      if(aflCallState.role!=="receiver")return;
+      if(pc.signalingState!=="stable"){try{await pc.setLocalDescription({type:"rollback"});}catch(_){} }
+      await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+      // The remote offer now defines the audio/video m-lines. Bind our local
+      // tracks to those exact transceivers before creating the answer.
+      const local=pc._localStream;
+      for(const track of (local?.getTracks?.()||[])){
+        let tx=pc.getTransceivers().find(t=>t.receiver?.track?.kind===track.kind);
+        if(!tx)tx=pc.getTransceivers().find(t=>t.sender&&t.sender.track===null&&t.mid!==null);
+        if(tx){
+          try{tx.direction="sendrecv";}catch(_){}
+          await tx.sender.replaceTrack(track);
+          if(track.kind==="audio")pc._audioSender=tx.sender;
+          if(track.kind==="video")pc._videoSender=tx.sender;
+        }else{
+          const added=pc.addTransceiver(track.kind,{direction:"sendrecv"});
+          await added.sender.replaceTrack(track);
+          if(track.kind==="audio")pc._audioSender=added.sender;
+          if(track.kind==="video")pc._videoSender=added.sender;
+        }
+      }
+      await aflFlushPendingIce();
+      const answer=await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await aflInsertCallSignal(sig.call_id,uid,"answer",{type:answer.type,sdp:answer.sdp});
+    }else if(sig.signal_type==="answer"&&aflCallState.role==="caller"){
+      if(pc.signalingState!=="have-local-offer")return;
+      await pc.setRemoteDescription(new RTCSessionDescription(sig.payload));
+      await aflFlushPendingIce();
+      if(aflIsVideoCall(aflCallState.call))aflSetVideoStage(true,pc._localStream||null);
+    }else if(sig.signal_type==="ice"&&sig.payload){
+      if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(sig.payload));}catch(_){}}
+      else pc._pendingIce.push(sig.payload);
+    }
+  }catch(e){console.warn("AFRILINK call signal:",e);}
+}
+
 async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voice"){
   if(aflCallState.call)throw new Error("A Live Business session is already active. End it before starting another session.");
   const s=await ensureHeavensAnonymousSession(),uid=s?.user?.id;
@@ -3232,7 +3185,7 @@ async function aflRefreshOwnerInquiries(uid,silent=false){
     card.querySelector(".afl-owner-reply-btn").onclick=async()=>{const inp=card.querySelector(".afl-owner-reply-input");const msg=inp.value.trim();if(!msg)return;const {error}=await heavensSupabase.from("afrilink_inquiry_messages").insert({inquiry_id:q.id,billboard_id:q.billboard_id,owner_id:uid,client_id:q.client_id,sender_id:uid,sender_role:"owner",message:msg});if(error){alert("Reply failed: "+error.message);return;}inp.value="";await aflRefreshSingleOwnerChat(q.id,uid);await aflChatBroadcast(q.id,{inquiry_id:q.id,message_id:null});aflOwnerOverlay.style.display="flex";aflOwnerOverlay.setAttribute("aria-hidden","false");};
     card.querySelector(".afl-owner-refresh").onclick=async()=>{const b=card.querySelector(".afl-owner-refresh");if(b){b.classList.remove("has-new");b.textContent="VIEW NEW";b.title="View new messages";}card.dataset.pendingNewMessageId="";const latest=await heavensSupabase.from("afrilink_inquiry_messages").select("id").eq("inquiry_id",q.id).order("created_at",{ascending:false}).limit(1).maybeSingle();if(latest.data)card.dataset.lastMessageId=String(latest.data.id);await aflRefreshSingleOwnerChat(q.id,uid);};
     card.querySelector(".afl-mic").onclick=()=>{if(aflVoiceRecorder&&aflVoiceRecorder.state!=="inactive"){aflVoiceRecorder.stop();return;} const status=card.querySelector(".afl-owner-voice-status");aflToggleVoiceRecorder("owner",{inquiryId:q.id,ownerId:uid,clientId:q.client_id,billboardId:q.billboard_id,status});};
-    card.querySelector(".afl-owner-video-call").onclick=async()=>{const b=card.querySelector(".afl-owner-video-call");if(b)b.disabled=true;try{aflUnlockCallAudio().catch(()=>{});await aflCreateCall(q.id,uid,q.client_id,"owner","video");}catch(e){alert(e?.message||"Could not start the video call.");}finally{if(b)b.disabled=false;}};
+    card.querySelector(".afl-owner-video-call").onclick=async()=>{const b=card.querySelector(".afl-owner-video-call");if(b)b.disabled=true;try{await aflCreateCall(q.id,uid,q.client_id,"owner","video");}catch(e){alert(e?.message||"Could not start the video call.");}finally{if(b)b.disabled=false;}};
     aflOwnerInquiryList.appendChild(card);
   }
 }
