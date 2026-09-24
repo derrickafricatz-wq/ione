@@ -7271,3 +7271,167 @@ preloadMedia();
   window.addEventListener('beforeunload',()=>{if(clientTimer)clearInterval(clientTimer);});
 })();
 </script>
+
+
+<script>
+/* =========================================================
+   AFRILINK FINAL BOOK ENTRY FIX
+   The original click handler was attached before the later
+   book wrappers were installed. Rebind the actual UI button
+   to the final window function and keep the book authoritative.
+========================================================= */
+(function(){
+  function waitForCards(maxMs){
+    return new Promise(resolve=>{
+      const start=Date.now();
+      const tick=()=>{
+        const list=document.getElementById('aflOwnerInquiryList');
+        const cards=list?.querySelectorAll('.afl-inquiry-card[data-inquiry-id]');
+        if(cards&&cards.length)return resolve(true);
+        if(Date.now()-start>maxMs)return resolve(false);
+        setTimeout(tick,80);
+      };
+      tick();
+    });
+  }
+
+  async function openFinalBrandBook(){
+    const s=await ensureHeavensAnonymousSession();
+    const uid=s?.user?.id;
+    if(!uid){alert('Please open AFRILINK again so your brand inbox can be connected.');return;}
+
+    const fn=window.aflOpenOwnerInquiries;
+    if(typeof fn!=='function')return;
+
+    /* Call the final wrapped inbox opener. */
+    await fn();
+    await waitForCards(7000);
+
+    /* The latest book builder is intentionally given one extra turn so it
+       always runs after the original inquiry renderer has finished. */
+    setTimeout(()=>{
+      const book=document.getElementById('aflDefBrandBook');
+      if(book){
+        book.classList.remove('open');
+        if(book._showPage)book._showPage(0);
+        return;
+      }
+      /* If a browser skipped a queued wrapper, force the already-installed
+         owner refresh path once more. Its final wrapper creates the book. */
+      window.aflRefreshOwnerInquiries?.(uid,false).catch(()=>{});
+    },60);
+  }
+
+  /* CRITICAL: replace the stale handler that captured the pre-book function. */
+  const inboxBtn=document.getElementById('aflOwnerInquiries');
+  if(inboxBtn){
+    inboxBtn.onclick=(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      openFinalBrandBook().catch(err=>{
+        console.error('AFRILINK final book open:',err);
+      });
+    };
+  }
+
+  /* The top refresh button also used to hold the pre-book function. */
+  const refreshBtn=document.getElementById('aflOwnerRefresh');
+  if(refreshBtn){
+    refreshBtn.onclick=async(e)=>{
+      e?.preventDefault?.();
+      try{
+        const s=await ensureHeavensAnonymousSession();
+        const uid=s?.user?.id;
+        if(!uid)return;
+        await window.aflRefreshOwnerInquiries?.(uid,false);
+        setTimeout(()=>{
+          const book=document.getElementById('aflDefBrandBook');
+          if(book&&book._showPage)book._showPage(book._page||0);
+        },100);
+      }catch(err){console.warn('AFRILINK book refresh:',err);}
+    };
+  }
+
+  /* Make the book's cover image always come from the first billboard image.
+     If the active-only lookup fails, fall back to the first stored image. */
+  async function ensureFirstBillboardCover(){
+    const book=document.getElementById('aflDefBrandBook');
+    if(!book)return;
+    const pages=book._pages||[];
+    const first=pages[0];
+    const bid=first?.dataset?.billboardId||'';
+    if(!bid)return;
+    try{
+      let r=await heavensSupabase.from('afrilink_billboard_items')
+        .select('image_url,sort_order,active')
+        .eq('billboard_id',bid)
+        .eq('active',true)
+        .order('sort_order',{ascending:true})
+        .limit(1).maybeSingle();
+      if(!r?.data?.image_url){
+        r=await heavensSupabase.from('afrilink_billboard_items')
+          .select('image_url,sort_order,active')
+          .eq('billboard_id',bid)
+          .order('sort_order',{ascending:true})
+          .limit(1).maybeSingle();
+      }
+      const url=r?.data?.image_url||'';
+      if(!url)return;
+      const art=book.querySelector('.afl-def-book-cover-art');
+      const bg=book.querySelector('.afl-def-book-cover-bg');
+      if(bg)bg.style.backgroundImage='url("'+url.replace(/"/g,'&quot;')+'")';
+      if(art){
+        art.innerHTML='';
+        const img=document.createElement('img');
+        img.src=url;img.alt='Brand cover';
+        art.appendChild(img);
+      }
+      /* Also update the full-screen cover used by the older polish layer. */
+      const screen=book.querySelector('.afl-book-cover-screen');
+      if(screen){
+        const main=screen.querySelector('.afl-book-cover-screen-main');
+        const bg2=screen.querySelector('.afl-book-cover-screen-bg');
+        if(bg2)bg2.style.backgroundImage='url("'+url.replace(/"/g,'&quot;')+'")';
+        if(main){
+          main.innerHTML='';
+          const img=document.createElement('img');img.src=url;img.alt='Brand cover';main.appendChild(img);
+        }
+      }
+    }catch(err){console.warn('AFRILINK cover image:',err);}
+  }
+
+  async function stabilizeBook(){
+    const book=document.getElementById('aflDefBrandBook');
+    if(!book)return;
+    await ensureFirstBillboardCover();
+    const pages=book._pages||[];
+    pages.forEach((card,i)=>{
+      card.dataset.defBookIndex=String(i);
+      card.dataset.clientName=card.dataset.clientName||'CLIENT';
+    });
+    if(book._showPage)book._showPage(book._page||0);
+  }
+
+  /* Watch only the owner inbox container. If an old renderer replaces the
+     book with the raw scrolling cards, restore the final book automatically. */
+  const list=document.getElementById('aflOwnerInquiryList');
+  if(list){
+    let timer=null;
+    const observer=new MutationObserver(()=>{
+      clearTimeout(timer);
+      timer=setTimeout(()=>{
+        const cards=list.querySelectorAll('.afl-inquiry-card[data-inquiry-id]');
+        const book=document.getElementById('aflDefBrandBook');
+        if(cards.length&&!book&&document.getElementById('aflOwnerOverlay')?.getAttribute('aria-hidden')==='false'){
+          const refresh=window.aflRefreshOwnerInquiries;
+          ensureHeavensAnonymousSession().then(s=>{
+            if(s?.user?.id)refresh?.(s.user.id,true).catch(()=>{});
+          });
+        }
+        if(book)stabilizeBook().catch(()=>{});
+      },180);
+    });
+    observer.observe(list,{childList:true,subtree:true});
+  }
+})();
+</script>
