@@ -7688,3 +7688,136 @@ preloadMedia();
   window.__aflAuthoritativeBrandTimer=null;
 })();
 </script>
+
+<script>
+/* FINAL CLEAN BOOK LOCK • remove legacy inbox shell without touching the real book */
+(function(){
+  function cleanLegacyShell(){
+    const overlay=document.getElementById('aflOwnerOverlay');
+    const list=document.getElementById('aflOwnerInquiryList');
+    const book=document.getElementById('aflRealBrandBook');
+    if(!overlay||!list||overlay.getAttribute('aria-hidden')!=='false')return;
+    /* The old Private Brand Inbox header is no longer part of the UI. */
+    const oldHead=overlay.querySelector('.afl-service-head');
+    if(oldHead)oldHead.style.display='none';
+    /* Remove only legacy direct children. Real book pages contain their cards safely inside the book. */
+    list.querySelectorAll(':scope > .afl-owner-status, :scope > .afl-empty, :scope > .afl-inquiry-card').forEach(n=>n.remove());
+    if(book){
+      book.style.display='block';
+      book.style.position='absolute';
+      book.style.inset='0';
+      book.style.width='100%';
+      book.style.height='100%';
+      book.style.minHeight='100%';
+      book.style.margin='0';
+      book.style.borderRadius='0';
+      book.style.border='0';
+      book.style.zIndex='20';
+    }
+  }
+  function install(){
+    const overlay=document.getElementById('aflOwnerOverlay');
+    const list=document.getElementById('aflOwnerInquiryList');
+    if(!overlay||!list)return;
+    const style=document.createElement('style');
+    style.textContent=`
+      #aflOwnerOverlay .afl-service-card{position:relative!important;width:100%!important;height:100dvh!important;max-width:none!important;margin:0!important;border-radius:0!important;padding:0!important;overflow:hidden!important}
+      #aflOwnerOverlay .afl-service-head{display:none!important}
+      #aflOwnerInquiryList{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#020506!important}
+      #aflOwnerInquiryList > .afl-owner-status,#aflOwnerInquiryList > .afl-empty,#aflOwnerInquiryList > .afl-inquiry-card{display:none!important}
+      #aflRealBrandBook{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;border:0!important;border-radius:0!important;z-index:20!important}
+    `;
+    document.head.appendChild(style);
+    cleanLegacyShell();
+    if(window.__aflLegacyBookCleanObserver)window.__aflLegacyBookCleanObserver.disconnect();
+    window.__aflLegacyBookCleanObserver=new MutationObserver(()=>cleanLegacyShell());
+    window.__aflLegacyBookCleanObserver.observe(list,{childList:true,subtree:false});
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
+})();
+</script>
+\n<script>/* FINAL LEGACY INBOX KILL SWITCH — keep the real CLIENT INFO book only */
+(function(){
+  function hardClean(){
+    const ov=document.getElementById('aflOwnerOverlay');
+    const list=document.getElementById('aflOwnerInquiryList');
+    if(!ov||!list)return;
+
+    /* The old shell is no longer part of CLIENT INFO. Remove it, do not merely hide it. */
+    const head=ov.querySelector('.afl-service-head');
+    if(head)head.remove();
+    list.querySelectorAll(':scope > .afl-owner-status, :scope > .afl-empty, :scope > .afl-inquiry-card').forEach(n=>n.remove());
+
+    const book=document.getElementById('aflRealBrandBook');
+    if(book){
+      book.style.cssText += ';position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;border:0!important;border-radius:0!important;z-index:9999!important;';
+      list.style.cssText += ';position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#020506!important;';
+    }
+  }
+
+  function install(){
+    const ov=document.getElementById('aflOwnerOverlay');
+    const list=document.getElementById('aflOwnerInquiryList');
+    if(!ov||!list)return;
+
+    /* Stop the legacy refresh/render pipeline from ever writing the old inbox UI. */
+    window.aflRefreshOwnerInquiries=async function(){ hardClean(); return; };
+    window.aflOpenOwnerInquiries=async function(){
+      const s=await ensureHeavensAnonymousSession().catch(()=>null);
+      const uid=s?.user?.id;
+      if(!uid)return;
+      ov.style.display='flex';
+      ov.setAttribute('aria-hidden','false');
+      if(typeof renderBook==='function')await renderBook(uid,'');
+      hardClean();
+      if(typeof startWatch==='function')startWatch(uid);
+    };
+    window.aflStartOwnerRealtime=function(){ return null; };
+
+    const oldTimer=window.aflOwnerInboxPollTimer;
+    if(oldTimer)clearInterval(oldTimer);
+    window.aflOwnerInboxPollTimer=null;
+    clearInterval(window.__aflAuthoritativeBrandTimer);
+
+    const oldHead=ov.querySelector('.afl-service-head');
+    if(oldHead)oldHead.remove();
+
+    const style=document.createElement('style');
+    style.id='aflFinalLegacyInboxKillStyle';
+    style.textContent=`
+      #aflOwnerOverlay .afl-service-card{position:relative!important;width:100%!important;height:100dvh!important;max-width:none!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;overflow:hidden!important;background:#020506!important}
+      #aflOwnerOverlay .afl-service-head{display:none!important}
+      #aflOwnerInquiryList{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;padding:0!important;overflow:hidden!important;background:#020506!important}
+      #aflOwnerInquiryList > .afl-owner-status,#aflOwnerInquiryList > .afl-empty,#aflOwnerInquiryList > .afl-inquiry-card{display:none!important}
+      #aflRealBrandBook{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:100%!important;margin:0!important;border:0!important;border-radius:0!important;z-index:9999!important}
+    `;
+    if(!document.getElementById(style.id))document.head.appendChild(style);
+
+    hardClean();
+
+    if(window.__aflFinalLegacyInboxObserver)window.__aflFinalLegacyInboxObserver.disconnect();
+    window.__aflFinalLegacyInboxObserver=new MutationObserver(function(){hardClean();});
+    window.__aflFinalLegacyInboxObserver.observe(list,{childList:true,subtree:false});
+
+    /* Rebind CLIENT INFO directly to the real book, bypassing every legacy inbox handler. */
+    const btn=document.getElementById('aflOwnerInquiries');
+    if(btn){
+      btn.onclick=function(e){
+        e.preventDefault();e.stopPropagation();
+        (async()=>{
+          const s=await ensureHeavensAnonymousSession().catch(()=>null);
+          const uid=s?.user?.id;if(!uid)return;
+          ov.style.display='flex';
+          ov.setAttribute('aria-hidden','false');
+          await renderBook(uid,'');
+          hardClean();
+          startWatch(uid);
+        })().catch(err=>console.error('CLIENT INFO book',err));
+      };
+    }
+  }
+
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+})();
+</script>
