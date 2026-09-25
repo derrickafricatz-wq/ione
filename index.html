@@ -714,7 +714,7 @@ body.landscape-mode #brandVideo {
   transform:skewX(-22deg);opacity:.95;box-shadow:0 10px 17px rgba(0,0,0,.55);
 }
 .afl-screen{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000;overflow:hidden}
-.afl-screen img.afl-signage-media{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover;object-position:center center;user-select:none;-webkit-user-drag:none;opacity:0;transition:opacity .78s cubic-bezier(.22,.61,.36,1),transform .78s cubic-bezier(.22,.61,.36,1),filter .78s ease;transform:scale(1.012);z-index:2}
+.afl-screen img.afl-signage-media{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;object-position:center center;background:#000;user-select:none;-webkit-user-drag:none;opacity:0;transition:opacity .78s cubic-bezier(.22,.61,.36,1),transform .78s cubic-bezier(.22,.61,.36,1),filter .78s ease;transform:scale(1.012);z-index:2}
 .afl-screen img.afl-signage-media.afl-signage-active{opacity:1;transform:scale(1);filter:none}
 .afl-screen video.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:contain;object-position:center center;background:#000;opacity:0;transition:opacity .78s cubic-bezier(.22,.61,.36,1),transform .78s cubic-bezier(.22,.61,.36,1),filter .78s ease;transform:scale(1.012);z-index:3}
 .afl-screen video.afl-signage-video.afl-media-visible{opacity:1;transform:scale(1);filter:none}
@@ -2625,7 +2625,7 @@ async function aflLoadFeed(){
       const service=document.createElement("button");service.className="afl-open-service";service.innerHTML=`<span style="font-size:15px;margin-right:6px">✦</span> OPEN SERVICE`;service.onclick=()=>aflOpenService(b);info.appendChild(service);
       wrap.append(head,stage,info);aflFeed.appendChild(wrap);
       const row={billboard:b,slides,index:0,img,img2,activeImg:img,video,videoAudio,videoCaption,overlay,counter,dots,wrap,board,screen,videoUrl:b.video_url||b.billboard_video_url||"",videoPlaying:false,audioMuted:true,aspectSet:false};
-      const aflSetBillboardAspect=(w,h)=>{w=Number(w);h=Number(h);if(!(w>0&&h>0))return;const ratio=Math.max(.45,Math.min(3.2,w/h));row.board.style.aspectRatio=`${ratio}`;row.aspectSet=true;};
+      const aflSetBillboardAspect=(w,h)=>{w=Number(w);h=Number(h);if(!(w>0&&h>0))return;const ratio=w/h;row.board.style.aspectRatio=`${ratio}`;row.aspectSet=true;row.mediaWidth=w;row.mediaHeight=h;};
       img.onload=()=>{if(!row.videoUrl&&!row.aspectSet)aflSetBillboardAspect(img.naturalWidth,img.naturalHeight);};
       if(row.videoUrl)video.addEventListener("loadedmetadata",()=>aflSetBillboardAspect(video.videoWidth,video.videoHeight),{once:true});
       else if(slides[0]?.image_url)img.src=slides[0].image_url;
@@ -2658,6 +2658,8 @@ function aflCrossfadeToImage(row,url,item,opts={}){
     const current=row.activeImg||row.img;const next=current===row.img?row.img2:row.img;const pre=new Image();
     const finish=()=>{
       if(row.videoPlaying&&!opts.crossfadeFromVideo)return resolve(false);
+      const nw=Number(pre.naturalWidth||0),nh=Number(pre.naturalHeight||0);
+      if(nw>0&&nh>0)aflSetBillboardAspect(nw,nh);
       next.src=url;next.alt=row.billboard.brand_name||"I|ONE";next.style.display="block";next.classList.remove("afl-signage-active");void next.offsetWidth;next.classList.add("afl-signage-active");
       if(opts.crossfadeFromVideo)row.video.classList.remove("afl-media-visible");
       current.classList.remove("afl-signage-active");row.activeImg=next;
@@ -2676,7 +2678,7 @@ function aflStartBillboardVideo(row){
 }
 async function aflRenderSlide(row,opts={}){
   if(row.videoPlaying)return;const item=row.slides[row.index];if(!item)return;const url=String(item.image_url||"");if(!url)return;
-  if(!row._rendered){const pre=new Image();pre.onload=()=>{if(!row.videoPlaying){row.img.src=url;row.img.alt=row.billboard.brand_name||"I|ONE";row.img.classList.add("afl-signage-active");row.activeImg=row.img;row.overlay.textContent=item.overlay_text||"";row.overlay.style.color=item.overlay_color||"#fff";row.overlay.style.display=item.overlay_text?"block":"none";row.video.classList.remove("afl-media-visible");row.videoAudio.style.display="none";row.videoCaption.style.display="none";row._rendered=true;}};pre.src=url;return;}
+  if(!row._rendered){const pre=new Image();pre.onload=()=>{if(!row.videoPlaying){if(pre.naturalWidth&&pre.naturalHeight)aflSetBillboardAspect(pre.naturalWidth,pre.naturalHeight);row.img.src=url;row.img.alt=row.billboard.brand_name||"I|ONE";row.img.classList.add("afl-signage-active");row.activeImg=row.img;row.overlay.textContent=item.overlay_text||"";row.overlay.style.color=item.overlay_color||"#fff";row.overlay.style.display=item.overlay_text?"block":"none";row.video.classList.remove("afl-media-visible");row.videoAudio.style.display="none";row.videoCaption.style.display="none";row._rendered=true;}};pre.src=url;return;}
   await aflCrossfadeToImage(row,url,item,opts);
 }
 function aflScheduleRow(row,ms){if(row._timer)clearTimeout(row._timer);row._timer=setTimeout(()=>{
