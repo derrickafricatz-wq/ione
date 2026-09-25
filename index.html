@@ -176,23 +176,31 @@ body.landscape-mode #brandVideo {
   transition: opacity 0.8s ease-in-out;
 }
 
-/* SMART TOGGLE (HIDDEN INITIALLY) */
+/* SMART TOGGLE — CENTERED, TOUCH FRIENDLY */
 #smartToggle {
   position:fixed;
   bottom:80px;
   left:20px;
-  border-radius:40px;
+  min-height:62px;
+  border-radius:36px;
   background:linear-gradient(145deg,#00ffff,#008f8f);
-  border:none;
+  border:1px solid rgba(255,255,255,.28);
   color:black;
   display:flex;
   align-items:center;
   gap:10px;
-  padding:10px 16px;
-  z-index:30;
+  padding:8px 16px 8px 8px;
+  z-index:300;
   opacity:0;
   transform:translateY(100px);
-  transition:0.4s;
+  transition:opacity .35s ease,transform .35s ease,box-shadow .35s ease;
+  box-shadow:0 10px 0 #005b5b,0 16px 28px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.45);
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+#smartToggle:active {
+  transform:translateY(5px) !important;
+  box-shadow:0 5px 0 #005b5b,0 10px 18px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.35);
 }
 
 /* ICON */
@@ -222,30 +230,70 @@ body.landscape-mode #brandVideo {
   transform:translateX(0);
 }
 
-/* PANEL */
+/* SMART PANEL — FOUR LARGE 3D TILES, ALWAYS ON-SCREEN */
 #smartPanel {
   position:fixed;
-  bottom:150px;
-  left:20px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+  left:50%;
+  bottom:155px;
+  width:min(760px,calc(100vw - 28px));
+  transform:translate(-50%,18px) scale(.96);
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
   opacity:0;
+  visibility:hidden;
   pointer-events:none;
-  transition:0.3s;
-  z-index:30;
+  transition:opacity .28s ease,transform .28s ease,visibility .28s ease;
+  z-index:290;
 }
 #smartPanel.show {
   opacity:1;
+  visibility:visible;
   pointer-events:auto;
+  transform:translate(-50%,0) scale(1);
 }
 
 .smart-item {
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  background:#00ffff;
-  color:black;
+  position:relative;
+  width:100%;
+  min-height:104px;
+  padding:16px 12px;
+  border:1px solid rgba(255,255,255,.42);
+  border-radius:22px;
+  color:#001010;
+  font-family:'Russo One',Arial,sans-serif;
+  font-size:clamp(13px,3.5vw,18px);
+  font-weight:900;
+  letter-spacing:.5px;
+  text-align:center;
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  box-shadow:0 9px 0 rgba(0,70,70,.95),0 17px 30px rgba(0,0,0,.48),inset 0 2px 0 rgba(255,255,255,.62),inset 0 -8px 18px rgba(0,0,0,.13);
+  transition:transform .14s ease,box-shadow .14s ease,filter .14s ease;
+  overflow:hidden;
+}
+.smart-item:nth-child(1){background:linear-gradient(145deg,#7fffff,#00b8b8 55%,#007777);}
+.smart-item:nth-child(2){background:linear-gradient(145deg,#d9ffff,#52d8ff 55%,#1685a5);}
+.smart-item:nth-child(3){background:linear-gradient(145deg,#e8ffff,#55e6c5 55%,#149477);}
+.smart-item:nth-child(4){background:linear-gradient(145deg,#ffffff,#c9d9ff 55%,#6378bb);}
+.smart-item::before{
+  content:"";position:absolute;left:10px;right:10px;top:7px;height:24px;border-radius:18px;
+  background:linear-gradient(to bottom,rgba(255,255,255,.58),rgba(255,255,255,0));
+  pointer-events:none;
+}
+.smart-item:active{
+  transform:translateY(7px);
+  box-shadow:0 2px 0 rgba(0,70,70,.95),0 8px 15px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.42);
+  filter:brightness(.96);
+}
+@media (max-width:520px){
+  #smartPanel{bottom:145px;gap:11px;width:calc(100vw - 22px);}
+  .smart-item{min-height:94px;border-radius:19px;padding:13px 8px;font-size:12px;}
+}
+@media (min-width:700px){
+  #smartPanel{grid-template-columns:repeat(4,minmax(0,1fr));width:min(1000px,calc(100vw - 40px));}
+  .smart-item{min-height:118px;}
 }
 
 /* SCROLL BANNER */
@@ -611,7 +659,7 @@ body.landscape-mode #brandVideo {
   }
   
 
-/* ================= MINISTRY ACCESS + I|ONE MARKETING ================= */
+/* ================= MINISTRY ACCESS + AFRILINK MARKETING ================= */
 .ministry-access-overlay{
   position:fixed;inset:0;z-index:100500;display:none;align-items:center;justify-content:center;
   padding:20px;box-sizing:border-box;background:rgba(0,0,0,.86);backdrop-filter:blur(10px);
@@ -633,7 +681,7 @@ body.landscape-mode #brandVideo {
 .ministry-cancel{border:1px solid #334a50;background:#111;color:#fff}
 .ministry-access-status{min-height:20px;margin-top:13px;text-align:center;color:#9eb0b5;font:700 12px/1.4 Arial,sans-serif}
 
-/* ---------- I|ONE 3D BILLBOARD WORLD ---------- */
+/* ---------- AFRILINK 3D BILLBOARD WORLD ---------- */
 #afrilinkOverlay{
   position:fixed;inset:0;z-index:100400;display:none;flex-direction:column;
   background:
@@ -692,7 +740,7 @@ body.landscape-mode #brandVideo {
   perspective:1200px;
 }
 .afl-board{
-  position:relative;width:100%;aspect-ratio:16/9;min-height:0;
+  position:relative;width:100%;min-height:260px;
   transform:rotateX(1deg);
   border:7px solid #1b2528;border-radius:5px;
   background:#020303;
@@ -713,11 +761,14 @@ body.landscape-mode #brandVideo {
   background:linear-gradient(90deg,#151b1d,#536164,#151b1d);
   transform:skewX(-22deg);opacity:.95;box-shadow:0 10px 17px rgba(0,0,0,.55);
 }
-.afl-screen{position:absolute;inset:0;width:100%;height:100%;display:block;background:#000;overflow:hidden}
-.afl-screen img.afl-signage-media{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:fill;object-position:center center;background:transparent;user-select:none;-webkit-user-drag:none;opacity:0;transition:opacity .78s cubic-bezier(.22,.61,.36,1),transform .78s cubic-bezier(.22,.61,.36,1),filter .78s ease;transform:scale(1.012);z-index:2}
-.afl-screen img.afl-signage-media.afl-signage-active{opacity:1;transform:scale(1);filter:none}
-.afl-screen video.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;display:block;object-fit:fill;object-position:center center;background:transparent;opacity:0;transition:opacity .78s cubic-bezier(.22,.61,.36,1),transform .78s cubic-bezier(.22,.61,.36,1),filter .78s ease;transform:scale(1.012);z-index:3}
-.afl-screen video.afl-signage-video.afl-media-visible{opacity:1;transform:scale(1);filter:none}
+.afl-screen{
+  position:relative;width:100%;min-height:260px;display:flex;align-items:center;justify-content:center;
+  background:#000;overflow:hidden;
+}
+.afl-screen img{
+  display:block;width:100%;height:auto;max-height:72vh;object-fit:contain;
+  user-select:none;-webkit-user-drag:none;
+}
 .afl-image-caption{
   position:absolute;left:8%;right:8%;bottom:7%;
   padding:8px 14px;text-align:center;color:#fff;font-weight:900;line-height:1.15;
@@ -738,12 +789,34 @@ body.landscape-mode #brandVideo {
 .afl-info-brand{font:900 20px/1.15 'Russo One',sans-serif;word-break:break-word}
 .afl-info-content{margin-top:6px;font-weight:800;font-size:13px;line-height:1.3;word-break:break-word}
 .afl-info-address{margin-top:4px;color:#aab8bc;font-size:12px;line-height:1.3;word-break:break-word}
-.afl-dots{display:none!important}.afl-image-count{display:none!important}.afl-screen.afl-signage-screen{perspective:1200px;overflow:hidden}.afl-screen.afl-signage-screen .afl-image-caption,.afl-screen.afl-signage-screen .afl-video-caption,.afl-screen.afl-signage-screen .afl-video-audio-toggle{z-index:8}
+.afl-dots{display:none!important}.afl-image-count{display:none!important}.afl-screen.afl-signage-screen{perspective:1200px;overflow:hidden}.afl-screen.afl-signage-screen img{transition:opacity .18s ease,transform .42s cubic-bezier(.2,.8,.2,1),filter .42s ease;transform-origin:center center}.afl-screen.afl-signage-screen img.afl-signage-out{opacity:0;transform:scale(1.045) rotateY(-6deg);filter:brightness(.7)}.afl-screen.afl-signage-screen img.afl-signage-in{opacity:1;transform:scale(1) rotateY(0);filter:none}
 .afl-dot{width:7px;height:7px;border-radius:50%;background:#3a4c51}
 .afl-dot.active{background:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.75)}
 .afl-upload-note{text-align:center;color:#66797e;font-size:10px;margin-top:-10px;margin-bottom:24px;letter-spacing:.5px}
 
-/* ---------- I|ONE UPLOAD / RENEW SHEET ---------- */
+/* ---------- I1 MARKET SELLER SUBSCRIPTION ---------- */
+#i1SubscriptionOverlay{position:fixed;inset:0;z-index:101200;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.84);backdrop-filter:blur(14px);padding:16px;box-sizing:border-box}
+.i1-sub-card{position:relative;width:min(560px,100%);max-height:calc(100dvh - 32px);overflow:auto;padding:22px 17px 18px;border:1px solid rgba(0,255,255,.65);border-radius:24px;background:linear-gradient(145deg,#101a1d,#040708);box-shadow:0 28px 90px rgba(0,0,0,.8),inset 0 1px rgba(255,255,255,.08);text-align:center}
+.i1-sub-close{position:absolute;right:12px;top:12px;min-height:38px;padding:0 11px;border:1px solid #294349;border-radius:10px;background:#101719;color:#b9c8cb;font-size:9px;font-weight:900;letter-spacing:.8px}
+.i1-sub-kicker{color:#00ffff;font-size:9px;font-weight:900;letter-spacing:2px;margin-top:9px}
+.i1-sub-card h2{margin:7px 0 5px;color:#fff;font:900 26px/1.05 'Russo One',sans-serif}
+.i1-sub-intro{margin:0 auto 16px;max-width:420px;color:#8fa3a8;font-size:12px;line-height:1.45}
+.i1-plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;text-align:left}
+.i1-plan{position:relative;min-height:112px;padding:15px 13px;border:1px solid #294349;border-radius:17px;background:linear-gradient(145deg,#101b1e,#071012);color:#fff;box-shadow:0 8px 0 #020506,0 14px 28px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.08);cursor:pointer;text-align:left;transition:.12s ease}
+.i1-plan:hover{border-color:#00ffff}
+.i1-plan.selected{border-color:#00ffff;background:linear-gradient(145deg,#0d3a3e,#071416);box-shadow:0 8px 0 #00484b,0 14px 28px rgba(0,255,255,.12),inset 0 1px rgba(255,255,255,.16)}
+.i1-plan:active{transform:translateY(5px);box-shadow:0 3px 0 #020506,0 8px 16px rgba(0,0,0,.25)}
+.i1-plan-duration{display:block;color:#00ffff;font-size:10px;font-weight:900;letter-spacing:1.4px}
+.i1-plan strong{display:block;margin-top:8px;color:#fff;font:900 20px/1 'Russo One',sans-serif}
+.i1-plan small{display:block;margin-top:8px;color:#71878c;font-size:8px;font-weight:900;letter-spacing:1px}
+.i1-selected-plan{margin-top:13px;min-height:43px;display:grid;place-items:center;border:1px dashed #294349;border-radius:12px;color:#7f969b;background:#05090a;font-size:10px;font-weight:900;letter-spacing:.8px}
+.i1-pay-button{width:100%;min-height:52px;margin-top:10px;border:1px solid #00ffff;border-radius:13px;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;font-size:13px;font-weight:900;letter-spacing:.7px;box-shadow:0 7px 0 #005858,0 12px 22px rgba(0,255,255,.14)}
+.i1-pay-button:disabled{opacity:.42;filter:grayscale(.5);cursor:not-allowed;box-shadow:0 5px 0 #183033}
+.i1-pay-button:not(:disabled):active{transform:translateY(5px);box-shadow:0 2px 0 #005858,0 6px 12px rgba(0,255,255,.12)}
+.i1-sub-note{margin-top:10px;color:#63787d;font-size:9px;line-height:1.4}
+@media(max-width:430px){.i1-sub-card{padding:20px 12px 16px}.i1-plans{grid-template-columns:1fr}.i1-plan{min-height:92px}.i1-plan strong{font-size:18px}}
+
+/* ---------- AFRILINK UPLOAD / RENEW SHEET ---------- */
 #aflEditorOverlay{
   position:fixed;inset:0;z-index:100600;display:none;align-items:flex-start;justify-content:center;
   background:rgba(0,0,0,.82);backdrop-filter:blur(12px);overflow:auto;padding:18px 12px 30px;
@@ -817,7 +890,7 @@ body.landscape-mode #brandVideo {
   .afl-billboard{margin-bottom:46px}
 }
 
-/* ---------- I|ONE OPEN SERVICE / PRIVATE INQUIRIES ---------- */
+/* ---------- AFRILINK OPEN SERVICE / PRIVATE INQUIRIES ---------- */
 .afl-owner-only-top{background:#101719;color:#00ffff;border-color:#00ffff}
 .afl-service-overlay{position:fixed;inset:0;z-index:100800;display:none;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.84);backdrop-filter:blur(12px);overflow:auto;padding:14px 10px 30px;font-family:Arial,Helvetica,sans-serif}
 .afl-service-card{width:min(760px,100%);background:linear-gradient(145deg,#10191c,#050809);border:1px solid #00ffff;border-radius:22px;padding:16px;box-shadow:0 25px 70px rgba(0,0,0,.8)}
@@ -1011,12 +1084,12 @@ Install App
   </div>
 </div>
 
-<!-- I|ONE • HOME OF MARKETING -->
+<!-- AFRILINK • HOME OF MARKETING -->
 <div id="afrilinkOverlay" aria-hidden="true">
   <div class="afl-head">
     <div class="afl-brand-mark">AF</div>
     <div class="afl-head-title">
-      <strong>I|ONE</strong>
+      <strong>AFRILINK</strong>
       <span>HOME OF MARKETING • LIVE BILLBOARDS</span>
     </div>
     <div class="afl-head-actions">
@@ -1032,10 +1105,41 @@ Install App
         <option value="all">ALL CATEGORIES</option><option value="hotel">HOTELS &amp; LODGES</option><option value="real_estate">REAL ESTATE &amp; LAND</option><option value="vehicles">CARS &amp; TRANSPORT</option><option value="food">FOOD &amp; RESTAURANTS</option><option value="travel">TOURS &amp; TRAVEL</option><option value="products">PRODUCTS &amp; SHOPS</option><option value="professional">PROFESSIONAL SERVICES</option><option value="health">HEALTH &amp; WELLNESS</option><option value="beauty">BEAUTY &amp; FASHION</option><option value="construction">CONSTRUCTION &amp; HOME</option><option value="education">EDUCATION &amp; TRAINING</option><option value="jobs">JOBS &amp; RECRUITMENT</option><option value="agriculture">AGRICULTURE</option><option value="technology">TECHNOLOGY &amp; ELECTRONICS</option><option value="events">EVENTS &amp; ENTERTAINMENT</option><option value="other">OTHER</option>
       </select>
     </div>
-    <div class="afl-discovery-hint">FIND A BRAND FAST • FILTER THE LIVE I|ONE NETWORK</div>
+    <div class="afl-discovery-hint">FIND A BRAND FAST • FILTER THE LIVE AFRILINK NETWORK</div>
   </div>
   <div id="aflScroll" class="afl-scroll">
     <div id="aflFeed"></div>
+  </div>
+</div>
+
+<div id="aflChapChapEditor" class="afl-chap-overlay" aria-hidden="true">
+  <div class="afl-chap-card">
+    <div class="afl-chap-head"><div><div class="afl-chap-kicker">AFRILINK • INDIVIDUAL MARKET</div><h2>CHAPCHAP SELLER</h2><p>Sell one product directly. No business billboard required.</p></div><button id="aflChapClose" class="afl-top-btn afl-close" type="button">CLOSE</button></div>
+    <div class="afl-chap-form" id="aflChapForm">
+      <div class="afl-chap-field"><label>SELLER NAME</label><input id="aflChapSellerName" maxlength="80" placeholder="Your name"></div>
+      <div class="afl-chap-field"><label>PHONE / WHATSAPP</label><input id="aflChapPhone" type="tel" maxlength="30" placeholder="2557XXXXXXXX"></div>
+      <div class="afl-chap-field"><label>WHAT ARE YOU SELLING?</label><select id="aflChapCategory"></select></div>
+      <div id="aflChapDynamicFields" class="afl-chap-dynamic"></div>
+      <div class="afl-chap-field"><label>LOCATION</label><input id="aflChapLocation" maxlength="120" placeholder="City / area"></div>
+      <div class="afl-chap-field"><label>PRICE • TZS</label><input id="aflChapPrice" type="number" min="0" step="1" inputmode="decimal" placeholder="10000"></div>
+      <div class="afl-chap-field"><label>PRICE TAG COLOUR</label><div id="aflChapPriceColors" class="afl-chap-price-colors"></div></div>
+      <div class="afl-chap-field full"><label>SHORT DESCRIPTION</label><textarea id="aflChapDescription" maxlength="500" placeholder="Tell buyers what makes this item worth seeing..."></textarea></div>
+      <input id="aflChapImages" class="afl-file-input" type="file" accept="image/*" multiple>
+      <input id="aflChapCamera" class="afl-file-input" type="file" accept="image/*" capture="environment" multiple>
+      <div class="afl-chap-photo-row"><button id="aflChapCameraBtn" type="button">◉ TAKE PHOTOS</button><button id="aflChapFilesBtn" type="button">＋ CHOOSE PHOTOS</button></div>
+      <div class="afl-chap-photo-note">EXACTLY 2 PRODUCT IMAGES • CAMERA OR FILE • KEEP IT CLEAN</div>
+      <div id="aflChapImagePreview" class="afl-chap-image-preview"></div>
+      <div id="aflChapPricePreview" class="afl-chap-price-preview">PRICE WILL APPEAR HERE</div>
+      <button id="aflChapSubmit" class="afl-chap-submit" type="button">PUBLISH CHAPCHAP SELLER</button>
+      <div id="aflChapStatus" class="afl-chap-status"></div>
+    </div>
+  </div>
+</div>
+
+<div id="aflChapChapDetail" class="afl-chap-overlay" aria-hidden="true">
+  <div class="afl-chap-detail-card">
+    <button id="aflChapDetailClose" class="afl-top-btn afl-close" type="button">CLOSE</button>
+    <div id="aflChapDetailBody"></div>
   </div>
 </div>
 
@@ -1062,13 +1166,13 @@ Install App
   <div class="afl-call-card afl-call-card-pro afl-video-card">
     <div class="afl-call-video-stage">
       <video id="aflRemoteVideo" class="afl-remote-video" autoplay playsinline></video>
-      <div id="aflVideoPlaceholder" class="afl-video-placeholder"><div class="afl-call-orb"><span>📞</span></div><div class="afl-video-placeholder-text">I|ONE</div></div>
+      <div id="aflVideoPlaceholder" class="afl-video-placeholder"><div class="afl-call-orb"><span>📞</span></div><div class="afl-video-placeholder-text">AFRILINK</div></div>
       <video id="aflLocalVideo" class="afl-local-video" autoplay playsinline muted></video>
-      <div id="aflCallQualityPill" class="afl-video-status-pill">CONNECTING • PRIVATE I|ONE</div>
+      <div id="aflCallQualityPill" class="afl-video-status-pill">CONNECTING • PRIVATE AFRILINK</div>
       <div id="aflRemoteCallerBadge" class="afl-video-caller-badge">REMOTE</div>
       <div id="aflLocalCallerBadge" class="afl-video-local-badge">YOU</div>
     </div>
-    <div class="afl-call-kicker">I|ONE • REQUEST LIVE</div>
+    <div class="afl-call-kicker">AFRILINK • REQUEST LIVE</div>
     <div id="aflIncomingCallTitle" class="afl-call-title">INCOMING REQUEST LIVE</div>
     <div id="aflIncomingCallMeta" class="afl-call-meta">Someone is calling you.</div>
     <div id="aflIncomingCallTimer" class="afl-call-timer">00:00</div>
@@ -1089,11 +1193,11 @@ Install App
       <button id="aflRearCameraActive" type="button" class="afl-call-accept afl-camera-switch" style="display:none">REAR CAMERA</button>
       <button id="aflCallEndActive" type="button" class="afl-call-decline">END CALL</button>
     </div>
-    <div class="afl-call-note">Private call • tied to this I|ONE service conversation</div>
+    <div class="afl-call-note">Private call • tied to this AFRILINK service conversation</div>
   </div>
 </div>
 
-<div id="aflDeleteOverlay" class="afl-delete-overlay" aria-hidden="true"><div class="afl-delete-card" role="dialog" aria-modal="true"><div class="afl-delete-kicker">I|ONE • DELETE CONTROL</div><div id="aflDeleteTitle" class="afl-delete-title">DELETE MESSAGE</div><div id="aflDeleteNote" class="afl-delete-note">Choose how you want this item removed.</div><div class="afl-delete-actions"><button id="aflDeleteInChat" class="afl-delete-chat" type="button">DELETE IN CHAT</button><button id="aflDeleteForever" class="afl-delete-forever" type="button">DELETE FOREVER</button><button id="aflDeleteCancel" class="afl-delete-cancel" type="button">CANCEL</button></div></div></div>
+<div id="aflDeleteOverlay" class="afl-delete-overlay" aria-hidden="true"><div class="afl-delete-card" role="dialog" aria-modal="true"><div class="afl-delete-kicker">AFRILINK • DELETE CONTROL</div><div id="aflDeleteTitle" class="afl-delete-title">DELETE MESSAGE</div><div id="aflDeleteNote" class="afl-delete-note">Choose how you want this item removed.</div><div class="afl-delete-actions"><button id="aflDeleteInChat" class="afl-delete-chat" type="button">DELETE IN CHAT</button><button id="aflDeleteForever" class="afl-delete-forever" type="button">DELETE FOREVER</button><button id="aflDeleteCancel" class="afl-delete-cancel" type="button">CANCEL</button></div></div></div>
 
 <div id="aflOwnerOverlay" class="afl-service-overlay" aria-hidden="true">
   <div class="afl-service-card" role="dialog" aria-modal="true">
@@ -1102,9 +1206,46 @@ Install App
   </div>
 </div>
 
+<!-- I1 MARKET SELLER SUBSCRIPTION — STEP 1 UI ONLY -->
+<div id="i1SubscriptionOverlay" aria-hidden="true">
+  <div class="i1-sub-card">
+    <button id="i1SubClose" class="i1-sub-close" type="button">CLOSE</button>
+    <div class="i1-sub-kicker">I1 MARKET • SELLER ACCESS</div>
+    <h2>START SELLING</h2>
+    <p class="i1-sub-intro">Choose a seller subscription to unlock product uploads on I1 Market.</p>
+
+    <div class="i1-plans">
+      <button class="i1-plan" type="button" data-plan="2_weeks" data-price="5000">
+        <span class="i1-plan-duration">2 WEEKS</span>
+        <strong>TZS 5,000</strong>
+        <small>TRY I1 MARKET</small>
+      </button>
+      <button class="i1-plan" type="button" data-plan="1_month" data-price="8000">
+        <span class="i1-plan-duration">1 MONTH</span>
+        <strong>TZS 8,000</strong>
+        <small>POPULAR</small>
+      </button>
+      <button class="i1-plan" type="button" data-plan="3_months" data-price="20000">
+        <span class="i1-plan-duration">3 MONTHS</span>
+        <strong>TZS 20,000</strong>
+        <small>MORE TIME TO SELL</small>
+      </button>
+      <button class="i1-plan" type="button" data-plan="1_year" data-price="60000">
+        <span class="i1-plan-duration">1 YEAR</span>
+        <strong>TZS 60,000</strong>
+        <small>FULL YEAR ACCESS</small>
+      </button>
+    </div>
+
+    <div id="i1SelectedPlan" class="i1-selected-plan">SELECT A PLAN TO CONTINUE</div>
+    <button id="i1PayButton" class="i1-pay-button" type="button" disabled>CONTINUE TO PAYMENT</button>
+    <div class="i1-sub-note">Payment will be connected to BLM Pay in the next step.</div>
+  </div>
+</div>
+
 <div id="aflEditorOverlay" aria-hidden="true">
   <div class="afl-editor" role="dialog" aria-modal="true" aria-labelledby="aflEditorTitle">
-    <h2 id="aflEditorTitle">I|ONE BILLBOARD</h2>
+    <h2 id="aflEditorTitle">AFRILINK BILLBOARD</h2>
     <div class="afl-editor-sub">
       Upload as many business images as you need. Each image can carry its own optional centered banner words.
       Your billboard is visible to other Mbingu Duniani users while its subscription date is active.
@@ -1168,14 +1309,10 @@ City tour — TZS 80,000"></textarea>
     </div>
 
     <div id="aflBillboardVideoBox" class="afl-video-upload-box">
-      <div class="afl-video-upload-head"><div><strong>SMART BILLBOARD VIDEO</strong><span>ONE VIDEO • MAXIMUM 5 MINUTES • PLAYS FIRST • SOUND AVAILABLE</span></div><span id="aflVideoBadge">OPTIONAL</span></div>
+      <div class="afl-video-upload-head"><div><strong>SMART BILLBOARD VIDEO</strong><span>ONE VIDEO • MAXIMUM 5 MINUTES • SOUND ON/OFF • PLAYS FIRST</span></div><span id="aflVideoBadge">OPTIONAL</span></div>
       <input id="aflBillboardVideo" class="afl-file-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/*">
-      <input id="aflBillboardVideoCamera" class="afl-file-input" type="file" accept="video/*" capture="environment">
-      <div class="afl-video-actions"><button id="aflPickBillboardVideo" type="button">CHOOSE VIDEO</button><button id="aflCaptureBillboardVideo" type="button">RECORD WITH CAMERA</button><button id="aflRemoveBillboardVideo" type="button" style="display:none">REMOVE VIDEO</button></div>
-      <div id="aflBillboardVideoStatus" class="afl-video-status">VIDEO → IMAGES → FINAL IMAGE → VIDEO</div>
-      <div class="afl-video-words-head"><strong>VIDEO WORDS</strong><button id="aflAddVideoWord" type="button">＋ ADD WORD</button></div>
-      <div class="afl-video-words-note">Add one or more transparent words/sentences. They rotate softly along the bottom of the video.</div>
-      <div id="aflVideoWords" class="afl-video-words"></div>
+      <div class="afl-video-actions"><button id="aflPickBillboardVideo" type="button">▶ ADD VIDEO</button><button id="aflRemoveBillboardVideo" type="button" style="display:none">REMOVE VIDEO</button></div>
+      <div id="aflBillboardVideoStatus" class="afl-video-status">VIDEO + SOUND → IMAGES → VIDEO • SMOOTH DIGITAL SIGNAGE LOOP</div>
     </div>
 
     <input id="aflFiles" class="afl-file-input" type="file" accept="image/*" multiple>
@@ -1189,7 +1326,7 @@ City tour — TZS 80,000"></textarea>
     <div id="aflExistingImageList" class="afl-image-list afl-existing-image-list"></div>
     <div id="aflNewImagesTitle" class="afl-existing-title" style="display:none">NEW IMAGES TO ADD</div>
     <div id="aflImageList" class="afl-image-list"></div>
-    <div id="aflBillboardVideoPreview" class="afl-video-editor-preview"></div>
+
     <div class="afl-editor-actions">
       <button id="aflEditorCancel" class="afl-cancel" type="button">CANCEL</button>
       <button id="aflEditorSave" class="afl-save" type="button">PUBLISH BILLBOARD</button>
@@ -1325,7 +1462,7 @@ function getMedia(id){
   </button>
 
   <button class="smart-item" id="openAfrilink">
-    I|ONE
+    AFRILINK
     <small>HOME OF MARKETING</small>
   </button>
   
@@ -1462,7 +1599,7 @@ const guideLanguages={
   "SYSTEM KEYPAD: Fungua keypad kutumia namba na OK kuchagua masomo na video.",
   "SERMON TRANSCRIPT: Eneo hili ni la waandishi wa huduma walioidhinishwa. Ingiza ministry access key ili kufungua transcript.",
   "SAVE: Bonyeza SAVE kuhifadhi transcript yako tayari kwa kutengeneza kitabu.",
-  "I|ONE: Fungua HOME OF MARKETING kuona live 3D billboards za biashara kutoka kwa watumiaji wote.",
+  "AFRILINK: Fungua HOME OF MARKETING kuona live 3D billboards za biashara kutoka kwa watumiaji wote.",
   "CREATE BOOK: Chagua sermon moja au zaidi kutoka SAVED SERMONS, kisha bonyeza CREATE BOOK.",
   "CHAPTER UPLOAD: Kwenye kila chapter kuna kitufe kifupi cha UPLOAD. Tumia hicho kuongeza ukurasa wa picha ndani ya chapter.",
   "IMAGE PAGE: Baada ya kupakia picha, chagua ukubwa wa ukurasa. Kisha unaweza kusogeza, kuzoom, kubadilisha picha au kuondoa picha.",
@@ -1483,7 +1620,7 @@ const guideLanguages={
   "SYSTEM KEYPAD: Open the keypad and use number keys plus OK to choose lessons and videos.",
   "SERMON TRANSCRIPT: This area is reserved for authorized ministry authors. Enter the ministry access key to open the transcript.",
   "SAVE: Press SAVE to keep the sermon transcript ready for book creation.",
-  "I|ONE: Open HOME OF MARKETING to see live 3D business billboards from users across the app.",
+  "AFRILINK: Open HOME OF MARKETING to see live 3D business billboards from users across the app.",
   "CREATE BOOK: Select one or more sermons from SAVED SERMONS, then press CREATE BOOK.",
   "CHAPTER UPLOAD: Every chapter has a compact UPLOAD button. Use it to add a dedicated image page inside that chapter.",
   "IMAGE PAGE: After uploading, choose a page size. Then you can move, zoom, resize, replace or remove the image.",
@@ -1751,24 +1888,52 @@ rotateHealthHints();
 setInterval(rotateHealthHints, 2200);
 
 let panelTimer=null;
+let toggleTimer=null;
+const SMART_GESTURE_MS=60000;
+
+function showSmartToggle(){
+  if(toggleTimer) clearTimeout(toggleTimer);
+  smartToggle.style.opacity="1";
+  smartToggle.style.transform="translateY(0)";
+  toggleTimer=setTimeout(()=>{
+    if(!smartPanel.classList.contains("show")) hideSmartToggle();
+  },SMART_GESTURE_MS);
+}
+
+function hideSmartToggle(){
+  if(toggleTimer) clearTimeout(toggleTimer);
+  toggleTimer=null;
+  smartPanel.classList.remove("show");
+  smartToggle.classList.remove("active");
+  smartToggle.style.opacity="0";
+  smartToggle.style.transform="translateY(100px)";
+}
 
 function showPanel(){
+  showSmartToggle();
   smartPanel.classList.add("show");
   smartToggle.classList.add("active");
   resetTimer();
 }
 
 function hidePanel(){
+  if(panelTimer) clearTimeout(panelTimer);
+  panelTimer=null;
   smartPanel.classList.remove("show");
   smartToggle.classList.remove("active");
+  showSmartToggle();
 }
 
 function resetTimer(){
   if(panelTimer) clearTimeout(panelTimer);
-  panelTimer=setTimeout(hidePanel,4000);
+  panelTimer=setTimeout(()=>{
+    smartPanel.classList.remove("show");
+    smartToggle.classList.remove("active");
+  },SMART_GESTURE_MS);
 }
 
-smartToggle.onclick=()=>{
+smartToggle.onclick=(e)=>{
+  e.stopPropagation();
   if(smartPanel.classList.contains("show")){
     hidePanel();
   } else {
@@ -2150,7 +2315,7 @@ ministryAccessKey.addEventListener("keydown",e=>{if(e.key==="Enter")document.get
   alert("Sermon saved successfully with its transcript images.");
 };
 
-/* ================= I|ONE • HOME OF MARKETING ================= */
+/* ================= AFRILINK • HOME OF MARKETING ================= */
 
 
 const aflOverlay = document.getElementById("afrilinkOverlay");
@@ -2188,10 +2353,6 @@ const AFL_COLOR_OPTIONS = [
 
 let aflImageDrafts = [];
 let aflExistingImages = [];
-let aflBillboardVideoFile = null;
-let aflBillboardVideoRemove = false;
-let aflBillboardVideoExisting = null;
-let aflBillboardVideoWords = [];
 let aflOwnerRefreshSeq = 0;
 let aflClientChatLoadSeq = 0;
 let aflCallState = { call:null, pc:null, channel:null, timer:null, role:null, inquiryId:null, overlayTimer:null, timerStartedAt:null, qualityTimer:null, micMuted:false, cameraOff:false };
@@ -2245,76 +2406,13 @@ function aflSetDefaultDates(){
   document.getElementById("aflEndAt").value=local.toISOString().slice(0,16);
 }
 
-function aflResetVideoEditorState(){
-  if(aflBillboardVideoFile?.__previewUrl)URL.revokeObjectURL(aflBillboardVideoFile.__previewUrl);
-  aflBillboardVideoFile=null;aflBillboardVideoRemove=false;aflBillboardVideoExisting=null;aflBillboardVideoWords=[];
-  const input=document.getElementById("aflBillboardVideo");if(input)input.value="";
-  const box=document.getElementById("aflBillboardVideoPreview");if(box)box.innerHTML="";
-  const list=document.getElementById("aflVideoWords");if(list)list.innerHTML="";
-  const remove=document.getElementById("aflRemoveBillboardVideo");if(remove)remove.style.display="none";
-  const status=document.getElementById("aflBillboardVideoStatus");if(status)status.textContent="VIDEO → IMAGES → FINAL IMAGE → VIDEO";
-}
-function aflVideoWordRow(word={text:"",color:"#ffffff"},index){
-  const row=document.createElement("div");row.className="afl-video-word-row";
-  row.innerHTML=`<input class="afl-video-word-text" maxlength="180" placeholder="Write a word or sentence" value="${aflEscape(word.text||"")}"><div class="afl-video-word-colors"></div><button type="button" class="afl-video-word-remove">REMOVE</button>`;
-  const input=row.querySelector(".afl-video-word-text");input.oninput=()=>word.text=input.value;
-  const colors=row.querySelector(".afl-video-word-colors");colors.innerHTML=aflColorButtons("video-word-"+index,word.color||"#ffffff");colors.querySelectorAll(".afl-color").forEach(b=>b.onclick=()=>{word.color=b.dataset.color;colors.querySelectorAll(".afl-color").forEach(x=>x.classList.remove("selected"));b.classList.add("selected")});
-  row.querySelector(".afl-video-word-remove").onclick=()=>{const i=aflBillboardVideoWords.indexOf(word);if(i>=0)aflBillboardVideoWords.splice(i,1);aflRenderVideoWords();aflRenderVideoEditorPreview();};
-  return row;
-}
-function aflRenderVideoWords(){
-  const list=document.getElementById("aflVideoWords");if(!list)return;list.innerHTML="";
-  aflBillboardVideoWords.forEach((w,i)=>list.appendChild(aflVideoWordRow(w,i)));
-}
-function aflRenderVideoEditorPreview(){
-  const box=document.getElementById("aflBillboardVideoPreview");if(!box)return;box.innerHTML="";
-  const url=aflBillboardVideoFile?.__previewUrl||aflBillboardVideoExisting?.video_url||"";if(!url)return;
-  const mediaHead=document.createElement("div");mediaHead.className="afl-existing-title";mediaHead.style.display="block";mediaHead.textContent="VIDEO • FIRST MEDIA IN BILLBOARD LOOP";box.appendChild(mediaHead);
-  const wrap=document.createElement("div");wrap.className="afl-editor-video-frame";
-  const v=document.createElement("video");v.src=url;v.controls=true;v.playsInline=true;v.muted=true;v.preload="metadata";
-  const caption=document.createElement("div");caption.className="afl-editor-video-caption";caption.textContent=aflBillboardVideoWords[0]?.text||"";caption.style.color=aflBillboardVideoWords[0]?.color||"#ffffff";
-  v.addEventListener("timeupdate",()=>{if(!aflBillboardVideoWords.length)return;const w=aflBillboardVideoWords.filter(x=>String(x.text||"").trim());if(!w.length)return;const idx=Math.floor((v.currentTime||0)/4)%w.length;caption.textContent=w[idx].text;caption.style.color=w[idx].color||"#ffffff"});
-  wrap.append(v,caption);box.appendChild(wrap);
-}
-function aflSetupVideoEditor(){
-  const input=document.getElementById("aflBillboardVideo"),camera=document.getElementById("aflBillboardVideoCamera"),pick=document.getElementById("aflPickBillboardVideo"),capture=document.getElementById("aflCaptureBillboardVideo"),remove=document.getElementById("aflRemoveBillboardVideo"),add=document.getElementById("aflAddVideoWord");
-  if(!input||input.dataset.bound==="1")return;
-  input.dataset.bound="1";
-  const acceptVideoFile=(f)=>{
-    if(!f)return;
-    if(!String(f.type||"").toLowerCase().startsWith("video/")){document.getElementById("aflBillboardVideoStatus").textContent="PLEASE CHOOSE A VIDEO FILE.";return;}
-    const url=URL.createObjectURL(f),v=document.createElement("video");v.preload="metadata";
-    v.onloadedmetadata=()=>{const d=v.duration;URL.revokeObjectURL(url);if(!Number.isFinite(d)||d>300){input.value="";if(camera)camera.value="";aflBillboardVideoFile=null;document.getElementById("aflBillboardVideoStatus").textContent="VIDEO MUST BE 5 MINUTES OR LESS.";return}
-      if(aflBillboardVideoFile?.__previewUrl)URL.revokeObjectURL(aflBillboardVideoFile.__previewUrl);
-      f.__previewUrl=URL.createObjectURL(f);aflBillboardVideoFile=f;aflBillboardVideoRemove=false;remove.style.display="inline-block";
-      document.getElementById("aflBillboardVideoStatus").textContent=`VIDEO READY • ${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,"0")} • FIRST IN LOOP`;
-      aflRenderVideoEditorPreview();
-    };
-    v.onerror=()=>{URL.revokeObjectURL(url);document.getElementById("aflBillboardVideoStatus").textContent="THIS VIDEO COULD NOT BE READ. TRY MP4, WEBM OR MOV.";};
-    v.src=url;
-  };
-  pick.onclick=()=>input.click();
-  capture.onclick=()=>camera.click();
-  input.onchange=()=>{const f=input.files?.[0];acceptVideoFile(f);input.value="";};
-  camera.onchange=()=>{const f=camera.files?.[0];acceptVideoFile(f);camera.value="";};
-  remove.onclick=()=>{if(aflBillboardVideoFile?.__previewUrl)URL.revokeObjectURL(aflBillboardVideoFile.__previewUrl);aflBillboardVideoFile=null;aflBillboardVideoRemove=true;input.value="";camera.value="";remove.style.display="none";document.getElementById("aflBillboardVideoStatus").textContent="VIDEO REMOVED • IMAGES WILL LOOP";document.getElementById("aflBillboardVideoPreview").innerHTML=""};
-  add.onclick=()=>{aflBillboardVideoWords.push({text:"",color:"#ffffff"});aflRenderVideoWords();aflRenderVideoEditorPreview();};
-}
-async function aflLoadExistingVideo(existingId){
-  aflResetVideoEditorState();
-  if(!existingId)return;
-  try{const {data:b,error}=await heavensSupabase.from("afrilink_billboards").select("video_url,video_path,video_bucket,video_duration_sec,video_overlay_words").eq("id",existingId).maybeSingle();if(error)throw error;if(!b)return;aflBillboardVideoExisting=b;aflBillboardVideoWords=Array.isArray(b.video_overlay_words)?b.video_overlay_words.map(x=>({text:String(x.text||""),color:String(x.color||"#ffffff")})):[];const remove=document.getElementById("aflRemoveBillboardVideo");if(b.video_url){remove.style.display="inline-block";document.getElementById("aflBillboardVideoStatus").textContent=`CURRENT VIDEO • ${Math.floor(Number(b.video_duration_sec||0)/60)}:${String(Math.floor(Number(b.video_duration_sec||0)%60)).padStart(2,"0")} • REPLACE OR REMOVE`;aflRenderVideoEditorPreview()}aflRenderVideoWords();}catch(e){console.warn("I|ONE video editor load:",e)}
-}
-
 async function aflOpenEditor(mode="publish", existing=null){
   aflEditorMode=mode;
-  aflSetupVideoEditor();
-  aflResetVideoEditorState();
   aflEditorOverlay.style.display="flex";
   aflEditorOverlay.setAttribute("aria-hidden","false");
   aflEditorStatus.textContent="";
   const catEl=document.getElementById("aflCategory");if(catEl)catEl.dataset.userChanged="";
-  document.getElementById("aflEditorTitle").textContent=mode==="renew" ? "RENEW I|ONE BILLBOARD" : "I|ONE BILLBOARD";
+  document.getElementById("aflEditorTitle").textContent=mode==="renew" ? "RENEW AFRILINK BILLBOARD" : "AFRILINK BILLBOARD";
   document.getElementById("aflEditorSave").textContent=mode==="renew" ? "RENEW SUBSCRIPTION" : "PUBLISH BILLBOARD";
 
   if(mode==="renew" && existing){
@@ -2329,7 +2427,7 @@ async function aflOpenEditor(mode="publish", existing=null){
     document.getElementById("aflEndAt").value=existing.end_at ? new Date(existing.end_at).toISOString().slice(0,16) : "";
     document.getElementById("aflBusinessType").value=existing.business_type||"service";document.getElementById("aflCategory").value=existing.category||aflDefaultCategoryForType(existing.business_type||"service");
     aflImageDrafts=[];aflExistingImages=[];
-    try{const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id;const {data:rows}=await heavensSupabase.from("afrilink_billboard_items").select("*").eq("billboard_id",existing.id).order("sort_order",{ascending:true}).order("created_at",{ascending:true});aflExistingImages=(rows||[]).filter(x=>x.active!==false).map(x=>({...x,replacementFile:null,replacementPreview:null,deleted:false}));}catch(e){console.warn("I|ONE renewal images:",e);}
+    try{const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id;const {data:rows}=await heavensSupabase.from("afrilink_billboard_items").select("*").eq("billboard_id",existing.id).order("sort_order",{ascending:true}).order("created_at",{ascending:true});aflExistingImages=(rows||[]).filter(x=>x.active!==false).map(x=>({...x,replacementFile:null,replacementPreview:null,deleted:false}));}catch(e){console.warn("AFRILINK renewal images:",e);}
     aflRenderExistingImages();
     aflRenderDrafts();
   }else{
@@ -2343,7 +2441,7 @@ async function aflOpenEditor(mode="publish", existing=null){
         const {data,error}=await heavensSupabase.from("afrilink_billboards").select("*").eq("owner_id",uid).maybeSingle();
         if(!error) current=data||null;
       }
-    }catch(e){ console.warn("I|ONE profile load:",e); }
+    }catch(e){ console.warn("AFRILINK profile load:",e); }
 
     if(current){
       document.getElementById("aflBrandName").value=current.brand_name||"";
@@ -2383,21 +2481,14 @@ async function aflOpenEditor(mode="publish", existing=null){
         const {data:rows}=await heavensSupabase.from("afrilink_billboard_items").select("*").eq("billboard_id",bb.id).order("sort_order",{ascending:true}).order("created_at",{ascending:true});
         aflExistingImages=(rows||[]).filter(x=>x.active!==false).map(x=>({...x,replacementFile:null,replacementPreview:null,deleted:false}));
       }
-    }catch(e){console.warn("I|ONE existing images:",e);}
+    }catch(e){console.warn("AFRILINK existing images:",e);}
     aflRenderExistingImages();
     aflRenderDrafts();
   }
-  const videoBillboardId=existing?.id||null;
-  if(videoBillboardId)await aflLoadExistingVideo(videoBillboardId);
-  else {
-    try{const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id;const {data:bb}=uid?await heavensSupabase.from("afrilink_billboards").select("id").eq("owner_id",uid).maybeSingle():{data:null};if(bb?.id)await aflLoadExistingVideo(bb.id);}catch(e){console.warn("I|ONE video load:",e)}
-  }
-  aflRenderVideoWords();
   aflInitColorPickers();
   setTimeout(()=>document.getElementById("aflBrandName").focus(),60);
 }
 function aflCloseEditor(){
-  aflResetVideoEditorState();
   aflEditorOverlay.style.display="none";
   aflEditorOverlay.setAttribute("aria-hidden","true");
   aflImageDrafts=[];
@@ -2512,7 +2603,7 @@ async function aflPublish(){
   try{
     aflEditorStatus.textContent="CHECKING ACCOUNT…";
     const session=await ensureHeavensAnonymousSession();
-    if(!session?.user)throw new Error("Could not create your secure I|ONE session.");
+    if(!session?.user)throw new Error("Could not create your secure AFRILINK session.");
     const uid=session.user.id;
     const brand=String(document.getElementById("aflBrandName").value||"").trim();
     const content=String(document.getElementById("aflContent").value||"").trim();
@@ -2538,40 +2629,21 @@ async function aflPublish(){
     }
     const {data:billboard,error:billError}=await heavensSupabase.from("afrilink_billboards").upsert({owner_id:uid,brand_name:brand,content,address,business_type:businessType,category,brand_color:brandColor,content_color:contentColor,address_color:addressColor,waiting_message:waitingMessage,booking_info:bookingInfo,end_date:endDate,end_at:new Date(endAt).toISOString()},{onConflict:"owner_id"}).select("id").single();
     if(billError)throw billError;
-    /* BILLBOARD VIDEO — one active video slot per brand billboard */
-    if(aflBillboardVideoRemove && !aflBillboardVideoFile){
-      if(aflBillboardVideoExisting?.video_path){try{await heavensSupabase.storage.from(aflBillboardVideoExisting.video_bucket||"afrilink-marketing").remove([aflBillboardVideoExisting.video_path]);}catch(e){console.warn("I|ONE old video delete:",e);}}
-      const {error}=await heavensSupabase.from("afrilink_billboards").update({video_path:null,video_url:null,video_duration_sec:null,video_overlay_words:[]}).eq("id",billboard.id).eq("owner_id",uid);if(error)throw error;
-    }else if(aflBillboardVideoFile){
-      aflEditorStatus.textContent="UPLOADING BILLBOARD VIDEO…";
-      const file=aflBillboardVideoFile;const safe=String(file.name||"billboard-video").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90);const path=`${uid}/billboard-video/${crypto.randomUUID()}-${safe}`;
-      const videoBucket="afrilink-billboard-video";
-      const up=await heavensSupabase.storage.from(videoBucket).upload(path,file,{cacheControl:"31536000",upsert:false,contentType:file.type||"video/mp4"});if(up.error)throw up.error;
-      const pub=heavensSupabase.storage.from(videoBucket).getPublicUrl(path);
-      if(aflBillboardVideoExisting?.video_path&&aflBillboardVideoExisting.video_path!==path){try{await heavensSupabase.storage.from(aflBillboardVideoExisting.video_bucket||"afrilink-marketing").remove([aflBillboardVideoExisting.video_path]);}catch(e){console.warn("I|ONE old video delete:",e);}}
-      const meta=document.createElement("video");meta.preload="metadata";const duration=await new Promise((resolve,reject)=>{meta.onloadedmetadata=()=>resolve(meta.duration);meta.onerror=()=>reject(new Error("Could not read the uploaded video."));meta.src=URL.createObjectURL(file);});if(!Number.isFinite(duration)||duration>300)throw new Error("VIDEO MUST BE 5 MINUTES OR LESS.");
-      const words=aflBillboardVideoWords.map(x=>({text:String(x.text||"").trim().slice(0,180),color:String(x.color||"#ffffff")})).filter(x=>x.text);
-      const {error}=await heavensSupabase.from("afrilink_billboards").update({video_path:path,video_url:pub.data.publicUrl,video_bucket:"afrilink-billboard-video",video_duration_sec:Number(duration.toFixed(2)),video_overlay_words:words}).eq("id",billboard.id).eq("owner_id",uid);if(error)throw error;
-      URL.revokeObjectURL(meta.src);
-    }else if(aflBillboardVideoExisting?.video_url){
-      const words=aflBillboardVideoWords.map(x=>({text:String(x.text||"").trim().slice(0,180),color:String(x.color||"#ffffff")})).filter(x=>x.text);
-      const {error}=await heavensSupabase.from("afrilink_billboards").update({video_overlay_words:words}).eq("id",billboard.id).eq("owner_id",uid);if(error)throw error;
-    }
     // Existing image edits are destructive where requested: deleted/replaced images disappear from both table and storage.
     const currentExisting=aflExistingImages.filter(x=>x.billboard_id===billboard.id).sort((a,b)=>Number(a.sort_order||0)-Number(b.sort_order||0));
     let activeCount=0;
     for(const item of currentExisting){
       if(item.deleted){
-        if(item.image_path){try{await heavensSupabase.storage.from("afrilink-marketing").remove([item.image_path]);}catch(e){console.warn("I|ONE image storage delete:",e);}}
+        if(item.image_path){try{await heavensSupabase.storage.from("afrilink-marketing").remove([item.image_path]);}catch(e){console.warn("AFRILINK image storage delete:",e);}}
         const {error}=await heavensSupabase.from("afrilink_billboard_items").delete().eq("id",item.id).eq("owner_id",uid);if(error)throw error;continue;
       }
       if(item.replacementFile){
         aflEditorStatus.textContent="REPLACING PUBLISHED IMAGE…";const uploaded=await aflUploadFile(item.replacementFile,uid);const oldPath=item.image_path,oldSort=Number(item.sort_order||0);
-        if(oldPath){try{await heavensSupabase.storage.from("afrilink-marketing").remove([oldPath]);}catch(e){console.warn("I|ONE old image delete:",e);}}
+        if(oldPath){try{await heavensSupabase.storage.from("afrilink-marketing").remove([oldPath]);}catch(e){console.warn("AFRILINK old image delete:",e);}}
         const {error:delOld}=await heavensSupabase.from("afrilink_billboard_items").delete().eq("id",item.id).eq("owner_id",uid);if(delOld)throw delOld;
-        const {error:insNew}=await heavensSupabase.from("afrilink_billboard_items").insert({billboard_id:billboard.id,owner_id:uid,image_path:uploaded.path,image_url:uploaded.url,title:(String(item.overlay_text||"").trim()||"I|ONE IMAGE").slice(0,180),overlay_text:String(item.overlay_text||"").trim()||null,overlay_color:item.overlay_color||"#ffffff",sort_order:oldSort,active:true});if(insNew)throw insNew;activeCount++;continue;
+        const {error:insNew}=await heavensSupabase.from("afrilink_billboard_items").insert({billboard_id:billboard.id,owner_id:uid,image_path:uploaded.path,image_url:uploaded.url,title:(String(item.overlay_text||"").trim()||"AFRILINK IMAGE").slice(0,180),overlay_text:String(item.overlay_text||"").trim()||null,overlay_color:item.overlay_color||"#ffffff",sort_order:oldSort,active:true});if(insNew)throw insNew;activeCount++;continue;
       }
-      const {error}=await heavensSupabase.from("afrilink_billboard_items").update({overlay_text:String(item.overlay_text||"").trim()||null,overlay_color:item.overlay_color||"#ffffff",title:(String(item.overlay_text||"").trim()||item.title||"I|ONE IMAGE").slice(0,180),active:true}).eq("id",item.id).eq("owner_id",uid);if(error)throw error;activeCount++;
+      const {error}=await heavensSupabase.from("afrilink_billboard_items").update({overlay_text:String(item.overlay_text||"").trim()||null,overlay_color:item.overlay_color||"#ffffff",title:(String(item.overlay_text||"").trim()||item.title||"AFRILINK IMAGE").slice(0,180),active:true}).eq("id",item.id).eq("owner_id",uid);if(error)throw error;activeCount++;
     }
     const {data:maxRows,error:maxError}=await heavensSupabase.from("afrilink_billboard_items").select("sort_order").eq("billboard_id",billboard.id).eq("active",true).order("sort_order",{ascending:false}).limit(1);
     if(maxError)throw maxError;
@@ -2579,14 +2651,14 @@ async function aflPublish(){
     for(let i=0;i<aflImageDrafts.length;i++){
       const item=aflImageDrafts[i];aflEditorStatus.textContent=`UPLOADING ${i+1} OF ${aflImageDrafts.length}…`;
       const uploaded=await aflUploadFile(item.file,uid);
-      const {error}=await heavensSupabase.from("afrilink_billboard_items").insert({billboard_id:billboard.id,owner_id:uid,image_path:uploaded.path,image_url:uploaded.url,title:(String(item.overlayText||"").trim() || String(item.file?.name||"I|ONE IMAGE")).slice(0,180),overlay_text:String(item.overlayText||"").trim()||null,overlay_color:item.overlayColor||"#ffffff",sort_order:offset+i,active:true});
+      const {error}=await heavensSupabase.from("afrilink_billboard_items").insert({billboard_id:billboard.id,owner_id:uid,image_path:uploaded.path,image_url:uploaded.url,title:(String(item.overlayText||"").trim() || String(item.file?.name||"AFRILINK IMAGE")).slice(0,180),overlay_text:String(item.overlayText||"").trim()||null,overlay_color:item.overlayColor||"#ffffff",sort_order:offset+i,active:true});
       if(error)throw error;
       activeCount++;
     }
     if(activeCount<1)throw new Error("Keep at least one active billboard image.");
     aflEditorStatus.textContent=`BILLBOARD UPDATED ✓ • ${activeCount} ACTIVE IMAGES`;
     setTimeout(async()=>{aflCloseEditor();await aflLoadFeed();},700);
-  }catch(err){console.error("I|ONE publish error:",err);aflEditorStatus.textContent=err?.message||"Could not publish your billboard.";}
+  }catch(err){console.error("AFRILINK publish error:",err);aflEditorStatus.textContent=err?.message||"Could not publish your billboard.";}
   finally{const saveBtn=document.getElementById("aflEditorSave");saveBtn.disabled=false;saveBtn.textContent=aflEditorMode==="renew"?"RENEW SUBSCRIPTION":"PUBLISH BILLBOARD";}
 }
 
@@ -2601,7 +2673,7 @@ async function aflLoadFeed(){
     // RLS on the inquiry tables still limits the inbox data to the current brand owner.
     const ownerBtn=document.getElementById("aflOwnerInquiries");
     if(ownerBtn){ ownerBtn.style.display="block"; ownerBtn.textContent='✦ CLIENT INFO'; }
-    if(!visible.length){aflFeed.innerHTML=`<div class="afl-empty"><div><strong>I|ONE</strong>No active billboards yet.<br>Be the first business to publish.</div></div>`;if(expiredMine) aflAddExpired(expiredMine);aflStartLoops();return;}
+    if(!visible.length){aflFeed.innerHTML=`<div class="afl-empty"><div><strong>AFRILINK</strong>No active billboards yet.<br>Be the first business to publish.</div></div>`;if(expiredMine) aflAddExpired(expiredMine);aflStartLoops();return;}
     const ids=visible.map(x=>x.id);
     // Read every active image in pages so large billboards are never silently truncated.
     let items=[];
@@ -2619,190 +2691,143 @@ async function aflLoadFeed(){
       const head=document.createElement("div");head.className="afl-billboard-head";head.innerHTML=`<span class="afl-company-dot"></span><div class="afl-company-title">${aflEscape(b.brand_name)}</div><div class="afl-owner-tools"></div>`;
       const tools=head.querySelector(".afl-owner-tools");
       if(uid&&String(b.owner_id)===String(uid)){tools.style.display="flex";const renew=document.createElement("button");renew.className="renew";renew.textContent="RENEW";renew.onclick=()=>aflOpenEditor("renew",b);tools.appendChild(renew);}
-      const stage=document.createElement("div");stage.className="afl-stage";const board=document.createElement("div");board.className="afl-board";const screen=document.createElement("div");screen.className="afl-screen afl-signage-screen";const img=document.createElement("img");img.alt=b.brand_name;img.loading="eager";img.className="afl-signage-image afl-signage-media";const img2=document.createElement("img");img2.alt=b.brand_name;img2.loading="eager";img2.className="afl-signage-image afl-signage-media";const overlay=document.createElement("div");overlay.className="afl-image-caption";const counter=document.createElement("div");counter.className="afl-image-count";const video=document.createElement("video");video.className="afl-signage-video";video.playsInline=true;video.preload="metadata";video.muted=true;video.setAttribute("playsinline","");video.setAttribute("muted","");const videoAudio=document.createElement("button");videoAudio.type="button";videoAudio.className="afl-video-audio-toggle";videoAudio.textContent="UNMUTE";videoAudio.style.display="none";const videoCaption=document.createElement("div");videoCaption.className="afl-video-caption";videoCaption.style.display="none";screen.append(img,img2,video,overlay,videoCaption,counter,videoAudio);board.appendChild(screen);stage.appendChild(board);
+      const stage=document.createElement("div");stage.className="afl-stage";const board=document.createElement("div");board.className="afl-board";const screen=document.createElement("div");screen.className="afl-screen afl-signage-screen";const img=document.createElement("img");img.alt=b.brand_name;img.loading="lazy";const video=document.createElement("video");video.className="afl-signage-video";video.muted=true;video.playsInline=true;video.autoplay=false;video.preload="auto";video.setAttribute("muted","");video.setAttribute("playsinline","");const videoAudio=document.createElement("button");videoAudio.type="button";videoAudio.className="afl-video-audio-toggle";videoAudio.textContent="🔊 UNMUTE";videoAudio.setAttribute("aria-label","Unmute billboard video");videoAudio.style.display="none";const overlay=document.createElement("div");overlay.className="afl-image-caption";const counter=document.createElement("div");counter.className="afl-image-count";screen.append(img,video,videoAudio,overlay,counter);board.appendChild(screen);stage.appendChild(board);
       const info=document.createElement("div");info.className="afl-info";info.innerHTML=`<div class="afl-info-brand" style="color:${aflEscape(b.brand_color||"#fff")}">${aflEscape(b.brand_name)}</div><div class="afl-info-content" style="color:${aflEscape(b.content_color||"#fff")}">${aflEscape(b.content)}</div><div class="afl-info-address" style="color:${aflEscape(b.address_color||"#aab8bc")}">${aflEscape(b.address)}</div><div class="afl-info-address" style="color:#00ffff;font-size:9px;font-weight:900;letter-spacing:1px">${aflEscape(aflCategoryLabel(b.category))} • ${aflEscape(aflBusinessLabel(b.business_type))}</div><div class="afl-dots"></div>`;
       const dots=info.querySelector(".afl-dots");slides.forEach((_,i)=>{const dot=document.createElement("span");dot.className="afl-dot"+(i===0?" active":"");dots.appendChild(dot);});
       const service=document.createElement("button");service.className="afl-open-service";service.innerHTML=`<span style="font-size:15px;margin-right:6px">✦</span> OPEN SERVICE`;service.onclick=()=>aflOpenService(b);info.appendChild(service);
       wrap.append(head,stage,info);aflFeed.appendChild(wrap);
-      const row={billboard:b,slides,index:0,img,img2,activeImg:img,video,videoAudio,videoCaption,overlay,counter,dots,wrap,board,screen,videoUrl:b.video_url||b.billboard_video_url||"",videoPlaying:false,audioMuted:true,aspectSet:false};
-      const aflSetBillboardAspect=(w,h)=>{w=Number(w);h=Number(h);if(!(w>0&&h>0))return;const ratio=w/h;row.board.style.aspectRatio=`${ratio}`;row.aspectSet=true;row.mediaWidth=w;row.mediaHeight=h;};
-      img.onload=()=>{if(!row.videoUrl&&!row.aspectSet)aflSetBillboardAspect(img.naturalWidth,img.naturalHeight);};
-      if(row.videoUrl)video.addEventListener("loadedmetadata",()=>aflSetBillboardAspect(video.videoWidth,video.videoHeight),{once:true});
-      else if(slides[0]?.image_url)img.src=slides[0].image_url;
-      videoAudio.onclick=e=>{e.preventDefault();e.stopPropagation();if(row.audioMuted){aflMuteAllBillboardVideos(row);row.audioMuted=false;video.muted=false;video.volume=1;videoAudio.textContent="MUTE";video.play().catch(()=>{});}else{row.audioMuted=true;video.muted=true;video.volume=0;videoAudio.textContent="UNMUTE";}};
-      video.onended=async()=>{
-        row.videoPlaying=false;row.audioMuted=true;video.muted=true;video.volume=0;videoAudio.textContent='UNMUTE';
-        const ok=await aflShowFirstImageAfterVideo(row);
-        if(ok)aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500)));
-        else if(row.videoUrl)setTimeout(()=>aflStartBillboardVideo(row),1000);
-      };
-      video.ontimeupdate=()=>aflRenderVideoCaption(row);
-      video.onerror=async()=>{
-        row.videoPlaying=false;row.audioMuted=true;video.muted=true;video.volume=0;videoAudio.style.display='none';
-        const ok=await aflShowFirstImageAfterVideo(row);
-        if(ok)aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500)));
-      };
-      aflFeedRows.push(row);
-      const observer=new IntersectionObserver(es=>{es.forEach(en=>{if(en.isIntersecting&&en.intersectionRatio>.55&&window.__aflActiveAudioVideo&&window.__aflActiveAudioVideo!==row){aflMuteAllBillboardVideos(row);}})},{threshold:[.55]});observer.observe(wrap);row.observer=observer;
+      const row={billboard:b,slides,index:0,img,video,videoAudio,overlay,counter,dots,wrap,mode:b.billboard_video_url?"video":"image",videoUrl:b.billboard_video_url||b.video_url||"",videoPlaying:false,audioMuted:true};aflFeedRows.push(row);aflRenderSlide(row);
     });
     if(expiredMine)aflAddExpired(expiredMine);
     aflApplyFeedFilter();
     aflStartLoops();
-  }catch(err){console.error("I|ONE feed error:",err);aflFeed.innerHTML=`<div class="afl-empty"><div><strong>I|ONE</strong>Could not load the billboard network.<br>${aflEscape(err?.message||"Please try again.")}</div></div>`;}
+  }catch(err){console.error("AFRILINK feed error:",err);aflFeed.innerHTML=`<div class="afl-empty"><div><strong>AFRILINK</strong>Could not load the billboard network.<br>${aflEscape(err?.message||"Please try again.")}</div></div>`;}
 }
-function aflAddExpired(b){const existing=document.createElement("div");existing.className="afl-expired";existing.innerHTML=`Your I|ONE subscription for <strong>${aflEscape(b.brand_name)}</strong> has expired.`;const btn=document.createElement("button");btn.className="afl-top-btn";btn.style.marginTop="9px";btn.textContent="RENEW SUBSCRIPTION";btn.onclick=()=>aflOpenEditor("renew",b);existing.appendChild(document.createElement("br"));existing.appendChild(btn);aflFeed.prepend(existing);}
+function aflAddExpired(b){const existing=document.createElement("div");existing.className="afl-expired";existing.innerHTML=`Your AFRILINK subscription for <strong>${aflEscape(b.brand_name)}</strong> has expired.`;const btn=document.createElement("button");btn.className="afl-top-btn";btn.style.marginTop="9px";btn.textContent="RENEW SUBSCRIPTION";btn.onclick=()=>aflOpenEditor("renew",b);existing.appendChild(document.createElement("br"));existing.appendChild(btn);aflFeed.prepend(existing);}
 
-function aflMuteAllBillboardVideos(exceptRow=null){
-  aflFeedRows.forEach(r=>{if(r!==exceptRow&&r.video){r.audioMuted=true;r.video.muted=true;r.video.volume=0;if(r.videoAudio)r.videoAudio.textContent="UNMUTE";}});
-  window.__aflActiveAudioVideo=exceptRow||null;
-}
-function aflRenderVideoCaption(row){
-  if(!row.videoCaption)return;
-  const words=(Array.isArray(row.billboard.video_overlay_words)?row.billboard.video_overlay_words:[]).filter(x=>String(x?.text||"").trim());
-  if(!words.length){row.videoCaption.style.display="none";return;}
-  const idx=Math.floor((Number(row.video?.currentTime||0)/4))%words.length;const w=words[idx];row.videoCaption.textContent=w.text;row.videoCaption.style.color=w.color||"#ffffff";row.videoCaption.style.display="block";
-}
-function aflSetBillboardAspect(row,w,h){
-  w=Number(w);h=Number(h);
-  if(!(w>0&&h>0))return;
-  const ratio=w/h;
-  row.board.style.width='100%';
-  row.board.style.aspectRatio=`${ratio}`;
-  row.board.style.height='auto';
-  row.screen.style.width='100%';
-  row.screen.style.height='100%';
-  row.mediaWidth=w;row.mediaHeight=h;row.aspectSet=true;
-}
-function aflPrepareImage(row,url){
-  return new Promise(resolve=>{
-    const pre=new Image();
-    let done=false;
-    const finish=ok=>{if(done)return;done=true;resolve(ok?pre:null);};
-    pre.onload=()=>finish(true);
-    pre.onerror=()=>finish(false);
-    pre.src=url;
-  });
-}
-function aflShowImagePrepared(row,pre,item,fromVideo=false){
-  if(!pre)return false;
-  const current=row.activeImg||row.img;
-  const next=current===row.img?row.img2:row.img;
-  const w=Number(pre.naturalWidth||0),h=Number(pre.naturalHeight||0);
-  if(w>0&&h>0)aflSetBillboardAspect(row,w,h);
-  next.src=pre.src;
-  next.alt=row.billboard.brand_name||'I|ONE';
-  next.style.display='block';
-  next.style.opacity='0';
-  next.classList.remove('afl-signage-active');
-  void next.offsetWidth;
-  next.classList.add('afl-signage-active');
-  next.style.opacity='1';
-  current.classList.remove('afl-signage-active');
-  current.style.opacity='0';
-  row.activeImg=next;
-  row.overlay.textContent=item?.overlay_text||'';
-  row.overlay.style.color=item?.overlay_color||'#fff';
-  row.overlay.style.display=item?.overlay_text?'block':'none';
-  row._rendered=true;
-  if(fromVideo){
-    row.video.classList.remove('afl-media-visible');
-    row.video.style.opacity='0';
+function aflRenderSlide(row){
+  const videoUrl=row.videoUrl||row.billboard?.video_url||row.billboard?.billboard_video_url||"";
+  const hasVideo=!!videoUrl;
+  const item=row.slides[row.index];
+  const img=row.img,video=row.video,audio=row.videoAudio;
+  if(hasVideo && !row._videoBound){
+    row._videoBound=true;
+    video.src=videoUrl;
+    video.playsInline=true;
+    video.preload="auto";
+    video.onended=()=>{
+      row.videoPlaying=false;
+      row.index=0;
+      row.mode="image";
+      if(audio)audio.style.display="none";
+      aflRenderSlide(row);
+      aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500)));
+    };
+    video.onerror=()=>{
+      row.videoPlaying=false;
+      row.mode="image";
+      if(audio)audio.style.display="none";
+      aflRenderSlide(row);
+      aflScheduleRow(row,7500);
+    };
+    if(audio && !audio.dataset.bound){
+      audio.dataset.bound="1";
+      audio.onclick=(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        row.audioMuted=!row.audioMuted;
+        video.muted=row.audioMuted;
+        video.volume=row.audioMuted?0:1;
+        audio.textContent=row.audioMuted?"🔊 UNMUTE":"🔇 MUTE";
+        audio.setAttribute("aria-label",row.audioMuted?"Unmute billboard video":"Mute billboard video");
+        if(!row.audioMuted){
+          const p=video.play();
+          if(p&&p.catch)p.catch(()=>{
+            row.audioMuted=true;
+            video.muted=true;
+            video.volume=0;
+            audio.textContent="🔊 UNMUTE";
+          });
+        }
+      };
+    }
   }
-  return true;
-}
-async function aflCrossfadeToImage(row,url,item,opts={}){
-  const pre=await aflPrepareImage(row,url);
-  if(!pre)return false;
-  if(row.videoPlaying&&!opts.crossfadeFromVideo)return false;
-  return aflShowImagePrepared(row,pre,item,!!opts.crossfadeFromVideo);
-}
-async function aflStartBillboardVideo(row){
-  if(!row.video||!row.videoUrl)return;
-  if(row._timer){clearTimeout(row._timer);row._timer=null;}
-  row.mode='video';row.videoPlaying=true;row.index=0;row.audioMuted=true;aflMuteAllBillboardVideos(row);
-  row.video.style.display='block';
-  row.video.style.opacity='0';
-  row.video.classList.remove('afl-media-visible');
-  row.overlay.style.display='none';
-  row.videoAudio.style.display='block';
-  row.videoCaption.style.display='none';
-  row.video.currentTime=0;row.video.muted=true;row.video.volume=0;
-  row.video.src=row.videoUrl;row.video.load();
-
-  const reveal=()=>{
-    if(!row.videoPlaying)return;
-    if(row.video.videoWidth&&row.video.videoHeight)aflSetBillboardAspect(row,row.video.videoWidth,row.video.videoHeight);
-    row.video.style.opacity='1';
-    row.video.classList.add('afl-media-visible');
-    row.img.classList.remove('afl-signage-active');row.img2.classList.remove('afl-signage-active');
-    row.img.style.opacity='0';row.img2.style.opacity='0';
-    row.video.removeEventListener('canplay',reveal);
+  if(row.mode==="video" && hasVideo){
+    img.style.opacity="0";
+    img.style.pointerEvents="none";
+    video.style.display="block";
+    video.style.opacity="1";
+    video.muted=!!row.audioMuted;
+    video.volume=row.audioMuted?0:1;
+    if(audio){
+      audio.style.display="block";
+      audio.textContent=row.audioMuted?"🔊 UNMUTE":"🔇 MUTE";
+      audio.setAttribute("aria-label",row.audioMuted?"Unmute billboard video":"Mute billboard video");
+    }
+    row.overlay.textContent="";
+    row.overlay.style.display="none";
+    row.counter.style.display="none";
+    try{video.currentTime=0;}catch(_){}
+    const p=video.play();
+    if(p&&p.catch)p.catch(()=>{
+      /* Browser autoplay policies may reject unmuted playback. Keep the video visible and muted until the user taps UNMUTE. */
+      row.audioMuted=true;
+      video.muted=true;
+      video.volume=0;
+      if(audio)audio.textContent="🔊 UNMUTE";
+      video.play().catch(()=>{});
+    });
+    row.videoPlaying=true;
+    return;
+  }
+  video.pause();
+  video.style.opacity="0";
+  video.style.display="none";
+  if(audio)audio.style.display="none";
+  img.style.opacity="1";
+  img.style.pointerEvents="auto";
+  row.counter.style.display="none";
+  if(!item)return;
+  const first=!row._rendered;
+  const apply=()=>{
+    img.alt=row.billboard.brand_name||"AFRILINK";
+    row.overlay.textContent=item.overlay_text||"";
+    row.overlay.style.color=item.overlay_color||"#fff";
+    row.overlay.style.display=item.overlay_text?"block":"none";
+    img.classList.remove("afl-signage-out");
+    img.classList.add("afl-signage-in");
+    row._rendered=true;
   };
-  row.video.addEventListener('loadedmetadata',()=>{
-    if(row.video.videoWidth&&row.video.videoHeight)aflSetBillboardAspect(row,row.video.videoWidth,row.video.videoHeight);
-  },{once:true});
-  row.video.addEventListener('canplay',reveal,{once:true});
-  aflRenderVideoCaption(row);
-  try{await row.video.play();}catch(_){try{row.video.muted=true;await row.video.play();}catch(e){console.warn('I|ONE billboard video play:',e);}}
-}
-async function aflShowFirstImageAfterVideo(row){
-  if(!row.slides.length)return false;
-  row.index=0;
-  const item=row.slides[0];
-  const shown=await aflCrossfadeToImage(row,String(item.image_url||''),item,{crossfadeFromVideo:true});
-  if(shown){row.mode='image';row.videoPlaying=false;row.videoAudio.style.display='none';row.videoCaption.style.display='none';row.video.muted=true;row.video.volume=0;}
-  return shown;
-}
-async function aflRenderSlide(row,opts={}){
-  if(row.videoPlaying&&!opts.crossfadeFromVideo)return false;
-  const item=row.slides[row.index];if(!item)return false;
-  const url=String(item.image_url||'');if(!url)return false;
-  const pre=await aflPrepareImage(row,url);
-  if(!pre)return false;
-  if(row.videoPlaying&&!opts.crossfadeFromVideo)return false;
-  const shown=aflShowImagePrepared(row,pre,item,!!opts.crossfadeFromVideo);
-  if(shown){row.mode='image';if(opts.crossfadeFromVideo){row.videoPlaying=false;row.videoAudio.style.display='none';row.videoCaption.style.display='none';row.video.muted=true;row.video.volume=0;}}
-  return shown;
+  if(first){img.src=item.image_url;apply();return;}
+  img.classList.remove("afl-signage-in");
+  img.classList.add("afl-signage-out");
+  window.setTimeout(()=>{
+    img.onload=()=>{img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in");};
+    img.src=item.image_url;
+    if(img.complete)setTimeout(()=>{img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in");},40);
+    apply();
+  },260);
 }
 function aflScheduleRow(row,ms){
   if(row._timer)clearTimeout(row._timer);
-  row._timer=setTimeout(async()=>{
-    row._timer=null;
-    if(row.videoPlaying)return;
-    if(row.slides.length){
-      if(row.index<row.slides.length-1){
-        row.index++;
-        const ok=await aflRenderSlide(row);
-        if(!ok){row.index=Math.min(row.index+1,row.slides.length-1);}
-        aflScheduleRow(row,Math.max(6500,Number(row.slides[row.index]?.display_ms||7500)));
-      }else if(row.videoUrl){
-        aflStartBillboardVideo(row);
-      }else{
-        row.index=0;
-        const ok=await aflRenderSlide(row);
-        aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500)));
-      }
-    }else if(row.videoUrl){
-      aflStartBillboardVideo(row);
+  row._timer=setTimeout(()=>{
+    if(row.mode==="video" || row.videoPlaying)return;
+    if(row.slides.length<2){
+      if(row.videoUrl){row.mode="video";aflRenderSlide(row);}return;
     }
-  },Math.max(1200,Number(ms||7500)));
+    row.index=(row.index+1)%row.slides.length;
+    if(row.index===0 && row.videoUrl){
+      row.mode="video";aflRenderSlide(row);
+    }else{
+      row.mode="image";aflRenderSlide(row);aflScheduleRow(row,Math.max(6500,Number(row.slides[row.index]?.display_ms||7500)));
+    }
+  },Math.max(2500,Number(ms)||7500));
 }
 function aflStartLoops(){
-  if(aflFeedTimer)clearInterval(aflFeedTimer);aflFeedTimer=null;
-  aflFeedRows.forEach(row=>{
-    if(row._timer)clearTimeout(row._timer);row._timer=null;
-    row.videoPlaying=false;row._rendered=false;row.mode='image';
-    if(row.videoUrl){
-      /* The image list remains part of the same rotation. Video starts first,
-         then ended -> first image -> remaining images -> video again. */
-      aflStartBillboardVideo(row);
-    }else{
-      row.index=0;
-      aflRenderSlide(row).then(()=>aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500))));
-    }
-  });
+  if(aflFeedTimer)clearInterval(aflFeedTimer);
+  aflFeedTimer=null;
+  aflFeedRows.forEach(row=>{if(row._timer)clearTimeout(row._timer);row._timer=null;aflScheduleRow(row,row.videoUrl?1800:7500);});
 }
-
 function aflOpenWorld(){
   smartPanel.classList.remove("show");
   aflOverlay.style.display="flex";
@@ -2862,7 +2887,7 @@ async function aflToggleVoiceRecorder(role,ctx=null){
         if(context.role==="client") await aflSendVoiceClient(blob);
         else await aflSendVoiceOwner(blob,context.inquiryId,context.ownerId,context.clientId,context.status,context.billboardId);
         if(input)input.textContent="VOICE SENT ✓";
-      }catch(e){console.error("I|ONE voice send:",e);if(input)input.textContent="VOICE SEND FAILED";alert(e?.message||"Could not send voice.");}
+      }catch(e){console.error("AFRILINK voice send:",e);if(input)input.textContent="VOICE SEND FAILED";alert(e?.message||"Could not send voice.");}
       finally{if(aflVoiceRecorder===recorder)aflVoiceRecorder=null;aflVoiceChunks=[];}
     };
     recorder.start();
@@ -2889,7 +2914,7 @@ async function aflLoadClientInquiry(billboardId){
   if(data){aflActiveService.inquiry=data;document.getElementById("aflServiceForm").style.display="none";document.getElementById("aflServiceSubmit").style.display="none";await aflLoadChat(data.id);aflStartClientChatRealtime(data.id);}
 }
 async function aflPurgeExpiredMessages(){
-  try{ await heavensSupabase.rpc("afrilink_purge_expired_messages"); }catch(e){ console.warn("I|ONE message cleanup:",e); }
+  try{ await heavensSupabase.rpc("afrilink_purge_expired_messages"); }catch(e){ console.warn("AFRILINK message cleanup:",e); }
 }
 async function aflGetHiddenMessageIds(inquiryId,uid){if(!inquiryId||!uid)return new Set();const {data}=await heavensSupabase.from("afrilink_inquiry_message_hidden").select("message_id").eq("inquiry_id",inquiryId).eq("user_id",uid);return new Set((data||[]).map(x=>x.message_id));}
 async function aflHideMessageForMe(m,uid){const {error}=await heavensSupabase.from("afrilink_inquiry_message_hidden").upsert({message_id:m.id,inquiry_id:m.inquiry_id,user_id:uid},{onConflict:"message_id,user_id"});if(error)throw error;await heavensSupabase.from("afrilink_inquiry_message_marks").delete().eq("message_id",m.id).eq("user_id",uid);}
@@ -2912,7 +2937,7 @@ function aflBuildChatMessageNode(m,viewerId,markedIds=new Set()){
   mark.onclick=async()=>{try{const exists=markedIds.has(m.id);const r=exists?await heavensSupabase.from("afrilink_inquiry_message_marks").delete().eq("message_id",m.id).eq("user_id",viewerId):await heavensSupabase.from("afrilink_inquiry_message_marks").insert({message_id:m.id,user_id:viewerId});if(r.error)throw r.error;await aflLoadChat(m.inquiry_id);}catch(e){alert(e?.message||"Could not update the mark.");}};
   tools.appendChild(mark);
   const share=document.createElement("button");share.type="button";share.className="afl-chat-tool";share.textContent="↗ SHARE";
-  share.onclick=async()=>{try{if(navigator.share)await navigator.share({title:"I|ONE message",text:m.is_voice?"I|ONE voice message":m.message||""});else if(!m.is_voice){await navigator.clipboard.writeText(m.message||"");alert("Message copied.");}}catch(e){if(e?.name!=="AbortError")alert("Could not share this message.");}};
+  share.onclick=async()=>{try{if(navigator.share)await navigator.share({title:"AFRILINK message",text:m.is_voice?"AFRILINK voice message":m.message||""});else if(!m.is_voice){await navigator.clipboard.writeText(m.message||"");alert("Message copied.");}}catch(e){if(e?.name!=="AbortError")alert("Could not share this message.");}};
   tools.appendChild(share);
   const del=document.createElement("button");del.type="button";del.className="afl-chat-tool delete";del.textContent="DELETE";
   del.onclick=async()=>{const action=await aflChooseDelete("message","MESSAGE");try{if(action==="chat")await aflHideMessageForMe(m,viewerId);else if(action==="forever")await aflDeleteMessageForever(m);else return;await aflLoadChat(m.inquiry_id);}catch(e){alert(e?.message||"Could not delete this message.");}};
@@ -2983,7 +3008,7 @@ function aflStartClientChatRealtime(inquiryId){
         aflSetClientNewMessageState(true);
       })
       .on("postgres_changes",{event:"*",schema:"public",table:"afrilink_voice_calls",filter:"inquiry_id=eq."+inquiryId},p=>{if(p.new&&aflIsVideoCall(p.new)){aflHandleCallRealtimeUpdate(p.new,uid);if(p.eventType==="INSERT")aflHandleIncomingCall(p.new,uid);aflRenderCallHistory(inquiryId,uid).catch(()=>{});}})
-      .subscribe(status=>{if(status!=="SUBSCRIBED")console.warn("I|ONE client chat realtime status:",status);});
+      .subscribe(status=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK client chat realtime status:",status);});
     // Silent fallback: checks for a new message without rebuilding or refreshing the chat panel.
     aflClientChatPollTimer=setInterval(()=>aflSyncClientChatSilently(inquiryId,uid).catch(()=>{}),1500);
   });
@@ -3187,7 +3212,7 @@ function aflShowActiveCallScreen(call){const who=call?.caller_id===call?.owner_i
 function aflHideCallOverlay(){aflStopCallOverlayTimer();aflRestoreLiveVideoOverlay();aflSetVideoStage(false);aflIncomingCallOverlay.style.display="none";aflIncomingCallOverlay.setAttribute("aria-hidden","true");aflIncomingCallOverlay.classList.remove("incoming","outgoing","active","video-mode","busy");}
 async function aflInsertCallSignal(callId,senderId,type,payload){const {error}=await heavensSupabase.from("afrilink_voice_signals").insert({call_id:callId,sender_id:senderId,signal_type:type,payload});if(error)throw error;}
 async function aflLoadCallSignals(callId,uid){const {data,error}=await heavensSupabase.from("afrilink_voice_signals").select("*").eq("call_id",callId).order("created_at",{ascending:true});if(error)return;for(const sig of data||[])await aflHandleCallSignal(sig,uid);}
-async function aflSubscribeCallSignals(call,uid){if(aflCallState.channel){try{await heavensSupabase.removeChannel(aflCallState.channel);}catch(_){}aflCallState.channel=null;}aflCallState.channel=heavensSupabase.channel("afl-call-"+call.id+"-"+uid+"-"+Date.now()).on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_voice_signals",filter:"call_id=eq."+call.id},payload=>aflHandleCallSignal(payload.new,uid)).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("I|ONE call signaling status:",status);});await new Promise(r=>setTimeout(r,250));await aflLoadCallSignals(call.id,uid);}
+async function aflSubscribeCallSignals(call,uid){if(aflCallState.channel){try{await heavensSupabase.removeChannel(aflCallState.channel);}catch(_){}aflCallState.channel=null;}aflCallState.channel=heavensSupabase.channel("afl-call-"+call.id+"-"+uid+"-"+Date.now()).on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_voice_signals",filter:"call_id=eq."+call.id},payload=>aflHandleCallSignal(payload.new,uid)).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK call signaling status:",status);});await new Promise(r=>setTimeout(r,250));await aflLoadCallSignals(call.id,uid);}
 async function aflSetupPeer(call,uid,role){
   if(aflCallState.pc)try{aflCallState.pc.close();}catch(_){}
   aflCameraFacing="user";aflCameraSwitchBusy=false;aflRemoteMediaStream=null;aflRemoteMediaStreamId="";
@@ -3210,12 +3235,12 @@ async function aflSetupPeer(call,uid,role){
   pc.onconnectionstatechange=()=>{
     const state=pc.connectionState;
     if(state==="connected"){pc._iceRestarting=false;return;}
-    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("I|ONE ICE restart:",e));
+    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE restart:",e));
   };
   pc.oniceconnectionstatechange=()=>{
     const state=pc.iceConnectionState;
     if(state==="connected"||state==="completed")pc._iceRestarting=false;
-    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("I|ONE ICE recovery:",e));
+    if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("AFRILINK ICE recovery:",e));
   };
   // REQUEST LIVE is intentionally video-only. Voice recording remains in the chat,
   // so the live video session has no microphone track and cannot create call echo.
@@ -3281,7 +3306,7 @@ async function aflHandleCallSignal(sig,uid){
       if(pc.remoteDescription){try{await pc.addIceCandidate(new RTCIceCandidate(sig.payload));}catch(_){}}
       else pc._pendingIce.push(sig.payload);
     }
-  }catch(e){console.warn("I|ONE call signal:",e);}
+  }catch(e){console.warn("AFRILINK call signal:",e);}
 }
 
 async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voice"){
@@ -3290,7 +3315,7 @@ async function aflCreateCall(inquiryId,ownerId,clientId,callerRole,callType="voi
   if(!uid)throw new Error("Secure call unavailable.");
   const receiverId=callerRole==="client"?ownerId:clientId;
   if(!receiverId)throw new Error("The other participant is unavailable.");
-  if(String(receiverId)===String(uid))throw new Error("The caller and receiver are using the same I|ONE session. Use separate sessions/devices for a call test.");
+  if(String(receiverId)===String(uid))throw new Error("The caller and receiver are using the same AFRILINK session. Use separate sessions/devices for a call test.");
   if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection)throw new Error("Calling is not supported on this browser.");
   const type=callType==="video"?"video":"voice";aflCameraFacing="user";aflCameraSwitchBusy=false;
   const {data:busyCall}=await heavensSupabase.from("afrilink_voice_calls").select("id").eq("receiver_id",receiverId).eq("status","accepted").limit(1).maybeSingle();
@@ -3383,7 +3408,7 @@ async function aflSwitchCamera(targetFacing=null){
       const rt=restore.getVideoTracks?.()[0];
       if(rt){await sender.replaceTrack(rt);pc._videoSender=sender;if(oldStream)oldStream.addTrack(rt);else pc._localStream=new MediaStream([rt]);const local=document.getElementById("aflLocalVideo");if(local){local.srcObject=pc._localStream;local.muted=true;local.volume=0;local.play().catch(()=>{});}}
     }catch(_){}
-    console.warn("I|ONE camera switch:",e);
+    console.warn("AFRILINK camera switch:",e);
     alert("Could not switch camera on this phone. The current camera has been kept.");
   }finally{aflCameraSwitchBusy=false;buttons.forEach(b=>b.disabled=false);}
   const current=aflCallState.call;
@@ -3395,7 +3420,7 @@ async function aflSwitchCamera(targetFacing=null){
     const isInlineActive=String(current.status||"").toLowerCase()==="accepted" && !!inlinePanel;
     if(!isInlineActive){
       const mode=aflIncomingCallOverlay?.classList.contains("outgoing")?"outgoing":"active";
-      aflSetCallOverlay(mode,mode==="outgoing"?(aflIsVideoCall(current)?"VIDEO CALLING…":"CALLING…"):(aflIsVideoCall(current)?"REQUEST LIVE • ACTIVE":"REQUEST LIVE • ACTIVE"),mode==="outgoing"?"Waiting for the other person to answer.":`${current.caller_id===current.owner_id?"Client":"Brand"} • private I|ONE ${aflIsVideoCall(current)?"video":"voice"} call`,current);
+      aflSetCallOverlay(mode,mode==="outgoing"?(aflIsVideoCall(current)?"VIDEO CALLING…":"CALLING…"):(aflIsVideoCall(current)?"REQUEST LIVE • ACTIVE":"REQUEST LIVE • ACTIVE"),mode==="outgoing"?"Waiting for the other person to answer.":`${current.caller_id===current.owner_id?"Client":"Brand"} • private AFRILINK ${aflIsVideoCall(current)?"video":"voice"} call`,current);
     }else{
       const stage=inlinePanel.querySelector(".afl-call-video-stage");
       if(stage)stage.style.display="block";
@@ -3445,9 +3470,9 @@ async function aflCleanupCallOnly(preservePending=false){
   if(pending){aflSetCallOverlay("incoming","INCOMING REQUEST LIVE","Your previous call has ended. This caller is waiting.",pending);aflVibrate([250,120,250,120,500]);}
 }
 
-async function aflHandleIncomingCall(call,uid){if(!call||!aflIsVideoCall(call)||String(call.receiver_id)!==String(uid)||call.status!=="ringing"||aflSeenIncomingCalls.has(call.id))return;aflSeenIncomingCalls.add(call.id);if(aflPendingIncomingCall?.id===call.id)return;aflPendingIncomingCall=call;const busy=!!aflCallState.call;const meta=busy?(call.caller_id===call.owner_id?"A client is calling while you are on another call.":"The brand is currently on another call. Your call is waiting."):(call.caller_id===call.owner_id?"A client is calling your brand.":"Your I|ONE brand is calling you.");aflSetCallOverlay("incoming",busy?"CALL WAITING • LIVE BUSINESS":"INCOMING REQUEST LIVE",meta,{...call,receiver_busy:busy});if(busy)await heavensSupabase.from("afrilink_voice_calls").update({receiver_busy:true}).eq("id",call.id);aflVibrate([250,120,250,120,500]);setTimeout(()=>{if(aflPendingIncomingCall?.id===call.id)aflDeclineIncomingCall().catch(()=>{});},45000);}
+async function aflHandleIncomingCall(call,uid){if(!call||!aflIsVideoCall(call)||String(call.receiver_id)!==String(uid)||call.status!=="ringing"||aflSeenIncomingCalls.has(call.id))return;aflSeenIncomingCalls.add(call.id);if(aflPendingIncomingCall?.id===call.id)return;aflPendingIncomingCall=call;const busy=!!aflCallState.call;const meta=busy?(call.caller_id===call.owner_id?"A client is calling while you are on another call.":"The brand is currently on another call. Your call is waiting."):(call.caller_id===call.owner_id?"A client is calling your brand.":"Your AFRILINK brand is calling you.");aflSetCallOverlay("incoming",busy?"CALL WAITING • LIVE BUSINESS":"INCOMING REQUEST LIVE",meta,{...call,receiver_busy:busy});if(busy)await heavensSupabase.from("afrilink_voice_calls").update({receiver_busy:true}).eq("id",call.id);aflVibrate([250,120,250,120,500]);setTimeout(()=>{if(aflPendingIncomingCall?.id===call.id)aflDeclineIncomingCall().catch(()=>{});},45000);}
 function aflHandleCallRealtimeUpdate(call,uid){if(!call)return;if(aflCallState.call?.id===call.id){const previous=aflCallState.call;aflCallState.call=call;if(call.status!==previous.status||!!call.receiver_busy!==!!previous.receiver_busy){if(call.status==="ringing"&&call.receiver_busy){aflShowOutgoingCallScreen(call);}else if(call.status==="accepted"&&previous.status!=="accepted"){aflShowActiveCallScreen(call);}else if(["rejected","missed","ended"].includes(call.status)&&!["rejected","missed","ended"].includes(previous.status)){const title=call.status==="rejected"?"CALL DECLINED":call.status==="missed"?"MISSED CALL":"CALL ENDED",meta=call.status==="rejected"?"The other person declined the call.":call.status==="missed"?"The call was not answered.":"The other person ended the call.";aflSetCallOverlay("outgoing",title,meta,call);setTimeout(()=>aflCleanupCallOnly(!!aflPendingIncomingCall),900);}}}
-if(aflPendingIncomingCall?.id===call.id&&call.status==="ringing"&&call.receiver_busy===false){aflSetCallOverlay("incoming","INCOMING REQUEST LIVE","The other I|ONE call has ended. You can answer now.",call);aflVibrate([250,120,250,120,500]);}}
+if(aflPendingIncomingCall?.id===call.id&&call.status==="ringing"&&call.receiver_busy===false){aflSetCallOverlay("incoming","INCOMING REQUEST LIVE","The other AFRILINK call has ended. You can answer now.",call);aflVibrate([250,120,250,120,500]);}}
 async function aflPollIncomingAndCallState(uid){
   if(!uid)return;
   try{
@@ -3459,10 +3484,10 @@ async function aflPollIncomingAndCallState(uid){
       const {data:incoming}=await heavensSupabase.from("afrilink_voice_calls").select("*").eq("receiver_id",uid).eq("status","ringing").order("created_at",{ascending:false}).limit(3);
       for(const call of (incoming||[])){if(aflIsVideoCall(call)&&!aflSeenIncomingCalls.has(call.id)){await aflHandleIncomingCall(call,uid);break;}}
     }
-  }catch(e){console.warn("I|ONE call poll:",e);}
+  }catch(e){console.warn("AFRILINK call poll:",e);}
 }
 function aflStartCallPolling(uid,callId){if(aflCallPollTimer)clearInterval(aflCallPollTimer);aflCallPollTimer=setInterval(()=>aflPollIncomingAndCallState(uid),900);aflPollIncomingAndCallState(uid);}
-function aflStartGlobalCallRealtime(uid){if(!uid)return;if(aflGlobalCallChannel){heavensSupabase.removeChannel(aflGlobalCallChannel).catch(()=>{});aflGlobalCallChannel=null;}aflGlobalCallChannel=heavensSupabase.channel("afl-global-calls-"+uid+"-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_voice_calls"},p=>{if(p.new&&aflIsVideoCall(p.new)&&(String(p.new.receiver_id)===String(uid)||String(p.new.caller_id)===String(uid))){if(p.eventType==="INSERT"&&String(p.new.receiver_id)===String(uid))aflHandleIncomingCall(p.new,uid);aflHandleCallRealtimeUpdate(p.new,uid);}}).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("I|ONE global call realtime status:",status);});if(!aflCallPollTimer)aflCallPollTimer=setInterval(()=>aflPollIncomingAndCallState(uid),1500);aflPollIncomingAndCallState(uid);}
+function aflStartGlobalCallRealtime(uid){if(!uid)return;if(aflGlobalCallChannel){heavensSupabase.removeChannel(aflGlobalCallChannel).catch(()=>{});aflGlobalCallChannel=null;}aflGlobalCallChannel=heavensSupabase.channel("afl-global-calls-"+uid+"-"+Date.now()).on("postgres_changes",{event:"*",schema:"public",table:"afrilink_voice_calls"},p=>{if(p.new&&aflIsVideoCall(p.new)&&(String(p.new.receiver_id)===String(uid)||String(p.new.caller_id)===String(uid))){if(p.eventType==="INSERT"&&String(p.new.receiver_id)===String(uid))aflHandleIncomingCall(p.new,uid);aflHandleCallRealtimeUpdate(p.new,uid);}}).subscribe((status)=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK global call realtime status:",status);});if(!aflCallPollTimer)aflCallPollTimer=setInterval(()=>aflPollIncomingAndCallState(uid),1500);aflPollIncomingAndCallState(uid);}
 
 async function aflGetHiddenCallIds(inquiryId,uid){const {data}=await heavensSupabase.from("afrilink_voice_call_hidden").select("call_id").eq("inquiry_id",inquiryId).eq("user_id",uid);return new Set((data||[]).map(x=>x.call_id));}
 async function aflDeleteCallForever(c){const {error}=await heavensSupabase.from("afrilink_voice_calls").delete().eq("id",c.id);if(error)throw error;}
@@ -3475,7 +3500,7 @@ async function aflOpenOwnerInquiries(){
   try{
     const s=await ensureHeavensAnonymousSession();
     const uid=s?.user?.id;
-    if(!uid){ alert("Please open I|ONE again so your brand inbox can be connected."); return; }
+    if(!uid){ alert("Please open AFRILINK again so your brand inbox can be connected."); return; }
     aflStartGlobalCallRealtime(uid);
     aflOwnerOverlay.style.display="flex";
   aflOwnerOverlay.setAttribute("aria-hidden","false");
@@ -3483,7 +3508,7 @@ async function aflOpenOwnerInquiries(){
   aflStartOwnerRealtime(uid);
 
   }catch(err){
-    console.error("I|ONE brand inbox error:",err);
+    console.error("AFRILINK brand inbox error:",err);
     aflOwnerInquiryList.innerHTML=`<div class="afl-empty"><strong>BRAND INBOX</strong>${aflEscape(err?.message||"Could not open the private brand inbox.")}</div>`;
     aflOwnerOverlay.style.display="flex";
     aflOwnerOverlay.setAttribute("aria-hidden","false");
@@ -3539,14 +3564,48 @@ function aflStartOwnerRealtime(uid){
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_inquiries",filter:"owner_id=eq."+uid},p=>{if(p.new)aflRefreshOwnerInquiries(uid,true).catch(()=>{});})
     .on("postgres_changes",{event:"INSERT",schema:"public",table:"afrilink_inquiry_messages"},p=>{const qid=p?.new?.inquiry_id;if(!qid||!p.new)return;if(String(p.new.sender_id)===String(uid))return;const card=aflOwnerInquiryList.querySelector(`.afl-inquiry-card[data-inquiry-id="${CSS.escape(String(qid))}"]`);if(card){card.dataset.pendingNewMessageId=String(p.new.id);const b=card.querySelector(".afl-owner-refresh");if(b){b.classList.add("has-new");b.textContent="VIEW NEW";b.title="New incoming message available — tap to view";}}})
     .on("postgres_changes",{event:"*",schema:"public",table:"afrilink_voice_calls"},p=>{if(p.new&&aflIsVideoCall(p.new)&&(String(p.new.owner_id)===String(uid)||String(p.new.client_id)===String(uid))){if(p.eventType==="INSERT"&&String(p.new.receiver_id)===String(uid))aflHandleIncomingCall(p.new,uid);aflHandleCallRealtimeUpdate(p.new,uid);}})
-    .subscribe(status=>{if(status!=="SUBSCRIBED")console.warn("I|ONE owner realtime status:",status);});
+    .subscribe(status=>{if(status!=="SUBSCRIBED")console.warn("AFRILINK owner realtime status:",status);});
   // Silent fallback only: no DOM rebuild, no inbox refresh. It updates a conversation only if a new message exists.
   aflOwnerInboxPollTimer=setInterval(()=>aflSyncOwnerChatsSilently(uid).catch(()=>{}),1500);
 }
 
 
 openAfrilink.onclick=aflOpenWorld;
-document.getElementById("aflUploadTop").onclick=()=>aflOpenEditor("publish");
+const i1SubscriptionOverlay=document.getElementById("i1SubscriptionOverlay");
+const i1SubClose=document.getElementById("i1SubClose");
+const i1SelectedPlan=document.getElementById("i1SelectedPlan");
+const i1PayButton=document.getElementById("i1PayButton");
+let i1SelectedPlanData=null;
+function i1OpenSubscription(){
+  if(!i1SubscriptionOverlay)return;
+  i1SelectedPlanData=null;
+  i1SubscriptionOverlay.querySelectorAll(".i1-plan").forEach(b=>b.classList.remove("selected"));
+  if(i1SelectedPlan)i1SelectedPlan.textContent="SELECT A PLAN TO CONTINUE";
+  if(i1PayButton)i1PayButton.disabled=true;
+  i1SubscriptionOverlay.style.display="flex";
+  i1SubscriptionOverlay.setAttribute("aria-hidden","false");
+}
+function i1CloseSubscription(){
+  if(!i1SubscriptionOverlay)return;
+  i1SubscriptionOverlay.style.display="none";
+  i1SubscriptionOverlay.setAttribute("aria-hidden","true");
+}
+i1SubscriptionOverlay?.querySelectorAll(".i1-plan").forEach(btn=>btn.addEventListener("click",()=>{
+  i1SubscriptionOverlay.querySelectorAll(".i1-plan").forEach(b=>b.classList.remove("selected"));
+  btn.classList.add("selected");
+  i1SelectedPlanData={plan:btn.dataset.plan,price:Number(btn.dataset.price||0)};
+  if(i1SelectedPlan)i1SelectedPlan.textContent=`SELECTED • ${btn.querySelector(".i1-plan-duration")?.textContent||"PLAN"} • TZS ${Number(btn.dataset.price||0).toLocaleString()}`;
+  if(i1PayButton)i1PayButton.disabled=false;
+}));
+i1SubClose?.addEventListener("click",i1CloseSubscription);
+i1SubscriptionOverlay?.addEventListener("click",e=>{if(e.target===i1SubscriptionOverlay)i1CloseSubscription();});
+i1PayButton?.addEventListener("click",()=>{
+  if(!i1SelectedPlanData)return;
+  alert("Payment connection comes in the next step. Your selected plan is ready: TZS "+Number(i1SelectedPlanData.price).toLocaleString());
+});
+document.getElementById("aflUploadTop").onclick=()=>i1OpenSubscription();
+document.getElementById("aflChapChapTop").onclick=()=>window.aflOpenChapChapEditor?.();
+document.getElementById("aflChapSellMini").onclick=()=>window.aflOpenChapChapEditor?.();
 document.getElementById("aflClose").onclick=aflCloseWorld;
 document.getElementById("aflOwnerInquiries").onclick=aflOpenOwnerInquiries;
 document.getElementById("aflOwnerRefresh").onclick=async()=>{const s=await ensureHeavensAnonymousSession();if(s?.user)await aflRefreshOwnerInquiries(s.user.id,false);};
@@ -6728,26 +6787,25 @@ function openBookReader(book,store){
 let startY=0,endY=0;
 
 document.addEventListener("touchstart",(e)=>{
-  startY=e.changedTouches[0].screenY;
-});
+  const t=e.changedTouches[0];
+  if(e.target.closest && (e.target.closest("#smartPanel") || e.target.closest("#smartToggle"))) return;
+  startY=t.screenY;
+},{passive:true});
 
 document.addEventListener("touchend",(e)=>{
+  if(e.target.closest && (e.target.closest("#smartPanel") || e.target.closest("#smartToggle"))) return;
   endY=e.changedTouches[0].screenY;
-  let dy=endY-startY;
+  const dy=endY-startY;
 
   if(dy<-60){
-    smartToggle.style.opacity="1";
-    smartToggle.style.transform="translateY(0)";
+    showSmartToggle();
   }
 
   if(dy>60){
-    smartPanel.classList.remove("show");
-    smartToggle.classList.remove("active");
-    smartToggle.style.opacity="0";
-    smartToggle.style.transform="translateY(100px)";
+    hideSmartToggle();
     controls.classList.remove("show");
   }
-});
+},{passive:true});
 
   /* =========================
    PRELOAD OFFLINE VIDEOS
@@ -6813,42 +6871,86 @@ preloadMedia();
 
 </script>
 <style>
-
-.afl-video-upload-box{margin:10px 0;border:1px solid rgba(0,255,255,.2);border-radius:16px;padding:11px;background:linear-gradient(145deg,rgba(0,255,255,.055),rgba(255,255,255,.018))}.afl-video-upload-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.afl-video-upload-head strong{display:block;color:#dffeff;font-size:11px;letter-spacing:1px}.afl-video-upload-head span{display:block;color:#779095;font-size:8px;letter-spacing:.8px;margin-top:3px}.afl-video-upload-head>#aflVideoBadge{border:1px solid #254348;border-radius:999px;padding:4px 7px;color:#00ffff;white-space:nowrap}.afl-video-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.afl-video-actions button,.afl-video-words-head button{border:1px solid #28545b;background:#071315;color:#cfffff;border-radius:10px;padding:8px 11px;font-weight:900;font-size:9px}.afl-video-status{font-size:8px;color:#71898e;margin-top:7px;line-height:1.35}.afl-video-editor-preview{margin-top:9px}.afl-editor-video-frame{position:relative;border:1px solid #203437;border-radius:14px;overflow:hidden;background:#000;min-height:180px}.afl-editor-video-frame video{display:block;width:100%;max-height:260px;object-fit:contain;background:#000}.afl-editor-video-caption,.afl-video-caption{position:absolute;left:6%;right:6%;bottom:8%;z-index:7;text-align:center;color:#fff;font-size:clamp(10px,2vw,14px);font-weight:900;letter-spacing:.6px;line-height:1.25;text-shadow:0 1px 7px rgba(0,0,0,.85);pointer-events:none;opacity:.86}.afl-video-words-head{display:flex;align-items:center;justify-content:space-between;margin-top:10px}.afl-video-words-head strong{font-size:9px;color:#8fa4a8;letter-spacing:1.2px}.afl-video-words-note{font-size:8px;color:#687d82;margin-top:5px}.afl-video-words{display:grid;gap:7px;margin-top:7px}.afl-video-word-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;border:1px solid #172b2f;border-radius:11px;padding:7px;background:#040809}.afl-video-word-text{width:100%;box-sizing:border-box;border:1px solid #1b3034;border-radius:8px;background:#050909;color:#eaffff;padding:8px;font-size:11px}.afl-video-word-colors{display:flex;gap:4px;flex-wrap:wrap}.afl-video-word-colors .afl-color{width:18px;height:18px}.afl-video-word-remove{border:1px solid #5a3232;background:#160909;color:#ffaaaa;border-radius:8px;padding:7px;font-size:8px;font-weight:900}.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;background:#000;opacity:1;display:none;z-index:3;display:block;box-sizing:border-box}.afl-screen.afl-signage-screen.video-active{background:#000}.afl-screen.afl-signage-screen.video-active .afl-signage-video{object-fit:fill!important;object-position:center center!important}.afl-video-audio-toggle{position:absolute;right:10px;top:10px;z-index:9;border:1px solid rgba(0,255,255,.55);background:rgba(0,10,12,.82);backdrop-filter:blur(8px);color:#dfffff;border-radius:11px;padding:8px 11px;font-size:9px;font-weight:1000;letter-spacing:1px;box-shadow:0 7px 20px rgba(0,0,0,.45);cursor:pointer}.afl-video-audio-toggle:active{transform:translateY(1px) scale(.98)}.afl-signage-screen{background:#000;overflow:hidden}.afl-video-caption{bottom:7%;opacity:.78;font-size:clamp(10px,2.4vw,15px);letter-spacing:1px}
-
-/* I|ONE BILLBOARD MEDIA PRESENTATION */
-.afl-signage-screen{position:relative;background:#000;overflow:hidden}
-.afl-signage-screen>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;background:#000;opacity:1;transition:opacity .72s cubic-bezier(.22,.61,.36,1),transform .72s cubic-bezier(.22,.61,.36,1),filter .72s ease;z-index:2}
-.afl-signage-screen>img.afl-signage-out{opacity:0;transform:scale(1.018);filter:brightness(.82)}
-.afl-signage-screen>img.afl-signage-in{opacity:1;transform:scale(1);filter:none}
-.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;object-fit:fill!important;object-position:center center!important;background:transparent;opacity:0;display:none;z-index:3;box-sizing:border-box;transition:opacity .72s cubic-bezier(.22,.61,.36,1)}
-.afl-signage-video.afl-media-visible{opacity:1}
-.afl-screen.afl-signage-screen.video-active{background:#000}
-.afl-video-audio-toggle{z-index:9}
+/* CHAPCHAP + PREMIUM VIDEO SIGNAGE — additive layer */
+.afl-head-actions{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap!important}.afl-head-actions::-webkit-scrollbar{display:none}
+.afl-chapchap-top{border-color:rgba(255,230,0,.5)!important;color:#ffe600!important;background:linear-gradient(180deg,#191a00,#080900)!important}
+.afl-chap-shelf{margin:8px 10px 2px;border:1px solid rgba(255,230,0,.18);border-radius:18px;background:linear-gradient(145deg,rgba(12,18,19,.98),rgba(2,5,6,.98));box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.05);overflow:hidden}
+.afl-chap-shelf-head{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 5px}.afl-chap-shelf-head strong{display:block;color:#ffe600;font:900 13px Russo One,Arial;letter-spacing:1.7px}.afl-chap-shelf-head span{display:block;color:#7f9297;font-size:8px;letter-spacing:1.2px;margin-top:2px}.afl-chap-shelf-head button{border:1px solid rgba(255,230,0,.35);background:#101300;color:#ffe600;border-radius:10px;padding:7px 10px;font-size:10px;font-weight:900}
+.afl-chap-track{display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:6px 10px 11px;scroll-snap-type:x proximity;scrollbar-width:none}.afl-chap-track::-webkit-scrollbar{display:none}.afl-chap-empty{min-width:100%;padding:13px;text-align:center;color:#66777b;font-size:9px;letter-spacing:1px}
+.afl-chap-mini{position:relative;flex:0 0 112px;height:126px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:#050808;overflow:hidden;scroll-snap-align:start;box-shadow:0 7px 20px rgba(0,0,0,.35);cursor:pointer}.afl-chap-mini-pics{height:82px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#101515}.afl-chap-mini-pics img{width:100%;height:100%;object-fit:cover}.afl-chap-mini-meta{padding:5px 7px}.afl-chap-mini-name{font-size:9px;font-weight:900;color:#eaf8fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-chap-mini-loc{font-size:7px;color:#809296;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-chap-price{position:absolute;right:5px;top:6px;padding:4px 7px;border-radius:999px;color:#050707;font-size:10px;font-weight:1000;box-shadow:0 3px 8px rgba(0,0,0,.35);transform:rotate(-2deg)}
+.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;opacity:0;display:none;transition:opacity .9s ease;z-index:3}.afl-video-audio-toggle{position:absolute;right:10px;top:10px;z-index:8;border:1px solid rgba(0,255,255,.5);background:rgba(0,10,12,.78);backdrop-filter:blur(8px);color:#dfffff;border-radius:999px;padding:7px 10px;font-size:9px;font-weight:900;letter-spacing:.6px;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}.afl-video-audio-toggle:active{transform:scale(.96)}.afl-signage-screen:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.045) 50%,transparent 60%);transform:translateX(-120%);animation:aflSignageShimmer 8s ease-in-out infinite;z-index:4}.afl-signage-screen{background:#000;overflow:hidden}@keyframes aflSignageShimmer{50%{transform:translateX(120%)}}
+.afl-video-upload-box{margin:10px 0;border:1px solid rgba(0,255,255,.2);border-radius:16px;padding:11px;background:linear-gradient(145deg,rgba(0,255,255,.055),rgba(255,255,255,.018))}.afl-video-upload-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.afl-video-upload-head strong{display:block;font-size:11px;letter-spacing:1px;color:#dffeff}.afl-video-upload-head span{display:block;color:#779095;font-size:8px;letter-spacing:.8px;margin-top:3px}.afl-video-upload-head>#aflVideoBadge{border:1px solid #254348;border-radius:999px;padding:4px 7px;color:#00ffff;white-space:nowrap}.afl-video-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.afl-video-actions button{border:1px solid #28545b;background:#071315;color:#cfffff;border-radius:10px;padding:8px 11px;font-weight:900;font-size:9px}.afl-video-status{font-size:8px;color:#71898e;margin-top:7px;line-height:1.35}
+.afl-chap-overlay{position:fixed;inset:0;z-index:10080;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(12px);padding:10px;box-sizing:border-box}.afl-chap-card,.afl-chap-detail-card{width:min(700px,100%);max-height:calc(100dvh - 20px);overflow:auto;border:1px solid rgba(255,230,0,.28);border-radius:22px;background:linear-gradient(145deg,#0a1011,#020505);box-shadow:0 30px 90px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.07);padding:13px}.afl-chap-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.afl-chap-kicker{font-size:8px;color:#ffe600;letter-spacing:1.8px}.afl-chap-head h2{margin:4px 0 2px;font:900 23px Russo One,Arial;color:#fff}.afl-chap-head p{margin:0;color:#73878b;font-size:9px}.afl-chap-form{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.afl-chap-field{min-width:0}.afl-chap-field.full,.afl-chap-dynamic{grid-column:1/-1}.afl-chap-field label{display:block;color:#789096;font-size:8px;font-weight:900;letter-spacing:1px;margin-bottom:4px}.afl-chap-field input,.afl-chap-field select,.afl-chap-field textarea{width:100%;box-sizing:border-box;background:#050909;color:#eaffff;border:1px solid #1b3034;border-radius:10px;padding:10px;font-size:12px;outline:none}.afl-chap-field textarea{min-height:85px;resize:vertical}.afl-chap-dynamic{display:grid;grid-template-columns:1fr 1fr;gap:9px}.afl-chap-photo-row{grid-column:1/-1;display:flex;gap:7px}.afl-chap-photo-row button,.afl-chap-submit{border:1px solid #31545a;background:#071416;color:#eaffff;border-radius:11px;padding:10px 12px;font-size:10px;font-weight:900}.afl-chap-submit{grid-column:1/-1;background:linear-gradient(135deg,#ffe600,#ffbd00);color:#080900;border:0;box-shadow:0 5px 0 #765900}.afl-chap-photo-note,.afl-chap-status{grid-column:1/-1;color:#71868a;font-size:8px;line-height:1.4}.afl-chap-image-preview{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}.afl-chap-image-preview img{width:100%;height:130px;object-fit:cover;border-radius:12px;border:1px solid #203437}.afl-chap-price-colors{display:flex;gap:6px;flex-wrap:wrap}.afl-chap-price-colors button{width:28px;height:28px;border-radius:50%;border:2px solid transparent}.afl-chap-price-colors button.selected{border-color:#fff;box-shadow:0 0 0 2px #ffe600}.afl-chap-price-preview{grid-column:1/-1;text-align:center;color:#7b8d91;font-size:9px;padding:9px}.afl-chap-detail-card{position:relative}.afl-chap-detail-card>.afl-close{position:sticky;top:0;float:right;z-index:5}.afl-chap-detail-main{clear:both;padding-top:8px}.afl-chap-detail-pics{display:grid;grid-template-columns:1fr 1fr;gap:7px}.afl-chap-detail-pics img{width:100%;height:min(42vh,330px);object-fit:contain;background:#020303;border-radius:16px}.afl-chap-detail-price{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:999px;font-weight:1000;font-size:20px;color:#050707}.afl-chap-detail-title{font:900 clamp(24px,7vw,38px) Russo One,Arial;margin-top:12px}.afl-chap-detail-sub{color:#7f9296;font-size:10px;margin-top:5px}.afl-chap-detail-desc{margin-top:14px;line-height:1.55;color:#d3e1e3;font-size:13px}.afl-chap-detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.afl-chap-detail-actions a{flex:1;min-width:130px;text-align:center;text-decoration:none;border-radius:12px;padding:12px;font-size:11px;font-weight:1000}.afl-call-btn{background:#00ffff;color:#001010}.afl-wa-btn{background:#59ff8a;color:#031006}.afl-close-btn{background:#101719;color:#eaffff;border:1px solid #2b4246}
+@media(max-width:560px){.afl-chap-form,.afl-chap-dynamic{grid-template-columns:1fr}.afl-chap-field.full,.afl-chap-dynamic{grid-column:auto}.afl-chap-photo-row{grid-column:auto}.afl-chap-submit,.afl-chap-photo-note,.afl-chap-status,.afl-chap-image-preview,.afl-chap-price-preview{grid-column:1}.afl-chap-mini{flex-basis:104px;height:120px}.afl-head-actions .afl-top-btn{padding:7px 9px;font-size:9px}}
 </style>
-
 <script>
-/* ================= BILLBOARD MEDIA BINDINGS ================= */
 (function(){
-  function bindVideoFit(){
-    document.querySelectorAll('.afl-signage-video').forEach(v=>{
-      v.style.objectFit='fill';
-      v.style.objectPosition='center center';
-      const screen=v.closest('.afl-signage-screen');
-      if(screen) screen.classList.add('video-active');
-    });
-  }
-  function install(){bindVideoFit();}
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',install,{once:true});
-  else install();
-  new MutationObserver(bindVideoFit).observe(document.documentElement,{childList:true,subtree:true});
+  const PRICE_COLORS=['#ffe600','#00ffff','#59ff8a','#ff9d38','#ff5d8f','#ffffff','#a78bfa'];
+  let chapImages=[], chapPriceColor=PRICE_COLORS[0], chapListings=[];
+  let currentVideoFile=null,currentVideoRemove=false,currentVideoExisting=null;
+  const catFields={
+    phone:[['brand','BRAND','text'],['model','MODEL','text'],['storage','STORAGE','text'],['ram','RAM','text'],['condition','CONDITION','text'],['battery','BATTERY CONDITION','text']],
+    watch:[['brand','BRAND','text'],['model','MODEL','text'],['movement','MOVEMENT','text'],['condition','CONDITION','text'],['material','MATERIAL','text']],
+    laptop:[['brand','BRAND','text'],['model','MODEL','text'],['processor','PROCESSOR','text'],['ram','RAM','text'],['storage','STORAGE','text'],['condition','CONDITION','text']],
+    electronics:[['brand','BRAND / TYPE','text'],['model','MODEL','text'],['condition','CONDITION','text'],['warranty','WARRANTY','text']],
+    vehicle:[['make','MAKE','text'],['model','MODEL','text'],['year','YEAR','number'],['mileage','MILEAGE','text'],['condition','CONDITION','text']],
+    shoes:[['brand','BRAND','text'],['size','SIZE','text'],['condition','CONDITION','text']],
+    clothes:[['brand','BRAND','text'],['size','SIZE','text'],['condition','CONDITION','text']],
+    furniture:[['type','TYPE','text'],['material','MATERIAL','text'],['condition','CONDITION','text']],
+    property:[['type','PROPERTY TYPE','text'],['area','AREA / SIZE','text'],['location','PROPERTY LOCATION','text'],['condition','CONDITION','text']],
+    other:[['item','ITEM NAME','text'],['condition','CONDITION','text']]
+  };
+  const cats=[['phone','📱 PHONE'],['watch','⌚ WATCH'],['laptop','💻 LAPTOP'],['electronics','🎧 ELECTRONICS'],['vehicle','🚗 VEHICLE'],['shoes','👟 SHOES'],['clothes','👕 CLOTHES'],['furniture','🪑 FURNITURE'],['property','🏠 PROPERTY'],['other','📦 OTHER']];
+  function esc(v){return aflEscape(v)}
+  function initCats(){const s=document.getElementById('aflChapCategory');if(!s)return;s.innerHTML=cats.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');s.onchange=renderFields;renderFields();renderPriceColors();updatePricePreview();}
+  function renderFields(){const c=document.getElementById('aflChapCategory')?.value||'phone',el=document.getElementById('aflChapDynamicFields');if(!el)return;el.innerHTML=(catFields[c]||catFields.other).map(([k,l,t])=>`<div class="afl-chap-field"><label>${l}</label><input id="aflChapF_${k}" type="${t}" maxlength="80"></div>`).join('')}
+  function renderPriceColors(){const el=document.getElementById('aflChapPriceColors');if(!el)return;el.innerHTML=PRICE_COLORS.map(c=>`<button type="button" style="background:${c}" class="${c===chapPriceColor?'selected':''}" data-c="${c}"></button>`).join('');el.querySelectorAll('button').forEach(b=>b.onclick=()=>{chapPriceColor=b.dataset.c;renderPriceColors();updatePricePreview()})}
+  function updatePricePreview(){const p=Number(document.getElementById('aflChapPrice')?.value||0),el=document.getElementById('aflChapPricePreview');if(el)el.innerHTML=p?`PRICE PREVIEW <strong style="display:inline-block;margin-left:7px;background:${chapPriceColor};color:#050707;border-radius:999px;padding:5px 10px">TZS ${p.toLocaleString()}</strong>`:'PRICE WILL APPEAR HERE'}
+  async function validateImages(){if(chapImages.length!==2)throw new Error('Please add exactly 2 product images.');}
+  function renderChapImages(){const el=document.getElementById('aflChapImagePreview');if(!el)return;el.innerHTML=chapImages.map((x,i)=>`<div><img src="${x.preview}" alt="Product ${i+1}"></div>`).join('')}
+  async function readChapFiles(list){const files=Array.from(list||[]).filter(f=>f.type.startsWith('image/'));if(!files.length)return;for(const f of files){if(chapImages.length>=2)break;const u=URL.createObjectURL(f);chapImages.push({file:f,preview:u});}renderChapImages();document.getElementById('aflChapStatus').textContent=`${chapImages.length}/2 IMAGES READY`;}
+  function resetChap(){chapImages.forEach(x=>URL.revokeObjectURL(x.preview));chapImages=[];document.getElementById('aflChapSellerName').value='';document.getElementById('aflChapPhone').value='';document.getElementById('aflChapLocation').value='';document.getElementById('aflChapPrice').value='';document.getElementById('aflChapDescription').value='';document.getElementById('aflChapImagePreview').innerHTML='';document.getElementById('aflChapStatus').textContent='';initCats();}
+  function openEditor(){resetChap();const o=document.getElementById('aflChapChapEditor');o.style.display='flex';o.setAttribute('aria-hidden','false');}
+  function closeEditor(){const o=document.getElementById('aflChapChapEditor');o.style.display='none';o.setAttribute('aria-hidden','true');resetChap();}
+  async function getRate(){const r=await fetch('https://open.er-api.com/v6/latest/TZS',{cache:'no-store'});if(!r.ok)throw new Error('Could not retrieve the current exchange rate.');const j=await r.json();const usd=Number(j?.rates?.USD);if(!Number.isFinite(usd)||usd<=0)throw new Error('Current USD exchange rate is unavailable.');return usd;}
+  function collectFields(){const c=document.getElementById('aflChapCategory').value,data={};for(const [k,l] of (catFields[c]||catFields.other)){data[k]=String(document.getElementById('aflChapF_'+k)?.value||'').trim()}return data}
+  async function uploadChapImage(file,uid){const safe=String(file.name||'product').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80),path=`${uid}/chapchap/${crypto.randomUUID()}-${safe}`;const {error}=await heavensSupabase.storage.from('afrilink-marketing').upload(path,file,{cacheControl:'31536000',upsert:false,contentType:file.type||'image/jpeg'});if(error)throw error;const {data}=heavensSupabase.storage.from('afrilink-marketing').getPublicUrl(path);return {path,url:data.publicUrl}}
+  async function publishChap(){const st=document.getElementById('aflChapStatus'),btn=document.getElementById('aflChapSubmit');try{btn.disabled=true;st.textContent='CHECKING…';const s=await ensureHeavensAnonymousSession();const uid=s?.user?.id;if(!uid)throw new Error('Secure seller session is unavailable.');const name=document.getElementById('aflChapSellerName').value.trim(),phone=document.getElementById('aflChapPhone').value.trim(),cat=document.getElementById('aflChapCategory').value,loc=document.getElementById('aflChapLocation').value.trim(),price=Number(document.getElementById('aflChapPrice').value||0),desc=document.getElementById('aflChapDescription').value.trim();if(!name||!phone||!loc)throw new Error('Please complete seller name, phone and location.');if(!Number.isFinite(price)||price<=0)throw new Error('Enter a valid TZS price.');await validateImages();st.textContent='GETTING LIVE USD RATE…';const rate=await getRate();const usd=price*rate;st.textContent='UPLOADING 2 PHOTOS…';const ups=[];for(const x of chapImages)ups.push(await uploadChapImage(x.file,uid));const {error}=await heavensSupabase.from('afrilink_chapchap_listings').insert({seller_id:uid,seller_name:name,seller_phone:phone,category:cat,product_data:collectFields(),location:loc,price_tzs:Math.round(price),price_usd:Number(usd.toFixed(2)),exchange_rate_usd_per_tzs:rate,exchange_rate_at:new Date().toISOString(),price_tag_color:chapPriceColor,description:desc,image1_path:ups[0].path,image1_url:ups[0].url,image2_path:ups[1].path,image2_url:ups[1].url,status:'active'});if(error)throw error;st.textContent='CHAPCHAP PUBLISHED ✓';setTimeout(()=>{closeEditor();loadChapChap();},700)}catch(e){console.error(e);st.textContent=e?.message||'Could not publish seller item.'}finally{btn.disabled=false}}
+  async function loadChapChap(){const track=document.getElementById('aflChapChapTrack');if(!track)return;try{const {data,error}=await heavensSupabase.from('afrilink_chapchap_listings').select('*').eq('status','active').order('created_at',{ascending:false}).limit(60);if(error)throw error;chapListings=data||[];if(!chapListings.length){track.innerHTML='<div class="afl-chap-empty">BE THE FIRST TO SELL SOMETHING HERE</div>';return}track.innerHTML='';chapListings.forEach(x=>{const c=document.createElement('button');c.type='button';c.className='afl-chap-mini';c.innerHTML=`<div class="afl-chap-mini-pics"><img src="${esc(x.image1_url)}" alt=""><img src="${esc(x.image2_url)}" alt=""></div><div class="afl-chap-mini-meta"><div class="afl-chap-mini-name">${esc(x.seller_name)}</div><div class="afl-chap-mini-loc">${esc(x.location)}</div></div><span class="afl-chap-price" style="background:${esc(x.price_tag_color||'#ffe600')}">$${Number(x.price_usd||0).toFixed(2)}</span>`;c.onclick=()=>openDetail(x);track.appendChild(c)})}catch(e){track.innerHTML='<div class="afl-chap-empty">CHAPCHAP IS TEMPORARILY UNAVAILABLE</div>';console.warn('ChapChap:',e)}}
+  function openDetail(x){const b=document.getElementById('aflChapDetailBody'),tag=esc(x.price_tag_color||'#ffe600'),d=x.product_data||{};const fields=Object.entries(d).filter(([,v])=>String(v||'').trim()).map(([k,v])=>`<div style="padding:7px 0;border-bottom:1px solid #132225"><strong style="color:#7e969a;font-size:8px">${esc(k.replace(/_/g,' ').toUpperCase())}</strong><div style="font-size:12px;margin-top:2px">${esc(v)}</div></div>`).join('');const wa=String(x.seller_phone||'').replace(/[^0-9]/g,'');b.innerHTML=`<div class="afl-chap-detail-main"><div class="afl-chap-detail-pics"><img src="${esc(x.image1_url)}" alt=""><img src="${esc(x.image2_url)}" alt=""></div><span class="afl-chap-detail-price" style="background:${tag}">$${Number(x.price_usd||0).toFixed(2)}</span><div class="afl-chap-detail-title">${esc((d.model||d.item||d.type||x.category||'PRODUCT').toString())}</div><div class="afl-chap-detail-sub">${esc(x.seller_name)} • ${esc(x.location)} • ${esc(x.category)}</div><div class="afl-chap-detail-desc">${esc(x.description||'')}</div><div style="margin-top:12px">${fields}</div><div class="afl-chap-detail-actions"><a class="afl-call-btn" href="tel:+${wa}">☎ CALL SELLER</a><a class="afl-wa-btn" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent('Hello '+x.seller_name+', I saw your item on AFRILINK CHAPCHAP.')}">◉ WHATSAPP</a></div></div>`;const o=document.getElementById('aflChapChapDetail');o.style.display='flex';o.setAttribute('aria-hidden','false')}
+  function closeDetail(){const o=document.getElementById('aflChapChapDetail');o.style.display='none';o.setAttribute('aria-hidden','true')}
+  async function attachVideoUI(){const input=document.getElementById('aflBillboardVideo'),pick=document.getElementById('aflPickBillboardVideo'),remove=document.getElementById('aflRemoveBillboardVideo'),status=document.getElementById('aflBillboardVideoStatus');if(!input||!pick)return;if(!input.dataset.bound){input.dataset.bound='1';pick.onclick=()=>input.click();remove.onclick=()=>{currentVideoFile=null;currentVideoRemove=true;currentVideoExisting=null;remove.style.display='none';status.textContent='VIDEO REMOVED • IMAGES WILL LOOP';};input.onchange=()=>{const f=input.files?.[0];if(!f)return;const v=document.createElement('video');v.preload='metadata';v.onloadedmetadata=()=>{URL.revokeObjectURL(v.src);if(!Number.isFinite(v.duration)||v.duration>300){input.value='';currentVideoFile=null;status.textContent='VIDEO MUST BE 5 MINUTES OR LESS.';return}currentVideoFile=f;currentVideoRemove=false;remove.style.display='inline-block';status.textContent=`VIDEO READY • ${Math.floor(v.duration/60)}:${String(Math.floor(v.duration%60)).padStart(2,'0')} • PLAYS FIRST`;};v.src=URL.createObjectURL(f)}}}
+  const originalOpen=window.aflOpenEditor;
+  const originalPublish=window.aflPublish;
+  const originalClose=window.aflCloseEditor;
+  window.aflOpenChapChapEditor=openEditor;
+  window.aflOpenEditor=async function(mode='publish',existing=null){currentVideoFile=null;currentVideoRemove=false;currentVideoExisting=null;await originalOpen(mode,existing);await attachVideoUI();if(existing){const s=await ensureHeavensAnonymousSession();const uid=s?.user?.id;if(uid){const {data:b}=await heavensSupabase.from('afrilink_billboards').select('video_url,video_path,video_duration_sec').eq('id',existing.id).maybeSingle();if(b?.video_url){currentVideoExisting=b;document.getElementById('aflRemoveBillboardVideo').style.display='inline-block';document.getElementById('aflBillboardVideoStatus').textContent=`CURRENT VIDEO • ${Math.floor(Number(b.video_duration_sec||0)/60)}:${String(Math.floor(Number(b.video_duration_sec||0)%60)).padStart(2,'0')} • REPLACE OR REMOVE`;}}}}
+  async function publishWithVideo(){const f=currentVideoFile,remove=currentVideoRemove,old=currentVideoExisting;await originalPublish();setTimeout(async()=>{try{const s=await ensureHeavensAnonymousSession();const uid=s?.user?.id;if(!uid)return;const {data:b}=await heavensSupabase.from('afrilink_billboards').select('id,video_path').eq('owner_id',uid).maybeSingle();if(!b)return;if(remove&&!f&&b.video_path){try{await heavensSupabase.storage.from('afrilink-marketing').remove([b.video_path])}catch(_){}await heavensSupabase.from('afrilink_billboards').update({video_path:null,video_url:null,video_duration_sec:null}).eq('id',b.id)}else if(f){document.getElementById('aflEditorStatus')?.replaceChildren();const v=document.createElement('video');v.preload='metadata';v.onloadedmetadata=async()=>{try{const dur=v.duration;const safe=String(f.name||'billboard-video').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-90),path=`${uid}/billboard-video/${crypto.randomUUID()}-${safe}`;const up=await heavensSupabase.storage.from('afrilink-marketing').upload(path,f,{cacheControl:'31536000',upsert:false,contentType:f.type||'video/mp4'});if(up.error)throw up.error;const pub=heavensSupabase.storage.from('afrilink-marketing').getPublicUrl(path);if(b.video_path&&b.video_path!==path){try{await heavensSupabase.storage.from('afrilink-marketing').remove([b.video_path])}catch(_){} }const ur=await heavensSupabase.from('afrilink_billboards').update({video_path:path,video_url:pub.data.publicUrl,video_duration_sec:Number(dur.toFixed(2))}).eq('id',b.id);if(ur.error)throw ur.error;await aflLoadFeed()}catch(e){console.error('Billboard video save:',e)}};v.src=URL.createObjectURL(f)}}catch(e){console.error('Billboard video finalize:',e)}},1100)}
+  // The existing save button was wired directly to the original function; replace that handler after DOM initialization.
+  const save=document.getElementById('aflEditorSave');if(save)save.onclick=publishWithVideo;
+  document.getElementById('aflChapPrice')?.addEventListener('input',updatePricePreview);
+  document.getElementById('aflChapFilesBtn')?.addEventListener('click',()=>document.getElementById('aflChapImages').click());
+  document.getElementById('aflChapCameraBtn')?.addEventListener('click',()=>document.getElementById('aflChapCamera').click());
+  document.getElementById('aflChapImages')?.addEventListener('change',e=>{readChapFiles(e.target.files);e.target.value=''});
+  document.getElementById('aflChapCamera')?.addEventListener('change',e=>{readChapFiles(e.target.files);e.target.value=''});
+  document.getElementById('aflChapSubmit')?.addEventListener('click',publishChap);
+  document.getElementById('aflChapClose')?.addEventListener('click',closeEditor);
+  document.getElementById('aflChapDetailClose')?.addEventListener('click',closeDetail);
+  document.getElementById('aflChapSellMini')?.addEventListener('click',openEditor);
+  document.getElementById('aflClose')?.addEventListener('click',()=>{closeEditor();closeDetail()});
+  const oldOpenWorld=window.aflOpenWorld;
+  // Open the shelf every time AFRILINK opens without changing the existing billboard loader.
+  const openBtn=document.getElementById('openAfrilink');
+  if(openBtn)openBtn.addEventListener('click',()=>setTimeout(loadChapChap,250));
+  document.getElementById('aflBillboardVideoBox')?.addEventListener('click',()=>attachVideoUI());
+  initCats();renderPriceColors();
 })();
 </script>
 </body>
 </html>
 <script>
 /* =========================================================
-   I|ONE SHINE + CLIENT BOOK INBOX UPGRADE
+   AFRILINK SHINE + CLIENT BOOK INBOX UPGRADE
    - video-only live controls inside chat
    - true front/rear camera buttons
    - one-shot VIEW NEW breathing
@@ -6945,7 +7047,7 @@ preloadMedia();
     book=document.createElement('div');book.className='afl-owner-book';book._cards=cards;book._current=0;
     const cover=document.createElement('div');cover.className='afl-owner-book-cover';cover.innerHTML='<div class="afl-owner-book-cover-fallback">'+escapeHtml(brandName)+'</div>';
     const brand=document.createElement('div');brand.className='afl-owner-book-brand';brand.textContent=brandName;
-    const sub=document.createElement('div');sub.className='afl-owner-book-sub';sub.textContent='PRIVATE CLIENT BOOK • I|ONE';
+    const sub=document.createElement('div');sub.className='afl-owner-book-sub';sub.textContent='PRIVATE CLIENT BOOK • AFRILINK';
     const nav=document.createElement('div');nav.className='afl-owner-book-nav';nav.innerHTML='<button type="button" class="afl-book-nav-btn afl-book-prev">‹ PREVIOUS</button><div class="afl-book-page-count">PAGE 1 / '+cards.length+'</div><button type="button" class="afl-book-nav-btn afl-book-next">NEXT ›</button>';
     const alert=document.createElement('button');alert.type='button';alert.className='afl-book-new-alert';alert.textContent='NEW CLIENT INFORMATION';
     const pages=document.createElement('div');pages.className='afl-book-pages';cards.forEach(c=>pages.appendChild(c));
@@ -7037,7 +7139,7 @@ preloadMedia();
 
 <script>
 /* =========================================================
-   I|ONE POLISH PATCH • INLINE CAMERA + CLIENT VIEW NEW +
+   AFRILINK POLISH PATCH • INLINE CAMERA + CLIENT VIEW NEW +
    FULL BRAND CLIENT BOOK
    ========================================================= */
 (function(){
@@ -7113,7 +7215,7 @@ preloadMedia();
     if(screen)return screen;
     const cards=book._cards||[...book.querySelectorAll('.afl-inquiry-card')];
     const first=cards[0];
-    const brandName=book.querySelector('.afl-owner-book-brand')?.textContent||'I|ONE';
+    const brandName=book.querySelector('.afl-owner-book-brand')?.textContent||'AFRILINK';
     const src=bookCoverImage(book);
     screen=document.createElement('div');
     screen.className='afl-book-cover-screen';
@@ -7123,7 +7225,7 @@ preloadMedia();
     if(src){const img=document.createElement('img');img.src=src;img.alt='Brand cover';main.appendChild(img);}
     else{const fallback=document.createElement('div');fallback.className='afl-book-cover-screen-fallback';fallback.textContent=brandName;main.appendChild(fallback);}
     const title=document.createElement('div');title.className='afl-book-cover-screen-title';title.textContent=brandName;
-    const sub=document.createElement('div');sub.className='afl-book-cover-screen-sub';sub.textContent='PRIVATE CLIENT INFORMATION BOOK • I|ONE';
+    const sub=document.createElement('div');sub.className='afl-book-cover-screen-sub';sub.textContent='PRIVATE CLIENT INFORMATION BOOK • AFRILINK';
     const enter=document.createElement('button');enter.type='button';enter.className='afl-book-enter';enter.textContent='VIEW INFOS';
     const alert=document.createElement('button');alert.type='button';alert.className='afl-book-cover-alert';alert.textContent='NEW INFO';
     screen.append(bg,main,title,sub,enter,alert);
@@ -7279,7 +7381,7 @@ preloadMedia();
 </script>
 <script>
 (function(){
-  /* FINAL I|ONE BOOK + CAMERA PATCH */
+  /* FINAL AFRILINK BOOK + CAMERA PATCH */
   const s=document.createElement('style');
   s.textContent=`
     /* Keep accepted live video INSIDE the chat at all times. */
@@ -7375,14 +7477,14 @@ preloadMedia();
     let book=document.getElementById('aflDefBrandBook');
     if(book){book.remove();}
     const first=cards[0];
-    const brand=first.querySelector('.afl-inquiry-title')?.textContent?.split(' • ')[0]||'I|ONE';
+    const brand=first.querySelector('.afl-inquiry-title')?.textContent?.split(' • ')[0]||'AFRILINK';
     book=document.createElement('div');book.id='aflDefBrandBook';book.className='afl-def-book';
     const cover=document.createElement('section');cover.className='afl-def-book-cover';
     const bg=document.createElement('div');bg.className='afl-def-book-cover-bg';
     const art=document.createElement('div');art.className='afl-def-book-cover-art';
     const fallback=document.createElement('div');fallback.className='afl-def-book-cover-fallback';fallback.textContent=brand;art.appendChild(fallback);
     const title=document.createElement('div');title.className='afl-def-book-title';title.textContent=brand;
-    const sub=document.createElement('div');sub.className='afl-def-book-sub';sub.textContent='PRIVATE CLIENT INFORMATION • I|ONE';
+    const sub=document.createElement('div');sub.className='afl-def-book-sub';sub.textContent='PRIVATE CLIENT INFORMATION • AFRILINK';
     const enter=document.createElement('button');enter.type='button';enter.className='afl-def-book-enter';enter.textContent='VIEW INFOS';
     const coverAlert=document.createElement('button');coverAlert.type='button';coverAlert.className='afl-def-book-alert';coverAlert.textContent='NEW INFO';
     cover.append(bg,art,title,sub,enter,coverAlert);
@@ -7444,14 +7546,14 @@ preloadMedia();
     window.aflOpenOwnerInquiries=async function(){
       await currentOpen.apply(this,arguments);
       const list=document.getElementById('aflOwnerInquiryList');
-      setTimeout(()=>buildDefBook().catch(e=>console.warn('I|ONE book:',e)),0);
+      setTimeout(()=>buildDefBook().catch(e=>console.warn('AFRILINK book:',e)),0);
     };
   }
   const currentRefresh=window.aflRefreshOwnerInquiries;
   if(typeof currentRefresh==='function'){
     window.aflRefreshOwnerInquiries=async function(uid,silent=false){
       await currentRefresh.apply(this,arguments);
-      setTimeout(()=>buildDefBook().catch(e=>console.warn('I|ONE book refresh:',e)),0);
+      setTimeout(()=>buildDefBook().catch(e=>console.warn('AFRILINK book refresh:',e)),0);
     };
   }
 
@@ -7566,7 +7668,7 @@ preloadMedia();
 
 <script>
 /* =========================================================
-   I|ONE FINAL BOOK ENTRY FIX
+   AFRILINK FINAL BOOK ENTRY FIX
    The original click handler was attached before the later
    book wrappers were installed. Rebind the actual UI button
    to the final window function and keep the book authoritative.
@@ -7589,7 +7691,7 @@ preloadMedia();
   async function openFinalBrandBook(){
     const s=await ensureHeavensAnonymousSession();
     const uid=s?.user?.id;
-    if(!uid){alert('Please open I|ONE again so your brand inbox can be connected.');return;}
+    if(!uid){alert('Please open AFRILINK again so your brand inbox can be connected.');return;}
 
     const fn=window.aflOpenOwnerInquiries;
     if(typeof fn!=='function')return;
@@ -7620,7 +7722,7 @@ preloadMedia();
       e.preventDefault();
       e.stopPropagation();
       openFinalBrandBook().catch(err=>{
-        console.error('I|ONE final book open:',err);
+        console.error('AFRILINK final book open:',err);
       });
     };
   }
@@ -7639,7 +7741,7 @@ preloadMedia();
           const book=document.getElementById('aflDefBrandBook');
           if(book&&book._showPage)book._showPage(book._page||0);
         },100);
-      }catch(err){console.warn('I|ONE book refresh:',err);}
+      }catch(err){console.warn('AFRILINK book refresh:',err);}
     };
   }
 
@@ -7688,7 +7790,7 @@ preloadMedia();
           const img=document.createElement('img');img.src=url;img.alt='Brand cover';main.appendChild(img);
         }
       }
-    }catch(err){console.warn('I|ONE cover image:',err);}
+    }catch(err){console.warn('AFRILINK cover image:',err);}
   }
 
   async function stabilizeBook(){
@@ -7730,7 +7832,7 @@ preloadMedia();
 
 <script>
 /* =========================================================
-   I|ONE • AUTHORITATIVE BRAND CLIENT BOOK
+   AFRILINK • AUTHORITATIVE BRAND CLIENT BOOK
    This final layer owns the Brand Inbox UI. It does not depend
    on any of the earlier experimental book wrappers.
 ========================================================= */
@@ -7836,17 +7938,6 @@ preloadMedia();
     OLD_IDS.forEach(id=>document.getElementById(id)?.remove());
     document.querySelectorAll('#aflOwnerInquiryList > .afl-owner-book').forEach(x=>x.remove());
   }
-  async function getOwnerBrandCover(uid){
-    if(!uid)return '';
-    try{
-      const b=await heavensSupabase.from('afrilink_billboards').select('id,brand_name,created_at').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1).maybeSingle();
-      const bid=b?.data?.id||'';
-      if(!bid)return '';
-      const r=await heavensSupabase.from('afrilink_billboard_items').select('image_url').eq('billboard_id',bid).eq('active',true).order('sort_order',{ascending:true}).order('created_at',{ascending:true}).limit(1).maybeSingle();
-      return r?.data?.image_url||'';
-    }catch(_){return '';}
-  }
-
   async function renderBook(uid,keepId){
     const list=document.getElementById('aflOwnerInquiryList');if(!list)return null;
     clearOldGenerated();
@@ -7857,10 +7948,10 @@ preloadMedia();
     const cover=document.createElement('section');cover.className='afl-rbb-cover';
     const bg=document.createElement('div');bg.className='afl-rbb-cover-bg';
     const main=document.createElement('div');main.className='afl-rbb-cover-main';
-    const fallback=document.createElement('div');fallback.className='afl-rbb-cover-fallback';fallback.textContent=(aflFeedRows?.[0]?.billboard?.brand_name||'I|ONE').toUpperCase();main.appendChild(fallback);
+    const fallback=document.createElement('div');fallback.className='afl-rbb-cover-fallback';fallback.textContent=(aflFeedRows?.[0]?.billboard?.brand_name||'AFRILINK').toUpperCase();main.appendChild(fallback);
     const shine=document.createElement('div');shine.className='afl-rbb-cover-shine';
     const bottom=document.createElement('div');bottom.className='afl-rbb-cover-bottom';
-    const title=document.createElement('div');title.className='afl-rbb-cover-title';title.textContent=(aflFeedRows?.[0]?.billboard?.brand_name||'I|ONE').toUpperCase();
+    const title=document.createElement('div');title.className='afl-rbb-cover-title';title.textContent=(aflFeedRows?.[0]?.billboard?.brand_name||'AFRILINK').toUpperCase();
     const sub=document.createElement('div');sub.className='afl-rbb-cover-sub';sub.textContent='PRIVATE CLIENT BOOK • HOME OF MARKETING';
     const view=document.createElement('button');view.type='button';view.className='afl-rbb-view';view.textContent='VIEW INFOS';
     bottom.append(title,sub,view);cover.append(bg,main,shine,bottom);
@@ -7879,7 +7970,8 @@ preloadMedia();
     book.append(cover,pages,nav,alert);list.appendChild(book);
     book._pages=[];book._page=0;book._uid=uid;book._newIndex=-1;book._ready=false;book._opened=false;
 
-    const immediateCover=await getOwnerBrandCover(uid);
+    const firstRow=aflFeedRows?.[0];
+    const immediateCover=firstRow?.slides?.[0]?.image_url||'';
     if(immediateCover){
       bg.style.backgroundImage=`url("${immediateCover.replace(/"/g,'&quot;')}")`;
       main.innerHTML='';const im=document.createElement('img');im.src=immediateCover;im.alt='Brand cover';main.appendChild(im);
@@ -7928,10 +8020,11 @@ preloadMedia();
     if(book._opened)showPage(Number(book._pendingOpenIndex||0),'next');
     else showPage(0,'next');
 
-    /* Keep the cover tied to the current brand owner only. Never use another brand's feed image. */
-    if(immediateCover&&document.body.contains(book)){
-      bg.style.backgroundImage=`url("${immediateCover.replace(/"/g,'&quot;')}")`;
-      main.innerHTML='';const img=document.createElement('img');img.src=immediateCover;img.alt='Brand cover';main.appendChild(img);
+    const firstCard=cards[0];
+    const coverUrl=await getCover(firstCard);
+    if(coverUrl&&document.body.contains(book)){
+      bg.style.backgroundImage=`url("${coverUrl.replace(/"/g,'&quot;')}")`;
+      main.innerHTML='';const img=document.createElement('img');img.src=coverUrl;img.alt='Brand cover';main.appendChild(img);
     }
     return book;
   }
@@ -8011,47 +8104,5 @@ preloadMedia();
     window.__aflLegacyBookCleanObserver.observe(list,{childList:true,subtree:false});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
-})();
-</script>
-
-<script>
-/* 421KB SAFE PATCH: stop only the legacy inbox refresh from replacing the real book. */
-(function(){
-  function protectBook(){
-    const book=document.getElementById('aflRealBrandBook');
-    const overlay=document.getElementById('aflOwnerOverlay');
-    if(!book||!overlay||overlay.getAttribute('aria-hidden')!=='false') return;
-    const head=overlay.querySelector('.afl-service-head');
-    if(head) head.style.display='none';
-  }
-
-  function install(){
-    const original=window.aflRefreshOwnerInquiries;
-    if(typeof original==='function' && !window.__afl421RefreshGuard){
-      window.__afl421RefreshGuard=true;
-      window.aflRefreshOwnerInquiries=async function(uid,silent){
-        if(document.getElementById('aflRealBrandBook')){
-          protectBook();
-          return;
-        }
-        return original.apply(this,arguments);
-      };
-    }
-
-    const overlay=document.getElementById('aflOwnerOverlay');
-    if(overlay && !window.__afl421BookGuard){
-      window.__afl421BookGuard=new MutationObserver(function(){
-        protectBook();
-      });
-      window.__afl421BookGuard.observe(overlay,{childList:true,subtree:true});
-    }
-    protectBook();
-  }
-
-  if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0),{once:true});
-  }else{
-    setTimeout(install,0);
-  }
 })();
 </script>
