@@ -1178,7 +1178,8 @@ City tour — TZS 80,000"></textarea>
     <div id="aflBillboardVideoBox" class="afl-video-upload-box">
       <div class="afl-video-upload-head"><div><strong>SMART BILLBOARD VIDEO</strong><span>ONE VIDEO • MAXIMUM 5 MINUTES • PLAYS FIRST • SOUND AVAILABLE</span></div><span id="aflVideoBadge">OPTIONAL</span></div>
       <input id="aflBillboardVideo" class="afl-file-input" type="file" accept="video/mp4,video/webm,video/quicktime,video/*">
-      <div class="afl-video-actions"><button id="aflPickBillboardVideo" type="button">ADD VIDEO</button><button id="aflRemoveBillboardVideo" type="button" style="display:none">REMOVE VIDEO</button></div>
+      <input id="aflBillboardVideoCamera" class="afl-file-input" type="file" accept="video/*" capture="environment">
+      <div class="afl-video-actions"><button id="aflPickBillboardVideo" type="button">CHOOSE VIDEO</button><button id="aflCaptureBillboardVideo" type="button">RECORD WITH CAMERA</button><button id="aflRemoveBillboardVideo" type="button" style="display:none">REMOVE VIDEO</button></div>
       <div id="aflBillboardVideoStatus" class="afl-video-status">VIDEO → IMAGES → FINAL IMAGE → VIDEO</div>
       <div class="afl-video-words-head"><strong>VIDEO WORDS</strong><button id="aflAddVideoWord" type="button">＋ ADD WORD</button></div>
       <div class="afl-video-words-note">Add one or more transparent words/sentences. They rotate softly along the bottom of the video.</div>
@@ -2307,6 +2308,7 @@ function aflRenderVideoWords(){
 function aflRenderVideoEditorPreview(){
   const box=document.getElementById("aflBillboardVideoPreview");if(!box)return;box.innerHTML="";
   const url=aflBillboardVideoFile?.__previewUrl||aflBillboardVideoExisting?.video_url||"";if(!url)return;
+  const mediaHead=document.createElement("div");mediaHead.className="afl-existing-title";mediaHead.style.display="block";mediaHead.textContent="VIDEO • FIRST MEDIA IN BILLBOARD LOOP";box.appendChild(mediaHead);
   const wrap=document.createElement("div");wrap.className="afl-editor-video-frame";
   const v=document.createElement("video");v.src=url;v.controls=true;v.playsInline=true;v.muted=true;v.preload="metadata";
   const caption=document.createElement("div");caption.className="afl-editor-video-caption";caption.textContent=aflBillboardVideoWords[0]?.text||"";caption.style.color=aflBillboardVideoWords[0]?.color||"#ffffff";
@@ -2314,18 +2316,33 @@ function aflRenderVideoEditorPreview(){
   wrap.append(v,caption);box.appendChild(wrap);
 }
 function aflSetupVideoEditor(){
-  const input=document.getElementById("aflBillboardVideo"),pick=document.getElementById("aflPickBillboardVideo"),remove=document.getElementById("aflRemoveBillboardVideo"),add=document.getElementById("aflAddVideoWord");
+  const input=document.getElementById("aflBillboardVideo"),camera=document.getElementById("aflBillboardVideoCamera"),pick=document.getElementById("aflPickBillboardVideo"),capture=document.getElementById("aflCaptureBillboardVideo"),remove=document.getElementById("aflRemoveBillboardVideo"),add=document.getElementById("aflAddVideoWord");
   if(!input||input.dataset.bound==="1")return;
   input.dataset.bound="1";
+  const acceptVideoFile=(f)=>{
+    if(!f)return;
+    if(!String(f.type||"").toLowerCase().startsWith("video/")){document.getElementById("aflBillboardVideoStatus").textContent="PLEASE CHOOSE A VIDEO FILE.";return;}
+    const url=URL.createObjectURL(f),v=document.createElement("video");v.preload="metadata";
+    v.onloadedmetadata=()=>{const d=v.duration;URL.revokeObjectURL(url);if(!Number.isFinite(d)||d>300){input.value="";if(camera)camera.value="";aflBillboardVideoFile=null;document.getElementById("aflBillboardVideoStatus").textContent="VIDEO MUST BE 5 MINUTES OR LESS.";return}
+      if(aflBillboardVideoFile?.__previewUrl)URL.revokeObjectURL(aflBillboardVideoFile.__previewUrl);
+      f.__previewUrl=URL.createObjectURL(f);aflBillboardVideoFile=f;aflBillboardVideoRemove=false;remove.style.display="inline-block";
+      document.getElementById("aflBillboardVideoStatus").textContent=`VIDEO READY • ${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,"0")} • FIRST IN LOOP`;
+      aflRenderVideoEditorPreview();
+    };
+    v.onerror=()=>{URL.revokeObjectURL(url);document.getElementById("aflBillboardVideoStatus").textContent="THIS VIDEO COULD NOT BE READ. TRY MP4, WEBM OR MOV.";};
+    v.src=url;
+  };
   pick.onclick=()=>input.click();
-  input.onchange=()=>{const f=input.files?.[0];if(!f)return;const url=URL.createObjectURL(f),v=document.createElement("video");v.preload="metadata";v.onloadedmetadata=()=>{const d=v.duration;URL.revokeObjectURL(url);if(!Number.isFinite(d)||d>300){input.value="";aflBillboardVideoFile=null;document.getElementById("aflBillboardVideoStatus").textContent="VIDEO MUST BE 5 MINUTES OR LESS.";return}f.__previewUrl=URL.createObjectURL(f);aflBillboardVideoFile=f;aflBillboardVideoRemove=false;remove.style.display="inline-block";document.getElementById("aflBillboardVideoStatus").textContent=`VIDEO READY • ${Math.floor(d/60)}:${String(Math.floor(d%60)).padStart(2,"0")} • PLAYS FIRST`;aflRenderVideoEditorPreview();};v.src=url;};
-  remove.onclick=()=>{aflBillboardVideoFile=null;aflBillboardVideoRemove=true;aflBillboardVideoExisting=null;input.value="";remove.style.display="none";document.getElementById("aflBillboardVideoStatus").textContent="VIDEO REMOVED • IMAGES WILL LOOP";document.getElementById("aflBillboardVideoPreview").innerHTML=""};
-  add.onclick=()=>{aflBillboardVideoWords.push({text:"",color:"#ffffff"});aflRenderVideoWords();};
+  capture.onclick=()=>camera.click();
+  input.onchange=()=>{const f=input.files?.[0];acceptVideoFile(f);input.value="";};
+  camera.onchange=()=>{const f=camera.files?.[0];acceptVideoFile(f);camera.value="";};
+  remove.onclick=()=>{if(aflBillboardVideoFile?.__previewUrl)URL.revokeObjectURL(aflBillboardVideoFile.__previewUrl);aflBillboardVideoFile=null;aflBillboardVideoRemove=true;input.value="";camera.value="";remove.style.display="none";document.getElementById("aflBillboardVideoStatus").textContent="VIDEO REMOVED • IMAGES WILL LOOP";document.getElementById("aflBillboardVideoPreview").innerHTML=""};
+  add.onclick=()=>{aflBillboardVideoWords.push({text:"",color:"#ffffff"});aflRenderVideoWords();aflRenderVideoEditorPreview();};
 }
 async function aflLoadExistingVideo(existingId){
   aflResetVideoEditorState();
   if(!existingId)return;
-  try{const {data:b,error}=await heavensSupabase.from("afrilink_billboards").select("video_url,video_path,video_duration_sec,video_overlay_words").eq("id",existingId).maybeSingle();if(error)throw error;if(!b)return;aflBillboardVideoExisting=b;aflBillboardVideoWords=Array.isArray(b.video_overlay_words)?b.video_overlay_words.map(x=>({text:String(x.text||""),color:String(x.color||"#ffffff")})):[];const remove=document.getElementById("aflRemoveBillboardVideo");if(b.video_url){remove.style.display="inline-block";document.getElementById("aflBillboardVideoStatus").textContent=`CURRENT VIDEO • ${Math.floor(Number(b.video_duration_sec||0)/60)}:${String(Math.floor(Number(b.video_duration_sec||0)%60)).padStart(2,"0")} • REPLACE OR REMOVE`;aflRenderVideoEditorPreview()}aflRenderVideoWords();}catch(e){console.warn("AFRILINK video editor load:",e)}
+  try{const {data:b,error}=await heavensSupabase.from("afrilink_billboards").select("video_url,video_path,video_bucket,video_duration_sec,video_overlay_words").eq("id",existingId).maybeSingle();if(error)throw error;if(!b)return;aflBillboardVideoExisting=b;aflBillboardVideoWords=Array.isArray(b.video_overlay_words)?b.video_overlay_words.map(x=>({text:String(x.text||""),color:String(x.color||"#ffffff")})):[];const remove=document.getElementById("aflRemoveBillboardVideo");if(b.video_url){remove.style.display="inline-block";document.getElementById("aflBillboardVideoStatus").textContent=`CURRENT VIDEO • ${Math.floor(Number(b.video_duration_sec||0)/60)}:${String(Math.floor(Number(b.video_duration_sec||0)%60)).padStart(2,"0")} • REPLACE OR REMOVE`;aflRenderVideoEditorPreview()}aflRenderVideoWords();}catch(e){console.warn("AFRILINK video editor load:",e)}
 }
 
 async function aflOpenEditor(mode="publish", existing=null){
@@ -2562,17 +2579,18 @@ async function aflPublish(){
     if(billError)throw billError;
     /* BILLBOARD VIDEO — one active video slot per brand billboard */
     if(aflBillboardVideoRemove && !aflBillboardVideoFile){
-      if(aflBillboardVideoExisting?.video_path){try{await heavensSupabase.storage.from("afrilink-marketing").remove([aflBillboardVideoExisting.video_path]);}catch(e){console.warn("AFRILINK old video delete:",e);}}
+      if(aflBillboardVideoExisting?.video_path){try{await heavensSupabase.storage.from(aflBillboardVideoExisting.video_bucket||"afrilink-marketing").remove([aflBillboardVideoExisting.video_path]);}catch(e){console.warn("AFRILINK old video delete:",e);}}
       const {error}=await heavensSupabase.from("afrilink_billboards").update({video_path:null,video_url:null,video_duration_sec:null,video_overlay_words:[]}).eq("id",billboard.id).eq("owner_id",uid);if(error)throw error;
     }else if(aflBillboardVideoFile){
       aflEditorStatus.textContent="UPLOADING BILLBOARD VIDEO…";
       const file=aflBillboardVideoFile;const safe=String(file.name||"billboard-video").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90);const path=`${uid}/billboard-video/${crypto.randomUUID()}-${safe}`;
-      const up=await heavensSupabase.storage.from("afrilink-marketing").upload(path,file,{cacheControl:"31536000",upsert:false,contentType:file.type||"video/mp4"});if(up.error)throw up.error;
-      const pub=heavensSupabase.storage.from("afrilink-marketing").getPublicUrl(path);
-      if(aflBillboardVideoExisting?.video_path&&aflBillboardVideoExisting.video_path!==path){try{await heavensSupabase.storage.from("afrilink-marketing").remove([aflBillboardVideoExisting.video_path]);}catch(e){console.warn("AFRILINK old video delete:",e);}}
+      const videoBucket="afrilink-billboard-video";
+      const up=await heavensSupabase.storage.from(videoBucket).upload(path,file,{cacheControl:"31536000",upsert:false,contentType:file.type||"video/mp4"});if(up.error)throw up.error;
+      const pub=heavensSupabase.storage.from(videoBucket).getPublicUrl(path);
+      if(aflBillboardVideoExisting?.video_path&&aflBillboardVideoExisting.video_path!==path){try{await heavensSupabase.storage.from(aflBillboardVideoExisting.video_bucket||"afrilink-marketing").remove([aflBillboardVideoExisting.video_path]);}catch(e){console.warn("AFRILINK old video delete:",e);}}
       const meta=document.createElement("video");meta.preload="metadata";const duration=await new Promise((resolve,reject)=>{meta.onloadedmetadata=()=>resolve(meta.duration);meta.onerror=()=>reject(new Error("Could not read the uploaded video."));meta.src=URL.createObjectURL(file);});if(!Number.isFinite(duration)||duration>300)throw new Error("VIDEO MUST BE 5 MINUTES OR LESS.");
       const words=aflBillboardVideoWords.map(x=>({text:String(x.text||"").trim().slice(0,180),color:String(x.color||"#ffffff")})).filter(x=>x.text);
-      const {error}=await heavensSupabase.from("afrilink_billboards").update({video_path:path,video_url:pub.data.publicUrl,video_duration_sec:Number(duration.toFixed(2)),video_overlay_words:words}).eq("id",billboard.id).eq("owner_id",uid);if(error)throw error;
+      const {error}=await heavensSupabase.from("afrilink_billboards").update({video_path:path,video_url:pub.data.publicUrl,video_bucket:"afrilink-billboard-video",video_duration_sec:Number(duration.toFixed(2)),video_overlay_words:words}).eq("id",billboard.id).eq("owner_id",uid);if(error)throw error;
       URL.revokeObjectURL(meta.src);
     }else if(aflBillboardVideoExisting?.video_url){
       const words=aflBillboardVideoWords.map(x=>({text:String(x.text||"").trim().slice(0,180),color:String(x.color||"#ffffff")})).filter(x=>x.text);
@@ -2697,14 +2715,11 @@ function aflStartLoops(){
   aflFeedRows.forEach(row=>{if(row._timer)clearTimeout(row._timer);row._timer=null;if(row.videoUrl)aflStartBillboardVideo(row);else{row.index=0;row._rendered=false;aflRenderSlide(row);aflScheduleRow(row,7500);}});
 }
 function aflOpenWorld(){
-  smartPanel.classList.remove("show");aflOverlay.style.display="flex";aflOverlay.setAttribute("aria-hidden","false");aflLoadFeed();setTimeout(()=>window.aflLoadChapChap?.(),180);
-}
-
-function aflOpenWorld(){
   smartPanel.classList.remove("show");
   aflOverlay.style.display="flex";
   aflOverlay.setAttribute("aria-hidden","false");
   aflLoadFeed();
+  setTimeout(()=>window.aflLoadChapChap?.(),180);
 }
 
 function aflCloseWorld(){
@@ -5682,7 +5697,25 @@ printBtn.onclick = () => {
     html += "<hr><p>Heaven On Earth</p>";
     html +=           "<p>powered by deka</p>";
 
-    html += "</body></html>";
+    html += "<script>
+/* CHAPCHAP BUTTON SAFETY BINDING */
+(function(){
+  function bind(){
+    const top=document.getElementById('aflChapChapTop');
+    const mini=document.getElementById('aflChapSellMini');
+    const open=()=>{
+      const panel=document.getElementById('aflChapChapEditor');
+      if(!panel)return;
+      if(typeof window.aflOpenChapChap==='function')window.aflOpenChapChap();
+      else{panel.style.display='flex';panel.setAttribute('aria-hidden','false');}
+    };
+    if(top){top.onclick=open;top.addEventListener('click',open,{capture:true});}
+    if(mini){mini.onclick=open;mini.addEventListener('click',open,{capture:true});}
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind,{once:true});else bind();
+})();
+</script>
+</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
