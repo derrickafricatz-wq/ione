@@ -6853,130 +6853,242 @@ preloadMedia();
 </script>
 
 <style id="ioneSellStyles">
-/* ================= I|ONE SELL • INDIVIDUAL SHOWROOM ================= */
-#ioneSellOverlay{position:fixed;inset:0;z-index:160000;display:none;overflow:auto;background:radial-gradient(circle at 50% 0%,rgba(0,255,255,.10),transparent 34%),linear-gradient(180deg,#020708,#061316 52%,#020607);color:#fff;padding:14px 12px 38px;box-sizing:border-box}
-.ione-sell-shell{width:min(1180px,100%);margin:0 auto}
-.ione-sell-top{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;padding:10px 0 14px;background:linear-gradient(#020708 72%,transparent);backdrop-filter:blur(10px)}
-.ione-sell-close,.ione-sell-action{border:1px solid #00ffff;background:#07191d;color:#00ffff;border-radius:12px;padding:11px 14px;font-weight:900;letter-spacing:1px;font-size:11px;cursor:pointer}
-.ione-sell-brand{flex:1;text-align:center}.ione-sell-brand strong{display:block;font-size:25px;letter-spacing:4px}.ione-sell-brand small{color:#79cdd1;letter-spacing:1.6px;font-size:8px}
-.ione-sell-hero{border:1px solid rgba(0,255,255,.28);border-radius:26px;padding:20px;background:linear-gradient(145deg,rgba(11,36,40,.95),rgba(3,10,12,.96));box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.06);margin-bottom:16px}
-.ione-sell-hero h2{margin:0 0 7px;font-size:22px;letter-spacing:1.5px}.ione-sell-hero p{margin:0;color:#9eb7ba;font-size:12px;line-height:1.6}
-.ione-sell-toolbar{display:grid;grid-template-columns:1fr 190px 150px;gap:9px;margin-top:16px}.ione-sell-input,.ione-sell-select{width:100%;box-sizing:border-box;background:#061114;border:1px solid #21484d;color:#fff;border-radius:13px;padding:13px;font-size:12px;outline:none}.ione-sell-input:focus,.ione-sell-select:focus{border-color:#00ffff}
-.ione-sell-layout{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:16px;align-items:start}
-.ione-sell-panel{border:1px solid rgba(0,255,255,.22);border-radius:24px;background:linear-gradient(145deg,#09191c,#030809);padding:17px;box-shadow:0 18px 45px rgba(0,0,0,.32)}
-.ione-sell-panel h3{margin:0 0 12px;font-size:13px;letter-spacing:1.6px;color:#00ffff}.ione-sell-kicker{font-size:8px;color:#76999d;letter-spacing:1.5px;margin-bottom:13px}
-.ione-field{margin-bottom:10px}.ione-field label{display:block;font-size:8px;color:#8fb7bb;font-weight:900;letter-spacing:1.1px;margin:0 0 5px}.ione-field input,.ione-field textarea,.ione-field select{width:100%;box-sizing:border-box;background:#050d0f;border:1px solid #23464a;border-radius:11px;color:#fff;padding:11px;font-size:11px;outline:none}.ione-field textarea{min-height:72px;resize:vertical}.ione-field input:focus,.ione-field textarea:focus,.ione-field select:focus{border-color:#00ffff}
-.ione-product-fields{padding:11px;border:1px solid #183b3f;border-radius:16px;background:rgba(0,255,255,.025);margin:7px 0 12px}.ione-product-fields-title{font-size:9px;color:#00ffff;font-weight:900;letter-spacing:1.4px;margin-bottom:10px}
-.ione-image-drop{border:1px dashed #27676d;border-radius:15px;padding:13px;text-align:center;background:#041012;margin:10px 0}.ione-image-drop strong{font-size:10px;display:block}.ione-image-drop span{font-size:8px;color:#76999d;display:block;margin-top:5px}.ione-image-preview{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}.ione-image-preview img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #244b4f}
-.ione-sell-publish{width:100%;border:1px solid #00ffff;background:linear-gradient(135deg,#063137,#0a1d21);color:#00ffff;border-radius:14px;padding:13px;font-size:11px;font-weight:900;letter-spacing:1.5px;cursor:pointer}.ione-sell-publish:disabled{opacity:.45}
-.ione-sell-status{min-height:18px;margin-top:9px;font-size:9px;color:#91c3c7;text-align:center}
-.ione-showroom-head{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px}.ione-showroom-head strong{font-size:12px;letter-spacing:1.6px}.ione-count{font-size:8px;color:#6e969a}
-.ione-showroom-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.ione-product-card{border:1px solid rgba(0,255,255,.18);border-radius:21px;overflow:hidden;background:linear-gradient(145deg,#0a1719,#030809);box-shadow:0 15px 35px rgba(0,0,0,.32)}
-.ione-product-photo{position:relative;background:#020607;aspect-ratio:1.08;overflow:hidden}.ione-product-photo img{width:100%;height:100%;object-fit:cover;display:block}.ione-product-badge{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.72);border:1px solid rgba(0,255,255,.45);color:#00ffff;border-radius:9px;padding:5px 7px;font-size:7px;font-weight:900;letter-spacing:1px}
-.ione-product-body{padding:12px}.ione-product-title{font-size:13px;font-weight:900;margin-bottom:5px}.ione-product-price{font-size:16px;color:#ffe600;font-weight:900}.ione-product-meta{font-size:8px;color:#78979a;margin-top:5px;line-height:1.5}.ione-product-desc{font-size:9px;color:#adc2c4;line-height:1.5;margin-top:8px;min-height:27px}.ione-product-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}.ione-product-actions a,.ione-product-actions button{border:1px solid #27565a;background:#071316;color:#00ffff;border-radius:10px;padding:9px 6px;text-align:center;text-decoration:none;font-size:8px;font-weight:900;cursor:pointer}.ione-product-actions a:last-child{color:#59ff8a;border-color:#276b4a}
-.ione-empty-showroom{padding:45px 15px;text-align:center;border:1px dashed #25484c;border-radius:20px;color:#78979a;font-size:10px;line-height:1.6;grid-column:1/-1}.ione-empty-showroom strong{display:block;color:#00ffff;font-size:16px;letter-spacing:2px;margin-bottom:6px}
-@media(max-width:820px){.ione-sell-layout{grid-template-columns:1fr}.ione-sell-toolbar{grid-template-columns:1fr 1fr}.ione-sell-toolbar .ione-sell-input{grid-column:1/-1}.ione-showroom-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){.ione-sell-toolbar{grid-template-columns:1fr}.ione-sell-toolbar .ione-sell-input{grid-column:auto}.ione-showroom-grid{grid-template-columns:1fr}.ione-sell-hero{padding:15px}.ione-sell-brand strong{font-size:20px}}
-</style>
+/* ================= I|ONE SELL + PREMIUM BILLBOARD VIDEO ================= */
+.afl-head-actions{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap!important}.afl-head-actions::-webkit-scrollbar{display:none}.ione-sellchap-top{border-color:rgba(255,230,0,.5)!important;color:#ffe600!important;background:linear-gradient(180deg,#191a00,#080900)!important}
+.ione-sell-shelf{margin:8px 10px 4px;border:1px solid rgba(255,230,0,.18);border-radius:18px;background:linear-gradient(145deg,#0d1415,#020506);overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.05)}.ione-sell-shelf-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 5px}.ione-sell-shelf-head strong{display:block;color:#ffe600;font:900 13px Russo One,Arial;letter-spacing:1.7px}.ione-sell-shelf-head span{display:block;color:#7d9297;font-size:8px;letter-spacing:1px;margin-top:2px}.ione-sell-shelf-head button{border:1px solid rgba(255,230,0,.35);background:#111400;color:#ffe600;border-radius:10px;padding:7px 10px;font-size:9px;font-weight:900}.ione-sell-track{display:flex;gap:9px;overflow-x:auto;padding:6px 10px 11px;scroll-snap-type:x proximity;scrollbar-width:none}.ione-sell-track::-webkit-scrollbar{display:none}.ione-sell-empty{min-width:100%;text-align:center;padding:13px;color:#68797d;font-size:9px;letter-spacing:1px}.ione-sell-mini{position:relative;flex:0 0 112px;height:126px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:#050808;overflow:hidden;scroll-snap-align:start;box-shadow:0 7px 20px rgba(0,0,0,.35)}.ione-sell-mini-pics{height:82px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#101515}.ione-sell-mini-pics img{width:100%;height:100%;object-fit:cover}.ione-sell-mini-meta{padding:5px 7px}.ione-sell-mini-name{font-size:9px;font-weight:900;color:#eaf8fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-sell-mini-loc{font-size:7px;color:#809296;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-sell-price{position:absolute;right:5px;top:6px;padding:4px 7px;border-radius:999px;color:#050707;font-size:10px;font-weight:1000;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+.ione-sell-overlay{position:fixed;inset:0;z-index:10080;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(12px);padding:10px;box-sizing:border-box}.ione-sell-card,.ione-sell-detail-card{width:min(700px,100%);max-height:calc(100dvh - 20px);overflow:auto;border:1px solid rgba(255,230,0,.28);border-radius:22px;background:linear-gradient(145deg,#0a1011,#020505);box-shadow:0 30px 90px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.07);padding:13px}.ione-sell-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.ione-sell-kicker{font-size:8px;color:#ffe600;letter-spacing:1.8px}.ione-sell-head h2{margin:4px 0 2px;font:900 23px Russo One,Arial;color:#fff}.ione-sell-head p{margin:0;color:#73878b;font-size:9px}.ione-sell-form{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.ione-sell-field{min-width:0}.ione-sell-field.full,.ione-sell-dynamic{grid-column:1/-1}.ione-sell-field label{display:block;color:#789096;font-size:8px;font-weight:900;letter-spacing:1px;margin-bottom:4px}.ione-sell-field input,.ione-sell-field select,.ione-sell-field textarea{width:100%;box-sizing:border-box;background:#050909;color:#eaffff;border:1px solid #1b3034;border-radius:10px;padding:10px;font-size:12px;outline:none}.ione-sell-field textarea{min-height:85px;resize:vertical}.ione-sell-dynamic{display:grid;grid-template-columns:1fr 1fr;gap:9px}.ione-sell-photo-row{grid-column:1/-1;display:flex;gap:7px}.ione-sell-photo-row button,.ione-sell-submit{border:1px solid #31545a;background:#071416;color:#eaffff;border-radius:11px;padding:10px 12px;font-size:10px;font-weight:900}.ione-sell-submit{grid-column:1/-1;background:linear-gradient(135deg,#ffe600,#ffbd00);color:#080900;border:0;box-shadow:0 5px 0 #765900}.ione-sell-photo-note,.ione-sell-status{grid-column:1/-1;color:#71868a;font-size:8px;line-height:1.4}.ione-sell-image-preview{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}.ione-sell-image-preview img{width:100%;height:130px;object-fit:cover;border-radius:12px;border:1px solid #203437}.ione-sell-price-colors{display:flex;gap:6px;flex-wrap:wrap}.ione-sell-price-colors button{width:28px;height:28px;border-radius:50%;border:2px solid transparent}.ione-sell-price-colors button.selected{border-color:#fff;box-shadow:0 0 0 2px #ffe600}.ione-sell-price-preview{grid-column:1/-1;text-align:center;color:#7b8d91;font-size:9px;padding:9px}.ione-sell-detail-card{position:relative}.ione-sell-detail-main{clear:both;padding-top:8px}.ione-sell-detail-pics{display:grid;grid-template-columns:1fr 1fr;gap:7px}.ione-sell-detail-pics img{width:100%;height:min(42vh,330px);object-fit:contain;background:#020303;border-radius:16px}.ione-sell-detail-price{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:999px;font-weight:1000;font-size:20px;color:#050707}.ione-sell-detail-title{font:900 clamp(24px,7vw,38px) Russo One,Arial;margin-top:12px}.ione-sell-detail-sub{color:#7f9296;font-size:10px;margin-top:5px}.ione-sell-detail-desc{margin-top:14px;line-height:1.55;color:#d3e1e3;font-size:13px}.ione-sell-detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.ione-sell-detail-actions a{flex:1;min-width:130px;text-align:center;text-decoration:none;border-radius:12px;padding:12px;font-size:11px;font-weight:1000}.afl-call-btn{background:#00ffff;color:#001010}.afl-wa-btn{background:#59ff8a;color:#031006}
 
-<div id="ioneSellOverlay" aria-hidden="true">
-  <div class="ione-sell-shell">
-    <div class="ione-sell-top">
-      <button class="ione-sell-close" id="ioneSellClose" type="button">CLOSE</button>
-      <div class="ione-sell-brand"><strong>I|ONE SELL</strong><small>INDIVIDUAL DIGITAL SHOWROOM</small></div>
-      <button class="ione-sell-action" id="ioneSellRefresh" type="button">↻</button>
-    </div>
 
-    <section class="ione-sell-hero">
-      <h2>SELL ONE PRODUCT. SHOW IT BEAUTIFULLY.</h2>
-      <p>Upload a phone, laptop, car, furniture, fashion item, machine or any other product. Choose the product type and I|ONE will reveal the right fields automatically.</p>
-      <div class="ione-sell-toolbar">
-        <input id="ioneSellSearch" class="ione-sell-input" type="search" placeholder="⌕ SEARCH PRODUCTS…" autocomplete="off">
-        <select id="ioneSellBrowseCategory" class="ione-sell-select"><option value="all">ALL PRODUCTS</option><option value="phone">PHONES</option><option value="laptop">LAPTOPS</option><option value="electronics">ELECTRONICS</option><option value="vehicle">VEHICLES</option><option value="furniture">FURNITURE</option><option value="fashion">FASHION</option><option value="property">PROPERTY</option><option value="machine">MACHINES</option><option value="other">OTHER</option></select>
-        <select id="ioneSellSort" class="ione-sell-select"><option value="new">NEWEST</option><option value="low">LOW PRICE</option><option value="high">HIGH PRICE</option></select>
-      </div>
-    </section>
-
-    <div class="ione-sell-layout">
-      <section class="ione-sell-panel">
-        <h3>＋ LIST A PRODUCT</h3>
-        <div class="ione-sell-kicker">SMART PRODUCT FORM • FIELDS CHANGE WITH YOUR PRODUCT</div>
-        <div class="ione-field"><label>SELLER / DISPLAY NAME</label><input id="ioneSellerName" maxlength="80" placeholder="Your name or shop name"></div>
-        <div class="ione-field"><label>PHONE / WHATSAPP</label><input id="ioneSellerPhone" type="tel" maxlength="30" placeholder="Phone number"></div>
-        <div class="ione-field"><label>PRODUCT TYPE</label><select id="ioneProductType"><option value="phone">PHONE</option><option value="laptop">LAPTOP / COMPUTER</option><option value="electronics">ELECTRONICS</option><option value="vehicle">VEHICLE</option><option value="furniture">FURNITURE</option><option value="fashion">FASHION</option><option value="property">PROPERTY</option><option value="machine">MACHINE / EQUIPMENT</option><option value="other">OTHER PRODUCT</option></select></div>
-        <div id="ioneDynamicFields" class="ione-product-fields"></div>
-        <div class="ione-field"><label>PRODUCT TITLE</label><input id="ioneProductTitle" maxlength="120" placeholder="Example: iPhone 15 Pro Max 256GB"></div>
-        <div class="ione-field"><label>PRICE — TZS</label><input id="ioneProductPrice" type="number" min="1" step="1" placeholder="Example: 1850000"></div>
-        <div class="ione-field"><label>LOCATION</label><input id="ioneProductLocation" maxlength="120" placeholder="City / area"></div>
-        <div class="ione-field"><label>DESCRIPTION</label><textarea id="ioneProductDescription" maxlength="900" placeholder="Tell buyers the important details…"></textarea></div>
-        <div class="ione-image-drop"><strong>PRODUCT SHOWROOM PHOTOS</strong><span>Up to 6 photos • first photo becomes the main showroom cover</span><input id="ioneProductImages" type="file" accept="image/*" multiple style="width:100%;margin-top:10px;font-size:9px"><div id="ioneProductImagePreview" class="ione-image-preview"></div></div>
-        <button id="ioneSellPublish" class="ione-sell-publish" type="button">PUBLISH TO I|ONE SELL</button>
-        <div id="ioneSellStatus" class="ione-sell-status"></div>
-      </section>
-
-      <section class="ione-sell-panel">
-        <div class="ione-showroom-head"><strong>LIVE PRODUCT SHOWROOM</strong><span id="ioneSellCount" class="ione-count">0 PRODUCTS</span></div>
-        <div id="ioneSellGrid" class="ione-showroom-grid"></div>
-      </section>
+<div id="ioneSellChapEditor" class="ione-sell-overlay" aria-hidden="true">
+  <div class="ione-sell-card" role="dialog" aria-modal="true">
+    <div class="ione-sell-head"><div><div class="ione-sell-kicker">I|ONE • INDIVIDUAL MARKET</div><h2>I|ONE SELL SELLER</h2><p>SELL • DISCOVER • CONNECT</p></div><button id="ioneSellClose" class="afl-top-btn afl-close" type="button">CLOSE</button></div>
+    <div class="ione-sell-form">
+      <div class="ione-sell-field"><label>SELLER NAME</label><input id="ioneSellSellerName" maxlength="80" placeholder="Your name"></div>
+      <div class="ione-sell-field"><label>PHONE / WHATSAPP</label><input id="ioneSellPhone" type="tel" maxlength="30" placeholder="2557XXXXXXXX"></div>
+      <div class="ione-sell-field"><label>PRODUCT TYPE</label><select id="ioneSellCategory"></select></div>
+      <div id="ioneSellDynamicFields" class="ione-sell-dynamic"></div>
+      <div class="ione-sell-field"><label>LOCATION</label><input id="ioneSellLocation" maxlength="120" placeholder="City / area"></div>
+      <div class="ione-sell-field"><label>PRICE • TZS</label><input id="ioneSellPrice" type="number" min="1" step="1" inputmode="decimal" placeholder="100000"></div>
+      <div class="ione-sell-field full"><label>PRICE TAG COLOUR</label><div id="ioneSellPriceColors" class="ione-sell-price-colors"></div></div>
+      <div class="ione-sell-field full"><label>SHORT DESCRIPTION</label><textarea id="ioneSellDescription" maxlength="500" placeholder="Tell buyers what they should know..."></textarea></div>
+      <input id="ioneSellImages" class="afl-file-input" type="file" accept="image/*" multiple>
+      <input id="ioneSellCamera" class="afl-file-input" type="file" accept="image/*" capture="environment" multiple>
+      <div class="ione-sell-photo-row"><button id="ioneSellCameraBtn" type="button">◉ TAKE PHOTOS</button><button id="ioneSellFilesBtn" type="button">＋ CHOOSE PHOTOS</button></div>
+      <div class="ione-sell-photo-note">EXACTLY 2 PRODUCT IMAGES • CAMERA OR FILE</div>
+      <div id="ioneSellImagePreview" class="ione-sell-image-preview"></div>
+      <div id="ioneSellPricePreview" class="ione-sell-price-preview">PRICE WILL APPEAR HERE</div>
+      <button id="ioneSellSubmit" class="ione-sell-submit" type="button">PUBLISH TO I|ONE SELL</button>
+      <div id="ioneSellStatus" class="ione-sell-status"></div>
     </div>
   </div>
 </div>
 
-<script id="ioneSellScript">
+<div id="ioneSellChapDetail" class="ione-sell-overlay" aria-hidden="true">
+  <div class="ione-sell-detail-card" role="dialog" aria-modal="true">
+    <button id="ioneSellDetailClose" class="afl-top-btn afl-close" type="button">CLOSE</button>
+    <div id="ioneSellDetailBody"></div>
+  </div>
+</div>
+<script>
+/* ================= I|ONE SELL ENGINE — SIMPLE / INDEPENDENT ================= */
 (function(){
-  const $=id=>document.getElementById(id);
-  const overlay=$('ioneSellOverlay'),type=$('ioneProductType'),dynamic=$('ioneDynamicFields'),images=$('ioneProductImages'),preview=$('ioneProductImagePreview');
-  let selectedFiles=[]; let products=[];
-  const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
-  const money=v=>{const n=Number(v||0);return Number.isFinite(n)?new Intl.NumberFormat('en-TZ').format(n)+' TZS':'—';};
-  const defs={
-    phone:[['brand','BRAND','text','Apple / Samsung / Tecno'],['model','MODEL','text','Model name'],['storage','STORAGE','text','128GB / 256GB'],['ram','RAM','text','4GB / 8GB'],['condition','CONDITION','select',['New','Used - Excellent','Used - Good','Used - Fair']],['network','NETWORK','text','Unlocked / network'],['battery','BATTERY HEALTH','text','Example: 91%'],['color','COLOR','text','Color']],
-    laptop:[['brand','BRAND','text','Dell / HP / Lenovo'],['model','MODEL','text','Model'],['processor','PROCESSOR','text','Core i5 / Ryzen 5'],['ram','RAM','text','8GB / 16GB'],['storage','STORAGE','text','256GB SSD'],['condition','CONDITION','select',['New','Used - Excellent','Used - Good']]],
-    electronics:[['brand','BRAND','text','Brand'],['model','MODEL','text','Model'],['condition','CONDITION','select',['New','Used - Excellent','Used - Good']],['warranty','WARRANTY','text','Example: 6 months'],['specs','KEY SPECS','text','Main specification']],
-    vehicle:[['make','MAKE','text','Toyota / Honda / etc.'],['model','MODEL','text','Model'],['year','YEAR','number','2020'],['mileage','MILEAGE (KM)','number','120000'],['condition','CONDITION','select',['New','Used - Excellent','Used - Good']],['transmission','TRANSMISSION','select',['Automatic','Manual','CVT','Other']],['fuel','FUEL','select',['Petrol','Diesel','Hybrid','Electric','Other']]],
-    furniture:[['item','ITEM TYPE','text','Sofa / table / bed'],['material','MATERIAL','text','Wood / metal / fabric'],['condition','CONDITION','select',['New','Used - Excellent','Used - Good']],['dimensions','DIMENSIONS','text','Example: 200 x 90 cm']],
-    fashion:[['brand','BRAND','text','Brand'],['size','SIZE','text','S / M / L / XL'],['gender','STYLE','select',['Men','Women','Unisex','Kids']],['condition','CONDITION','select',['New','Like New','Used']]],
-    property:[['propertyType','PROPERTY TYPE','select',['House','Apartment','Land / Plot','Office','Shop','Other']],['bedrooms','BEDROOMS','number','3'],['size','SIZE','text','Example: 600 sqm'],['titleStatus','TITLE / OWNERSHIP','text','Available documents / status']],
-    machine:[['brand','BRAND','text','Brand'],['model','MODEL','text','Model'],['year','YEAR','number','2022'],['condition','CONDITION','select',['New','Used - Excellent','Used - Good']],['hours','WORKING HOURS','number','1000']],
-    other:[['condition','CONDITION','select',['New','Like New','Used - Good','Used - Fair']],['brand','BRAND','text','Brand (optional)'],['details','KEY DETAILS','text','Important product details']]
+  const cats=[
+    ["phone","PHONES & ACCESSORIES"],["fashion","FASHION & CLOTHING"],["food","FOOD & DRINK"],
+    ["home","HOME & LIVING"],["beauty","BEAUTY"],["electronics","ELECTRONICS"],
+    ["services","SERVICES"],["other","OTHER"]
+  ];
+  const catFields={
+    phone:[["model","MODEL / NAME"],["condition","CONDITION"]],
+    fashion:[["item","ITEM / STYLE"],["size","SIZE"]],
+    food:[["item","ITEM"],["portion","PORTION / SIZE"]],
+    home:[["item","ITEM"],["condition","CONDITION"]],
+    beauty:[["item","ITEM"],["brand","BRAND"]],
+    electronics:[["item","ITEM"],["condition","CONDITION"]],
+    services:[["service","SERVICE"],["experience","EXPERIENCE / NOTE"]],
+    other:[["item","ITEM"],["note","NOTE"]]
   };
+  const PRICE_COLORS=["#ffffff","#00ffff","#ffe600","#59ff8a","#ff9d38"];
+  let ioneImages=[];
+  let ionePriceColor="#ffe600";
+  let ioneListings=[];
+  let ionePublishing=false;
+
+  function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+  function status(v){const e=document.getElementById("ioneSellStatus");if(e)e.textContent=v;}
   function renderFields(){
-    const list=defs[type.value]||defs.other; dynamic.innerHTML='<div class="ione-product-fields-title">SMART '+esc(type.options[type.selectedIndex]?.text||'PRODUCT')+' DETAILS</div>'+list.map(([k,l,t,ph])=>{
-      if(t==='select')return `<div class="ione-field"><label>${esc(l)}</label><select data-ione-field="${esc(k)}">${ph.map(x=>`<option>${esc(x)}</option>`).join('')}</select></div>`;
-      return `<div class="ione-field"><label>${esc(l)}</label><input data-ione-field="${esc(k)}" type="${t}" placeholder="${esc(ph||'')}" maxlength="120"></div>`;
-    }).join('');
+    const c=document.getElementById("ioneSellCategory")?.value||"other";
+    const box=document.getElementById("ioneSellDynamicFields");
+    if(!box)return;
+    box.innerHTML=(catFields[c]||catFields.other).map(([k,l])=>`<div class="ione-sell-field"><label>${l}</label><input id="ioneSell_${k}" maxlength="100"></div>`).join("");
   }
-  function collectAttributes(){const o={};dynamic.querySelectorAll('[data-ione-field]').forEach(el=>o[el.dataset.ioneField]=String(el.value||'').trim());return o;}
-  type.addEventListener('change',renderFields); renderFields();
-  images.addEventListener('change',()=>{selectedFiles=Array.from(images.files||[]).slice(0,6);preview.innerHTML='';selectedFiles.forEach(f=>{const u=URL.createObjectURL(f),im=document.createElement('img');im.src=u;im.onload=()=>URL.revokeObjectURL(u);preview.appendChild(im);});});
-  function open(){overlay.style.display='block';overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';load();}
-  function close(){overlay.style.display='none';overlay.setAttribute('aria-hidden','true');document.body.style.overflow='';}
-  $('ioneSellClose').onclick=close;$('ioneSellRefresh').onclick=load;
-  $('openIoneSell').onclick=open;
-  $('ioneSellSearch').addEventListener('input',render);$('ioneSellBrowseCategory').addEventListener('change',render);$('ioneSellSort').addEventListener('change',render);
-  async function uploadFile(file,uid){const safe=String(file.name||'product-image').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80);const path=`${uid}/ione-sell/${crypto.randomUUID()}-${safe}`;const up=await heavensSupabase.storage.from('afrilink-marketing').upload(path,file,{cacheControl:'31536000',upsert:false,contentType:file.type||'image/jpeg'});if(up.error)throw up.error;const pub=heavensSupabase.storage.from('afrilink-marketing').getPublicUrl(path);return {path,url:pub.data.publicUrl};}
+  function collectFields(){
+    const c=document.getElementById("ioneSellCategory")?.value||"other",o={};
+    (catFields[c]||catFields.other).forEach(([k])=>o[k]=String(document.getElementById("ioneSell_"+k)?.value||"").trim());
+    return o;
+  }
+  function renderColors(){
+    const box=document.getElementById("ioneSellPriceColors");if(!box)return;
+    box.innerHTML=PRICE_COLORS.map(c=>`<button type="button" style="background:${c}" class="${c===ionePriceColor?"selected":""}" data-c="${c}"></button>`).join("");
+    box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ionePriceColor=b.dataset.c;renderColors();updatePricePreview();});
+  }
+  function updatePricePreview(){
+    const p=Number(document.getElementById("ioneSellPrice")?.value||0),el=document.getElementById("ioneSellPricePreview");
+    if(el)el.innerHTML=p?`PRICE PREVIEW <strong style="display:inline-block;margin-left:7px;background:${esc(ionePriceColor)};color:#050707;border-radius:999px;padding:5px 10px">TZS ${p.toLocaleString()}</strong>`:"PRICE WILL APPEAR HERE";
+  }
+  function reset(){
+    ioneImages.forEach(x=>{try{if(x.preview)URL.revokeObjectURL(x.preview)}catch(_){}});
+    ioneImages=[];ionePublishing=false;
+    ["ioneSellSellerName","ioneSellPhone","ioneSellLocation","ioneSellPrice","ioneSellDescription"].forEach(id=>{const e=document.getElementById(id);if(e)e.value="";});
+    const cat=document.getElementById("ioneSellCategory");if(cat)cat.value="phone";
+    renderFields();renderColors();updatePricePreview();
+    const box=document.getElementById("ioneSellImagePreview");if(box)box.innerHTML="";
+    status("");
+  }
+  function openEditor(){
+    reset();
+    const o=document.getElementById("ioneSellEditor");
+    if(o){o.style.display="flex";o.style.visibility="visible";o.style.opacity="1";o.style.pointerEvents="auto";o.setAttribute("aria-hidden","false");}
+  }
+  function closeEditor(){
+    const o=document.getElementById("ioneSellEditor");
+    if(o){o.style.display="none";o.setAttribute("aria-hidden","true");}
+    reset();
+  }
+  function openOverlay(){
+    const o=document.getElementById("ioneSellOverlay");
+    if(o){o.style.display="flex";o.setAttribute("aria-hidden","false");}
+    document.body.style.overflow="hidden";
+    load();
+  }
+  function closeOverlay(){
+    closeEditor();
+    const o=document.getElementById("ioneSellOverlay");
+    if(o){o.style.display="none";o.setAttribute("aria-hidden","true");}
+    document.body.style.overflow="";
+  }
+  function readImages(list){
+    for(const f of Array.from(list||[])){
+      if(!f.type.startsWith("image/"))continue;
+      if(ioneImages.length>=2)break;
+      ioneImages.push({file:f,preview:URL.createObjectURL(f)});
+    }
+    const box=document.getElementById("ioneSellImagePreview");
+    if(box)box.innerHTML=ioneImages.map(x=>`<img src="${x.preview}" alt="">`).join("");
+    status(`${ioneImages.length}/2 IMAGES READY`);
+  }
+  async function compressImage(file){
+    return await new Promise((resolve,reject)=>{
+      const img=new Image();
+      const url=URL.createObjectURL(file);
+      img.onload=()=>{
+        try{
+          const max=900;
+          const scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));
+          const w=Math.max(1,Math.round(img.naturalWidth*scale));
+          const h=Math.max(1,Math.round(img.naturalHeight*scale));
+          const c=document.createElement("canvas");c.width=w;c.height=h;
+          const ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL("image/jpeg",0.72));
+        }catch(e){URL.revokeObjectURL(url);reject(e)}
+      };
+      img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error("Could not read product photo."))};
+      img.src=url;
+    });
+  }
+
+  /* I|ONE SELL: isolated public marketplace flow.
+     This section uses its own table/RPC and does not depend on seller auth,
+     storage uploads, exchange-rate APIs, or the old I|ONE SELL table rules. */
+  async function uploadImage(file,uid){
+    const safe=String(file.name||"product").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-80);
+    const path=`${uid}/ione-sell/${crypto.randomUUID()}-${safe}`;
+    const {error}=await heavensSupabase.storage.from("afrilink-marketing").upload(path,file,{cacheControl:"31536000",upsert:false,contentType:file.type||"image/jpeg"});
+    if(error)throw error;
+    const {data}=heavensSupabase.storage.from("afrilink-marketing").getPublicUrl(path);
+    return {path,url:data.publicUrl};
+  }
   async function publish(){
-    const status=$('ioneSellStatus'),btn=$('ioneSellPublish');
+    if(ionePublishing)return;
+    ionePublishing=true;
+    const btn=document.getElementById("ioneSellSubmit");
     try{
-      const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id;if(!uid)throw new Error('Secure seller session could not be created.');
-      const seller=String($('ioneSellerName').value||'').trim(),phone=String($('ioneSellerPhone').value||'').trim(),title=String($('ioneProductTitle').value||'').trim(),price=Number($('ioneProductPrice').value||0),location=String($('ioneProductLocation').value||'').trim(),desc=String($('ioneProductDescription').value||'').trim();
-      if(!seller||!phone||!title||!price||!location||!selectedFiles.length){status.textContent='NAME, PHONE, TITLE, PRICE, LOCATION AND AT LEAST ONE PHOTO ARE REQUIRED.';return;}
-      btn.disabled=true;status.textContent='UPLOADING SHOWROOM PHOTOS…';const uploaded=[];for(const f of selectedFiles)uploaded.push(await uploadFile(f,uid));
-      const row={seller_id:uid,seller_name:seller,seller_phone:phone,category:type.value,title,price_tzs:Math.round(price),location,description:desc,attributes:collectAttributes(),image_urls:uploaded.map(x=>x.url),image_paths:uploaded.map(x=>x.path),status:'active'};
-      const {error}=await heavensSupabase.from('ione_single_products').insert(row);if(error)throw error;
-      status.textContent='PRODUCT PUBLISHED ✓';selectedFiles=[];images.value='';preview.innerHTML='';$('ioneProductTitle').value='';$('ioneProductPrice').value='';$('ioneProductDescription').value='';await load();
-    }catch(e){console.error('I|ONE SELL publish:',e);status.textContent=e?.message||'Could not publish product. Run the I|ONE SELL database SQL once in Supabase.';}
-    finally{btn.disabled=false;}
+      if(btn){btn.disabled=true;btn.setAttribute("aria-busy","true");}
+      const name=document.getElementById("ioneSellSellerName")?.value.trim()||"";
+      const phone=document.getElementById("ioneSellPhone")?.value.trim()||"";
+      const category=document.getElementById("ioneSellCategory")?.value||"other";
+      const location=document.getElementById("ioneSellLocation")?.value.trim()||"";
+      const price=Number(document.getElementById("ioneSellPrice")?.value||0);
+      const description=document.getElementById("ioneSellDescription")?.value.trim()||"";
+      const title=(collectFields().model||collectFields().item||collectFields().type||category||"PRODUCT").trim();
+      if(!name)return status("ENTER SELLER NAME");
+      if(!phone)return status("ENTER PHONE / WHATSAPP");
+      if(!location)return status("ENTER LOCATION");
+      if(!Number.isFinite(price)||price<=0)return status("ENTER A VALID TZS PRICE");
+      if(ioneImages.length!==2)return status("ADD EXACTLY 2 PRODUCT PHOTOS");
+      status("UPLOADING 2 SHOWROOM PHOTOS…");
+      const session=await ensureHeavensAnonymousSession();
+      const uid=session?.user?.id;if(!uid)throw new Error("Secure seller connection is unavailable.");
+      const uploads=[];for(const x of ioneImages)uploads.push(await uploadImage(x.file,uid));
+      const row={seller_id:uid,seller_name:name,seller_phone:phone,category,title,price_tzs:Math.round(price),location,description,attributes:collectFields(),image_urls:uploads.map(x=>x.url),image_paths:uploads.map(x=>x.path),status:"active"};
+      const {error}=await heavensSupabase.from("ione_single_products").insert(row);
+      if(error)throw error;
+      status("I|ONE SELL PUBLISHED ✓");
+      await load();
+      setTimeout(()=>closeEditor(),500);
+    }catch(e){
+      console.error("I|ONE SELL publish:",e);
+      status(e?.message||"I|ONE SELL could not publish this product.");
+    }finally{
+      ionePublishing=false;if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");}
+    }
   }
-  $('ioneSellPublish').onclick=publish;
-  function render(){
-    const q=String($('ioneSellSearch').value||'').toLowerCase().trim(),cat=$('ioneSellBrowseCategory').value,sort=$('ioneSellSort').value;let list=products.filter(p=>(cat==='all'||p.category===cat)&&(!q||[p.title,p.seller_name,p.location,p.description,p.category,JSON.stringify(p.attributes||{})].join(' ').toLowerCase().includes(q)));if(sort==='low')list.sort((a,b)=>Number(a.price_tzs)-Number(b.price_tzs));else if(sort==='high')list.sort((a,b)=>Number(b.price_tzs)-Number(a.price_tzs));else list.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));$('ioneSellCount').textContent=`${list.length} PRODUCT${list.length===1?'':'S'}`;const grid=$('ioneSellGrid');if(!list.length){grid.innerHTML='<div class="ione-empty-showroom"><strong>I|ONE SELL</strong>No products match yet.<br>Be the first seller to put a product in the showroom.</div>';return;}grid.innerHTML=list.map(p=>{const imgs=Array.isArray(p.image_urls)?p.image_urls:[];const img=imgs[0]||'';const wa=String(p.seller_phone||'').replace(/[^0-9]/g,'');const attrs=Object.entries(p.attributes||{}).filter(x=>String(x[1]||'').trim()).slice(0,4).map(x=>`${esc(x[0])}: ${esc(x[1])}`).join(' • ');return `<article class="ione-product-card"><div class="ione-product-photo">${img?`<img loading="lazy" src="${esc(img)}" alt="${esc(p.title)}">`:''}<span class="ione-product-badge">${esc(String(p.category||'PRODUCT').toUpperCase())}</span></div><div class="ione-product-body"><div class="ione-product-title">${esc(p.title)}</div><div class="ione-product-price">${money(p.price_tzs)}</div><div class="ione-product-meta">${esc(p.location)}${attrs?' • '+attrs:''}</div><div class="ione-product-desc">${esc(p.description||'')}</div><div class="ione-product-actions"><a href="tel:${esc(p.seller_phone)}">CALL SELLER</a><a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">WHATSAPP</a></div></div></article>`;}).join('');
+  function openDetail(x){
+    const d=x.attributes||{},fields=Object.entries(d).filter(([,v])=>String(v||"").trim()).map(([k,v])=>`<div style="padding:7px 0;border-bottom:1px solid #132225"><strong style="color:#7e969d;font-size:8px">${esc(k.replace(/_/g," ").toUpperCase())}</strong><div style="font-size:12px;margin-top:2px">${esc(v)}</div></div>`).join("");
+    const wa=String(x.seller_phone||"").replace(/[^0-9]/g,"");
+    const imgs=Array.isArray(x.image_urls)?x.image_urls:[];
+    const pics=imgs.slice(0,2).map(u=>`<img src="${esc(u)}">`).join("");
+    document.getElementById("ioneSellDetailBody").innerHTML=`<div class="ione-sell-detail-main"><div class="ione-sell-detail-pics">${pics}</div><span class="ione-sell-detail-price">TZS ${Number(x.price_tzs||0).toLocaleString()}</span><div class="ione-sell-detail-title">${esc(x.title||d.model||d.item||x.category||"PRODUCT")}</div><div class="ione-sell-detail-sub">${esc(x.seller_name)} • ${esc(x.location)} • ${esc(x.category)}</div><div class="ione-sell-detail-desc">${esc(x.description||"")}</div>${fields}<div class="ione-sell-detail-actions"><a class="ione-call-btn" href="tel:+${wa}">CALL SELLER</a><a class="ione-wa-btn" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent("Hello "+x.seller_name+", I saw your product on I|ONE SELL.")}">WHATSAPP</a></div></div>`;
+    const o=document.getElementById("ioneSellDetail");o.style.display="flex";o.setAttribute("aria-hidden","false");
   }
+  function closeDetail(){const o=document.getElementById("ioneSellDetail");if(o){o.style.display="none";o.setAttribute("aria-hidden","true");}}
   async function load(){
-    const grid=$('ioneSellGrid');grid.innerHTML='<div class="ione-empty-showroom"><strong>LOADING I|ONE SELL</strong>Opening the digital showroom…</div>';
-    try{const {data,error}=await heavensSupabase.from('ione_single_products').select('*').eq('status','active').order('created_at',{ascending:false}).limit(200);if(error)throw error;products=data||[];render();}
-    catch(e){console.warn('I|ONE SELL load:',e);grid.innerHTML='<div class="ione-empty-showroom"><strong>I|ONE SELL</strong>The showroom database is not connected yet.<br>Run the included I|ONE SELL SQL in your Supabase project, then refresh.</div>';}
+    const track=document.getElementById("ioneSellTrack");if(!track)return;
+    try{
+      const {data,error}=await heavensSupabase.from("ione_single_products").select("*").eq("status","active").order("created_at",{ascending:false}).limit(100);
+      if(error)throw error;
+      ioneListings=data||[];
+      const q=String(document.getElementById("ioneSellSearch")?.value||"").trim().toLowerCase();
+      if(q)ioneListings=ioneListings.filter(x=>[x.title,x.seller_name,x.location,x.description,x.category,JSON.stringify(x.attributes||{})].join(" ").toLowerCase().includes(q));
+      if(!ioneListings.length){track.innerHTML='<div class="ione-sell-empty">DISCOVER INDIVIDUAL SELLERS HERE</div>';return;}
+      track.innerHTML="";
+      ioneListings.forEach(x=>{
+        const imgs=Array.isArray(x.image_urls)?x.image_urls:[];
+        const c=document.createElement("button");c.type="button";c.className="ione-sell-mini";
+        c.innerHTML=`<div class="ione-sell-mini-pics"><img src="${esc(imgs[0]||"")}"><img src="${esc(imgs[1]||imgs[0]||"")}"></div><div class="ione-sell-mini-meta"><div class="ione-sell-mini-name">${esc(x.title||x.seller_name)}</div><div class="ione-sell-mini-loc">${esc(x.location)}</div></div><span class="ione-sell-price">TZS ${Number(x.price_tzs||0).toLocaleString()}</span>`;
+        c.onclick=()=>openDetail(x);track.appendChild(c);
+      });
+    }catch(e){console.warn("I|ONE SELL load:",e);track.innerHTML='<div class="ione-sell-empty">I|ONE SELL IS TEMPORARILY UNAVAILABLE</div>';}
   }
+  function init(){
+    const cat=document.getElementById("ioneSellCategory");
+    if(cat){cat.innerHTML=cats.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join("");cat.value="phone";cat.onchange=renderFields;renderFields();}
+    renderColors();
+    document.getElementById("ioneSellPrice")?.addEventListener("input",updatePricePreview);
+    document.getElementById("ioneSellFilesBtn")?.addEventListener("click",()=>document.getElementById("ioneSellImages")?.click());
+    document.getElementById("ioneSellCameraBtn")?.addEventListener("click",()=>document.getElementById("ioneSellCamera")?.click());
+    document.getElementById("ioneSellImages")?.addEventListener("change",e=>{readImages(e.target.files);e.target.value=""});
+    document.getElementById("ioneSellCamera")?.addEventListener("change",e=>{readImages(e.target.files);e.target.value=""});
+    document.getElementById("ioneSellSubmit")?.addEventListener("click",publish);
+    document.getElementById("ioneSellEditorClose")?.addEventListener("click",closeEditor);
+    document.getElementById("ioneSellDetailClose")?.addEventListener("click",closeDetail);
+    document.getElementById("ioneSellNew")?.addEventListener("click",openEditor);
+    document.getElementById("ioneSellRefresh")?.addEventListener("click",load);
+    document.getElementById("ioneSellExit")?.addEventListener("click",closeOverlay);
+    document.getElementById("ioneSellSearch")?.addEventListener("input",load);
+  }
+  document.getElementById("openIoneSell")?.addEventListener("click",openOverlay);
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();
 })();
 </script>
 
