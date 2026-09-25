@@ -6874,8 +6874,9 @@ preloadMedia();
     });
   }
 
-  /* CHAPCHAP: deliberately simple public seller flow.
-     No login, no storage upload, no USD-rate request. */
+  /* CHAPCHAP: isolated public marketplace flow.
+     This section uses its own table/RPC and does not depend on seller auth,
+     storage uploads, exchange-rate APIs, or the old CHAPCHAP table rules. */
   async function publish(){
     if(publishing)return;
     publishing=true;
@@ -6895,37 +6896,31 @@ preloadMedia();
       if(!Number.isFinite(price)||price<=0)return status("ENTER A VALID TZS PRICE");
       if(chapImages.length<1)return status("ADD AT LEAST 1 PRODUCT PHOTO");
 
-      status("SAVING PRODUCT…");
+      status("PREPARING PRODUCT…");
       const image1=await compressImage(chapImages[0].file);
-      const image2=chapImages[1]?await compressImage(chapImages[1].file):null;
+      const image2=chapImages[1]?await compressImage(chapImages[1].file):"";
 
-      const payload={
-        seller_id:null,
-        seller_name:name,
-        seller_phone:phone,
-        category,
-        product_data:collectFields(),
-        location,
-        price_tzs:Math.round(price),
-        price_usd:null,
-        exchange_rate_usd_per_tzs:null,
-        exchange_rate_at:null,
-        price_tag_color:chapPriceColor,
-        description,
-        image1_path:"inline",
-        image1_url:image1,
-        image2_path:image2?"inline":"",
-        image2_url:image2,
-        status:"active"
-      };
-
-      const {error}=await heavensSupabase.from("afrilink_chapchap_listings").insert(payload);
+      status("PUBLISHING…");
+      const {data,error}=await heavensSupabase.rpc("chapchap_public_publish_v2",{
+        p_seller_name:name,
+        p_seller_phone:phone,
+        p_category:category,
+        p_product_data:collectFields(),
+        p_location:location,
+        p_price_tzs:Math.round(price),
+        p_price_tag_color:chapPriceColor,
+        p_description:description,
+        p_image1_url:image1,
+        p_image2_url:image2
+      });
       if(error)throw error;
+      if(!data)throw new Error("CHAPCHAP did not return a saved product.");
       status("CHAPCHAP PUBLISHED ✓");
-      setTimeout(()=>{close();window.aflLoadChapChap?.();},500);
+      await load();
+      setTimeout(()=>close(),350);
     }catch(e){
-      console.error("CHAPCHAP SIMPLE PUBLIC:",e);
-      status(e?.message||"CHAPCHAP could not save this product.");
+      console.error("CHAPCHAP PUBLIC V2:",e);
+      status((e&&e.message)||"CHAPCHAP could not publish this product.");
     }finally{
       publishing=false;
       if(btn){btn.disabled=false;btn.removeAttribute("aria-busy");}
@@ -6942,7 +6937,7 @@ preloadMedia();
   async function load(){
     const track=document.getElementById("aflChapChapTrack");if(!track)return;
     try{
-      const {data,error}=await heavensSupabase.from("afrilink_chapchap_listings").select("*").eq("status","active").order("created_at",{ascending:false}).limit(60);
+      const {data,error}=await heavensSupabase.from("afrilink_chapchap_public_v2").select("*").eq("status","active").order("created_at",{ascending:false}).limit(60);
       if(error)throw error;
       chapListings=data||[];
       if(!chapListings.length){track.innerHTML='<div class="afl-chap-empty">DISCOVER INDIVIDUAL SELLERS HERE</div>';return;}
