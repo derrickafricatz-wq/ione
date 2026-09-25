@@ -1,4 +1,4 @@
-const CACHE_NAME = "afya-care-v63";
+const CACHE_NAME = "afya-care-v64";
 
 /* =========================
    CORE APP FILES
