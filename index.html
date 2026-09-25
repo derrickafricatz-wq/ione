@@ -741,7 +741,7 @@ body.landscape-mode #brandVideo {
 .afl-info-brand{font:900 20px/1.15 'Russo One',sans-serif;word-break:break-word}
 .afl-info-content{margin-top:6px;font-weight:800;font-size:13px;line-height:1.3;word-break:break-word}
 .afl-info-address{margin-top:4px;color:#aab8bc;font-size:12px;line-height:1.3;word-break:break-word}
-.afl-dots{display:none!important}.afl-image-count{display:none!important}.afl-screen.afl-signage-screen{perspective:1200px;overflow:hidden}.afl-screen.afl-signage-screen img{transition:opacity .18s ease,transform .42s cubic-bezier(.2,.8,.2,1),filter .42s ease;transform-origin:center center}.afl-screen.afl-signage-screen img.afl-signage-out{opacity:0;transform:scale(1.045) rotateY(-6deg);filter:brightness(.7)}.afl-screen.afl-signage-screen img.afl-signage-in{opacity:1;transform:scale(1) rotateY(0);filter:none}
+.afl-dots{display:none!important}.afl-image-count{display:none!important}.afl-screen.afl-signage-screen{perspective:1200px;overflow:hidden}.afl-screen.afl-signage-screen img{transition:opacity .78s cubic-bezier(.22,.8,.24,1),transform 1.05s cubic-bezier(.18,.72,.2,1),filter .78s ease;transform-origin:center center;will-change:opacity,transform,filter}.afl-screen.afl-signage-screen img.afl-signage-out{opacity:0;transform:scale(1.025) rotateY(-2deg);filter:brightness(.72) blur(1.2px)}.afl-screen.afl-signage-screen img.afl-signage-in{opacity:1;transform:scale(1) rotateY(0);filter:none}
 .afl-dot{width:7px;height:7px;border-radius:50%;background:#3a4c51}
 .afl-dot.active{background:#00ffff;box-shadow:0 0 8px rgba(0,255,255,.75)}
 .afl-upload-note{text-align:center;color:#66797e;font-size:10px;margin-top:-10px;margin-bottom:24px;letter-spacing:.5px}
@@ -1025,7 +1025,7 @@ Install App
     <div class="afl-head-actions">
       <button id="aflUploadTop" class="afl-top-btn afl-upload-top" type="button">＋ UPLOAD</button>
       <button id="aflOwnerInquiries" class="afl-top-btn afl-owner-only-top" type="button">✦ CLIENT INFO</button>
-      <button id="aflChapChapTop" class="afl-top-btn afl-chapchap-top" type="button">✦ CHAPCHAP SELLER</button>
+      <button id="aflChapChapTop" class="afl-top-btn afl-chapchap-top" type="button" onclick="window.aflOpenChapChapSafe&&window.aflOpenChapChapSafe(event)">✦ CHAPCHAP SELLER</button>
       <button id="aflClose" class="afl-top-btn afl-close" type="button">CLOSE</button>
     </div>
   </div>
@@ -2665,7 +2665,20 @@ async function aflLoadFeed(){
       wrap.append(head,stage,info);aflFeed.appendChild(wrap);
       const row={billboard:b,slides,index:0,img,video,videoAudio,videoCaption,overlay,counter,dots,wrap,videoUrl:b.video_url||b.billboard_video_url||"",videoPlaying:false,audioMuted:true};
       videoAudio.onclick=e=>{e.preventDefault();e.stopPropagation();if(row.audioMuted){aflMuteAllBillboardVideos(row);row.audioMuted=false;video.muted=false;video.volume=1;videoAudio.textContent="MUTE";video.play().catch(()=>{});}else{row.audioMuted=true;video.muted=true;video.volume=0;videoAudio.textContent="UNMUTE";}};
-      video.onended=()=>{row.videoPlaying=false;row.index=0;row.audioMuted=true;video.muted=true;video.volume=0;videoAudio.textContent="UNMUTE";videoAudio.style.display="none";row.mode="image";row._rendered=false;if(row.slides.length){aflRenderSlide(row);aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500)));}};
+      video.onended=()=>{
+        row.videoPlaying=false;row.audioMuted=true;video.muted=true;video.volume=0;videoAudio.textContent="UNMUTE";videoAudio.style.display="none";
+        if(!row.slides.length){row.mode="image";return;}
+        row.mode="image-transition";screen.classList.add("afl-media-transition");video.classList.remove("afl-media-fade-in");video.classList.add("afl-media-fade-out");
+        window.setTimeout(()=>{
+          video.style.display="none";video.classList.remove("afl-media-fade-out");row.index=0;row._rendered=false;
+          aflRenderSlide(row);
+          const first=row.slides[0];
+          row.img.classList.remove("afl-signage-out");row.img.classList.add("afl-signage-in");
+          row.img.style.opacity="0";
+          requestAnimationFrame(()=>{requestAnimationFrame(()=>{row.img.style.opacity="1";});});
+          window.setTimeout(()=>{row.img.style.opacity="";screen.classList.remove("afl-media-transition");row.mode="image";aflScheduleRow(row,Math.max(6500,Number(first?.display_ms||7500)));},980);
+        },780);
+      };
       video.ontimeupdate=()=>aflRenderVideoCaption(row);
       video.onerror=()=>{row.videoPlaying=false;row.audioMuted=true;video.muted=true;video.style.display="none";videoAudio.style.display="none";if(row.slides.length){row.index=0;row._rendered=false;aflRenderSlide(row);aflScheduleRow(row,7500);}};
       aflFeedRows.push(row);
@@ -2696,18 +2709,32 @@ function aflStartBillboardVideo(row){
   const p=row.video.play();if(p?.catch)p.catch(()=>{row.audioMuted=true;row.video.muted=true;row.video.volume=0;row.video.play().catch(()=>{});});
 }
 function aflRenderSlide(row){
-  if(row.videoPlaying)return;
+  if(row.videoPlaying||row.mode==="image-transition")return;
   const item=row.slides[row.index];if(!item)return;
-  const img=row.img;const apply=()=>{img.alt=row.billboard.brand_name||"AFRILINK";row.overlay.textContent=item.overlay_text||"";row.overlay.style.color=item.overlay_color||"#fff";row.overlay.style.display=item.overlay_text?"block":"none";img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in");img.style.display="block";row.video.style.display="none";row.videoAudio.style.display="none";row.videoCaption.style.display="none";row._rendered=true;};
+  const img=row.img;
+  const apply=()=>{
+    img.alt=row.billboard.brand_name||"AFRILINK";
+    row.overlay.textContent=item.overlay_text||"";row.overlay.style.color=item.overlay_color||"#fff";row.overlay.style.display=item.overlay_text?"block":"none";
+    img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in");img.style.display="block";img.style.opacity="1";
+    row.video.style.display="none";row.videoAudio.style.display="none";row.videoCaption.style.display="none";
+    row._rendered=true;row.mode="image";
+  };
   if(!row._rendered){img.src=item.image_url;apply();return;}
-  img.classList.remove("afl-signage-in");img.classList.add("afl-signage-out");window.setTimeout(()=>{img.onload=()=>{img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in")};img.src=item.image_url;if(img.complete)setTimeout(()=>{img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in")},40);apply();},180);
+  img.style.opacity="";img.classList.remove("afl-signage-in");img.classList.add("afl-signage-out");
+  window.setTimeout(()=>{
+    img.onload=()=>{img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in");img.style.opacity="1";};
+    img.src=item.image_url;
+    if(img.complete){window.setTimeout(()=>{img.classList.remove("afl-signage-out");img.classList.add("afl-signage-in");img.style.opacity="1";},70);}
+    row.overlay.textContent=item.overlay_text||"";row.overlay.style.color=item.overlay_color||"#fff";row.overlay.style.display=item.overlay_text?"block":"none";
+    row._rendered=true;
+  },760);
 }
 function aflScheduleRow(row,ms){if(row._timer)clearTimeout(row._timer);row._timer=setTimeout(()=>{
   if(row.videoPlaying)return;
   if(row.slides.length){
-    if(row.index<row.slides.length-1){row.index++;aflRenderSlide(row);aflScheduleRow(row,Math.max(6500,Number(row.slides[row.index]?.display_ms||7500)));}
+    if(row.index<row.slides.length-1){row.index++;aflRenderSlide(row);aflScheduleRow(row,Math.max(7800,Number(row.slides[row.index]?.display_ms||8200)));}
     else if(row.videoUrl){aflStartBillboardVideo(row);}
-    else{row.index=0;aflRenderSlide(row);aflScheduleRow(row,Math.max(6500,Number(row.slides[0]?.display_ms||7500)));}
+    else{row.index=0;aflRenderSlide(row);aflScheduleRow(row,Math.max(7800,Number(row.slides[0]?.display_ms||8200)));}
   }else if(row.videoUrl){aflStartBillboardVideo(row);}
 },Math.max(1200,Number(ms||7500)));}
 function aflStartLoops(){
@@ -6729,7 +6756,7 @@ preloadMedia();
 .afl-head-actions{overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap!important}.afl-head-actions::-webkit-scrollbar{display:none}.afl-chapchap-top{border-color:rgba(255,230,0,.5)!important;color:#ffe600!important;background:linear-gradient(180deg,#191a00,#080900)!important}
 .afl-chap-shelf{margin:8px 10px 4px;border:1px solid rgba(255,230,0,.18);border-radius:18px;background:linear-gradient(145deg,#0d1415,#020506);overflow:hidden;box-shadow:0 10px 28px rgba(0,0,0,.35),inset 0 1px rgba(255,255,255,.05)}.afl-chap-shelf-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px 5px}.afl-chap-shelf-head strong{display:block;color:#ffe600;font:900 13px Russo One,Arial;letter-spacing:1.7px}.afl-chap-shelf-head span{display:block;color:#7d9297;font-size:8px;letter-spacing:1px;margin-top:2px}.afl-chap-shelf-head button{border:1px solid rgba(255,230,0,.35);background:#111400;color:#ffe600;border-radius:10px;padding:7px 10px;font-size:9px;font-weight:900}.afl-chap-track{display:flex;gap:9px;overflow-x:auto;padding:6px 10px 11px;scroll-snap-type:x proximity;scrollbar-width:none}.afl-chap-track::-webkit-scrollbar{display:none}.afl-chap-empty{min-width:100%;text-align:center;padding:13px;color:#68797d;font-size:9px;letter-spacing:1px}.afl-chap-mini{position:relative;flex:0 0 112px;height:126px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:#050808;overflow:hidden;scroll-snap-align:start;box-shadow:0 7px 20px rgba(0,0,0,.35)}.afl-chap-mini-pics{height:82px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#101515}.afl-chap-mini-pics img{width:100%;height:100%;object-fit:cover}.afl-chap-mini-meta{padding:5px 7px}.afl-chap-mini-name{font-size:9px;font-weight:900;color:#eaf8fa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-chap-mini-loc{font-size:7px;color:#809296;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-chap-price{position:absolute;right:5px;top:6px;padding:4px 7px;border-radius:999px;color:#050707;font-size:10px;font-weight:1000;box-shadow:0 3px 8px rgba(0,0,0,.35)}
 .afl-chap-overlay{position:fixed;inset:0;z-index:10080;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.78);backdrop-filter:blur(12px);padding:10px;box-sizing:border-box}.afl-chap-card,.afl-chap-detail-card{width:min(700px,100%);max-height:calc(100dvh - 20px);overflow:auto;border:1px solid rgba(255,230,0,.28);border-radius:22px;background:linear-gradient(145deg,#0a1011,#020505);box-shadow:0 30px 90px rgba(0,0,0,.7),inset 0 1px rgba(255,255,255,.07);padding:13px}.afl-chap-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.afl-chap-kicker{font-size:8px;color:#ffe600;letter-spacing:1.8px}.afl-chap-head h2{margin:4px 0 2px;font:900 23px Russo One,Arial;color:#fff}.afl-chap-head p{margin:0;color:#73878b;font-size:9px}.afl-chap-form{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}.afl-chap-field{min-width:0}.afl-chap-field.full,.afl-chap-dynamic{grid-column:1/-1}.afl-chap-field label{display:block;color:#789096;font-size:8px;font-weight:900;letter-spacing:1px;margin-bottom:4px}.afl-chap-field input,.afl-chap-field select,.afl-chap-field textarea{width:100%;box-sizing:border-box;background:#050909;color:#eaffff;border:1px solid #1b3034;border-radius:10px;padding:10px;font-size:12px;outline:none}.afl-chap-field textarea{min-height:85px;resize:vertical}.afl-chap-dynamic{display:grid;grid-template-columns:1fr 1fr;gap:9px}.afl-chap-photo-row{grid-column:1/-1;display:flex;gap:7px}.afl-chap-photo-row button,.afl-chap-submit{border:1px solid #31545a;background:#071416;color:#eaffff;border-radius:11px;padding:10px 12px;font-size:10px;font-weight:900}.afl-chap-submit{grid-column:1/-1;background:linear-gradient(135deg,#ffe600,#ffbd00);color:#080900;border:0;box-shadow:0 5px 0 #765900}.afl-chap-photo-note,.afl-chap-status{grid-column:1/-1;color:#71868a;font-size:8px;line-height:1.4}.afl-chap-image-preview{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px}.afl-chap-image-preview img{width:100%;height:130px;object-fit:cover;border-radius:12px;border:1px solid #203437}.afl-chap-price-colors{display:flex;gap:6px;flex-wrap:wrap}.afl-chap-price-colors button{width:28px;height:28px;border-radius:50%;border:2px solid transparent}.afl-chap-price-colors button.selected{border-color:#fff;box-shadow:0 0 0 2px #ffe600}.afl-chap-price-preview{grid-column:1/-1;text-align:center;color:#7b8d91;font-size:9px;padding:9px}.afl-chap-detail-card{position:relative}.afl-chap-detail-main{clear:both;padding-top:8px}.afl-chap-detail-pics{display:grid;grid-template-columns:1fr 1fr;gap:7px}.afl-chap-detail-pics img{width:100%;height:min(42vh,330px);object-fit:contain;background:#020303;border-radius:16px}.afl-chap-detail-price{display:inline-block;margin-top:10px;padding:8px 14px;border-radius:999px;font-weight:1000;font-size:20px;color:#050707}.afl-chap-detail-title{font:900 clamp(24px,7vw,38px) Russo One,Arial;margin-top:12px}.afl-chap-detail-sub{color:#7f9296;font-size:10px;margin-top:5px}.afl-chap-detail-desc{margin-top:14px;line-height:1.55;color:#d3e1e3;font-size:13px}.afl-chap-detail-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.afl-chap-detail-actions a{flex:1;min-width:130px;text-align:center;text-decoration:none;border-radius:12px;padding:12px;font-size:11px;font-weight:1000}.afl-call-btn{background:#00ffff;color:#001010}.afl-wa-btn{background:#59ff8a;color:#031006}
-.afl-video-upload-box{margin:10px 0;border:1px solid rgba(0,255,255,.2);border-radius:16px;padding:11px;background:linear-gradient(145deg,rgba(0,255,255,.055),rgba(255,255,255,.018))}.afl-video-upload-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.afl-video-upload-head strong{display:block;color:#dffeff;font-size:11px;letter-spacing:1px}.afl-video-upload-head span{display:block;color:#779095;font-size:8px;letter-spacing:.8px;margin-top:3px}.afl-video-upload-head>#aflVideoBadge{border:1px solid #254348;border-radius:999px;padding:4px 7px;color:#00ffff;white-space:nowrap}.afl-video-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.afl-video-actions button,.afl-video-words-head button{border:1px solid #28545b;background:#071315;color:#cfffff;border-radius:10px;padding:8px 11px;font-weight:900;font-size:9px}.afl-video-status{font-size:8px;color:#71898e;margin-top:7px;line-height:1.35}.afl-video-editor-preview{margin-top:9px}.afl-editor-video-frame{position:relative;border:1px solid #203437;border-radius:14px;overflow:hidden;background:#000;min-height:180px}.afl-editor-video-frame video{display:block;width:100%;max-height:260px;object-fit:contain;background:#000}.afl-editor-video-caption,.afl-video-caption{position:absolute;left:6%;right:6%;bottom:8%;z-index:7;text-align:center;color:#fff;font-size:clamp(10px,2vw,14px);font-weight:900;letter-spacing:.6px;line-height:1.25;text-shadow:0 1px 7px rgba(0,0,0,.85);pointer-events:none;opacity:.86}.afl-video-words-head{display:flex;align-items:center;justify-content:space-between;margin-top:10px}.afl-video-words-head strong{font-size:9px;color:#8fa4a8;letter-spacing:1.2px}.afl-video-words-note{font-size:8px;color:#687d82;margin-top:5px}.afl-video-words{display:grid;gap:7px;margin-top:7px}.afl-video-word-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;border:1px solid #172b2f;border-radius:11px;padding:7px;background:#040809}.afl-video-word-text{width:100%;box-sizing:border-box;border:1px solid #1b3034;border-radius:8px;background:#050909;color:#eaffff;padding:8px;font-size:11px}.afl-video-word-colors{display:flex;gap:4px;flex-wrap:wrap}.afl-video-word-colors .afl-color{width:18px;height:18px}.afl-video-word-remove{border:1px solid #5a3232;background:#160909;color:#ffaaaa;border-radius:8px;padding:7px;font-size:8px;font-weight:900}.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;background:#000;opacity:1;display:none;z-index:3;display:block;box-sizing:border-box}.afl-screen.afl-signage-screen.video-active{background:#000}.afl-screen.afl-signage-screen.video-active .afl-signage-video{object-fit:contain!important;object-position:center center!important}.afl-video-audio-toggle{position:absolute;right:10px;top:10px;z-index:9;border:1px solid rgba(0,255,255,.55);background:rgba(0,10,12,.82);backdrop-filter:blur(8px);color:#dfffff;border-radius:11px;padding:8px 11px;font-size:9px;font-weight:1000;letter-spacing:1px;box-shadow:0 7px 20px rgba(0,0,0,.45);cursor:pointer}.afl-video-audio-toggle:active{transform:translateY(1px) scale(.98)}.afl-signage-screen{background:#000;overflow:hidden}.afl-video-caption{bottom:7%;opacity:.78;font-size:clamp(10px,2.4vw,15px);letter-spacing:1px}
+.afl-video-upload-box{margin:10px 0;border:1px solid rgba(0,255,255,.2);border-radius:16px;padding:11px;background:linear-gradient(145deg,rgba(0,255,255,.055),rgba(255,255,255,.018))}.afl-video-upload-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.afl-video-upload-head strong{display:block;color:#dffeff;font-size:11px;letter-spacing:1px}.afl-video-upload-head span{display:block;color:#779095;font-size:8px;letter-spacing:.8px;margin-top:3px}.afl-video-upload-head>#aflVideoBadge{border:1px solid #254348;border-radius:999px;padding:4px 7px;color:#00ffff;white-space:nowrap}.afl-video-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.afl-video-actions button,.afl-video-words-head button{border:1px solid #28545b;background:#071315;color:#cfffff;border-radius:10px;padding:8px 11px;font-weight:900;font-size:9px}.afl-video-status{font-size:8px;color:#71898e;margin-top:7px;line-height:1.35}.afl-video-editor-preview{margin-top:9px}.afl-editor-video-frame{position:relative;border:1px solid #203437;border-radius:14px;overflow:hidden;background:#000;min-height:180px}.afl-editor-video-frame video{display:block;width:100%;max-height:260px;object-fit:contain;background:#000}.afl-editor-video-caption,.afl-video-caption{position:absolute;left:6%;right:6%;bottom:8%;z-index:7;text-align:center;color:#fff;font-size:clamp(10px,2vw,14px);font-weight:900;letter-spacing:.6px;line-height:1.25;text-shadow:0 1px 7px rgba(0,0,0,.85);pointer-events:none;opacity:.86}.afl-video-words-head{display:flex;align-items:center;justify-content:space-between;margin-top:10px}.afl-video-words-head strong{font-size:9px;color:#8fa4a8;letter-spacing:1.2px}.afl-video-words-note{font-size:8px;color:#687d82;margin-top:5px}.afl-video-words{display:grid;gap:7px;margin-top:7px}.afl-video-word-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px;align-items:center;border:1px solid #172b2f;border-radius:11px;padding:7px;background:#040809}.afl-video-word-text{width:100%;box-sizing:border-box;border:1px solid #1b3034;border-radius:8px;background:#050909;color:#eaffff;padding:8px;font-size:11px}.afl-video-word-colors{display:flex;gap:4px;flex-wrap:wrap}.afl-video-word-colors .afl-color{width:18px;height:18px}.afl-video-word-remove{border:1px solid #5a3232;background:#160909;color:#ffaaaa;border-radius:8px;padding:7px;font-size:8px;font-weight:900}.afl-signage-video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center center;background:#000;opacity:1;display:none;z-index:3;display:block;box-sizing:border-box}.afl-signage-video.afl-media-fade-out{opacity:0!important;transform:scale(1.012);filter:brightness(.72) blur(1px);transition:opacity .78s cubic-bezier(.22,.8,.24,1),transform .9s ease,filter .78s ease}.afl-signage-video.afl-media-fade-in{opacity:1!important;transform:scale(1);filter:none;transition:opacity .95s cubic-bezier(.16,.78,.2,1),transform 1.05s cubic-bezier(.18,.72,.2,1),filter .95s ease}.afl-screen.afl-signage-screen.afl-media-transition{background:linear-gradient(180deg,#020607,#000)}.afl-screen.afl-signage-screen.video-active{background:#000}.afl-screen.afl-signage-screen.video-active .afl-signage-video{object-fit:contain!important;object-position:center center!important}.afl-video-audio-toggle{position:absolute;right:10px;top:10px;z-index:9;border:1px solid rgba(0,255,255,.55);background:rgba(0,10,12,.82);backdrop-filter:blur(8px);color:#dfffff;border-radius:11px;padding:8px 11px;font-size:9px;font-weight:1000;letter-spacing:1px;box-shadow:0 7px 20px rgba(0,0,0,.45);cursor:pointer}.afl-video-audio-toggle:active{transform:translateY(1px) scale(.98)}.afl-signage-screen{background:#000;overflow:hidden}.afl-video-caption{bottom:7%;opacity:.78;font-size:clamp(10px,2.4vw,15px);letter-spacing:1px}
 @media(max-width:560px){.afl-chap-form,.afl-chap-dynamic{grid-template-columns:1fr}.afl-chap-field.full,.afl-chap-dynamic,.afl-chap-photo-row,.afl-chap-submit,.afl-chap-photo-note,.afl-chap-status,.afl-chap-image-preview,.afl-chap-price-preview{grid-column:1}.afl-chap-mini{flex-basis:104px;height:120px}.afl-video-word-row{grid-template-columns:1fr}.afl-head-actions .afl-top-btn{padding:7px 9px;font-size:9px}}
 </style>
 <script>
@@ -6760,6 +6787,28 @@ preloadMedia();
 })();
 </script>
 <script>
+/* ================= CHAPCHAP HARD OPEN =================
+   Capture-phase binding so no older AFRILINK handler can swallow the tap.
+========================= */
+(function(){
+  function safeOpen(ev){
+    if(ev){ev.preventDefault();ev.stopPropagation();if(ev.stopImmediatePropagation)ev.stopImmediatePropagation();}
+    const o=document.getElementById("aflChapChapEditor");
+    if(!o)return;
+    try{ if(typeof window.aflOpenChapChap==="function"){window.aflOpenChapChap();} }catch(err){console.warn("CHAPCHAP open fallback:",err);}
+    o.style.display="flex";o.style.visibility="visible";o.style.opacity="1";o.style.pointerEvents="auto";o.setAttribute("aria-hidden","false");
+  }
+  window.aflOpenChapChapSafe=safeOpen;
+  document.addEventListener("pointerup",function(e){
+    const b=e.target&&e.target.closest?e.target.closest("#aflChapChapTop,#aflChapSellMini"):null;
+    if(b){safeOpen(e);}
+  },true);
+  document.addEventListener("click",function(e){
+    const b=e.target&&e.target.closest?e.target.closest("#aflChapChapTop,#aflChapSellMini"):null;
+    if(b){safeOpen(e);}
+  },true);
+})();
+
 /* ================= FINAL SAFE UI BINDINGS =================
    Keeps CHAPCHAP independent from the older AFRILINK handlers.
    Also guarantees billboard video is always shown whole (no crop).
