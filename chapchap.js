@@ -95,20 +95,20 @@
     overlay.id = "ioneChapOverlay";
     overlay.innerHTML =
       '<div class="cc-card">' +
-        '<div class="cc-head"><h2 id="ioneCcTitle">CHAPCHAP</h2><button class="cc-close" id="ccClose" type="button">CLOSE</button></div>' +
-        '<div class="cc-kicker" id="ccKicker">I|ONE • SINGLE-PRODUCT MARKET</div>' +
-        '<div id="ccBody"></div>' +
+        '<div class="cc-head"><h2 id="ioneCcTitle">CHAPCHAP</h2><button class="cc-close" id="ioneChapOverlayClose" type="button">CLOSE</button></div>' +
+        '<div class="cc-kicker" id="ioneChapOverlayKicker">I|ONE • SINGLE-PRODUCT MARKET</div>' +
+        '<div id="ioneChapOverlayBody"></div>' +
       '</div>';
     document.body.appendChild(overlay);
-    document.getElementById("ccClose").addEventListener("click", closeOverlay);
+    document.getElementById("ioneChapOverlayClose").addEventListener("click", closeOverlay);
     overlay.addEventListener("click", function (e) { if (e.target === overlay) closeOverlay(); });
   }
 
   function openOverlay(title, kicker, body) {
     createOverlay();
     document.getElementById("ioneCcTitle").textContent = title;
-    document.getElementById("ccKicker").textContent = kicker || "I|ONE • SINGLE-PRODUCT MARKET";
-    document.getElementById("ccBody").innerHTML = body;
+    document.getElementById("ioneChapOverlayKicker").textContent = kicker || "I|ONE • SINGLE-PRODUCT MARKET";
+    document.getElementById("ioneChapOverlayBody").innerHTML = body;
     document.getElementById("ioneChapOverlay").style.display = "flex";
     document.body.classList.add("ione-chap-open");
   }
