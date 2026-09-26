@@ -2095,7 +2095,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js")
+  navigator.serviceWorker.register("sw.js?v=71")
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
 }
