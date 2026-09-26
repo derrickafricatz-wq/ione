@@ -99,7 +99,9 @@
       '<span id="ioneChapStatus">SINGLE-PRODUCT MARKET</span>' +
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
-    if (discovery.classList && discovery.classList.contains("afl-head")) {\n      discovery.parentNode.insertBefore(dock, discovery.nextSibling);\n    } else {\n      discovery.insertBefore(dock, discovery.firstChild);\n    }
+    if (discovery.classList && discovery.classList.contains("afl-head")) {
+      discovery.parentNode.insertBefore(dock, discovery.nextSibling);\n    } else {
+      discovery.insertBefore(dock, discovery.firstChild);\n    }
     document.getElementById("ioneChapOpen").addEventListener("click", function () { openSell(); });
     document.getElementById("ioneChapMine").addEventListener("click", function () { openMine(); });
     return true;
