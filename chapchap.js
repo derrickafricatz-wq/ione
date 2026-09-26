@@ -6,6 +6,7 @@
   "use strict";
 
   var started = false;
+  var mountObserver = null;
   var productCache = [];
   var pollTimer = null;
 
@@ -72,8 +73,15 @@
     document.head.appendChild(style);
   }
 
+  function findMarketingHost() {
+    return document.querySelector("#afrilinkOverlay .afl-discovery") ||
+      document.querySelector("#afrilinkOverlay .afl-marketing") ||
+      document.querySelector("#afrilinkOverlay [class*="marketing"]") ||
+      document.querySelector(".afl-discovery");
+  }
+
   function createDock() {
-    var discovery = document.querySelector("#afrilinkOverlay .afl-discovery");
+    var discovery = findMarketingHost();
     if (!discovery || document.getElementById("ioneChapDock")) return false;
     var dock = document.createElement("div");
     dock.id = "ioneChapDock";
@@ -457,11 +465,16 @@
   /* I|ONE may build/open the Marketing overlay after DOMContentLoaded.
      Keep watching only for the specific ChapChap mounting point. */
   function watchForMarketingMount() {
-    var observer = new MutationObserver(function () {
-      if (!document.getElementById("ioneChapDock")) createDock();
+    if (mountObserver || typeof MutationObserver === "undefined") return;
+    mountObserver = new MutationObserver(function () {
+      if (!document.getElementById("ioneChapDock")) {
+        createDock();
+        if (document.getElementById("ioneChapDock")) {
+          loadProducts();
+        }
+      }
     });
-    observer.observe(document.body, { childList: true, subtree: true });
-    setTimeout(function () { observer.disconnect(); }, 120000);
+    mountObserver.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   /* The existing marketing world is opened by I|ONE. We only mount inside it. */
