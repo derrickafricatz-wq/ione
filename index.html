@@ -2508,6 +2508,34 @@ async function aflUploadFile(file, userId){
   return {path,url:data.publicUrl};
 }
 
+
+/* ================= I|ONE UPLOAD SUBSCRIPTION PRICING =================
+   Edit ONLY the three amounts below when you want to change prices.
+   Amounts are in Tanzanian Shillings (TZS).
+====================================================================== */
+const IONE_UPLOAD_PLANS = {
+  twoWeeks: {
+    id: "two_weeks",
+    name: "2 WEEKS",
+    days: 14,
+    amount: 3000
+  },
+  oneMonth: {
+    id: "one_month",
+    name: "1 MONTH",
+    days: 30,
+    amount: 5000
+  },
+  threeMonths: {
+    id: "three_months",
+    name: "3 MONTHS",
+    days: 90,
+    amount: 12000
+  }
+};
+
+const IONE_UPLOAD_CURRENCY = "TZS";
+
 async function aflPublish(){
   try{
     aflEditorStatus.textContent="CHECKING ACCOUNT…";
