@@ -2703,6 +2703,7 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     status.textContent="Please choose a subscription plan.";
     return;
   }
+
   if(!phone){
     status.textContent="Please enter your mobile money phone number.";
     return;
@@ -2714,39 +2715,144 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
   try{
     const session=await ensureHeavensAnonymousSession();
     const uid=session?.user?.id;
-    if(!uid)throw new Error("Could not create your secure I|ONE session.");
 
-    const prepared=await heavensSupabase.functions.invoke("ione-upload-payment",{
-      body:{
-        action:"prepare_subscription",
-        user_id:uid,
-        plan_id:planId,
-        phone_number:phone
+    if(!uid){
+      throw new Error("Could not create your secure I|ONE session.");
+    }
+
+    const prepared=await heavensSupabase.functions.invoke(
+      "ione-upload-payment",
+      {
+        body:{
+          action:"prepare_subscription",
+          user_id:uid,
+          plan_id:planId,
+          phone_number:phone
+        }
       }
-    });
+    );
 
-    if(prepared.error)throw prepared.error;
-    if(!prepared.data?.success)throw new Error(prepared.data?.error||"Could not prepare subscription.");
+    if(prepared.error){
+      console.error(
+        "I|ONE prepare subscription Edge Function error:",
+        prepared.error
+      );
 
-    const requestId="ione-sub-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
+      let message=
+        prepared.error?.message ||
+        prepared.error?.context?.message ||
+        "Could not prepare subscription.";
 
-    status.textContent="Sending payment request to your phone…";
+      try{
+        const ctx=prepared.error?.context;
 
-    const payment=await heavensSupabase.functions.invoke("ione-upload-payment",{
-      body:{
-        action:"create_payment",
-        user_id:uid,
-        subscription_id:prepared.data.subscription_id,
-        request_id:requestId,
-        phone_number:phone,
-        plan_id:planId,
-        customer_name:"I|ONE USER"
+        if(ctx?.body){
+          const body=
+            typeof ctx.body==="string"
+              ? JSON.parse(ctx.body)
+              : ctx.body;
+
+          if(body?.error){
+            message=body.error;
+
+            if(body.http_status){
+              message+=" [HTTP "+body.http_status+"]";
+            }
+
+            if(body.blmpay_error){
+              message+=" "+body.blmpay_error;
+            }
+          }
+        }
+      }catch(e){
+        console.warn(
+          "Could not read prepare Edge Function error body:",
+          e
+        );
       }
-    });
 
-    if(payment.error)throw payment.error;
+      throw new Error(message);
+    }
+
+    if(!prepared.data?.success){
+      const d=prepared.data||{};
+
+      throw new Error(
+        (d.error||"Could not prepare subscription.")+
+        (d.http_status?" [HTTP "+d.http_status+"]":"")+
+        (d.blmpay_error?" "+d.blmpay_error:"")
+      );
+    }
+
+    const requestId=
+      "ione-sub-"+
+      Date.now()+
+      "-"+
+      Math.random().toString(36).slice(2,9);
+
+    status.textContent=
+      "Sending payment request to your phone…";
+
+    const payment=await heavensSupabase.functions.invoke(
+      "ione-upload-payment",
+      {
+        body:{
+          action:"create_payment",
+          user_id:uid,
+          subscription_id:prepared.data.subscription_id,
+          request_id:requestId,
+          phone_number:phone,
+          plan_id:planId,
+          customer_name:"I|ONE USER"
+        }
+      }
+    );
+
+    if(payment.error){
+      console.error(
+        "I|ONE BLMPay Edge Function error:",
+        payment.error
+      );
+
+      let message=
+        payment.error?.message ||
+        payment.error?.context?.message ||
+        "Edge Function returned an error.";
+
+      try{
+        const ctx=payment.error?.context;
+
+        if(ctx?.body){
+          const body=
+            typeof ctx.body==="string"
+              ? JSON.parse(ctx.body)
+              : ctx.body;
+
+          if(body?.error){
+            message=body.error;
+
+            if(body.http_status){
+              message+=" [HTTP "+body.http_status+"]";
+            }
+
+            if(body.blmpay_error){
+              message+=" "+body.blmpay_error;
+            }
+          }
+        }
+      }catch(e){
+        console.warn(
+          "Could not read Edge Function error body:",
+          e
+        );
+      }
+
+      throw new Error(message);
+    }
+
     if(!payment.data?.success){
       const d=payment.data||{};
+
       throw new Error(
         (d.error||"BLMPay payment failed.")+
         (d.http_status?" [HTTP "+d.http_status+"]":"")+
@@ -2754,12 +2860,25 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
       );
     }
 
-    status.textContent="Payment request sent. Check your phone and approve the payment.";
-    await ioneWaitForUploadSubscription(uid,mode,existing);
+    status.textContent=
+      "Payment request sent. Check your phone and approve the payment.";
+
+    await ioneWaitForUploadSubscription(
+      uid,
+      mode,
+      existing
+    );
 
   }catch(error){
-    console.error("I|ONE subscription payment:",error);
-    status.textContent=error?.message||"Payment could not be started.";
+    console.error(
+      "I|ONE subscription payment:",
+      error
+    );
+
+    status.textContent=
+      error?.message ||
+      "Payment could not be started.";
+
     pay.disabled=false;
   }
 }
