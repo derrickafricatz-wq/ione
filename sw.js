@@ -1,10 +1,8 @@
-const CACHE_NAME = "ione-app-v70";
+const CACHE_NAME = "ione-app-v71";
 
 const APP_FILES = [
   "./",
-  "./index.html",
   "./manifest.json",
-  "./sw.js",
   "./health-data.js",
   "./lesson-data.js",
   "./ads-data.js",
@@ -50,6 +48,24 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+
+  // Always fetch the app shell and service worker from the network first.
+  // This prevents a broken/stale HTML or SW from trapping the app in an old cache.
+  const url = new URL(event.request.url);
+  if (event.request.mode === "navigate" || url.pathname.endsWith("/sw.js")) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" })
+        .then((response) => {
+          if (event.request.mode === "navigate" && response && response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match("./index.html"))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
