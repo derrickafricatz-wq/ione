@@ -31,7 +31,7 @@
     return /^255[67]\d{8}$/.test(normalizePhone(value));
   }
 
-  function fieldValue(id) {\n    var el = document.getElementById(id);\n    return el && typeof el.value === "string" ? fieldValue(el.id) : "";\n  }\n\n  function getSupabase() {
+  function fieldValue(id) {\n    var el = document.getElementById(id);\n    return el && typeof el.value === "string" ? el.value.trim() : "";\n  }\n\n  function getSupabase() {
     return typeof heavensSupabase !== "undefined" ? heavensSupabase : null;
   }
 
@@ -74,7 +74,7 @@
 
   function createDock() {
     var discovery = document.querySelector("#afrilinkOverlay .afl-discovery");
-    if (!discovery || document.getElementById("ioneChapDock")) return;
+    if (!discovery || document.getElementById("ioneChapDock")) return false;
     var dock = document.createElement("div");
     dock.id = "ioneChapDock";
     dock.innerHTML =
@@ -87,6 +87,7 @@
     discovery.parentNode.insertBefore(dock, discovery.nextSibling);
     document.getElementById("ioneChapOpen").addEventListener("click", function () { openSell(); });
     document.getElementById("ioneChapMine").addEventListener("click", function () { openMine(); });
+    return true;
   }
 
   function createOverlay() {
@@ -453,8 +454,19 @@
     initialize();
   }
 
+  /* I|ONE may build/open the Marketing overlay after DOMContentLoaded.
+     Keep watching only for the specific ChapChap mounting point. */
+  function watchForMarketingMount() {
+    var observer = new MutationObserver(function () {
+      if (!document.getElementById("ioneChapDock")) createDock();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    setTimeout(function () { observer.disconnect(); }, 120000);
+  }
+
   /* The existing marketing world is opened by I|ONE. We only mount inside it. */
   bootWhenReady();
+  if (typeof MutationObserver !== "undefined") watchForMarketingMount();
   window.ioneChapChapRefresh = loadProducts;
   window.ioneChapChapOpen = openSell;
 })();
