@@ -17,6 +17,135 @@
  <!-- Supabase public client key: safe for browser use. NEVER put BLMPay/API or service-role secrets here. -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script>
+/* ================= AUTHORITY PRESS + LIVE I|ONE PRICING ================= */
+(function(){
+  const FALLBACK = {
+    "2weeks": {id:"2weeks",name:"2 WEEKS",days:14,amount:3000},
+    "1month": {id:"1month",name:"1 MONTH",days:30,amount:5000},
+    "3months": {id:"3months",name:"3 MONTHS",days:90,amount:12000}
+  };
+
+  window.ioneRemotePlansReady=false;
+
+  function setPlanAmount(id,amount){
+    if(typeof IONE_UPLOAD_PLANS!=="undefined" && IONE_UPLOAD_PLANS[id]) IONE_UPLOAD_PLANS[id].amount=Number(amount);
+    const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
+    if(typeof IONE_UPLOAD_PLANS!=="undefined" && IONE_UPLOAD_PLANS[map[id]]) IONE_UPLOAD_PLANS[map[id]].amount=Number(amount);
+  }
+
+  async function loadLivePlans(){
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
+      if(r.error || !r.data?.success) throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
+      (r.data.plans||[]).forEach(p=>setPlanAmount(p.id,p.amount));
+      window.ioneRemotePlansReady=true;
+      updateOpenGate();
+      return r.data.plans||[];
+    }catch(e){
+      console.warn("I|ONE live pricing:",e);
+      return [];
+    }
+  }
+
+  function updateOpenGate(){
+    const gate=document.getElementById("ioneSubscriptionGate");
+    if(!gate)return;
+    const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
+    gate.querySelectorAll(".ione-sub-plan").forEach(btn=>{
+      const id=btn.dataset.plan;
+      const key=map[id];
+      const plan=key && typeof IONE_UPLOAD_PLANS!=="undefined" ? IONE_UPLOAD_PLANS[key] : null;
+      const span=btn.querySelector("span");
+      if(plan&&span)span.textContent="TZS "+Number(plan.amount).toLocaleString("en-US");
+    });
+  }
+
+  window.ioneRefreshLivePlans=loadLivePlans;
+
+  async function openAuthorityPanel(){
+    const panel=document.getElementById("authorityPressPanel");
+    if(!panel)return;
+    panel.style.display="block";
+    panel.setAttribute("aria-hidden","false");
+    const status=document.getElementById("authorityPriceStatus");
+    if(status)status.textContent="Loading…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
+      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
+      const plans=r.data.plans||[];
+      const inputs={
+        "2weeks":document.getElementById("authorityPrice2weeks"),
+        "1month":document.getElementById("authorityPrice1month"),
+        "3months":document.getElementById("authorityPrice3months")
+      };
+      plans.forEach(p=>{if(inputs[p.id])inputs[p.id].value=Number(p.amount);setPlanAmount(p.id,p.amount);});
+      if(status)status.textContent="CONNECTED • LIVE";
+    }catch(e){
+      if(status)status.textContent="Could not load live prices.";
+    }
+  }
+
+  async function saveAuthorityPrices(){
+    const status=document.getElementById("authoritySaveStatus");
+    const button=document.getElementById("authoritySavePrices");
+    const read=id=>Number(document.getElementById(id)?.value);
+    const plans=[
+      {id:"2weeks",amount:read("authorityPrice2weeks")},
+      {id:"1month",amount:read("authorityPrice1month")},
+      {id:"3months",amount:read("authorityPrice3months")}
+    ];
+    if(plans.some(p=>!Number.isFinite(p.amount)||p.amount<0||!Number.isInteger(p.amount))){
+      if(status)status.textContent="Enter valid whole TZS amounts.";
+      return;
+    }
+    if(button)button.disabled=true;
+    if(status)status.textContent="Saving live prices…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{
+        body:{action:"update",password:String(document.getElementById("authorityPasswordInput")?.value||""),plans}
+      });
+      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not save prices.");
+      (r.data.plans||plans).forEach(p=>setPlanAmount(p.id,p.amount));
+      updateOpenGate();
+      if(status)status.textContent="SAVED • ALL USERS WILL SEE THE NEW PRICES";
+      const live=document.getElementById("authorityPriceStatus");
+      if(live)live.textContent="CONNECTED • LIVE";
+    }catch(e){
+      if(status)status.textContent=e?.message||"Could not save prices.";
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
+  function bind(){
+    const save=document.getElementById("authoritySavePrices");
+    if(save)save.onclick=saveAuthorityPrices;
+
+    /* Reuse the existing unlock flow; only add live panel loading. */
+    const unlock=document.getElementById("authorityPasswordUnlock");
+    if(unlock && !unlock.dataset.livePanelBound){
+      unlock.dataset.livePanelBound="1";
+      unlock.addEventListener("click",()=>setTimeout(()=>{
+        const panel=document.getElementById("authorityPressPanel");
+        if(panel && panel.getAttribute("aria-hidden")==="false")openAuthorityPanel();
+      },20));
+    }
+
+    const close=document.getElementById("authorityPressClose");
+    if(close && !close.dataset.livePanelBound){
+      close.dataset.livePanelBound="1";
+      close.addEventListener("click",()=>{const panel=document.getElementById("authorityPressPanel");if(panel){panel.style.display="none";panel.setAttribute("aria-hidden","true");}});
+    }
+
+    loadLivePlans();
+  }
+
+  window.addEventListener("load",bind,{once:true});
+})();
+
+</script>
+
 <style>
 html, body {
   margin: 0;
@@ -6461,133 +6590,7 @@ printBtn.onclick = () => {
     html += "<hr><p>Heaven On Earth</p>";
     html +=           "<p>powered by deka</p>";
 
-    html += "<script>
-/* ================= AUTHORITY PRESS + LIVE I|ONE PRICING ================= */
-(function(){
-  const FALLBACK = {
-    "2weeks": {id:"2weeks",name:"2 WEEKS",days:14,amount:3000},
-    "1month": {id:"1month",name:"1 MONTH",days:30,amount:5000},
-    "3months": {id:"3months",name:"3 MONTHS",days:90,amount:12000}
-  };
-
-  window.ioneRemotePlansReady=false;
-
-  function setPlanAmount(id,amount){
-    if(typeof IONE_UPLOAD_PLANS!=="undefined" && IONE_UPLOAD_PLANS[id]) IONE_UPLOAD_PLANS[id].amount=Number(amount);
-    const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
-    if(typeof IONE_UPLOAD_PLANS!=="undefined" && IONE_UPLOAD_PLANS[map[id]]) IONE_UPLOAD_PLANS[map[id]].amount=Number(amount);
-  }
-
-  async function loadLivePlans(){
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
-      if(r.error || !r.data?.success) throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
-      (r.data.plans||[]).forEach(p=>setPlanAmount(p.id,p.amount));
-      window.ioneRemotePlansReady=true;
-      updateOpenGate();
-      return r.data.plans||[];
-    }catch(e){
-      console.warn("I|ONE live pricing:",e);
-      return [];
-    }
-  }
-
-  function updateOpenGate(){
-    const gate=document.getElementById("ioneSubscriptionGate");
-    if(!gate)return;
-    const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
-    gate.querySelectorAll(".ione-sub-plan").forEach(btn=>{
-      const id=btn.dataset.plan;
-      const key=map[id];
-      const plan=key && typeof IONE_UPLOAD_PLANS!=="undefined" ? IONE_UPLOAD_PLANS[key] : null;
-      const span=btn.querySelector("span");
-      if(plan&&span)span.textContent="TZS "+Number(plan.amount).toLocaleString("en-US");
-    });
-  }
-
-  window.ioneRefreshLivePlans=loadLivePlans;
-
-  async function openAuthorityPanel(){
-    const panel=document.getElementById("authorityPressPanel");
-    if(!panel)return;
-    panel.style.display="block";
-    panel.setAttribute("aria-hidden","false");
-    const status=document.getElementById("authorityPriceStatus");
-    if(status)status.textContent="Loading…";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
-      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
-      const plans=r.data.plans||[];
-      const inputs={
-        "2weeks":document.getElementById("authorityPrice2weeks"),
-        "1month":document.getElementById("authorityPrice1month"),
-        "3months":document.getElementById("authorityPrice3months")
-      };
-      plans.forEach(p=>{if(inputs[p.id])inputs[p.id].value=Number(p.amount);setPlanAmount(p.id,p.amount);});
-      if(status)status.textContent="CONNECTED • LIVE";
-    }catch(e){
-      if(status)status.textContent="Could not load live prices.";
-    }
-  }
-
-  async function saveAuthorityPrices(){
-    const status=document.getElementById("authoritySaveStatus");
-    const button=document.getElementById("authoritySavePrices");
-    const read=id=>Number(document.getElementById(id)?.value);
-    const plans=[
-      {id:"2weeks",amount:read("authorityPrice2weeks")},
-      {id:"1month",amount:read("authorityPrice1month")},
-      {id:"3months",amount:read("authorityPrice3months")}
-    ];
-    if(plans.some(p=>!Number.isFinite(p.amount)||p.amount<0||!Number.isInteger(p.amount))){
-      if(status)status.textContent="Enter valid whole TZS amounts.";
-      return;
-    }
-    if(button)button.disabled=true;
-    if(status)status.textContent="Saving live prices…";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{
-        body:{action:"update",password:String(document.getElementById("authorityPasswordInput")?.value||""),plans}
-      });
-      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not save prices.");
-      (r.data.plans||plans).forEach(p=>setPlanAmount(p.id,p.amount));
-      updateOpenGate();
-      if(status)status.textContent="SAVED • ALL USERS WILL SEE THE NEW PRICES";
-      const live=document.getElementById("authorityPriceStatus");
-      if(live)live.textContent="CONNECTED • LIVE";
-    }catch(e){
-      if(status)status.textContent=e?.message||"Could not save prices.";
-    }finally{
-      if(button)button.disabled=false;
-    }
-  }
-
-  function bind(){
-    const save=document.getElementById("authoritySavePrices");
-    if(save)save.onclick=saveAuthorityPrices;
-
-    /* Reuse the existing unlock flow; only add live panel loading. */
-    const unlock=document.getElementById("authorityPasswordUnlock");
-    if(unlock && !unlock.dataset.livePanelBound){
-      unlock.dataset.livePanelBound="1";
-      unlock.addEventListener("click",()=>setTimeout(()=>{
-        const panel=document.getElementById("authorityPressPanel");
-        if(panel && panel.getAttribute("aria-hidden")==="false")openAuthorityPanel();
-      },20));
-    }
-
-    const close=document.getElementById("authorityPressClose");
-    if(close && !close.dataset.livePanelBound){
-      close.dataset.livePanelBound="1";
-      close.addEventListener("click",()=>{const panel=document.getElementById("authorityPressPanel");if(panel){panel.style.display="none";panel.setAttribute("aria-hidden","true");}});
-    }
-
-    loadLivePlans();
-  }
-
-  window.addEventListener("load",bind,{once:true});
-})();
-</script></body></html>";
+    html += "</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
