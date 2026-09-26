@@ -6533,13 +6533,9 @@ printBtn.onclick = () => {
   window.ioneRemotePlansReady=false;
 
   function setPlanAmount(id,amount){
-    if(window.IONE_UPLOAD_PLANS && window.IONE_UPLOAD_PLANS[id]){
-      window.IONE_UPLOAD_PLANS[id].amount=Number(amount);
-    }
+    if(typeof IONE_UPLOAD_PLANS!=="undefined" && IONE_UPLOAD_PLANS[id]) IONE_UPLOAD_PLANS[id].amount=Number(amount);
     const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
-    if(window.IONE_UPLOAD_PLANS && window.IONE_UPLOAD_PLANS[map[id]]){
-      window.IONE_UPLOAD_PLANS[map[id]].amount=Number(amount);
-    }
+    if(typeof IONE_UPLOAD_PLANS!=="undefined" && IONE_UPLOAD_PLANS[map[id]]) IONE_UPLOAD_PLANS[map[id]].amount=Number(amount);
   }
 
   async function loadLivePlans(){
@@ -6563,7 +6559,7 @@ printBtn.onclick = () => {
     gate.querySelectorAll(".ione-sub-plan").forEach(btn=>{
       const id=btn.dataset.plan;
       const key=map[id];
-      const plan=key && window.IONE_UPLOAD_PLANS ? window.IONE_UPLOAD_PLANS[key] : null;
+      const plan=key && typeof IONE_UPLOAD_PLANS!=="undefined" ? IONE_UPLOAD_PLANS[key] : null;
       const span=btn.querySelector("span");
       if(plan&&span)span.textContent="TZS "+Number(plan.amount).toLocaleString("en-US");
     });
