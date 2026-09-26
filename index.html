@@ -339,6 +339,68 @@ body.landscape-mode #brandVideo {
   color:#ff6b6b;
   font:700 12px/1.4 Arial,sans-serif;
 }
+/* ================= AUTHORITY PRESS PANEL ================= */
+#authorityPressPanel{
+  position:fixed;
+  inset:0;
+  z-index:100600;
+  display:none;
+  overflow:auto;
+  box-sizing:border-box;
+  padding:20px;
+  background:#05090a;
+  color:#fff;
+}
+.authority-panel-inner{
+  width:min(900px,100%);
+  min-height:calc(100vh - 40px);
+  margin:0 auto;
+  box-sizing:border-box;
+  padding:24px 20px 30px;
+  border:1px solid #00ffff;
+  border-radius:22px;
+  background:linear-gradient(145deg,#101b1f,#05090a);
+  box-shadow:0 20px 60px rgba(0,0,0,.65);
+}
+.authority-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:15px;
+  margin-bottom:28px;
+}
+.authority-panel-head h2{
+  margin:0;
+  color:#00ffff;
+  font:900 clamp(22px,6vw,34px)/1.1 'Russo One',Arial,sans-serif;
+}
+#authorityPressClose{
+  flex:0 0 auto;
+  min-width:90px;
+  min-height:46px;
+  border:1px solid #00ffff;
+  border-radius:12px;
+  background:#111;
+  color:#00ffff;
+  font-weight:900;
+  cursor:pointer;
+}
+.authority-panel-placeholder{
+  border:1px dashed #31545a;
+  border-radius:16px;
+  padding:35px 20px;
+  text-align:center;
+  color:#aebdc1;
+  font:14px/1.6 Arial,sans-serif;
+}
+.authority-panel-placeholder strong{
+  display:block;
+  margin-bottom:8px;
+  color:#fff;
+  font-size:18px;
+}
+/* ================= END AUTHORITY PRESS PANEL ================= */
+
 /* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
 
 /* SCROLL BANNER */
@@ -1497,6 +1559,18 @@ function getMedia(id){
   </div>
 </div>
 
+<div id="authorityPressPanel" aria-hidden="true">
+  <div class="authority-panel-inner">
+    <div class="authority-panel-head">
+      <h2>AUTHORITY PRESS</h2>
+      <button type="button" id="authorityPressClose">CLOSE</button>
+    </div>
+    <div class="authority-panel-placeholder">
+      <strong>AUTHORITY PRESS PANEL</strong>
+      This panel is ready. The authority controls will be added here step by step.
+    </div>
+  </div>
+</div>
 
 <div id="transcriptPanel">
 
@@ -7492,13 +7566,27 @@ preloadMedia();
       if((input?.value||"").trim()==="DEKA"){
         overlay.style.display="none";
         overlay.setAttribute("aria-hidden","true");
-        alert("AUTHORITY PRESS UNLOCKED");
+        overlay.style.display="none";
+        overlay.setAttribute("aria-hidden","true");
+        const panel=document.getElementById("authorityPressPanel");
+        if(panel){
+          panel.style.display="block";
+          panel.setAttribute("aria-hidden","false");
+        }
       }else{
         if(status)status.textContent="INCORRECT PASSWORD.";
         if(input){input.value="";input.focus();}
       }
     };
-    if(input)input.onkeydown=function(e){
+    const authorityPressCloseButton=document.getElementById("authorityPressClose");
+if(authorityPressCloseButton)authorityPressCloseButton.onclick=function(){
+  const panel=document.getElementById("authorityPressPanel");
+  if(panel){
+    panel.style.display="none";
+    panel.setAttribute("aria-hidden","true");
+  }
+};
+if(input)input.onkeydown=function(e){
       if(e.key==="Enter"&&unlock)unlock.click();
       if(e.key==="Escape"&&cancel)cancel.click();
     };
