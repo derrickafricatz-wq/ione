@@ -7460,6 +7460,54 @@ preloadMedia();
   new MutationObserver(bindVideoFit).observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
+<script>
+/* AUTHORITY PRESS CLICK FIX */
+(function(){
+  function bindAuthorityPress(){
+    const button=document.getElementById("openAuthority");
+    const overlay=document.getElementById("authorityPasswordOverlay");
+    const input=document.getElementById("authorityPasswordInput");
+    const status=document.getElementById("authorityPasswordStatus");
+    const unlock=document.getElementById("authorityPasswordUnlock");
+    const cancel=document.getElementById("authorityPasswordCancel");
+    if(!button||!overlay)return;
+    button.onclick=function(e){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      overlay.style.display="flex";
+      overlay.setAttribute("aria-hidden","false");
+      if(status)status.textContent="";
+      if(input){
+        input.value="";
+        setTimeout(function(){input.focus();},50);
+      }
+    };
+    if(cancel)cancel.onclick=function(){
+      overlay.style.display="none";
+      overlay.setAttribute("aria-hidden","true");
+    };
+    if(unlock)unlock.onclick=function(){
+      if((input?.value||"").trim()==="DEKA"){
+        overlay.style.display="none";
+        overlay.setAttribute("aria-hidden","true");
+        alert("AUTHORITY PRESS UNLOCKED");
+      }else{
+        if(status)status.textContent="INCORRECT PASSWORD.";
+        if(input){input.value="";input.focus();}
+      }
+    };
+    if(input)input.onkeydown=function(e){
+      if(e.key==="Enter"&&unlock)unlock.click();
+      if(e.key==="Escape"&&cancel)cancel.click();
+    };
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",bindAuthorityPress,{once:true});
+  }else{
+    bindAuthorityPress();
+  }
+})();
+</script>
 </body>
 </html>
 <script>
