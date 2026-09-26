@@ -2614,7 +2614,7 @@ async function ioneGetUploadSubscription(){
     body:{action:"status",user_id:session.user.id}
   });
   if(error)throw error;
-  if(!data?.ok)throw new Error(data?.error||"Could not check I|ONE subscription.");
+  if(!data?.success)throw new Error(data?.error||"Could not check I|ONE subscription.");
   ioneUploadSubscription=data.subscription||null;
   return data;
 }
