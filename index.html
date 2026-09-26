@@ -2745,7 +2745,14 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     });
 
     if(payment.error)throw payment.error;
-    if(!payment.data?.success)throw new Error(payment.data?.error||"Could not start BLMPay payment.");
+    if(!payment.data?.success){
+      const d=payment.data||{};
+      throw new Error(
+        (d.error||"BLMPay payment failed.")+
+        (d.http_status?" [HTTP "+d.http_status+"]":"")+
+        (d.blmpay_error?" "+d.blmpay_error:"")
+      );
+    }
 
     status.textContent="Payment request sent. Check your phone and approve the payment.";
     await ioneWaitForUploadSubscription(uid,mode,existing);
