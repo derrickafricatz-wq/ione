@@ -95,7 +95,7 @@
     overlay.id = "ioneChapOverlay";
     overlay.innerHTML =
       '<div class="cc-card">' +
-        '<div class="cc-head"><h2 id="ccTitle">CHAPCHAP</h2><button class="cc-close" id="ccClose" type="button">CLOSE</button></div>' +
+        '<div class="cc-head"><h2 id="ioneCcTitle">CHAPCHAP</h2><button class="cc-close" id="ccClose" type="button">CLOSE</button></div>' +
         '<div class="cc-kicker" id="ccKicker">I|ONE • SINGLE-PRODUCT MARKET</div>' +
         '<div id="ccBody"></div>' +
       '</div>';
@@ -106,7 +106,7 @@
 
   function openOverlay(title, kicker, body) {
     createOverlay();
-    document.getElementById("ccTitle").textContent = title;
+    document.getElementById("ioneCcTitle").textContent = title;
     document.getElementById("ccKicker").textContent = kicker || "I|ONE • SINGLE-PRODUCT MARKET";
     document.getElementById("ccBody").innerHTML = body;
     document.getElementById("ioneChapOverlay").style.display = "flex";
@@ -134,13 +134,13 @@
     var key = spec[0], label = spec[1], type = spec[2];
     if (type.indexOf("select:") === 0) {
       var opts = type.slice(7).split("|").map(function (x) { return '<option value="' + esc(x) + '">' + esc(x) + "</option>"; }).join("");
-      return '<div class="cc-field"><label>' + esc(label) + '</label><select id="cc_attr_' + esc(key) + '"><option value="">SELECT</option>' + opts + "</select></div>";
+      return '<div class="cc-field"><label>' + esc(label) + '</label><select id="ioneCc_attr_' + esc(key) + '"><option value="">SELECT</option>' + opts + "</select></div>";
     }
-    return '<div class="cc-field"><label>' + esc(label) + '</label><input id="cc_attr_' + esc(key) + '" type="' + esc(type) + '" maxlength="120" placeholder="' + esc(label) + '"></div>';
+    return '<div class="cc-field"><label>' + esc(label) + '</label><input id="ioneCc_attr_' + esc(key) + '" type="' + esc(type) + '" maxlength="120" placeholder="' + esc(label) + '"></div>';
   }
 
   function categoryHtml() {
-    return '<select id="ccCategory">' +
+    return '<select id="ioneCcCategory">' +
       '<option value="phones">PHONES</option><option value="electronics">ELECTRONICS</option>' +
       '<option value="fashion">FASHION</option><option value="vehicles">VEHICLES</option>' +
       '<option value="furniture">FURNITURE</option><option value="food">FOOD</option>' +
@@ -149,8 +149,8 @@
   }
 
   function renderSmartFields() {
-    var cat = document.getElementById("ccCategory");
-    var box = document.getElementById("ccSmartFields");
+    var cat = document.getElementById("ioneCcCategory");
+    var box = document.getElementById("ioneCcSmartFields");
     if (!cat || !box) return;
     box.innerHTML = (smartFields[cat.value] || smartFields.other).map(fieldHtml).join("");
   }
@@ -158,23 +158,23 @@
   function openSell() {
     openOverlay("SELL ON CHAPCHAP", "SELLER • ONE PRODUCT PER LISTING",
       '<div class="cc-grid">' +
-      '<div class="cc-field"><label>YOUR NAME</label><input id="ccSellerName" maxlength="80" placeholder="Seller name"></div>' +
-      '<div class="cc-field"><label>YOUR PHONE</label><input id="ccSellerPhone" class="cc-phone" inputmode="tel" maxlength="15" placeholder="07XXXXXXXX"></div>' +
+      '<div class="cc-field"><label>YOUR NAME</label><input id="ioneCcSellerName" maxlength="80" placeholder="Seller name"></div>' +
+      '<div class="cc-field"><label>YOUR PHONE</label><input id="ioneCcSellerPhone" class="cc-phone" inputmode="tel" maxlength="15" placeholder="07XXXXXXXX"></div>' +
       '<div class="cc-field"><label>CATEGORY</label>' + categoryHtml() + "</div>" +
-      '<div id="ccSmartFields" class="cc-grid"></div>' +
-      '<div class="cc-field"><label>PRODUCT NAME</label><input id="ccTitle" maxlength="100" placeholder="One clear product name"></div>' +
-      '<div class="cc-field"><label>PRICE • TZS</label><input id="ccPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="Example: 150000"></div>' +
-      '<div class="cc-field"><label>LOCATION</label><input id="ccLocation" maxlength="100" placeholder="City / area"></div>' +
-      '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ccDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
-      '<div class="cc-field"><label>PRODUCT PHOTOS • 1 TO 4</label><div class="cc-images"><input id="ccImage1" type="file" accept="image/*"><input id="ccImage2" type="file" accept="image/*"><input id="ccImage3" type="file" accept="image/*"><input id="ccImage4" type="file" accept="image/*"></div></div>' +
-      '<div class="cc-actions"><button id="ccSellCancel" class="cc-secondary" type="button">CANCEL</button><button id="ccSellSubmit" class="cc-primary" type="button">PUBLISH PRODUCT</button></div>' +
-      '<div id="ccSellStatus" class="cc-status"></div>' +
+      '<div id="ioneCcSmartFields" class="cc-grid"></div>' +
+      '<div class="cc-field"><label>PRODUCT NAME</label><input id="ioneCcTitle" maxlength="100" placeholder="One clear product name"></div>' +
+      '<div class="cc-field"><label>PRICE • TZS</label><input id="ioneCcPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="Example: 150000"></div>' +
+      '<div class="cc-field"><label>LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="City / area"></div>' +
+      '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ioneCcDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
+      '<div class="cc-field"><label>PRODUCT PHOTOS • 1 TO 4</label><div class="cc-images"><input id="ioneCcImage1" type="file" accept="image/*"><input id="ioneCcImage2" type="file" accept="image/*"><input id="ioneCcImage3" type="file" accept="image/*"><input id="ioneCcImage4" type="file" accept="image/*"></div></div>' +
+      '<div class="cc-actions"><button id="ioneCcSellCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcSellSubmit" class="cc-primary" type="button">PUBLISH PRODUCT</button></div>' +
+      '<div id="ioneCcSellStatus" class="cc-status"></div>' +
       "</div>"
     );
     renderSmartFields();
-    document.getElementById("ccCategory").addEventListener("change", renderSmartFields);
-    document.getElementById("ccSellCancel").addEventListener("click", closeOverlay);
-    document.getElementById("ccSellSubmit").addEventListener("click", submitListing);
+    document.getElementById("ioneCcCategory").addEventListener("change", renderSmartFields);
+    document.getElementById("ioneCcSellCancel").addEventListener("click", closeOverlay);
+    document.getElementById("ioneCcSellSubmit").addEventListener("click", submitListing);
   }
 
   async function uploadImages(uid, files) {
@@ -198,19 +198,19 @@
   }
 
   async function submitListing() {
-    var status = document.getElementById("ccSellStatus");
-    var btn = document.getElementById("ccSellSubmit");
+    var status = document.getElementById("ioneCcSellStatus");
+    var btn = document.getElementById("ioneCcSellSubmit");
     try {
       btn.disabled = true;
       status.textContent = "Checking secure session…";
       var session = await getSession();
-      var name = document.getElementById("ccSellerName").value.trim();
-      var phone = normalizePhone(document.getElementById("ccSellerPhone").value);
-      var category = document.getElementById("ccCategory").value;
-      var title = document.getElementById("ccTitle").value.trim();
-      var price = Math.round(Number(document.getElementById("ccPrice").value));
-      var location = document.getElementById("ccLocation").value.trim();
-      var description = document.getElementById("ccDescription").value.trim();
+      var name = document.getElementById("ioneCcSellerName").value.trim();
+      var phone = normalizePhone(document.getElementById("ioneCcSellerPhone").value);
+      var category = document.getElementById("ioneCcCategory").value;
+      var title = document.getElementById("ioneCcTitle").value.trim();
+      var price = Math.round(Number(document.getElementById("ioneCcPrice").value));
+      var location = document.getElementById("ioneCcLocation").value.trim();
+      var description = document.getElementById("ioneCcDescription").value.trim();
       if (!name) throw new Error("Enter your name.");
       if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
       if (!title) throw new Error("Enter the product name.");
@@ -223,7 +223,7 @@
       var media = await uploadImages(session.user.id, files);
       var attrs = {};
       (smartFields[category] || smartFields.other).forEach(function (spec) {
-        var el = document.getElementById("cc_attr_" + spec[0]);
+        var el = document.getElementById("ioneCc_attr_" + spec[0]);
         if (el && el.value.trim()) attrs[spec[0]] = el.value.trim();
       });
       status.textContent = "Publishing product…";
@@ -315,21 +315,21 @@
       "</div>" +
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>SELLER</label><div style="color:#9eb0b5;font-size:11px;line-height:1.45">' + esc(p.description || "Product listed on I|ONE ChapChap.") + "</div></div>" +
-      '<div class="cc-field"><label>YOUR MOBILE NUMBER</label><input id="ccBuyerPhone" class="cc-phone" inputmode="tel" maxlength="15" placeholder="07XXXXXXXX"></div>' +
-      '<div class="cc-actions"><button id="ccBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ccBuySubmit" class="cc-primary" type="button">CONFIRM PAYMENT</button></div>' +
-      '<div id="ccBuyStatus" class="cc-status">A payment prompt will be sent to your phone. Enter your mobile-money PIN on the phone.</div>' +
+      '<div class="cc-field"><label>YOUR MOBILE NUMBER</label><input id="ioneCcBuyerPhone" class="cc-phone" inputmode="tel" maxlength="15" placeholder="07XXXXXXXX"></div>' +
+      '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button">CONFIRM PAYMENT</button></div>' +
+      '<div id="ioneCcBuyStatus" class="cc-status">A payment prompt will be sent to your phone. Enter your mobile-money PIN on the phone.</div>' +
       "</div>"
     );
-    document.getElementById("ccBuyCancel").addEventListener("click", closeOverlay);
-    document.getElementById("ccBuySubmit").addEventListener("click", function () { startPayment(p); });
+    document.getElementById("ioneCcBuyCancel").addEventListener("click", closeOverlay);
+    document.getElementById("ioneCcBuySubmit").addEventListener("click", function () { startPayment(p); });
   }
 
   async function startPayment(product) {
-    var status = document.getElementById("ccBuyStatus");
-    var btn = document.getElementById("ccBuySubmit");
+    var status = document.getElementById("ioneCcBuyStatus");
+    var btn = document.getElementById("ioneCcBuySubmit");
     try {
       btn.disabled = true;
-      var phone = normalizePhone(document.getElementById("ccBuyerPhone").value);
+      var phone = normalizePhone(document.getElementById("ioneCcBuyerPhone").value);
       if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
       var session = await getSession();
       status.textContent = "Sending payment request…";
@@ -350,7 +350,7 @@
 
   async function waitForPayment(orderId, product, buyerPhone) {
     var sb = getSupabase();
-    var status = document.getElementById("ccBuyStatus");
+    var status = document.getElementById("ioneCcBuyStatus");
     var startedAt = Date.now();
     if (pollTimer) clearInterval(pollTimer);
     var attempts = 0;
@@ -373,14 +373,14 @@
           if (r.data && ["failed","expired","cancelled"].indexOf(r.data.status) >= 0) {
             clearInterval(pollTimer); pollTimer = null;
             status.textContent = "Payment was not completed. The product is available again.";
-            document.getElementById("ccBuySubmit").disabled = false;
+            document.getElementById("ioneCcBuySubmit").disabled = false;
             resolve();
             return;
           }
           if (Date.now() - startedAt > 130000 || attempts > 43) {
             clearInterval(pollTimer); pollTimer = null;
             status.innerHTML = "Still waiting for the payment result. If you completed the PIN, wait a little and refresh ChapChap.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER</a>";
-            document.getElementById("ccBuySubmit").disabled = false;
+            document.getElementById("ioneCcBuySubmit").disabled = false;
             resolve();
           } else {
             status.textContent = "Waiting for payment confirmation…";
@@ -390,7 +390,7 @@
           if (Date.now() - startedAt > 130000) {
             clearInterval(pollTimer); pollTimer = null;
             status.textContent = "Payment confirmation is taking longer than expected. Please check your mobile-money message.";
-            document.getElementById("ccBuySubmit").disabled = false;
+            document.getElementById("ioneCcBuySubmit").disabled = false;
             resolve();
           }
         }
