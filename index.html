@@ -2733,42 +2733,30 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     );
 
     if(prepared.error){
-      console.error(
-        "I|ONE prepare subscription Edge Function error:",
-        prepared.error
-      );
+      console.error("I|ONE prepare Edge Function error:",prepared.error);
 
       let message=
         prepared.error?.message ||
-        prepared.error?.context?.message ||
         "Could not prepare subscription.";
 
       try{
-        const ctx=prepared.error?.context;
-
-        if(ctx?.body){
-          const body=
-            typeof ctx.body==="string"
-              ? JSON.parse(ctx.body)
-              : ctx.body;
+        if(prepared.error?.context?.json){
+          const body=await prepared.error.context.json();
 
           if(body?.error){
             message=body.error;
+          }
 
-            if(body.http_status){
-              message+=" [HTTP "+body.http_status+"]";
-            }
+          if(body?.http_status){
+            message+=" [HTTP "+body.http_status+"]";
+          }
 
-            if(body.blmpay_error){
-              message+=" "+body.blmpay_error;
-            }
+          if(body?.blmpay_error){
+            message+=" "+body.blmpay_error;
           }
         }
       }catch(e){
-        console.warn(
-          "Could not read prepare Edge Function error body:",
-          e
-        );
+        console.warn("Could not read prepare Edge Function response:",e);
       }
 
       throw new Error(message);
@@ -2776,7 +2764,6 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
 
     if(!prepared.data?.success){
       const d=prepared.data||{};
-
       throw new Error(
         (d.error||"Could not prepare subscription.")+
         (d.http_status?" [HTTP "+d.http_status+"]":"")+
@@ -2785,13 +2772,9 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     }
 
     const requestId=
-      "ione-sub-"+
-      Date.now()+
-      "-"+
-      Math.random().toString(36).slice(2,9);
+      "ione-sub-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
 
-    status.textContent=
-      "Sending payment request to your phone…";
+    status.textContent="Sending payment request to your phone…";
 
     const payment=await heavensSupabase.functions.invoke(
       "ione-upload-payment",
@@ -2809,42 +2792,36 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     );
 
     if(payment.error){
-      console.error(
-        "I|ONE BLMPay Edge Function error:",
-        payment.error
-      );
+      console.error("I|ONE BLMPay Edge Function error:",payment.error);
 
       let message=
         payment.error?.message ||
-        payment.error?.context?.message ||
         "Edge Function returned an error.";
 
       try{
-        const ctx=payment.error?.context;
+        if(payment.error?.context?.json){
+          const body=await payment.error.context.json();
 
-        if(ctx?.body){
-          const body=
-            typeof ctx.body==="string"
-              ? JSON.parse(ctx.body)
-              : ctx.body;
+          console.error("I|ONE actual Edge Function response:",body);
 
           if(body?.error){
             message=body.error;
+          }
 
-            if(body.http_status){
-              message+=" [HTTP "+body.http_status+"]";
-            }
+          if(body?.http_status){
+            message+=" [HTTP "+body.http_status+"]";
+          }
 
-            if(body.blmpay_error){
-              message+=" "+body.blmpay_error;
-            }
+          if(body?.blmpay_error){
+            message+=" "+body.blmpay_error;
+          }
+
+          if(body?.details?.message){
+            message+=" "+body.details.message;
           }
         }
       }catch(e){
-        console.warn(
-          "Could not read Edge Function error body:",
-          e
-        );
+        console.warn("Could not read BLMPay Edge Function response:",e);
       }
 
       throw new Error(message);
@@ -2863,17 +2840,10 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     status.textContent=
       "Payment request sent. Check your phone and approve the payment.";
 
-    await ioneWaitForUploadSubscription(
-      uid,
-      mode,
-      existing
-    );
+    await ioneWaitForUploadSubscription(uid,mode,existing);
 
   }catch(error){
-    console.error(
-      "I|ONE subscription payment:",
-      error
-    );
+    console.error("I|ONE subscription payment:",error);
 
     status.textContent=
       error?.message ||
