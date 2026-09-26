@@ -79,10 +79,12 @@
   }
 
   function findMarketingHost() {
-    return document.querySelector("#afrilinkOverlay .afl-discovery") ||
-      document.querySelector("#afrilinkOverlay .afl-marketing") ||
-      document.querySelector('#afrilinkOverlay [class*="marketing"]') ||
-      document.querySelector(".afl-discovery");
+    var overlay = document.getElementById("afrilinkOverlay");
+    if (!overlay) return null;
+    return overlay.querySelector(".afl-head") ||
+      overlay.querySelector(".afl-discovery") ||
+      overlay.querySelector(".afl-scroll") ||
+      overlay;
   }
 
   function createDock() {
@@ -97,7 +99,7 @@
       '<span id="ioneChapStatus">SINGLE-PRODUCT MARKET</span>' +
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
-    discovery.parentNode.insertBefore(dock, discovery.nextSibling);
+    if (discovery.classList && discovery.classList.contains("afl-head")) {\n      discovery.parentNode.insertBefore(dock, discovery.nextSibling);\n    } else {\n      discovery.insertBefore(dock, discovery.firstChild);\n    }
     document.getElementById("ioneChapOpen").addEventListener("click", function () { openSell(); });
     document.getElementById("ioneChapMine").addEventListener("click", function () { openMine(); });
     return true;
