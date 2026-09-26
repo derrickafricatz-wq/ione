@@ -248,6 +248,99 @@ body.landscape-mode #brandVideo {
   color:black;
 }
 
+/* ================= AUTHORITY PRESS PASSWORD GATE ================= */
+#authorityPasswordOverlay{
+  position:fixed;
+  inset:0;
+  z-index:100700;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  box-sizing:border-box;
+  background:rgba(0,0,0,.90);
+  backdrop-filter:blur(10px);
+}
+.authority-password-card{
+  width:min(420px,100%);
+  box-sizing:border-box;
+  padding:24px 20px 20px;
+  border:1px solid #00ffff;
+  border-radius:22px;
+  background:linear-gradient(145deg,#101b1f,#05090a);
+  color:#fff;
+  box-shadow:0 22px 55px rgba(0,0,0,.7),0 0 35px rgba(0,255,255,.12);
+}
+.authority-password-kicker{
+  color:#7f9198;
+  text-align:center;
+  font:900 10px/1 Arial,sans-serif;
+  letter-spacing:2.5px;
+  margin-bottom:9px;
+}
+.authority-password-card h2{
+  margin:0;
+  color:#00ffff;
+  text-align:center;
+  font:900 clamp(23px,6vw,31px)/1.15 'Russo One',Arial,sans-serif;
+}
+.authority-password-card p{
+  color:#b9c7cc;
+  text-align:center;
+  font:14px/1.5 Arial,sans-serif;
+  margin:12px 0 18px;
+}
+#authorityPasswordInput{
+  width:100%;
+  height:54px;
+  padding:0 15px;
+  box-sizing:border-box;
+  border:1px solid #31545a;
+  border-radius:13px;
+  background:#05090a;
+  color:#fff;
+  font-size:18px;
+  outline:none;
+  text-align:center;
+  letter-spacing:2px;
+}
+#authorityPasswordInput:focus{
+  border-color:#00ffff;
+  box-shadow:0 0 0 3px rgba(0,255,255,.10);
+}
+.authority-password-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:17px;
+}
+.authority-password-actions button{
+  min-height:52px;
+  border-radius:13px;
+  font-weight:900;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+#authorityPasswordUnlock{
+  border:1px solid #00ffff;
+  background:linear-gradient(145deg,#18ffff,#008f8f);
+  color:#001010;
+  box-shadow:0 6px 0 #005858;
+}
+#authorityPasswordCancel{
+  border:1px solid #334a50;
+  background:#111;
+  color:#fff;
+}
+#authorityPasswordStatus{
+  min-height:20px;
+  margin-top:13px;
+  text-align:center;
+  color:#ff6b6b;
+  font:700 12px/1.4 Arial,sans-serif;
+}
+/* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
+
 /* SCROLL BANNER */
 #scrollBanner {
   position: fixed;
@@ -1380,6 +1473,22 @@ function getMedia(id){
     HEAVEN ON EARTH
   </div>
 
+<div id="authorityPasswordOverlay" aria-hidden="true">
+  <div class="authority-password-card">
+    <div class="authority-password-kicker">AUTHORIZED ACCESS</div>
+    <h2>AUTHORITY PRESS</h2>
+    <p>Enter the authority password to continue.</p>
+    <input id="authorityPasswordInput" type="password" inputmode="text" autocomplete="off" placeholder="PASSWORD">
+    <div class="authority-password-actions">
+      <button type="button" id="authorityPasswordUnlock">UNLOCK</button>
+      <button type="button" id="authorityPasswordCancel">CANCEL</button>
+    </div>
+    <div id="authorityPasswordStatus"></div>
+  </div>
+</div>
+
+
+
   <small>
     NENO • MAFUNDISHO • IMANI
   </small>
@@ -1743,6 +1852,71 @@ if ("serviceWorker" in navigator) {
 }
 
 // checkLicense();
+
+/* ================= AUTHORITY PRESS PASSWORD GATE ================= */
+const openAuthority=document.getElementById("openAuthority");
+const authorityPasswordOverlay=document.getElementById("authorityPasswordOverlay");
+const authorityPasswordInput=document.getElementById("authorityPasswordInput");
+const authorityPasswordUnlock=document.getElementById("authorityPasswordUnlock");
+const authorityPasswordCancel=document.getElementById("authorityPasswordCancel");
+const authorityPasswordStatus=document.getElementById("authorityPasswordStatus");
+
+/*
+  STEP 2 TEMPORARY PASSWORD GATE.
+  This is intentionally kept separate from subscription/payment logic.
+  Replace the temporary password with the real protected authority system
+  in a later step using server-side verification.
+*/
+const AUTHORITY_PRESS_TEMP_PASSWORD="DEKA";
+
+function authorityPressOpen(){
+  if(!authorityPasswordOverlay)return;
+  authorityPasswordOverlay.style.display="flex";
+  authorityPasswordOverlay.setAttribute("aria-hidden","false");
+  if(authorityPasswordStatus)authorityPasswordStatus.textContent="";
+  if(authorityPasswordInput){
+    authorityPasswordInput.value="";
+    setTimeout(()=>authorityPasswordInput.focus(),80);
+  }
+}
+function authorityPressClose(){
+  if(!authorityPasswordOverlay)return;
+  authorityPasswordOverlay.style.display="none";
+  authorityPasswordOverlay.setAttribute("aria-hidden","true");
+  if(authorityPasswordInput)authorityPasswordInput.value="";
+  if(authorityPasswordStatus)authorityPasswordStatus.textContent="";
+}
+function authorityPressUnlock(){
+  const value=String(authorityPasswordInput?.value||"").trim();
+  if(value===AUTHORITY_PRESS_TEMP_PASSWORD){
+    authorityPressClose();
+    smartPanel?.classList.remove("show");
+    smartToggle?.classList.remove("active");
+    /* Authority panel will be added in the next step. */
+    alert("AUTHORITY PRESS UNLOCKED");
+  }else if(authorityPasswordStatus){
+    authorityPasswordStatus.textContent="INCORRECT PASSWORD.";
+    if(authorityPasswordInput){
+      authorityPasswordInput.value="";
+      authorityPasswordInput.focus();
+    }
+  }
+}
+if(openAuthority)openAuthority.onclick=e=>{
+  e.preventDefault();
+  e.stopPropagation();
+  authorityPressOpen();
+};
+if(authorityPasswordUnlock)authorityPasswordUnlock.onclick=authorityPressUnlock;
+if(authorityPasswordCancel)authorityPasswordCancel.onclick=authorityPressClose;
+if(authorityPasswordInput)authorityPasswordInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter")authorityPressUnlock();
+  if(e.key==="Escape")authorityPressClose();
+});
+if(authorityPasswordOverlay)authorityPasswordOverlay.addEventListener("click",e=>{
+  if(e.target===authorityPasswordOverlay)authorityPressClose();
+});
+/* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
 
 /* SMART SYSTEM */
 const smartToggle=document.getElementById("smartToggle");
