@@ -31,7 +31,7 @@
     return /^255[67]\d{8}$/.test(normalizePhone(value));
   }
 
-  function getSupabase() {
+  function fieldValue(id) {\n    var el = document.getElementById(id);\n    return el && typeof el.value === "string" ? fieldValue(el.id) : "";\n  }\n\n  function getSupabase() {
     return typeof heavensSupabase !== "undefined" ? heavensSupabase : null;
   }
 
@@ -204,19 +204,19 @@
       btn.disabled = true;
       status.textContent = "Checking secure session…";
       var session = await getSession();
-      var name = document.getElementById("ioneCcSellerName").value.trim();
-      var phone = normalizePhone(document.getElementById("ioneCcSellerPhone").value);
-      var category = document.getElementById("ioneCcCategory").value;
-      var title = document.getElementById("ioneCcTitle").value.trim();
-      var price = Math.round(Number(document.getElementById("ioneCcPrice").value));
-      var location = document.getElementById("ioneCcLocation").value.trim();
-      var description = document.getElementById("ioneCcDescription").value.trim();
+      var name = fieldValue("ioneCcSellerName");
+      var phone = normalizePhone(fieldValue("ioneCcSellerPhone"));
+      var category = fieldValue("ioneCcCategory");
+      var title = fieldValue("ioneCcTitle");
+      var price = Math.round(Number(fieldValue("ioneCcPrice")));
+      var location = fieldValue("ioneCcLocation");
+      var description = fieldValue("ioneCcDescription");
       if (!name) throw new Error("Enter your name.");
       if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
       if (!title) throw new Error("Enter the product name.");
       if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
       if (!location) throw new Error("Enter the location.");
-      var fileEls = [1,2,3,4].map(function (n) { return document.getElementById("ccImage" + n); });
+      var fileEls = [1,2,3,4].map(function (n) { return document.getElementById("ioneCcImage" + n); });
       var files = fileEls.map(function (el) { return el.files[0]; }).filter(Boolean);
       if (!files.length) throw new Error("Add at least one product photo.");
       status.textContent = "Uploading product photos…";
