@@ -611,6 +611,44 @@ body.landscape-mode #brandVideo {
   }
   
 
+
+/* ================= I|ONE UPLOAD SUBSCRIPTION UI ================= */
+#ioneSubscriptionGate{
+  position:fixed;inset:0;z-index:100600;display:flex;align-items:center;justify-content:center;
+  padding:18px;box-sizing:border-box;background:rgba(0,0,0,.90);backdrop-filter:blur(8px);
+}
+.ione-sub-card{
+  width:min(460px,100%);max-height:92vh;overflow-y:auto;box-sizing:border-box;
+  padding:22px;border:1px solid #00ffff;border-radius:20px;
+  background:linear-gradient(145deg,#101b1f,#05090a);color:#fff;
+  box-shadow:0 22px 55px rgba(0,0,0,.7),0 0 35px rgba(0,255,255,.12);
+}
+.ione-sub-card h2{margin:0;text-align:center;color:#00ffff;font:900 27px/1.1 'Russo One',Arial,sans-serif}
+.ione-sub-card .ione-sub-note{margin:11px 0 18px;text-align:center;color:#b9c7cc;font:14px/1.5 Arial,sans-serif}
+.ione-sub-expiry{margin:0 0 16px;padding:12px;border:1px solid rgba(0,255,255,.25);border-radius:12px;background:rgba(0,255,255,.05);text-align:center;color:#dce8eb;font:700 13px/1.45 Arial,sans-serif}
+.ione-sub-heading{margin:16px 0 9px;color:#00ffff;font:900 11px/1 Arial,sans-serif;letter-spacing:1.5px}
+.ione-sub-plans{display:grid;gap:9px}
+.ione-sub-plan{
+  width:100%;min-height:58px;padding:11px 14px;box-sizing:border-box;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  border:1px solid #31545a;border-radius:13px;background:#0b1113;color:#fff;
+  font-weight:900;cursor:pointer;touch-action:manipulation;
+}
+.ione-sub-plan strong{font-size:15px}.ione-sub-plan span{color:#00ffff;font-size:15px}
+.ione-sub-plan.selected{border-color:#00ffff;background:rgba(0,255,255,.12);box-shadow:0 0 0 2px rgba(0,255,255,.08)}
+.ione-sub-phone-label{display:block;margin:16px 0 7px;color:#00ffff;font:900 11px/1 Arial,sans-serif;letter-spacing:1.5px}
+#ioneSubPhone{
+  width:100%;height:52px;box-sizing:border-box;padding:0 14px;
+  border:1px solid #31545a;border-radius:12px;background:#05090a;color:#fff;font-size:17px;outline:none;
+}
+#ioneSubPhone:focus{border-color:#00ffff;box-shadow:0 0 0 3px rgba(0,255,255,.10)}
+#ioneSubStatus{min-height:42px;margin:13px 0;text-align:center;color:#b9c7cc;font:700 12px/1.5 Arial,sans-serif}
+.ione-sub-actions{display:grid;gap:9px}
+.ione-sub-actions button{min-height:50px;border-radius:12px;font-weight:900;cursor:pointer}
+#ioneSubPay{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;box-shadow:0 5px 0 #005858}
+#ioneSubCancel{border:1px solid #334a50;background:#111;color:#fff}
+#ioneSubPay:disabled{opacity:.55;cursor:wait}
+
 /* ================= MINISTRY ACCESS + I|ONE MARKETING ================= */
 .ministry-access-overlay{
   position:fixed;inset:0;z-index:100500;display:none;align-items:center;justify-content:center;
@@ -1135,8 +1173,11 @@ Install App
       </div>
 
       <div class="afl-field">
-        <label for="aflEndAt">SUBSCRIPTION END DATE &amp; TIME</label>
-        <input id="aflEndAt" type="datetime-local">
+        <label>I|ONE SUBSCRIPTION EXPIRY</label>
+        <div id="aflSubscriptionExpiryDisplay" style="padding:12px;border:1px solid rgba(0,255,255,.25);border-radius:10px;background:rgba(0,255,255,.05);font-weight:800;color:#dce8eb">
+          Payment subscription controls the expiry date and time.
+        </div>
+        <input id="aflEndAt" type="hidden" value="">
       </div>
 
       <div class="afl-field full">
@@ -2240,9 +2281,7 @@ function aflInitColorPickers(){
 }
 
 function aflSetDefaultDates(){
-  const d=new Date(Date.now()+30*24*60*60*1000);
-  const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
-  document.getElementById("aflEndAt").value=local.toISOString().slice(0,16);
+  ioneSetSubscriptionExpiryDisplay(ioneUploadSubscription?.expires_at||"");
 }
 
 function aflResetVideoEditorState(){
@@ -2326,7 +2365,7 @@ async function aflOpenEditor(mode="publish", existing=null){
     document.getElementById("aflAddressColor").value=existing.address_color||"#ffffff";
     document.getElementById("aflWaitingMessage").value=existing.waiting_message||"";
     document.getElementById("aflBookingInfo").value=Array.isArray(existing.booking_info)?existing.booking_info.join("\n"):String(existing.booking_info||"");
-    document.getElementById("aflEndAt").value=existing.end_at ? new Date(existing.end_at).toISOString().slice(0,16) : "";
+    ioneSetSubscriptionExpiryDisplay(ioneUploadSubscription?.expires_at||existing.end_at||"");
     document.getElementById("aflBusinessType").value=existing.business_type||"service";document.getElementById("aflCategory").value=existing.category||aflDefaultCategoryForType(existing.business_type||"service");
     aflImageDrafts=[];aflExistingImages=[];
     try{const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id;const {data:rows}=await heavensSupabase.from("afrilink_billboard_items").select("*").eq("billboard_id",existing.id).order("sort_order",{ascending:true}).order("created_at",{ascending:true});aflExistingImages=(rows||[]).filter(x=>x.active!==false).map(x=>({...x,replacementFile:null,replacementPreview:null,deleted:false}));}catch(e){console.warn("I|ONE renewal images:",e);}
@@ -2356,11 +2395,7 @@ async function aflOpenEditor(mode="publish", existing=null){
       document.getElementById("aflWaitingMessage").value=current.waiting_message||"";
       document.getElementById("aflBookingInfo").value=Array.isArray(current.booking_info)?current.booking_info.join("\n"):String(current.booking_info||"");
       // Keep the existing subscription date when it is still active; otherwise choose a fresh default.
-      const existingEnd=current.end_at||"";
-      document.getElementById("aflEndAt").value=existingEnd && aflEndAtActive(existingEnd)
-        ? new Date(existingEnd).toISOString().slice(0,16)
-        : "";
-      if(!document.getElementById("aflEndAt").value) aflSetDefaultDates();
+      ioneSetSubscriptionExpiryDisplay(ioneUploadSubscription?.expires_at||current.end_at||"");
     }else{
       document.getElementById("aflBrandName").value="";
       document.getElementById("aflContent").value="";
@@ -2536,19 +2571,298 @@ const IONE_UPLOAD_PLANS = {
 
 const IONE_UPLOAD_CURRENCY = "TZS";
 
+
+/* ================= I|ONE UPLOAD SUBSCRIPTION ================= */
+let ioneUploadSubscription = null;
+let ioneSubscriptionChecking = false;
+
+function ioneSubscriptionFormatExpiry(value){
+  if(!value)return "";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return String(value);
+  return d.toLocaleString("en-GB",{
+    timeZone:"Africa/Dar_es_Salaam",
+    year:"numeric",month:"2-digit",day:"2-digit",
+    hour:"2-digit",minute:"2-digit",hour12:false
+  });
+}
+
+function ioneSubscriptionPlans(){
+  return [
+    IONE_UPLOAD_PLANS.twoWeeks,
+    IONE_UPLOAD_PLANS.oneMonth,
+    IONE_UPLOAD_PLANS.threeMonths
+  ];
+}
+
+function ioneSetSubscriptionExpiryDisplay(value){
+  const hidden=document.getElementById("aflEndAt");
+  if(hidden)hidden.value=value||"";
+  const box=document.getElementById("aflSubscriptionExpiryDisplay");
+  if(!box)return;
+  if(value){
+    box.innerHTML="ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(value))+"</strong>";
+  }else{
+    box.textContent="Payment subscription controls the expiry date and time.";
+  }
+}
+
+async function ioneGetUploadSubscription(){
+  const session=await ensureHeavensAnonymousSession();
+  if(!session?.user?.id)throw new Error("Could not create your secure I|ONE session.");
+  const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
+    body:{action:"status",user_id:session.user.id}
+  });
+  if(error)throw error;
+  if(!data?.ok)throw new Error(data?.error||"Could not check I|ONE subscription.");
+  ioneUploadSubscription=data.subscription||null;
+  return data;
+}
+
+function ioneCloseSubscriptionGate(){
+  const gate=document.getElementById("ioneSubscriptionGate");
+  if(gate)gate.remove();
+}
+
+function ioneSubscriptionGate(mode="publish",existing=null){
+  ioneCloseSubscriptionGate();
+
+  const gate=document.createElement("div");
+  gate.id="ioneSubscriptionGate";
+
+  const plans=ioneSubscriptionPlans();
+  gate.innerHTML=`
+    <div class="ione-sub-card" role="dialog" aria-modal="true">
+      <h2>I|ONE UPLOAD</h2>
+      <div class="ione-sub-note">
+        An active subscription is required to upload and publish on I|ONE.
+      </div>
+
+      <div id="ioneSubCurrent" class="ione-sub-expiry"></div>
+
+      <div class="ione-sub-heading">CHOOSE YOUR PLAN</div>
+      <div class="ione-sub-plans">
+        ${plans.map(p=>`
+          <button type="button" class="ione-sub-plan" data-plan="${p.id}">
+            <strong>${p.name}</strong>
+            <span>TZS ${Number(p.amount).toLocaleString("en-US")}</span>
+          </button>
+        `).join("")}
+      </div>
+
+      <label class="ione-sub-phone-label" for="ioneSubPhone">
+        MOBILE MONEY PHONE NUMBER
+      </label>
+      <input id="ioneSubPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX">
+
+      <div id="ioneSubStatus"></div>
+
+      <div class="ione-sub-actions">
+        <button id="ioneSubPay" type="button">PAY WITH BLMPAY</button>
+        <button id="ioneSubCancel" type="button">CANCEL</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(gate);
+
+  const current=document.getElementById("ioneSubCurrent");
+  if(current){
+    if(ioneUploadSubscription?.expires_at){
+      current.innerHTML="CURRENT SUBSCRIPTION EXPIRED • "+aflEscape(ioneSubscriptionFormatExpiry(ioneUploadSubscription.expires_at));
+    }else{
+      current.textContent="NO ACTIVE UPLOAD SUBSCRIPTION";
+    }
+  }
+
+  const buttons=[...gate.querySelectorAll(".ione-sub-plan")];
+  buttons.forEach(btn=>{
+    btn.onclick=()=>{
+      buttons.forEach(x=>x.classList.remove("selected"));
+      btn.classList.add("selected");
+      gate.dataset.plan=btn.dataset.plan||"";
+    };
+  });
+
+  gate.querySelector("#ioneSubCancel").onclick=ioneCloseSubscriptionGate;
+  gate.querySelector("#ioneSubPay").onclick=()=>ioneStartUploadSubscriptionPayment(mode,existing);
+
+  return gate;
+}
+
+async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
+  const gate=document.getElementById("ioneSubscriptionGate");
+  if(!gate)return;
+
+  const planId=String(gate.dataset.plan||"").trim();
+  const phone=String(document.getElementById("ioneSubPhone")?.value||"").trim();
+  const status=document.getElementById("ioneSubStatus");
+  const pay=document.getElementById("ioneSubPay");
+
+  if(!planId){
+    status.textContent="Please choose a subscription plan.";
+    return;
+  }
+  if(!phone){
+    status.textContent="Please enter your mobile money phone number.";
+    return;
+  }
+
+  pay.disabled=true;
+  status.textContent="Preparing your subscription…";
+
+  try{
+    const session=await ensureHeavensAnonymousSession();
+    const uid=session?.user?.id;
+    if(!uid)throw new Error("Could not create your secure I|ONE session.");
+
+    const prepared=await heavensSupabase.functions.invoke("ione-upload-payment",{
+      body:{
+        action:"prepare_subscription",
+        user_id:uid,
+        plan_id:planId,
+        phone_number:phone
+      }
+    });
+
+    if(prepared.error)throw prepared.error;
+    if(!prepared.data?.ok)throw new Error(prepared.data?.error||"Could not prepare subscription.");
+
+    const requestId="ione-sub-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
+
+    status.textContent="Sending payment request to your phone…";
+
+    const payment=await heavensSupabase.functions.invoke("ione-upload-payment",{
+      body:{
+        action:"create_payment",
+        user_id:uid,
+        subscription_id:prepared.data.subscription_id,
+        request_id:requestId,
+        phone_number:phone,
+        plan_id:planId,
+        customer_name:"I|ONE USER"
+      }
+    });
+
+    if(payment.error)throw payment.error;
+    if(!payment.data?.ok)throw new Error(payment.data?.error||"Could not start BLMPay payment.");
+
+    status.textContent="Payment request sent. Check your phone and approve the payment.";
+    await ioneWaitForUploadSubscription(uid,mode,existing);
+
+  }catch(error){
+    console.error("I|ONE subscription payment:",error);
+    status.textContent=error?.message||"Payment could not be started.";
+    pay.disabled=false;
+  }
+}
+
+async function ioneWaitForUploadSubscription(uid,mode="publish",existing=null){
+  const status=document.getElementById("ioneSubStatus");
+  const pay=document.getElementById("ioneSubPay");
+
+  for(let attempt=0;attempt<40;attempt++){
+    await new Promise(resolve=>setTimeout(resolve,3000));
+
+    try{
+      const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
+        body:{action:"status",user_id:uid}
+      });
+
+      if(!error&&data?.ok&&data.active&&data.subscription?.expires_at){
+        ioneUploadSubscription=data.subscription;
+        ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
+
+        status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>";
+
+        setTimeout(async()=>{
+          ioneCloseSubscriptionGate();
+
+          /*
+           * Subscription payment is the renewal itself.
+           * For an existing billboard, synchronize its published end date
+           * automatically. No manual end date is required.
+           */
+          if(existing?.id){
+            try{
+              const iso=new Date(data.subscription.expires_at).toISOString();
+              const endDate=iso.slice(0,10);
+              const {error:updateError}=await heavensSupabase.from("afrilink_billboards")
+                .update({end_date:endDate,end_at:iso})
+                .eq("id",existing.id)
+                .eq("owner_id",uid);
+              if(updateError)console.warn("I|ONE billboard expiry sync:",updateError);
+            }catch(syncError){
+              console.warn("I|ONE billboard expiry sync:",syncError);
+            }
+          }
+
+          if(mode==="renew"&&existing){
+            await aflLoadFeed();
+          }else{
+            aflOpenEditor("publish");
+          }
+        },900);
+
+        return;
+      }
+    }catch(error){
+      console.warn("I|ONE subscription status check:",error);
+    }
+
+    status.textContent="Waiting for BLMPay payment confirmation…";
+  }
+
+  status.textContent="Payment confirmation has not arrived yet. If you approved the payment, please wait a moment and press UPLOAD again.";
+  if(pay)pay.disabled=false;
+}
+
+async function ioneRequireUploadSubscription(mode="publish",existing=null){
+  if(ioneSubscriptionChecking)return false;
+  ioneSubscriptionChecking=true;
+
+  try{
+    const result=await ioneGetUploadSubscription();
+
+    if(result.active&&result.subscription?.expires_at){
+      ioneSetSubscriptionExpiryDisplay(result.subscription.expires_at);
+      return true;
+    }
+
+    ioneSubscriptionGate(mode,existing);
+    return false;
+
+  }catch(error){
+    console.error("I|ONE subscription check:",error);
+    alert(error?.message||"Unable to check your I|ONE subscription.");
+    return false;
+
+  }finally{
+    ioneSubscriptionChecking=false;
+  }
+}
+
 async function aflPublish(){
   try{
     aflEditorStatus.textContent="CHECKING ACCOUNT…";
     const session=await ensureHeavensAnonymousSession();
     if(!session?.user)throw new Error("Could not create your secure I|ONE session.");
     const uid=session.user.id;
+    const subscriptionCheck=await ioneGetUploadSubscription();
+    if(!subscriptionCheck.active||!subscriptionCheck.subscription?.expires_at){
+      aflEditorStatus.textContent="Your I|ONE upload subscription is not active.";
+      await ioneRequireUploadSubscription(aflEditorMode,aflEditorMode==="renew"?aflFeedRows.find(x=>String(x.billboard?.id||"")===String(aflActiveRenewBillboardId||""))?.billboard:null);
+      return;
+    }
+    ioneUploadSubscription=subscriptionCheck.subscription;
+    ioneSetSubscriptionExpiryDisplay(ioneUploadSubscription.expires_at);
     const brand=String(document.getElementById("aflBrandName").value||"").trim();
     const content=String(document.getElementById("aflContent").value||"").trim();
     const address=String(document.getElementById("aflAddress").value||"").trim();
     const businessType=String(document.getElementById("aflBusinessType").value||"service");
     const category=String(document.getElementById("aflCategory").value||aflDefaultCategoryForType(businessType));
-    const endAt=String(document.getElementById("aflEndAt").value||"").trim();
-    const endDate=endAt ? new Date(endAt).toISOString().slice(0,10) : "";
+    const subscriptionEndAt=String(ioneUploadSubscription?.expires_at||"").trim();
+    const subscriptionEndDate=subscriptionEndAt ? new Date(subscriptionEndAt).toISOString().slice(0,10) : "";
     const brandColor=document.getElementById("aflBrandColor").value||"#ffffff";
     const contentColor=document.getElementById("aflContentColor").value||"#ffffff";
     const addressColor=document.getElementById("aflAddressColor").value||"#ffffff";
@@ -2557,14 +2871,14 @@ async function aflPublish(){
     if(!brand){aflEditorStatus.textContent="Please enter your brand name.";return;}
     if(!content){aflEditorStatus.textContent="Please enter your business content.";return;}
     if(!address){aflEditorStatus.textContent="Please enter your address / location.";return;}
-    if(!endAt || !aflEndAtActive(endAt)){aflEditorStatus.textContent="Please choose a future subscription date and time.";return;}
+    if(!subscriptionEndAt || new Date(subscriptionEndAt).getTime()<=Date.now()){aflEditorStatus.textContent="Your I|ONE upload subscription is not active.";return;}
     if(aflEditorMode==="publish" && !aflImageDrafts.length && !aflExistingImages.length){aflEditorStatus.textContent="Please add at least one image.";return;}
     const saveBtn=document.getElementById("aflEditorSave");saveBtn.disabled=true;saveBtn.textContent=aflEditorMode==="renew"?"RENEWING…":"PUBLISHING…";
     if(aflEditorMode==="renew") {
-      const {error}=await heavensSupabase.from("afrilink_billboards").update({brand_name:brand,content,address,business_type:businessType,category,brand_color:brandColor,content_color:contentColor,address_color:addressColor,waiting_message:waitingMessage,booking_info:bookingInfo,end_date:endDate,end_at:new Date(endAt).toISOString()}).eq("owner_id",uid);
+      const {error}=await heavensSupabase.from("afrilink_billboards").update({brand_name:brand,content,address,business_type:businessType,category,brand_color:brandColor,content_color:contentColor,address_color:addressColor,waiting_message:waitingMessage,booking_info:bookingInfo,end_date:subscriptionEndDate,end_at:new Date(subscriptionEndAt).toISOString()}).eq("owner_id",uid);
       if(error)throw error;
     }
-    const {data:billboard,error:billError}=await heavensSupabase.from("afrilink_billboards").upsert({owner_id:uid,brand_name:brand,content,address,business_type:businessType,category,brand_color:brandColor,content_color:contentColor,address_color:addressColor,waiting_message:waitingMessage,booking_info:bookingInfo,end_date:endDate,end_at:new Date(endAt).toISOString()},{onConflict:"owner_id"}).select("id").single();
+    const {data:billboard,error:billError}=await heavensSupabase.from("afrilink_billboards").upsert({owner_id:uid,brand_name:brand,content,address,business_type:businessType,category,brand_color:brandColor,content_color:contentColor,address_color:addressColor,waiting_message:waitingMessage,booking_info:bookingInfo,end_date:subscriptionEndDate,end_at:new Date(subscriptionEndAt).toISOString()},{onConflict:"owner_id"}).select("id").single();
     if(billError)throw billError;
     /* BILLBOARD VIDEO — one active video slot per brand billboard */
     if(aflBillboardVideoRemove && !aflBillboardVideoFile){
@@ -2678,7 +2992,7 @@ async function aflLoadFeed(){
     aflStartLoops();
   }catch(err){console.error("I|ONE feed error:",err);aflFeed.innerHTML=`<div class="afl-empty"><div><strong>I|ONE</strong>Could not load the billboard network.<br>${aflEscape(err?.message||"Please try again.")}</div></div>`;}
 }
-function aflAddExpired(b){const existing=document.createElement("div");existing.className="afl-expired";existing.innerHTML=`Your I|ONE subscription for <strong>${aflEscape(b.brand_name)}</strong> has expired.`;const btn=document.createElement("button");btn.className="afl-top-btn";btn.style.marginTop="9px";btn.textContent="RENEW SUBSCRIPTION";btn.onclick=()=>aflOpenEditor("renew",b);existing.appendChild(document.createElement("br"));existing.appendChild(btn);aflFeed.prepend(existing);}
+function aflAddExpired(b){const existing=document.createElement("div");existing.className="afl-expired";existing.innerHTML=`Your I|ONE subscription for <strong>${aflEscape(b.brand_name)}</strong> has expired.`;const btn=document.createElement("button");btn.className="afl-top-btn";btn.style.marginTop="9px";btn.textContent="RENEW SUBSCRIPTION";btn.onclick=async()=>{try{await ioneGetUploadSubscription();}catch(_){ioneUploadSubscription=null;}ioneSubscriptionGate("renew",b);};existing.appendChild(document.createElement("br"));existing.appendChild(btn);aflFeed.prepend(existing);}
 
 function aflMuteAllBillboardVideos(exceptRow=null){
   aflFeedRows.forEach(r=>{if(r!==exceptRow&&r.video){r.audioMuted=true;r.video.muted=true;r.video.volume=0;if(r.videoAudio)r.videoAudio.textContent="UNMUTE";}});
@@ -3574,7 +3888,7 @@ function aflStartOwnerRealtime(uid){
 
 
 openAfrilink.onclick=aflOpenWorld;
-document.getElementById("aflUploadTop").onclick=()=>aflOpenEditor("publish");
+document.getElementById("aflUploadTop").onclick=async()=>{if(await ioneRequireUploadSubscription("publish",null))aflOpenEditor("publish");};
 document.getElementById("aflClose").onclick=aflCloseWorld;
 document.getElementById("aflOwnerInquiries").onclick=aflOpenOwnerInquiries;
 document.getElementById("aflOwnerRefresh").onclick=async()=>{const s=await ensureHeavensAnonymousSession();if(s?.user)await aflRefreshOwnerInquiries(s.user.id,false);};
