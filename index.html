@@ -7732,10 +7732,22 @@ preloadMedia();
       overlay.style.display="none";
       overlay.setAttribute("aria-hidden","true");
     };
-    if(unlock)unlock.onclick=function(){
-      if((input?.value||"").trim()==="DEKA"){
-        overlay.style.display="none";
-        overlay.setAttribute("aria-hidden","true");
+    if(unlock)unlock.onclick=async function(){
+      const password=String(input?.value||"");
+      if(!password){
+        if(status)status.textContent="ENTER PASSWORD.";
+        if(input)input.focus();
+        return;
+      }
+      if(unlock)unlock.disabled=true;
+      if(status)status.textContent="VERIFYING…";
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-subscription-plans",{
+          body:{action:"verify",password}
+        });
+        if(result.error || !result.data?.success){
+          throw new Error(result.data?.error || result.error?.message || "Incorrect password.");
+        }
         overlay.style.display="none";
         overlay.setAttribute("aria-hidden","true");
         const panel=document.getElementById("authorityPressPanel");
@@ -7743,9 +7755,11 @@ preloadMedia();
           panel.style.display="block";
           panel.setAttribute("aria-hidden","false");
         }
-      }else{
-        if(status)status.textContent="INCORRECT PASSWORD.";
+      }catch(error){
+        if(status)status.textContent=error?.message||"INCORRECT PASSWORD.";
         if(input){input.value="";input.focus();}
+      }finally{
+        if(unlock)unlock.disabled=false;
       }
     };
     const authorityPressCloseButton=document.getElementById("authorityPressClose");
