@@ -1149,7 +1149,24 @@ body.landscape-mode #brandVideo {
 
 .afl-live-business-btn{width:auto!important;min-width:96px!important;padding:0 10px!important;font-size:9px!important;letter-spacing:.55px!important;white-space:nowrap!important;color:#00ffff!important;border-color:#00ffff!important;background:linear-gradient(145deg,#092126,#061012)!important}.afl-live-business-btn:active{transform:translateY(2px) scale(.98)}@media(max-width:420px){.afl-chat-compose{display:flex!important;flex-wrap:nowrap!important;align-items:stretch!important;gap:6px!important}.afl-chat-compose input{flex:1 1 auto!important;min-width:0!important}.afl-chat-compose .afl-live-business-btn{min-width:92px!important;flex:0 0 92px!important}.afl-chat-compose .afl-chat-send{width:64px!important;flex:0 0 64px!important}}
 </style>
-</head>
+<style>
+.authority-panel-section{border:1px solid #203f45;border-radius:18px;padding:20px;background:rgba(0,255,255,.025)}
+.authority-section-kicker{font:900 11px/1.2 Arial,sans-serif;letter-spacing:2px;color:#6d858a;margin-bottom:7px}
+.authority-panel-section h3{margin:0;color:#fff;font:900 22px/1.2 'Russo One',Arial,sans-serif}
+.authority-section-note{margin:9px 0 20px;color:#9fb0b4;font:14px/1.5 Arial,sans-serif}
+.authority-price-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.authority-price-card{position:relative;display:block;border:1px solid #31545a;border-radius:14px;padding:13px;background:#091114}
+.authority-price-card>span{display:block;color:#00ffff;font:900 12px/1.2 Arial,sans-serif;letter-spacing:1px;margin-bottom:9px}
+.authority-price-card input{width:100%;box-sizing:border-box;min-height:50px;border:1px solid #3a565b;border-radius:10px;background:#020506;color:#fff;padding:0 42px 0 12px;font:900 18px/1 Arial,sans-serif;outline:none}
+.authority-price-card input:focus{border-color:#00ffff;box-shadow:0 0 0 3px rgba(0,255,255,.08)}
+.authority-price-card small{position:absolute;right:24px;bottom:31px;color:#71888c;font:900 10px/1 Arial,sans-serif}
+.authority-live-row{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:16px 0;padding:12px 14px;border-radius:11px;background:#050b0d;border:1px solid #173238;color:#71888c;font:900 11px/1.3 Arial,sans-serif;letter-spacing:1px}
+.authority-live-row strong{color:#fff;text-align:right;letter-spacing:0}
+.authority-save-button{width:100%;min-height:52px;border:1px solid #00ffff;border-radius:13px;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;font-weight:900;cursor:pointer}
+.authority-save-button:disabled{opacity:.55;cursor:wait}
+.authority-save-status{min-height:20px;margin-top:12px;text-align:center;color:#9fb0b4;font:700 12px/1.4 Arial,sans-serif}
+@media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
+</style></head>
 
 <body>
 
@@ -1565,9 +1582,36 @@ function getMedia(id){
       <h2>AUTHORITY PRESS</h2>
       <button type="button" id="authorityPressClose">CLOSE</button>
     </div>
-    <div class="authority-panel-placeholder">
-      <strong>AUTHORITY PRESS PANEL</strong>
-      This panel is ready. The authority controls will be added here step by step.
+    <div class="authority-panel-section">
+      <div class="authority-section-kicker">I|ONE CONTROL CENTER</div>
+      <h3>UPLOAD SUBSCRIPTION PRICES</h3>
+      <p class="authority-section-note">These are the live prices used by I|ONE users and by the BLMPay payment server.</p>
+
+      <div class="authority-price-grid">
+        <label class="authority-price-card">
+          <span>2 WEEKS</span>
+          <input id="authorityPrice2weeks" type="number" min="0" step="1" inputmode="numeric" placeholder="3000">
+          <small>TZS</small>
+        </label>
+        <label class="authority-price-card">
+          <span>1 MONTH</span>
+          <input id="authorityPrice1month" type="number" min="0" step="1" inputmode="numeric" placeholder="5000">
+          <small>TZS</small>
+        </label>
+        <label class="authority-price-card">
+          <span>3 MONTHS</span>
+          <input id="authorityPrice3months" type="number" min="0" step="1" inputmode="numeric" placeholder="12000">
+          <small>TZS</small>
+        </label>
+      </div>
+
+      <div class="authority-live-row">
+        <span>LIVE PRICES</span>
+        <strong id="authorityPriceStatus">Loading…</strong>
+      </div>
+
+      <button type="button" id="authoritySavePrices" class="authority-save-button">SAVE PRICES</button>
+      <div id="authoritySaveStatus" class="authority-save-status"></div>
     </div>
   </div>
 </div>
@@ -6477,7 +6521,137 @@ printBtn.onclick = () => {
     html += "<hr><p>Heaven On Earth</p>";
     html +=           "<p>powered by deka</p>";
 
-    html += "</body></html>";
+    html += "<script>
+/* ================= AUTHORITY PRESS + LIVE I|ONE PRICING ================= */
+(function(){
+  const FALLBACK = {
+    "2weeks": {id:"2weeks",name:"2 WEEKS",days:14,amount:3000},
+    "1month": {id:"1month",name:"1 MONTH",days:30,amount:5000},
+    "3months": {id:"3months",name:"3 MONTHS",days:90,amount:12000}
+  };
+
+  window.ioneRemotePlansReady=false;
+
+  function setPlanAmount(id,amount){
+    if(window.IONE_UPLOAD_PLANS && window.IONE_UPLOAD_PLANS[id]){
+      window.IONE_UPLOAD_PLANS[id].amount=Number(amount);
+    }
+    const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
+    if(window.IONE_UPLOAD_PLANS && window.IONE_UPLOAD_PLANS[map[id]]){
+      window.IONE_UPLOAD_PLANS[map[id]].amount=Number(amount);
+    }
+  }
+
+  async function loadLivePlans(){
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
+      if(r.error || !r.data?.success) throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
+      (r.data.plans||[]).forEach(p=>setPlanAmount(p.id,p.amount));
+      window.ioneRemotePlansReady=true;
+      updateOpenGate();
+      return r.data.plans||[];
+    }catch(e){
+      console.warn("I|ONE live pricing:",e);
+      return [];
+    }
+  }
+
+  function updateOpenGate(){
+    const gate=document.getElementById("ioneSubscriptionGate");
+    if(!gate)return;
+    const map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
+    gate.querySelectorAll(".ione-sub-plan").forEach(btn=>{
+      const id=btn.dataset.plan;
+      const key=map[id];
+      const plan=key && window.IONE_UPLOAD_PLANS ? window.IONE_UPLOAD_PLANS[key] : null;
+      const span=btn.querySelector("span");
+      if(plan&&span)span.textContent="TZS "+Number(plan.amount).toLocaleString("en-US");
+    });
+  }
+
+  window.ioneRefreshLivePlans=loadLivePlans;
+
+  async function openAuthorityPanel(){
+    const panel=document.getElementById("authorityPressPanel");
+    if(!panel)return;
+    panel.style.display="block";
+    panel.setAttribute("aria-hidden","false");
+    const status=document.getElementById("authorityPriceStatus");
+    if(status)status.textContent="Loading…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
+      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
+      const plans=r.data.plans||[];
+      const inputs={
+        "2weeks":document.getElementById("authorityPrice2weeks"),
+        "1month":document.getElementById("authorityPrice1month"),
+        "3months":document.getElementById("authorityPrice3months")
+      };
+      plans.forEach(p=>{if(inputs[p.id])inputs[p.id].value=Number(p.amount);setPlanAmount(p.id,p.amount);});
+      if(status)status.textContent="CONNECTED • LIVE";
+    }catch(e){
+      if(status)status.textContent="Could not load live prices.";
+    }
+  }
+
+  async function saveAuthorityPrices(){
+    const status=document.getElementById("authoritySaveStatus");
+    const button=document.getElementById("authoritySavePrices");
+    const read=id=>Number(document.getElementById(id)?.value);
+    const plans=[
+      {id:"2weeks",amount:read("authorityPrice2weeks")},
+      {id:"1month",amount:read("authorityPrice1month")},
+      {id:"3months",amount:read("authorityPrice3months")}
+    ];
+    if(plans.some(p=>!Number.isFinite(p.amount)||p.amount<0||!Number.isInteger(p.amount))){
+      if(status)status.textContent="Enter valid whole TZS amounts.";
+      return;
+    }
+    if(button)button.disabled=true;
+    if(status)status.textContent="Saving live prices…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{
+        body:{action:"update",password:"DEKA",plans}
+      });
+      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not save prices.");
+      (r.data.plans||plans).forEach(p=>setPlanAmount(p.id,p.amount));
+      updateOpenGate();
+      if(status)status.textContent="SAVED • ALL USERS WILL SEE THE NEW PRICES";
+      const live=document.getElementById("authorityPriceStatus");
+      if(live)live.textContent="CONNECTED • LIVE";
+    }catch(e){
+      if(status)status.textContent=e?.message||"Could not save prices.";
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
+  function bind(){
+    const save=document.getElementById("authoritySavePrices");
+    if(save)save.onclick=saveAuthorityPrices;
+
+    /* Reuse the existing unlock flow; only add live panel loading. */
+    const unlock=document.getElementById("authorityPasswordUnlock");
+    if(unlock && !unlock.dataset.livePanelBound){
+      unlock.dataset.livePanelBound="1";
+      unlock.addEventListener("click",()=>setTimeout(()=>{
+        const panel=document.getElementById("authorityPressPanel");
+        if(panel && panel.getAttribute("aria-hidden")==="false")openAuthorityPanel();
+      },20));
+    }
+
+    const close=document.getElementById("authorityPressClose");
+    if(close && !close.dataset.livePanelBound){
+      close.dataset.livePanelBound="1";
+      close.addEventListener("click",()=>{const panel=document.getElementById("authorityPressPanel");if(panel){panel.style.display="none";panel.setAttribute("aria-hidden","true");}});
+    }
+
+    loadLivePlans();
+  }
+
+  window.addEventListener("load",bind,{once:true});
+})();
+</script></body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
