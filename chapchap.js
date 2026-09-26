@@ -32,7 +32,12 @@
     return /^255[67]\d{8}$/.test(normalizePhone(value));
   }
 
-  function fieldValue(id) {\n    var el = document.getElementById(id);\n    return el && typeof el.value === "string" ? el.value.trim() : "";\n  }\n\n  function getSupabase() {
+  function fieldValue(id) {
+    var el = document.getElementById(id);
+    return el && typeof el.value === "string" ? el.value.trim() : "";
+  }
+
+  function getSupabase() {
     return typeof heavensSupabase !== "undefined" ? heavensSupabase : null;
   }
 
