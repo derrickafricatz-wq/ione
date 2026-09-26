@@ -242,7 +242,7 @@
       var attrs = {};
       (smartFields[category] || smartFields.other).forEach(function (spec) {
         var el = document.getElementById("ioneCc_attr_" + spec[0]);
-        if (el && el.value.trim()) attrs[spec[0]] = el.value.trim();
+        if (el && typeof el.value === "string" && el.value.trim()) attrs[spec[0]] = el.value.trim();
       });
       status.textContent = "Publishing product…";
       var sb = getSupabase();
