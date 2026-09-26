@@ -6607,7 +6607,7 @@ printBtn.onclick = () => {
     if(status)status.textContent="Saving live prices…";
     try{
       const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{
-        body:{action:"update",password:"DEKA",plans}
+        body:{action:"update",password:String(document.getElementById("authorityPasswordInput")?.value||""),plans}
       });
       if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not save prices.");
       (r.data.plans||plans).forEach(p=>setPlanAmount(p.id,p.amount));
