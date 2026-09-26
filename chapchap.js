@@ -76,7 +76,7 @@
   function findMarketingHost() {
     return document.querySelector("#afrilinkOverlay .afl-discovery") ||
       document.querySelector("#afrilinkOverlay .afl-marketing") ||
-      document.querySelector("#afrilinkOverlay [class*="marketing"]") ||
+      document.querySelector('#afrilinkOverlay [class*="marketing"]') ||
       document.querySelector(".afl-discovery");
   }
 
