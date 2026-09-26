@@ -1359,11 +1359,21 @@ Install App
       <span>HOME OF MARKETING • LIVE BILLBOARDS</span>
     </div>
     <div class="afl-head-actions">
+      <button id="chapchapTopBtn" class="afl-top-btn" type="button">⚡ CHAPCHAP</button>
       <button id="aflUploadTop" class="afl-top-btn afl-upload-top" type="button">＋ UPLOAD</button>
       <button id="aflOwnerInquiries" class="afl-top-btn afl-owner-only-top" type="button">✦ CLIENT INFO</button>
       <button id="aflClose" class="afl-top-btn afl-close" type="button">CLOSE</button>
     </div>
   </div>
+
+  <div id="chapchapDock" class="chapchap-dock">
+    <div class="chapchap-dock-head">
+      <div><div class="chapchap-kicker">I|ONE • CHAPCHAP</div><strong>ONE PRODUCT. ONE BUYER. FAST.</strong></div>
+      <button id="chapchapSellBtn" type="button" class="chapchap-mini-btn">＋ SELL</button>
+    </div>
+    <div id="chapchapRail" class="chapchap-rail" aria-label="ChapChap single products"></div>
+  </div>
+
   <div class="afl-discovery">
     <div class="afl-discovery-row">
       <input id="aflBillboardSearch" type="search" maxlength="120" placeholder="⌕ SEARCH BRAND, SERVICE OR PRODUCT…" autocomplete="off">
@@ -6590,7 +6600,117 @@ printBtn.onclick = () => {
     html += "<hr><p>Heaven On Earth</p>";
     html +=           "<p>powered by deka</p>";
 
-    html += "</body></html>";
+    html += "
+<!-- CHAPCHAP MARKETPLACE V1 -->
+<div id="chapchapSellerOverlay" class="chapchap-overlay" aria-hidden="true">
+  <div class="chapchap-modal">
+    <div class="chapchap-modal-head"><div><span class="chapchap-kicker">CHAPCHAP • SINGLE SELLER</span><h2>SELL ONE PRODUCT</h2></div><button id="chapchapSellerClose" type="button" class="chapchap-close">×</button></div>
+    <div class="chapchap-note">List one product with up to four images. ChapChap keeps 5% from a completed sale.</div>
+    <div class="chapchap-form-grid">
+      <label>YOUR NAME<input id="ccSellerName" type="text" maxlength="80" autocomplete="name" placeholder="Full name"></label>
+      <label>YOUR PHONE<input id="ccSellerPhone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="07XXXXXXXX"></label>
+      <label>PRODUCT TYPE<select id="ccCategory"><option value="phone">PHONE / ELECTRONICS</option><option value="vehicle">CAR / VEHICLE</option><option value="fashion">CLOTHES / FASHION</option><option value="home">HOME / FURNITURE</option><option value="beauty">BEAUTY</option><option value="food">FOOD</option><option value="other">OTHER PRODUCT</option></select></label>
+      <label>PRODUCT NAME<input id="ccTitle" type="text" maxlength="120" placeholder="What are you selling?"></label>
+      <label>PRICE • TZS<input id="ccPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 850000"></label>
+      <label>LOCATION<input id="ccLocation" type="text" maxlength="120" placeholder="Area / town"></label>
+    </div>
+    <div id="ccSmartFields" class="chapchap-smart-fields"></div>
+    <label class="chapchap-full">DESCRIPTION<textarea id="ccDescription" maxlength="600" placeholder="Short product description..."></textarea></label>
+    <div class="chapchap-upload-box"><div class="chapchap-upload-title">PRODUCT IMAGES <span>MAX 4</span></div><input id="ccImages" type="file" accept="image/*" multiple><div id="ccImagePreview" class="chapchap-image-preview"></div></div>
+    <div id="ccSellerStatus" class="chapchap-status"></div>
+    <button id="ccPublish" type="button" class="chapchap-primary">PUBLISH ON CHAPCHAP</button>
+    <button id="ccMySales" type="button" class="chapchap-secondary">MY SALES / SOLD ITEMS</button>
+  </div>
+</div>
+<div id="chapchapBuyerOverlay" class="chapchap-overlay" aria-hidden="true">
+  <div class="chapchap-modal chapchap-buy-modal">
+    <div class="chapchap-modal-head"><div><span class="chapchap-kicker">CHAPCHAP • BUY</span><h2 id="ccBuyTitle">PRODUCT</h2></div><button id="ccBuyerClose" type="button" class="chapchap-close">×</button></div>
+    <div id="ccBuyProduct" class="chapchap-buy-product"></div>
+    <label class="chapchap-full">YOUR MOBILE MONEY NUMBER<input id="ccBuyerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX"></label>
+    <div class="chapchap-buy-note">Press confirm and BLMPay will send the mobile-money payment prompt to this number. Enter your PIN on your phone.</div>
+    <div id="ccBuyerStatus" class="chapchap-status"></div>
+    <button id="ccConfirmBuy" type="button" class="chapchap-primary">CONFIRM PAYMENT</button>
+    <button id="ccCallSeller" type="button" class="chapchap-secondary" style="display:none">☎ CALL SELLER</button>
+  </div>
+</div>
+<div id="chapchapSalesOverlay" class="chapchap-overlay" aria-hidden="true">
+  <div class="chapchap-modal">
+    <div class="chapchap-modal-head"><div><span class="chapchap-kicker">CHAPCHAP • SELLER</span><h2>MY SALES</h2></div><button id="ccSalesClose" type="button" class="chapchap-close">×</button></div>
+    <div id="ccSalesList" class="chapchap-sales-list"></div>
+  </div>
+</div>
+
+<style>
+
+/* ================= CHAPCHAP MARKETPLACE ================= */
+.chapchap-dock{margin:0 12px 10px;padding:10px 10px 12px;border:1px solid rgba(0,255,255,.28);border-radius:22px;background:linear-gradient(145deg,rgba(8,20,23,.96),rgba(1,5,6,.98));box-shadow:0 14px 34px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);position:relative;z-index:4}
+.chapchap-dock-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.chapchap-dock-head strong{display:block;font:900 12px/1.1 'Russo One',Arial,sans-serif;color:#fff;letter-spacing:.5px}
+.chapchap-kicker{display:block;color:#00ffff;font:900 8px/1.2 Arial,sans-serif;letter-spacing:2px;margin-bottom:4px}
+.chapchap-mini-btn,.chapchap-secondary,.chapchap-primary{border-radius:12px;font-weight:900;cursor:pointer;touch-action:manipulation}
+.chapchap-mini-btn{border:1px solid #00ffff;background:#061617;color:#00ffff;padding:9px 12px;font-size:11px;box-shadow:0 4px 0 #003d3d}
+.chapchap-rail{display:flex;gap:11px;overflow-x:auto;overflow-y:hidden;padding:4px 4px 9px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;perspective:900px}
+.chapchap-rail::-webkit-scrollbar{display:none}
+.chap-card{flex:0 0 118px;height:132px;scroll-snap-align:start;position:relative;border-radius:20px;overflow:hidden;border:1px solid rgba(0,255,255,.38);background:#081012;box-shadow:0 8px 0 #001f20,0 15px 25px rgba(0,0,0,.35);transform:rotateX(1deg) rotateY(-3deg);transition:transform .18s ease,filter .18s ease;cursor:pointer}
+.chap-card:active{transform:translateY(4px) rotateX(1deg) rotateY(-1deg);box-shadow:0 3px 0 #001f20,0 8px 15px rgba(0,0,0,.3)}
+.chap-card img{width:100%;height:92px;display:block;object-fit:cover;background:#111}
+.chap-card-shade{position:absolute;inset:35px 0 0;background:linear-gradient(transparent,rgba(0,0,0,.92))}
+.chap-card-title{position:absolute;left:8px;right:8px;bottom:27px;font:900 11px/1.05 'Russo One',Arial,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chap-price-tag{position:absolute;left:7px;top:7px;max-width:100px;padding:5px 7px;border-radius:9px;background:#ffe600;color:#111;font:900 9px/1 Arial,sans-serif;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.chap-buy-mini{position:absolute;right:7px;bottom:6px;border:0;border-radius:8px;padding:5px 8px;background:#00ffff;color:#001010;font:900 8px/1 Arial,sans-serif}
+.chap-empty{flex:1;min-height:65px;display:flex;align-items:center;justify-content:center;color:#8da0a5;font:700 10px/1.4 Arial,sans-serif;text-align:center;border:1px dashed #25474d;border-radius:15px}
+.chapchap-overlay{position:fixed;inset:0;z-index:100900;display:none;align-items:center;justify-content:center;padding:15px;background:rgba(0,0,0,.9);backdrop-filter:blur(12px);box-sizing:border-box}
+.chapchap-overlay[aria-hidden="false"]{display:flex}
+.chapchap-modal{width:min(620px,100%);max-height:94vh;overflow:auto;padding:18px;border:1px solid #00ffff;border-radius:24px;background:linear-gradient(145deg,#101b1f,#030708);box-shadow:0 25px 70px rgba(0,0,0,.75);box-sizing:border-box;color:#fff}
+.chapchap-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px}
+.chapchap-modal h2{margin:0;color:#fff;font:900 clamp(22px,6vw,32px)/1 'Russo One',Arial,sans-serif}
+.chapchap-close{width:42px;height:42px;border:1px solid #35545a;border-radius:50%;background:#111;color:#00ffff;font-size:28px;line-height:1;cursor:pointer}
+.chapchap-note,.chapchap-buy-note{color:#91a4a9;font:12px/1.5 Arial,sans-serif;margin:0 0 14px}
+.chapchap-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.chapchap-form-grid label,.chapchap-full{display:block;color:#b9c7cb;font:800 9px/1.2 Arial,sans-serif;letter-spacing:1px}
+.chapchap-form-grid input,.chapchap-form-grid select,.chapchap-full input,.chapchap-full textarea,.chapchap-smart-fields input,.chapchap-smart-fields select{width:100%;margin-top:6px;box-sizing:border-box;min-height:48px;padding:12px;border:1px solid #29474d;border-radius:12px;background:#050a0b;color:#fff;outline:none;font:14px Arial,sans-serif}
+.chapchap-form-grid input:focus,.chapchap-form-grid select:focus,.chapchap-full input:focus,.chapchap-full textarea:focus,.chapchap-smart-fields input:focus,.chapchap-smart-fields select:focus{border-color:#00ffff}
+.chapchap-full{margin-top:10px}.chapchap-full textarea{min-height:90px;resize:vertical}
+.chapchap-smart-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.chap-smart-label{display:block;color:#b9c7cb;font:800 9px/1.2 Arial,sans-serif;letter-spacing:1px}
+.chapchap-upload-box{margin-top:12px;padding:12px;border:1px dashed #31545a;border-radius:15px;background:rgba(0,255,255,.025)}
+.chapchap-upload-title{font:900 10px Arial,sans-serif;color:#fff;margin-bottom:9px}.chapchap-upload-title span{float:right;color:#00ffff}
+.chapchap-upload-box input{width:100%;font-size:12px}.chapchap-image-preview{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}.chapchap-image-preview img{width:100%;aspect-ratio:1;border-radius:10px;object-fit:cover;border:1px solid #31545a}
+.chapchap-status{min-height:20px;margin:10px 0;color:#00ffff;font:700 11px/1.4 Arial,sans-serif;text-align:center}
+.chapchap-primary{width:100%;min-height:53px;border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;box-shadow:0 6px 0 #005858;font-size:13px}
+.chapchap-secondary{width:100%;min-height:48px;margin-top:10px;border:1px solid #31545a;background:#101617;color:#fff;font-size:12px}
+.chapchap-buy-product{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;margin:10px 0 14px;padding:10px;border-radius:16px;background:rgba(0,255,255,.05);border:1px solid rgba(0,255,255,.18)}
+.chapchap-buy-product img{width:120px;height:120px;border-radius:14px;object-fit:cover}.chapchap-buy-product strong{display:block;font:900 18px/1.1 'Russo One',Arial,sans-serif}.chapchap-buy-product span{display:block;margin-top:7px;color:#ffe600;font:900 17px Arial,sans-serif}.chapchap-buy-product small{display:block;margin-top:7px;color:#8fa3a8}
+.chapchap-sales-list{display:grid;gap:10px}.chap-sale{padding:13px;border:1px solid #29474d;border-radius:15px;background:#070d0e}.chap-sale strong{display:block;color:#fff;font:900 14px Arial,sans-serif}.chap-sale .sold-line{margin-top:6px;color:#00ffff;font:800 11px Arial,sans-serif}.chap-sale small{display:block;color:#8ea1a6;margin-top:5px}.chap-sale button{margin-top:9px;border:1px solid #00ffff;border-radius:9px;padding:8px 11px;background:#061617;color:#00ffff;font-weight:900}
+@media(max-width:520px){.chapchap-form-grid,.chapchap-smart-fields{grid-template-columns:1fr}.chapchap-dock{margin-left:8px;margin-right:8px}.chap-card{flex-basis:112px;height:128px}.chap-card img{height:89px}}
+/* ================= END CHAPCHAP MARKETPLACE ================= */
+
+</style>
+
+<script>
+/* ================= CHAPCHAP MARKETPLACE LOGIC ================= */
+(function(){
+  const rail=document.getElementById("chapchapRail"),sellerOverlay=document.getElementById("chapchapSellerOverlay"),buyerOverlay=document.getElementById("chapchapBuyerOverlay"),salesOverlay=document.getElementById("chapchapSalesOverlay"),category=document.getElementById("ccCategory");
+  let currentProduct=null,selectedFiles=[];
+  const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m])),money=v=>"TZS "+Number(v||0).toLocaleString("en-US");
+  const openOverlay=el=>{el.style.display="flex";el.setAttribute("aria-hidden","false")},closeOverlay=el=>{el.style.display="none";el.setAttribute("aria-hidden","true")};
+  const smartSchemas={phone:[["brand","BRAND","text"],["model","MODEL","text"],["storage","STORAGE","text"],["condition","CONDITION","select","New,Used"],["color","COLOR","text"]],vehicle:[["make","MAKE","text"],["model","MODEL","text"],["year","YEAR","number"],["mileage","MILEAGE","text"],["condition","CONDITION","select","New,Used"]],fashion:[["size","SIZE","text"],["color","COLOR","text"],["material","MATERIAL","text"],["condition","CONDITION","select","New,Used"]],home:[["material","MATERIAL","text"],["color","COLOR","text"],["condition","CONDITION","select","New,Used"],["dimensions","DIMENSIONS","text"]],beauty:[["brand","BRAND","text"],["type","TYPE","text"],["size","SIZE","text"],["condition","CONDITION","select","New,Used"]],food:[["type","TYPE","text"],["quantity","QUANTITY","text"],["freshness","FRESHNESS","select","Fresh,Ready-made,Packaged"]],other:[["condition","CONDITION","select","New,Used"],["brand","BRAND","text"],["model","MODEL","text"]]};
+  function renderSmartFields(){const box=document.getElementById("ccSmartFields");if(!box)return;const schema=smartSchemas[category.value]||smartSchemas.other;box.innerHTML=schema.map(f=>f[2]==="select"?'<label class="chap-smart-label">'+f[1]+'<select data-cc-attr="'+f[0]+'">'+f[3].split(",").map(v=>'<option>'+esc(v)+'</option>').join("")+'</select></label>':'<label class="chap-smart-label">'+f[1]+'<input data-cc-attr="'+f[0]+'" type="'+f[2]+'" placeholder="'+f[1]+'"></label>').join("")}
+  renderSmartFields();category?.addEventListener("change",renderSmartFields);
+  document.getElementById("ccImages")?.addEventListener("change",e=>{selectedFiles=Array.from(e.target.files||[]).slice(0,4);const p=document.getElementById("ccImagePreview");p.innerHTML="";selectedFiles.forEach(f=>{const im=document.createElement("img");im.src=URL.createObjectURL(f);p.appendChild(im)});if((e.target.files||[]).length>4)document.getElementById("ccSellerStatus").textContent="Only the first 4 images are used."});
+  async function loadProducts(){if(!rail)return;try{const {data,error}=await heavensSupabase.from("ione_single_products").select("id,seller_name,seller_phone,category,title,price_tzs,location,description,attributes,image_urls,status,created_at").eq("status","active").order("created_at",{ascending:false}).limit(60);if(error)throw error;rail.innerHTML="";if(!data?.length){rail.innerHTML='<div class="chap-empty">CHAPCHAP IS READY.<br>Be the first single seller.</div>';return}data.forEach(p=>{const urls=Array.isArray(p.image_urls)?p.image_urls:[],card=document.createElement("article");card.className="chap-card";card.innerHTML='<img src="'+esc(urls[0]||"")+'" alt="'+esc(p.title)+'"><div class="chap-card-shade"></div><div class="chap-price-tag">'+esc(money(p.price_tzs))+'</div><div class="chap-card-title">'+esc(p.title)+'</div><button class="chap-buy-mini" type="button">BUY</button>';card.querySelector("button").onclick=e=>{e.stopPropagation();openBuy(p)};card.onclick=()=>openBuy(p);rail.appendChild(card)})}catch(e){rail.innerHTML='<div class="chap-empty">CHAPCHAP COULD NOT LOAD.<br>Try again shortly.</div>';console.error("ChapChap feed",e)}}
+  function openBuy(p){currentProduct=p;document.getElementById("ccBuyTitle").textContent=p.title||"PRODUCT";const urls=Array.isArray(p.image_urls)?p.image_urls:[];document.getElementById("ccBuyProduct").innerHTML='<img src="'+esc(urls[0]||"")+'" alt=""><div><strong>'+esc(p.title)+'</strong><span>'+esc(money(p.price_tzs))+'</span><small>'+esc(p.location||"")+'</small><small>SELLER • '+esc(p.seller_name||"")+'</small></div>';document.getElementById("ccBuyerPhone").value="";document.getElementById("ccBuyerStatus").textContent="";document.getElementById("ccConfirmBuy").disabled=false;document.getElementById("ccConfirmBuy").style.display="";document.getElementById("ccCallSeller").style.display="none";openOverlay(buyerOverlay)}
+  async function publish(){const status=document.getElementById("ccSellerStatus"),btn=document.getElementById("ccPublish"),name=document.getElementById("ccSellerName").value.trim(),phone=document.getElementById("ccSellerPhone").value.trim(),title=document.getElementById("ccTitle").value.trim(),location=document.getElementById("ccLocation").value.trim(),description=document.getElementById("ccDescription").value.trim(),price=Math.round(Number(document.getElementById("ccPrice").value));if(!name||!phone||!title||!location||!price||price<1){status.textContent="Complete your name, phone, product, price and location.";return}if(!selectedFiles.length){status.textContent="Add at least 1 product image.";return}btn.disabled=true;status.textContent="Uploading product…";try{const session=await ensureHeavensAnonymousSession(),uid=session?.user?.id;if(!uid)throw new Error("Could not create your secure I|ONE session.");const imageUrls=[],imagePaths=[];for(let i=0;i<selectedFiles.length;i++){status.textContent="Uploading image "+(i+1)+" of "+selectedFiles.length+"…";const u=await aflUploadFile(selectedFiles[i],uid);imageUrls.push(u.url);imagePaths.push(u.path)}const attrs={};document.querySelectorAll("[data-cc-attr]").forEach(el=>{if(String(el.value||"").trim())attrs[el.dataset.ccAttr]=String(el.value).trim()});const {error}=await heavensSupabase.from("ione_single_products").insert({seller_id:uid,seller_name:name,seller_phone:phone,category:category.value,title,price_tzs:price,location,description,attributes:attrs,image_urls:imageUrls,image_paths:imagePaths,status:"active"});if(error)throw error;status.textContent="PUBLISHED ✓ Your ChapChap product is live.";selectedFiles=[];document.getElementById("ccImages").value="";document.getElementById("ccImagePreview").innerHTML="";await loadProducts();setTimeout(()=>closeOverlay(sellerOverlay),900)}catch(e){console.error("ChapChap publish",e);status.textContent=e?.message||"Could not publish the product."}finally{btn.disabled=false}}
+  async function buy(){if(!currentProduct)return;const status=document.getElementById("ccBuyerStatus"),btn=document.getElementById("ccConfirmBuy"),phone=document.getElementById("ccBuyerPhone").value.trim();if(!phone){status.textContent="Enter the number that should receive the payment prompt.";return}btn.disabled=true;status.textContent="Sending BLMPay request to your phone…";try{const session=await ensureHeavensAnonymousSession();if(!session?.user?.id)throw new Error("Could not create your secure I|ONE session.");const {data,error}=await heavensSupabase.functions.invoke("ione-chapchap-payment",{body:{product_id:currentProduct.id,phone_number:phone}});if(error)throw error;if(!data?.success)throw new Error(data?.error||"Payment could not be started.");status.textContent="PROMPT SENT ✓ Check your phone and enter your M-Pesa PIN. Waiting for confirmation…";await waitForPaid(data.order_id,currentProduct.seller_phone)}catch(e){console.error("ChapChap buy",e);status.textContent=e?.message||"Payment could not be started.";btn.disabled=false}}
+  async function waitForPaid(orderId,sellerPhone){const status=document.getElementById("ccBuyerStatus"),btn=document.getElementById("ccConfirmBuy"),call=document.getElementById("ccCallSeller"),started=Date.now();while(Date.now()-started<240000){await new Promise(r=>setTimeout(r,3000));const {data,error}=await heavensSupabase.from("ione_chapchap_orders").select("status").eq("id",orderId).maybeSingle();if(error)continue;if(data?.status==="paid"){status.innerHTML="PAID ✓ <strong>SELLER INFORMED.</strong><br>Your product is now marked SOLD.";btn.style.display="none";call.style.display="block";call.onclick=()=>{window.location.href="tel:"+String(sellerPhone||"").replace(/[^0-9+]/g,"")};await loadProducts();return}if(["failed","expired","cancelled"].includes(data?.status)){status.textContent="Payment was not completed. The product is available again.";btn.disabled=false;await loadProducts();return}status.textContent="Waiting for BLMPay confirmation…"}status.textContent="Payment is still pending. If you completed the PIN prompt, you can close this and return later.";btn.disabled=false}
+  async function loadSales(){const list=document.getElementById("ccSalesList");list.innerHTML='<div class="chap-empty">LOADING SALES…</div>';try{const s=await ensureHeavensAnonymousSession(),uid=s?.user?.id;if(!uid)throw new Error("Session unavailable.");const {data,error}=await heavensSupabase.from("ione_chapchap_orders").select("id,amount_tzs,commission_tzs,seller_net_tzs,buyer_phone,status,created_at,paid_at,ione_single_products(title)").eq("seller_id",uid).order("created_at",{ascending:false}).limit(50);if(error)throw error;const {data:notes}=await heavensSupabase.from("ione_chapchap_notifications").select("id,order_id,title,body,read_at,created_at").eq("seller_id",uid).order("created_at",{ascending:false}).limit(50);list.innerHTML="";if(!data?.length){list.innerHTML='<div class="chap-empty">NO SALES YET.</div>';return}data.forEach(o=>{const title=o.ione_single_products?.title||"ChapChap product",d=document.createElement("div");d.className="chap-sale";d.innerHTML='<strong>'+esc(title)+'</strong><div class="sold-line">'+esc(o.status==="paid"?"SOLD • PAID":"PAYMENT • "+String(o.status||"pending").toUpperCase())+' • '+esc(money(o.amount_tzs))+'</div><small>ChapChap 5%: '+esc(money(o.commission_tzs))+' • You receive: '+esc(money(o.seller_net_tzs))+'</small><small>Buyer: '+esc(o.buyer_phone||"")+'</small>'+(o.status==="paid"?'<button type="button">☎ CALL BUYER</button>':"");if(o.status==="paid")d.querySelector("button").onclick=()=>{window.location.href="tel:"+String(o.buyer_phone||"").replace(/[^0-9+]/g,"")};list.appendChild(d)});if(notes?.length)notes.forEach(n=>{if(!n.read_at)heavensSupabase.from("ione_chapchap_notifications").update({read_at:new Date().toISOString()}).eq("id",n.id).then(()=>{})})}catch(e){list.innerHTML='<div class="chap-empty">Could not load your sales.</div>';console.error("ChapChap sales",e)}}
+  document.getElementById("chapchapSellBtn")?.addEventListener("click",()=>{renderSmartFields();openOverlay(sellerOverlay)});document.getElementById("ccPublish")?.addEventListener("click",publish);document.getElementById("ccMySales")?.addEventListener("click",()=>{openOverlay(salesOverlay);loadSales()});document.getElementById("ccConfirmBuy")?.addEventListener("click",buy);document.getElementById("chapchapSellerClose")?.addEventListener("click",()=>closeOverlay(sellerOverlay));document.getElementById("ccBuyerClose")?.addEventListener("click",()=>closeOverlay(buyerOverlay));document.getElementById("ccSalesClose")?.addEventListener("click",()=>closeOverlay(salesOverlay));[sellerOverlay,buyerOverlay,salesOverlay].forEach(el=>el?.addEventListener("click",e=>{if(e.target===el)closeOverlay(el)}));
+  document.getElementById("chapchapTopBtn")?.addEventListener("click",()=>document.getElementById("chapchapDock")?.scrollIntoView({behavior:"smooth",block:"start"}));
+  window.ioneChapChapRefresh=loadProducts;if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",loadProducts,{once:true});else loadProducts();setInterval(()=>{if(!document.hidden)loadProducts()},30000);
+})();
+</script>
+
+</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
