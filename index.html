@@ -1976,67 +1976,7 @@ if ("serviceWorker" in navigator) {
 /* ================= AUTHORITY PRESS PASSWORD GATE ================= */
 const openAuthority=document.getElementById("openAuthority");
 const authorityPasswordOverlay=document.getElementById("authorityPasswordOverlay");
-const authorityPasswordInput=document.getElementById("authorityPasswordInput");
-const authorityPasswordUnlock=document.getElementById("authorityPasswordUnlock");
-const authorityPasswordCancel=document.getElementById("authorityPasswordCancel");
-const authorityPasswordStatus=document.getElementById("authorityPasswordStatus");
-
-/*
-  STEP 2 TEMPORARY PASSWORD GATE.
-  This is intentionally kept separate from subscription/payment logic.
-  Replace the temporary password with the real protected authority system
-  in a later step using server-side verification.
-*/
-const AUTHORITY_PRESS_TEMP_PASSWORD=null;
-
-function authorityPressOpen(){
-  if(!authorityPasswordOverlay)return;
-  authorityPasswordOverlay.style.display="flex";
-  authorityPasswordOverlay.setAttribute("aria-hidden","false");
-  if(authorityPasswordStatus)authorityPasswordStatus.textContent="";
-  if(authorityPasswordInput){
-    authorityPasswordInput.value="";
-    setTimeout(()=>authorityPasswordInput.focus(),80);
-  }
-}
-function authorityPressClose(){
-  if(!authorityPasswordOverlay)return;
-  authorityPasswordOverlay.style.display="none";
-  authorityPasswordOverlay.setAttribute("aria-hidden","true");
-  if(authorityPasswordInput)authorityPasswordInput.value="";
-  if(authorityPasswordStatus)authorityPasswordStatus.textContent="";
-}
-function authorityPressUnlock(){
-  const value=String(authorityPasswordInput?.value||"").trim();
-  if(value===AUTHORITY_PRESS_TEMP_PASSWORD){
-    authorityPressClose();
-    smartPanel?.classList.remove("show");
-    smartToggle?.classList.remove("active");
-    /* Authority panel will be added in the next step. */
-    alert("AUTHORITY PRESS UNLOCKED");
-  }else if(authorityPasswordStatus){
-    authorityPasswordStatus.textContent="INCORRECT PASSWORD.";
-    if(authorityPasswordInput){
-      authorityPasswordInput.value="";
-      authorityPasswordInput.focus();
-    }
-  }
-}
-if(openAuthority)openAuthority.onclick=e=>{
-  e.preventDefault();
-  e.stopPropagation();
-  authorityPressOpen();
-};
-if(authorityPasswordUnlock)authorityPasswordUnlock.onclick=authorityPressUnlock;
-if(authorityPasswordCancel)authorityPasswordCancel.onclick=authorityPressClose;
-if(authorityPasswordInput)authorityPasswordInput.addEventListener("keydown",e=>{
-  if(e.key==="Enter")authorityPressUnlock();
-  if(e.key==="Escape")authorityPressClose();
-});
-if(authorityPasswordOverlay)authorityPasswordOverlay.addEventListener("click",e=>{
-  if(e.target===authorityPasswordOverlay)authorityPressClose();
-});
-/* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
+/* AUTHORITY PRESS: backend-authenticated handler is installed by the final Authority Press binding below. */
 
 /* SMART SYSTEM */
 const smartToggle=document.getElementById("smartToggle");
