@@ -497,6 +497,55 @@
     }, 3200);
   }
 
+  async function reconcilePayment(product) {
+    var status = document.getElementById("ioneCcBuyStatus");
+    var btn = document.getElementById("ioneCcBuySubmit");
+    try {
+      if (btn) btn.disabled = true;
+      if (status) status.textContent = "Checking BLMPay payment status…";
+      var session = await getSession();
+      var sb = getSupabase();
+      var result = await sb.functions.invoke("ione-chapchap-payment", {
+        body: { action: "reconcile", product_id: product.id }
+      });
+      var message = result.data && result.data.error ? result.data.error : "";
+      if (!message && result.error && result.error.context) {
+        try {
+          var errorPayload = await result.error.context.json();
+          message = errorPayload && (errorPayload.error || errorPayload.message) ? (errorPayload.error || errorPayload.message) : "";
+        } catch (errorRead) {}
+      }
+      if (result.error || !result.data || !result.data.success) {
+        if (status) {
+          status.innerHTML = esc(message || "BLMPay is still processing this payment.") +
+            '<br><button id="ioneCcCheckAgain" class="cc-secondary" type="button" style="margin-top:8px;width:100%">CHECK PAYMENT STATUS</button>';
+          var again = document.getElementById("ioneCcCheckAgain");
+          if (again) again.addEventListener("click", function () { reconcilePayment(product); });
+        }
+        return;
+      }
+      if (result.data.status === "released") {
+        if (status) status.textContent = result.data.message || "Previous payment was cancelled. You can try again now.";
+        if (btn) btn.disabled = false;
+        await loadProducts();
+        return;
+      }
+      if (result.data.status === "paid") {
+        if (status) status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
+        await loadProducts();
+        return;
+      }
+    } catch (err) {
+      console.warn("ChapChap payment reconciliation:", err);
+      if (status) status.innerHTML = esc(err && err.message ? err.message : "Could not check payment status.") +
+        '<br><button id="ioneCcCheckAgain" class="cc-secondary" type="button" style="margin-top:8px;width:100%">CHECK PAYMENT STATUS</button>';
+      var retry = document.getElementById("ioneCcCheckAgain");
+      if (retry) retry.addEventListener("click", function () { reconcilePayment(product); });
+    } finally {
+      if (btn && !status?.textContent?.toLowerCase().includes("confirmed")) btn.disabled = false;
+    }
+  }
+
   async function startPayment(product) {
     var status = document.getElementById("ioneCcBuyStatus");
     var btn = document.getElementById("ioneCcBuySubmit");
@@ -523,7 +572,15 @@
       await waitForPayment(orderId, product, phone);
     } catch (err) {
       console.error("ChapChap payment:", err);
-      if (status) status.textContent = err && err.message ? err.message : "Payment could not be started.";
+      var msg = err && err.message ? err.message : "Payment could not be started.";
+      if (status && /previous payment is still in progress|already reserved for a payment attempt/i.test(msg)) {
+        status.innerHTML = esc(msg) +
+          '<br><button id="ioneCcCheckAgain" class="cc-secondary" type="button" style="margin-top:8px;width:100%">CHECK PAYMENT STATUS</button>';
+        var check = document.getElementById("ioneCcCheckAgain");
+        if (check) check.addEventListener("click", function () { reconcilePayment(product); });
+      } else if (status) {
+        status.textContent = msg;
+      }
       if (btn) btn.disabled = false;
     }
   }
