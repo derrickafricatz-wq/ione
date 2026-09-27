@@ -166,7 +166,8 @@
         "@keyframes ioneChapShine{0%{left:-35%;opacity:0}12%{opacity:1}30%{left:115%;opacity:0}100%{left:115%;opacity:0}}" +
         "@media(max-width:420px){#ioneChapBar{grid-template-columns:minmax(0,1fr) 82px 38px!important}.ione-chap-card{flex-basis:132px!important;height:165px!important}#afrilinkOverlay .afl-discovery-row select{width:45px!important;min-width:45px!important;flex-basis:45px!important}#afrilinkOverlay .afl-top-btn{width:29px!important;min-width:29px!important;padding:0 1px!important;font-size:5.5px!important}}";
 
-    style.textContent += "#afrilinkOverlay .afl-head-actions{gap:6px!important;padding-left:3px!important}"+"#afrilinkOverlay .afl-top-btn{width:35px!important;min-width:35px!important;padding:0 3px!important}"+"#afrilinkOverlay .afl-upload-top,#afrilinkOverlay .afl-owner-only-top,#afrilinkOverlay .afl-close{width:35px!important;min-width:35px!important}";\n    document.head.appendChild(style);
+    style.textContent += "#afrilinkOverlay .afl-head-actions{gap:6px!important;padding-left:3px!important}"+"#afrilinkOverlay .afl-top-btn{width:35px!important;min-width:35px!important;padding:0 3px!important}"+"#afrilinkOverlay .afl-upload-top,#afrilinkOverlay .afl-owner-only-top,#afrilinkOverlay .afl-close{width:35px!important;min-width:35px!important}";
+    document.head.appendChild(style);
   }
 
   function createDock() {
