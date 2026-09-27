@@ -510,6 +510,12 @@
       var result = await sb.functions.invoke("ione-chapchap-payment", { body: { product_id: product.id, phone_number: phone } });
       if (result.error || !result.data || !result.data.success) {
         var backendMessage = result.data && result.data.error ? result.data.error : "";
+        if (!backendMessage && result.error && result.error.context) {
+          try {
+            var errorPayload = await result.error.context.json();
+            backendMessage = errorPayload && (errorPayload.error || errorPayload.message) ? (errorPayload.error || errorPayload.message) : "";
+          } catch (errorRead) {}
+        }
         throw new Error(backendMessage || (result.error && result.error.message) || "Payment could not be started.");
       }
       var orderId = result.data.order_id;
