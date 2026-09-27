@@ -137,6 +137,35 @@
       "/* Full billboard content keeps its existing geometry and remains the visual focus. */" +
       "#afrilinkOverlay .afl-screen img.afl-signage-media{object-fit:contain!important;object-position:center center!important;background:#000}" +
       "@media(max-width:420px){#ioneChapBar{grid-template-columns:minmax(0,1fr) 86px 40px}.ione-chap-card{flex-basis:132px;height:165px}#ioneChapOpen{font-size:8.5px}#ioneChapMine{font-size:7.5px}#afrilinkOverlay .afl-discovery{padding:5px 0 6px}.afl-discovery-row select{width:132px;flex-basis:132px}.afl-top-btn{padding:0 8px;font-size:8px}}";
+    
+      /* FINAL MICRO HEADER + CUTE FAST CHAPCHAP POLISH */
+      style.textContent +=
+        "#afrilinkOverlay .afl-head{display:flex!important;align-items:center!important;gap:3px!important;height:44px!important;min-height:44px!important;padding:4px!important;overflow:visible!important}" +
+        "#afrilinkOverlay .afl-brand-mark{flex:0 0 28px!important;width:28px!important;height:28px!important;font-size:9px!important;border-radius:8px!important}" +
+        "#afrilinkOverlay .afl-discovery{order:2!important;flex:1 1 0!important;min-width:70px!important;padding:0!important;margin:0!important}" +
+        "#afrilinkOverlay .afl-discovery-row{gap:2px!important;width:100%!important}" +
+        "#afrilinkOverlay .afl-discovery-row input{flex:1 1 0!important;width:0!important;min-width:35px!important;height:28px!important;padding:0 5px!important;font-size:7px!important}" +
+        "#afrilinkOverlay .afl-discovery-row select{flex:0 0 45px!important;width:45px!important;min-width:45px!important;height:28px!important;padding:0 1px!important;font-size:5.5px!important}" +
+        "#afrilinkOverlay .afl-head-actions{order:3!important;flex:0 0 auto!important;display:flex!important;gap:2px!important;margin:0!important}" +
+        "#afrilinkOverlay .afl-top-btn{width:29px!important;min-width:29px!important;height:28px!important;min-height:28px!important;padding:0 1px!important;font-size:5.5px!important;border-radius:7px!important;white-space:nowrap!important;overflow:hidden!important}" +
+        "#afrilinkOverlay .afl-upload-top,#afrilinkOverlay .afl-owner-only-top,#afrilinkOverlay .afl-close{width:29px!important;min-width:29px!important}" +
+        "#ioneChapDock{padding:6px 4px 7px!important;border:0!important;background:linear-gradient(180deg,rgba(0,255,255,.035),transparent)!important}" +
+        "#ioneChapBar{gap:4px!important;margin-bottom:5px!important}" +
+        "#ioneChapOpen,#ioneChapMine{position:relative!important;overflow:hidden!important;font-weight:1000!important;letter-spacing:.4px!important;transition:filter .12s ease,transform .12s ease!important}" +
+        "#ioneChapOpen:before,#ioneChapMine:before{content:'';position:absolute;top:0;left:-35%;width:22%;height:100%;background:rgba(255,255,255,.48);transform:skewX(-20deg);animation:ioneChapShine 3.8s linear infinite;pointer-events:none!important}" +
+        "#ioneChapOpen{background:linear-gradient(135deg,#00ffff 0%,#008cff 52%,#625cff 100%)!important;border-color:#75ffff!important;color:#001014!important}" +
+        "#ioneChapMine{background:linear-gradient(135deg,#ff4fd8 0%,#9b55ff 55%,#5f6cff 100%)!important;border-color:#ff9be9!important;color:#fff!important}" +
+        "#ioneChapOpen:active,#ioneChapMine:active{filter:brightness(1.08)!important;transform:scale(.985)!important}" +
+        "#ioneChapRail{gap:8px!important;padding:3px 2px 7px!important;scroll-behavior:smooth!important;-webkit-overflow-scrolling:touch!important}" +
+        ".ione-chap-card{border:1px solid rgba(0,255,255,.28)!important;background:linear-gradient(145deg,#132d34,#06090b)!important;transition:transform .12s ease,border-color .12s ease!important;will-change:transform!important}" +
+        ".ione-chap-card:after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 28%,transparent 72%,rgba(0,255,255,.08))!important}" +
+        ".ione-chap-card:hover{border-color:rgba(0,255,255,.72)!important;transform:translateY(-2px)!important}" +
+        ".ione-chap-price{background:linear-gradient(135deg,#ffe600,#ff9f00)!important;color:#171000!important;border:1px solid rgba(255,255,255,.65)!important}" +
+        ".ione-chap-title{font-size:10px!important;text-shadow:0 1px 3px #000!important}" +
+        ".ione-chap-seller{color:#6fffff!important}.ione-chap-location{color:#b5c7ca!important}" +
+        "@keyframes ioneChapShine{0%{left:-35%;opacity:0}12%{opacity:1}30%{left:115%;opacity:0}100%{left:115%;opacity:0}}" +
+        "@media(max-width:420px){#ioneChapBar{grid-template-columns:minmax(0,1fr) 82px 38px!important}.ione-chap-card{flex-basis:132px!important;height:165px!important}#afrilinkOverlay .afl-discovery-row select{width:45px!important;min-width:45px!important;flex-basis:45px!important}#afrilinkOverlay .afl-top-btn{width:29px!important;min-width:29px!important;padding:0 1px!important;font-size:5.5px!important}}";
+
     document.head.appendChild(style);
   }
 
