@@ -33,7 +33,7 @@
 
   function fieldValue(id) {
     var el = document.getElementById(id);
-    return el && typeof el.value === "string" ? el.value.trim() : "";
+    return el && typeof el.value === "string" ? el.value : "";
   }
 
   function getSupabase() {
@@ -73,7 +73,7 @@
       "#ioneChapOverlay .cc-card{width:min(500px,100%);max-height:94vh;overflow:auto;border:1px solid #00ffff;border-radius:22px;background:linear-gradient(145deg,#101b1f,#05090a);box-shadow:0 25px 80px rgba(0,0,0,.75);padding:18px}" +
       ".cc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.cc-head h2{margin:0;color:#00ffff;font:900 23px Arial,sans-serif}.cc-close{border:1px solid #334a50;background:#111;color:#fff;border-radius:10px;padding:8px 11px;font-weight:900;cursor:pointer}" +
       ".cc-kicker{color:#789096;font:900 9px Arial,sans-serif;letter-spacing:2px;margin:5px 0 13px}.cc-grid{display:grid;gap:9px}.cc-field label{display:block;color:#00ffff;font:900 9px Arial,sans-serif;letter-spacing:1px;margin:0 0 5px}.cc-field input,.cc-field select,.cc-field textarea{width:100%;box-sizing:border-box;border:1px solid #294349;border-radius:10px;background:#071012;color:#fff;padding:11px;font:700 13px Arial,sans-serif;outline:none}.cc-field textarea{min-height:76px;resize:vertical}.cc-field input:focus,.cc-field select:focus,.cc-field textarea:focus{border-color:#00ffff}.cc-images{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cc-images input{font-size:9px;padding:7px}.cc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.cc-primary,.cc-secondary{min-height:45px;border-radius:11px;font-weight:900;cursor:pointer}.cc-primary{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010}.cc-secondary{border:1px solid #334a50;background:#111;color:#fff}.cc-status{min-height:20px;margin-top:10px;text-align:center;color:#9eb0b5;font:800 10px/1.4 Arial,sans-serif}.cc-product-preview{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;margin:5px 0 13px;padding:9px;border:1px solid #294349;border-radius:13px;background:#071012}.cc-product-preview img{width:110px;height:90px;object-fit:cover;border-radius:9px;background:#0b1417}.cc-product-preview h3{margin:0 0 5px;font:900 16px Arial,sans-serif}.cc-product-preview p{margin:3px 0;color:#9fb2b6;font-size:10px}.cc-phone{font-size:18px!important;letter-spacing:1px}.cc-call{display:inline-block;margin-top:8px;padding:9px 11px;border:1px solid #00ffff;border-radius:9px;background:#071719;color:#00ffff;text-decoration:none;font:900 10px Arial,sans-serif}.cc-list{display:grid;gap:8px}.cc-list-item{border:1px solid #294349;border-radius:12px;padding:10px;background:#071012}.cc-list-item strong{display:block;color:#fff;font-size:12px}.cc-list-item span{display:block;margin-top:4px;color:#82979c;font-size:9px}.cc-list-item a{display:inline-block;margin-top:7px;color:#00ffff;font-weight:900;font-size:10px;text-decoration:none}" +
-      "@media(max-width:420px){.ione-chap-card{flex-basis:164px;height:214px}.ione-chap-photo{height:119px}.cc-images{grid-template-columns:repeat(2,1fr)}.cc-actions{grid-template-columns:1fr}}";
+      "@media(max-width:420px){.ione-chap-card{flex-basis:164px;height:214px}.ione-chap-photo{height:119px}.cc-image-actions{grid-template-columns:1fr 1fr}.cc-actions{grid-template-columns:1fr}}";
     document.head.appendChild(style);
   }
 
@@ -171,7 +171,11 @@
       '<div class="cc-field"><label>PRICE • TZS</label><input id="ioneCcPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="Example: 150000"></div>' +
       '<div class="cc-field"><label>LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="City / area"></div>' +
       '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ioneCcDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
-      '<div class="cc-field"><label>PRODUCT PHOTOS • 1 TO 4</label><div class="cc-images"><input id="ioneCcImage1" type="file" accept="image/*"><input id="ioneCcImage2" type="file" accept="image/*"><input id="ioneCcImage3" type="file" accept="image/*"><input id="ioneCcImage4" type="file" accept="image/*"></div></div>' +
+      '<div class="cc-field"><label>PRODUCT PHOTOS • UP TO 4</label><div class="cc-images">' +
+      '<div class="cc-image-actions"><button id="ioneCcCameraBtn" class="cc-image-btn" type="button">📷 TAKE PHOTO</button><button id="ioneCcGalleryBtn" class="cc-image-btn" type="button">🖼 CHOOSE FILES</button></div>' +
+      '<input id="ioneCcCamera" type="file" accept="image/*" capture="environment" hidden>' +
+      '<input id="ioneCcGallery" type="file" accept="image/*" multiple hidden>' +
+      '<div id="ioneCcImageCount" class="cc-image-count">NO PHOTOS SELECTED • MAX 4</div></div></div>' +
       '<div class="cc-actions"><button id="ioneCcSellCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcSellSubmit" class="cc-primary" type="button">PUBLISH PRODUCT</button></div>' +
       '<div id="ioneCcSellStatus" class="cc-status"></div>' +
       "</div>"
@@ -180,6 +184,22 @@
     document.getElementById("ioneCcCategory").addEventListener("change", renderSmartFields);
     document.getElementById("ioneCcSellCancel").addEventListener("click", closeOverlay);
     document.getElementById("ioneCcSellSubmit").addEventListener("click", submitListing);
+    var camera = document.getElementById("ioneCcCamera");
+    var gallery = document.getElementById("ioneCcGallery");
+    var selectedFiles = [];
+    function addSelectedFiles(list) {
+      Array.prototype.forEach.call(list || [], function (file) {
+        if (!file || !file.type || file.type.indexOf("image/") !== 0) return;
+        if (selectedFiles.length < 4) selectedFiles.push(file);
+      });
+      var count = document.getElementById("ioneCcImageCount");
+      if (count) count.textContent = selectedFiles.length + " PHOTO" + (selectedFiles.length === 1 ? "" : "S") + " SELECTED • MAX 4";
+    }
+    document.getElementById("ioneCcCameraBtn").addEventListener("click", function () { camera.click(); });
+    document.getElementById("ioneCcGalleryBtn").addEventListener("click", function () { gallery.click(); });
+    camera.addEventListener("change", function () { addSelectedFiles(camera.files); camera.value = ""; });
+    gallery.addEventListener("change", function () { addSelectedFiles(gallery.files); gallery.value = ""; });
+    window.ioneChapSelectedFiles = selectedFiles;
   }
 
   async function uploadImages(uid, files) {
@@ -210,19 +230,18 @@
       status.textContent = "Checking secure session…";
       var session = await getSession();
       var name = fieldValue("ioneCcSellerName");
-      var phone = normalizePhone(document.getElementById("ioneCcSellerPhone").value);
-      var category = document.getElementById("ioneCcCategory").value;
+      var phone = normalizePhone(fieldValue("ioneCcSellerPhone"));
+      var category = fieldValue("ioneCcCategory");
       var title = fieldValue("ioneCcTitle");
-      var price = Math.round(Number(document.getElementById("ioneCcPrice").value));
+      var price = Math.round(Number(fieldValue("ioneCcPrice")));
       var location = fieldValue("ioneCcLocation");
       var description = fieldValue("ioneCcDescription");
-      if (!name) throw new Error("Enter your name.");
+      if (!String(name).replace(/\s/g, "")) throw new Error("Enter your name.");
       if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
-      if (!title) throw new Error("Enter the product name.");
+      if (!String(title).replace(/\s/g, "")) throw new Error("Enter the product name.");
       if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
-      if (!location) throw new Error("Enter the location.");
-      var fileEls = [1,2,3,4].map(function (n) { return document.getElementById("ioneCcImage" + n); });
-      var files = fileEls.map(function (el) { return el && el.files ? el.files[0] : null; }).filter(Boolean);
+      if (!String(location).replace(/\s/g, "")) throw new Error("Enter the location.");
+      var files = window.ioneChapSelectedFiles || [];
       if (!files.length) throw new Error("Add at least one product photo.");
       status.textContent = "Uploading product photos…";
       var media = await uploadImages(session.user.id, files);
@@ -335,7 +354,7 @@
     var btn = document.getElementById("ioneCcBuySubmit");
     try {
       btn.disabled = true;
-      var phone = normalizePhone(document.getElementById("ioneCcBuyerPhone").value);
+      var phone = normalizePhone(fieldValue("ioneCcBuyerPhone"));
       if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
       var session = await getSession();
       status.textContent = "Sending payment request…";
