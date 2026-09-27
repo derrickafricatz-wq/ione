@@ -98,41 +98,48 @@
       "#ioneChapOverlay .cc-card{width:min(500px,100%);max-height:94vh;overflow:auto;border:1px solid #00ffff;border-radius:22px;background:linear-gradient(145deg,#101b1f,#05090a);box-shadow:0 25px 80px rgba(0,0,0,.75);padding:18px}" +
       ".cc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.cc-head h2{margin:0;color:#00ffff;font:900 23px Arial,sans-serif}.cc-close{border:1px solid #334a50;background:#111;color:#fff;border-radius:10px;padding:8px 11px;font-weight:900;cursor:pointer}" +
       ".cc-kicker{color:#789096;font:900 9px Arial,sans-serif;letter-spacing:2px;margin:5px 0 13px}.cc-grid{display:grid;gap:9px}.cc-field label{display:block;color:#00ffff;font:900 9px Arial,sans-serif;letter-spacing:1px;margin:0 0 5px}.cc-field input,.cc-field select,.cc-field textarea{width:100%;box-sizing:border-box;border:1px solid #294349;border-radius:10px;background:#071012;color:#fff;padding:11px;font:700 13px Arial,sans-serif;outline:none}.cc-field textarea{min-height:76px;resize:vertical}.cc-field input:focus,.cc-field select:focus,.cc-field textarea:focus{border-color:#00ffff}.cc-images{display:block}.cc-image-actions{display:flex;flex-direction:row;align-items:stretch;gap:8px;width:100%;overflow:hidden}.cc-image-btn{flex:1 1 0;min-width:0;height:42px;padding:0 10px;border:1px solid #31535a;border-radius:11px;background:linear-gradient(145deg,#14262b,#071012);color:#eaffff;font:900 9px Arial,sans-serif;letter-spacing:.65px;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #020506;cursor:pointer}.cc-image-btn:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 0 #020506}.cc-image-count{margin-top:7px;text-align:center;color:#71878c;font:800 8px Arial,sans-serif;letter-spacing:.5px}.cc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.cc-primary,.cc-secondary{min-height:45px;border-radius:11px;font-weight:900;cursor:pointer}.cc-primary{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010}.cc-secondary{border:1px solid #334a50;background:#111;color:#fff}.cc-status{min-height:20px;margin-top:10px;text-align:center;color:#9eb0b5;font:800 10px/1.4 Arial,sans-serif}.cc-product-preview{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;margin:5px 0 13px;padding:9px;border:1px solid #294349;border-radius:13px;background:#071012}.cc-product-preview img{width:110px;height:90px;object-fit:cover;border-radius:9px;background:#0b1417}.cc-gallery{position:relative;width:100%;height:clamp(150px,28vh,230px);overflow:hidden;border:1px solid #294349;border-radius:15px;background:#000;margin:4px 0 12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}.cc-gallery-img{position:absolute!important;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#000;opacity:0;transition:opacity .8s ease}.cc-gallery-img:first-child{opacity:1}.cc-product-preview h3{margin:0 0 5px;font:900 16px Arial,sans-serif}.cc-product-preview p{margin:3px 0;color:#9fb2b6;font-size:10px}.cc-phone{font-size:18px!important;letter-spacing:1px}.cc-call{display:inline-block;margin-top:8px;padding:9px 11px;border:1px solid #00ffff;border-radius:9px;background:#071719;color:#00ffff;text-decoration:none;font:900 10px Arial,sans-serif}.cc-list{display:grid;gap:8px}.cc-list-item{border:1px solid #294349;border-radius:12px;padding:10px;background:#071012}.cc-list-item strong{display:block;color:#fff;font-size:12px}.cc-list-item span{display:block;margin-top:4px;color:#82979c;font-size:9px}.cc-list-item a{display:inline-block;margin-top:7px;color:#00ffff;font-weight:900;font-size:10px;text-decoration:none}" +
-      "/* I|ONE Marketing: compact global header and world-market layout. Existing billboard content is untouched. */" +
-      "#afrilinkOverlay .afl-head{padding:7px 9px;gap:7px}" +
-      "#afrilinkOverlay .afl-brand-mark{width:37px;height:37px;border-radius:11px;font-size:11px}" +
-      "#afrilinkOverlay .afl-head-title strong{font-size:15px}" +
-      "#afrilinkOverlay .afl-head-title span{font-size:8px;letter-spacing:1.2px;margin-top:3px}" +
-      "#afrilinkOverlay .afl-head-actions{gap:5px}" +
-      "#afrilinkOverlay .afl-top-btn{min-height:34px;height:34px;padding:0 9px;border-radius:9px;font-size:9px;letter-spacing:.25px}" +
-      "#afrilinkOverlay .afl-scroll{padding:8px 8px 28px}" +
-      "#afrilinkOverlay .afl-discovery{padding:7px 0 8px;margin:0 0 8px}" +
-      "#afrilinkOverlay .afl-discovery-row{justify-content:flex-start;gap:6px}" +
-      "#afrilinkOverlay .afl-discovery-row input{padding:8px 10px;font-size:10px;border-radius:9px}" +
-      "#afrilinkOverlay .afl-discovery-row select{width:145px;padding:8px 9px;font-size:9px;border-radius:9px}" +
-      "#afrilinkOverlay .afl-discovery-hint{margin-top:4px;font-size:7px;letter-spacing:.7px}" +
-      "/* ChapChap sits first; search/filter remains immediately below it. */" +
-      "#ioneChapDock{margin:0 0 2px;padding:7px 9px 3px;border-bottom:1px solid #172a2e;background:#050809}" +
-      "#ioneChapBar{display:grid!important;grid-template-columns:minmax(0,1fr) 108px auto;align-items:center;gap:7px;margin-bottom:5px}" +
-      "#ioneChapOpen{min-height:46px;height:46px;padding:0 10px;border-radius:13px;font-size:10px;letter-spacing:.8px;line-height:1.1}" +
-      "#ioneChapMine{min-height:46px;height:46px;padding:0 8px;border-radius:13px;font-size:9px;line-height:1.1}" +
-      "#ioneChapStatus{margin-left:0;min-width:48px;font-size:8px;line-height:1.15;text-align:center;letter-spacing:.45px}" +
-      "#ioneChapRail{gap:9px;padding:3px 1px 8px}" +
-      ".ione-chap-card{flex:0 0 151px;height:188px;border-radius:16px;transform:perspective(700px) rotateY(-1.5deg)}" +
+      "/* I1 Marketing world: identity-light header, discovery first, ChapChap compact, billboards dominant. */" +
+      "#afrilinkOverlay .afl-head{padding:7px 9px;gap:7px;min-height:50px}" +
+      "#afrilinkOverlay .afl-brand-mark{width:39px;height:39px;border-radius:12px;font-size:14px;letter-spacing:.5px;box-shadow:0 0 16px rgba(0,255,255,.12)}" +
+      "#afrilinkOverlay .afl-head-title{display:none}" +
+      "#afrilinkOverlay .afl-head-actions{margin-left:auto;gap:5px}" +
+      "#afrilinkOverlay .afl-top-btn{min-height:34px;height:34px;padding:0 10px;border-radius:9px;font-size:9px;letter-spacing:.2px}" +
+      "#afrilinkOverlay .afl-upload-top{min-width:74px}" +
+      "#afrilinkOverlay .afl-owner-only-top{min-width:101px}" +
+      "#afrilinkOverlay .afl-close{min-width:67px}" +
+      "#afrilinkOverlay .afl-scroll{padding:6px 7px 28px}" +
+      "/* Search + category are the first market controls, directly below I1. */" +
+      "#afrilinkOverlay .afl-discovery{padding:5px 0 6px;margin:0 0 3px;border-bottom:1px solid rgba(0,255,255,.10)}" +
+      "#afrilinkOverlay .afl-discovery-row{justify-content:flex-start;gap:5px}" +
+      "#afrilinkOverlay .afl-discovery-row input{padding:8px 9px;font-size:10px;border-radius:9px}" +
+      "#afrilinkOverlay .afl-discovery-row select{width:139px;padding:8px 8px;font-size:9px;border-radius:9px}" +
+      "#afrilinkOverlay .afl-discovery-hint{margin-top:3px;font-size:6.5px;letter-spacing:.55px}" +
+      "/* ChapChap becomes a small horizontal market shelf so billboards remain the visual hero. */" +
+      "#ioneChapDock{margin:0 0 7px;padding:5px 4px 4px;border-bottom:1px solid #172a2e;background:transparent}" +
+      "#ioneChapBar{display:grid!important;grid-template-columns:minmax(0,1fr) 94px auto;align-items:center;gap:5px;margin-bottom:4px}" +
+      "#ioneChapOpen{min-height:39px;height:39px;padding:0 8px;border-radius:11px;font-size:9px;letter-spacing:.65px;line-height:1.05;box-shadow:0 3px 0 #005858}" +
+      "#ioneChapMine{min-height:39px;height:39px;padding:0 7px;border-radius:11px;font-size:8px;line-height:1.05}" +
+      "#ioneChapStatus{margin-left:0;min-width:43px;font-size:7px;line-height:1.05;text-align:center;letter-spacing:.25px}" +
+      "#ioneChapRail{gap:7px;padding:2px 0 6px}" +
+      ".ione-chap-card{flex:0 0 137px;height:171px;border-radius:15px;transform:perspective(700px) rotateY(-1deg)}" +
       ".ione-chap-photo img{width:100%;height:100%;object-fit:cover;object-position:center center;background:#000}" +
-      ".ione-chap-price{left:7px;top:7px;padding:5px 7px;border-radius:8px;font-size:9px}" +
-      ".ione-chap-info{padding:8px 9px 9px}" +
-      ".ione-chap-title{font-size:10px}.ione-chap-seller{font-size:8px}.ione-chap-location{font-size:7px}" +
-      "/* No payment-state text is painted over the product image. */" +
-      ".ione-chap-pending{display:none!important}" +
-      "/* Full-size Marketing billboards keep their existing geometry/content. */" +
+      ".ione-chap-price{left:6px;top:6px;padding:4px 6px;border-radius:7px;font-size:8px;opacity:.82;backdrop-filter:blur(2px);box-shadow:0 2px 0 rgba(0,0,0,.25)}" +
+      ".ione-chap-info{padding:7px 8px 8px;background:linear-gradient(to top,rgba(0,0,0,.68),rgba(0,0,0,.02))}" +
+      ".ione-chap-title{font-size:9px}.ione-chap-seller{font-size:7.5px}.ione-chap-location{font-size:6.5px}" +
+      "/* Payment/product graphics remain visible beneath translucent UI elements. */" +
+      ".cc-product-preview{background:rgba(7,16,18,.72)}" +
+      ".cc-product-preview p span{opacity:.84}" +
+      ".cc-call{background:rgba(7,23,25,.68)}" +
+      "/* Full billboard content keeps its existing geometry and remains the visual focus. */" +
       "#afrilinkOverlay .afl-screen img.afl-signage-media{object-fit:contain!important;object-position:center center!important;background:#000}" +
-      "@media(max-width:420px){#ioneChapBar{grid-template-columns:minmax(0,1fr) 96px 46px}.ione-chap-card{flex-basis:145px;height:182px}#ioneChapOpen{font-size:9px}#ioneChapMine{font-size:8px}#afrilinkOverlay .afl-discovery-row select{width:138px}}";
+      "@media(max-width:420px){#ioneChapBar{grid-template-columns:minmax(0,1fr) 86px 40px}.ione-chap-card{flex-basis:132px;height:165px}#ioneChapOpen{font-size:8.5px}#ioneChapMine{font-size:7.5px}#afrilinkOverlay .afl-discovery-row select{width:132px}#afrilinkOverlay .afl-top-btn{padding:0 8px;font-size:8px}}";
     document.head.appendChild(style);
   }
 
   function createDock() {
     var discovery = document.querySelector("#afrilinkOverlay .afl-discovery");
+    var brandMark = document.querySelector("#afrilinkOverlay .afl-brand-mark");
+    if (brandMark) brandMark.textContent = "I1";
     if (!discovery || document.getElementById("ioneChapDock")) return;
     var dock = document.createElement("div");
     dock.id = "ioneChapDock";
@@ -143,7 +150,7 @@
       '<span id="ioneChapStatus">SINGLE-PRODUCT MARKET</span>' +
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
-    discovery.parentNode.insertBefore(dock, discovery);
+    discovery.parentNode.insertBefore(dock, discovery.nextSibling);
     document.getElementById("ioneChapOpen").addEventListener("click", function () { openSell(); });
     document.getElementById("ioneChapMine").addEventListener("click", function () { openMine(); });
   }
