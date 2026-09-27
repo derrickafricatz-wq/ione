@@ -87,6 +87,7 @@
       "#ioneChapRail::-webkit-scrollbar{display:none}" +
       ".ione-chap-card{flex:0 0 178px;height:222px;scroll-snap-align:start;position:relative;border:1px solid #294349;border-radius:18px;background:linear-gradient(145deg,#101a1d,#050809);overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.42);transform:perspective(700px) rotateY(-2deg);transition:transform .18s ease,border-color .18s ease;cursor:pointer}" +
       ".ione-chap-card:active{transform:perspective(700px) rotateY(0) scale(.985)}" +
+      ".ione-chap-card.pending-payment{cursor:default}.ione-chap-pending{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding:10px;text-align:center;background:linear-gradient(to bottom,rgba(0,0,0,.08),rgba(0,0,0,.55));color:#ffe600;font:900 11px/1.25 Arial,sans-serif;letter-spacing:1px;text-shadow:0 2px 5px #000}" +
       ".ione-chap-photo{position:absolute;inset:0;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}" +
       ".ione-chap-photo img{width:100%;height:100%;object-fit:contain;display:block;background:#000}" +
       ".ione-chap-price{position:absolute;left:8px;top:8px;z-index:3;padding:6px 8px;border-radius:8px;background:#ffe600;color:#111;font:900 10px Arial,sans-serif;box-shadow:0 3px 0 rgba(0,0,0,.35)}" +
@@ -326,17 +327,19 @@
       var currency = p.price_currency || "TZS";
       var displayAmount = p.price_amount != null ? p.price_amount : p.price_tzs;
       var tagColor = p.price_tag_color || "#ffe600";
-      return '<article class="ione-chap-card" data-id="' + esc(p.id) + '">' +
+      var pending = String(p.status || "") === "pending_payment";
+      return '<article class="ione-chap-card' + (pending ? " pending-payment" : "") + '" data-id="' + esc(p.id) + '">' +
         '<div class="ione-chap-photo">' +
         (image ? '<img src="' + esc(image) + '" alt="' + esc(p.title) + '" loading="lazy">' : "") +
         '<span class="ione-chap-price" style="background:' + esc(tagColor) + '">' + esc(money(displayAmount, currency)) + "</span>" +
-        '</div><div class="ione-chap-info">' +
+        (pending ? '<div class="ione-chap-pending">PAYMENT IN PROGRESS</div>' : "") + '</div><div class="ione-chap-info">' +
         '<div class="ione-chap-title">' + esc(p.title) + "</div>" +
         '<div class="ione-chap-seller">' + esc(p.seller_name) + "</div>" +
         '<div class="ione-chap-location">' + esc(p.location) + " • " + esc(String(p.category || "").toUpperCase()) + "</div>" +
         "</div></article>";
     }).join("");
     Array.prototype.forEach.call(rail.querySelectorAll(".ione-chap-card"), function (card) {
+      if (card.classList.contains("pending-payment")) return;
       card.addEventListener("click", function () { openProduct(card.getAttribute("data-id")); });
     });
   }
@@ -348,7 +351,7 @@
     try {
       var result = await sb.from("ione_single_products")
         .select("id,seller_id,seller_name,seller_phone,category,title,price_tzs,price_amount,price_currency,price_tag_color,location,description,attributes,image_urls,status,created_at")
-        .eq("status", "active")
+        .in("status", ["active","pending_payment"])
         .order("created_at", { ascending: false })
         .limit(30);
       if (result.error) throw result.error;
@@ -497,6 +500,7 @@
       var orders = await sb.from("ione_chapchap_orders")
         .select("id,product_id,buyer_phone,amount_tzs,status,created_at,paid_at")
         .eq("seller_id", session.user.id)
+        .eq("status", "paid")
         .order("created_at", { ascending: false })
         .limit(20);
       if (orders.error) throw orders.error;
@@ -517,7 +521,7 @@
           return '<div class="cc-list-item"><strong>ORDER • ' + esc(String(o.status).toUpperCase()) + '</strong><span>' + esc(money(o.amount_tzs)) + " • " + esc(new Date(o.created_at).toLocaleString()) + "</span></div>";
         }).join("") : "") +
         "</div>";
-      openOverlay("MY CHAPCHAP", "SELLER • SALES & NOTIFICATIONS", body);
+      openOverlay("MY CHAPCHAP", "SELLER • PAID SALES & NOTIFICATIONS", body);
     } catch (err) {
       openOverlay("MY CHAPCHAP", "SELLER", '<div class="cc-status">' + esc(err && err.message ? err.message : "Could not load seller information.") + "</div>");
     }
