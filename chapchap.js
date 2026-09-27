@@ -578,24 +578,43 @@
 
   async function initialize() {
     if (started) return;
-    started = true;
     try {
       injectStyles();
+      var discovery = document.querySelector("#afrilinkOverlay .afl-discovery");
+      if (!discovery) return false;
       createDock();
       createOverlay();
+      if (!document.getElementById("ioneChapDock")) return false;
+      started = true;
       if (typeof ensureHeavensAnonymousSession === "function") ensureHeavensAnonymousSession().catch(function () {});
       await loadProducts();
+      return true;
     } catch (err) {
       console.warn("ChapChap isolated module:", err);
+      return false;
     }
   }
 
   function bootWhenReady() {
+    var tryMount = function () {
+      if (started) return;
+      initialize();
+    };
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initialize, { once: true });
-      return;
+      document.addEventListener("DOMContentLoaded", tryMount, { once: true });
+    } else {
+      tryMount();
     }
-    initialize();
+    var observer = new MutationObserver(function () {
+      if (started) return;
+      if (document.querySelector("#afrilinkOverlay .afl-discovery")) {
+        tryMount();
+      }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    setTimeout(function () { if (!started) tryMount(); }, 500);
+    setTimeout(function () { if (!started) tryMount(); }, 1500);
+    setTimeout(function () { if (!started) tryMount(); }, 3000);
   }
 
   /* The existing marketing world is opened by I|ONE. We only mount inside it. */
