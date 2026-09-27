@@ -99,7 +99,7 @@
       ".cc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.cc-head h2{margin:0;color:#00ffff;font:900 23px Arial,sans-serif}.cc-close{border:1px solid #334a50;background:#111;color:#fff;border-radius:10px;padding:8px 11px;font-weight:900;cursor:pointer}" +
       ".cc-kicker{color:#789096;font:900 9px Arial,sans-serif;letter-spacing:2px;margin:5px 0 13px}.cc-grid{display:grid;gap:9px}.cc-field label{display:block;color:#00ffff;font:900 9px Arial,sans-serif;letter-spacing:1px;margin:0 0 5px}.cc-field input,.cc-field select,.cc-field textarea{width:100%;box-sizing:border-box;border:1px solid #294349;border-radius:10px;background:#071012;color:#fff;padding:11px;font:700 13px Arial,sans-serif;outline:none}.cc-field textarea{min-height:76px;resize:vertical}.cc-field input:focus,.cc-field select:focus,.cc-field textarea:focus{border-color:#00ffff}.cc-images{display:block}.cc-image-actions{display:flex;flex-direction:row;align-items:stretch;gap:8px;width:100%;overflow:hidden}.cc-image-btn{flex:1 1 0;min-width:0;height:42px;padding:0 10px;border:1px solid #31535a;border-radius:11px;background:linear-gradient(145deg,#14262b,#071012);color:#eaffff;font:900 9px Arial,sans-serif;letter-spacing:.65px;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 4px 0 #020506;cursor:pointer}.cc-image-btn:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 0 #020506}.cc-image-count{margin-top:7px;text-align:center;color:#71878c;font:800 8px Arial,sans-serif;letter-spacing:.5px}.cc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.cc-primary,.cc-secondary{min-height:45px;border-radius:11px;font-weight:900;cursor:pointer}.cc-primary{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010}.cc-secondary{border:1px solid #334a50;background:#111;color:#fff}.cc-status{min-height:20px;margin-top:10px;text-align:center;color:#9eb0b5;font:800 10px/1.4 Arial,sans-serif}.cc-product-preview{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:center;margin:5px 0 13px;padding:9px;border:1px solid #294349;border-radius:13px;background:#071012}.cc-product-preview img{width:110px;height:90px;object-fit:cover;border-radius:9px;background:#0b1417}.cc-gallery{position:relative;width:100%;height:clamp(150px,28vh,230px);overflow:hidden;border:1px solid #294349;border-radius:15px;background:#000;margin:4px 0 12px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}.cc-gallery-img{position:absolute!important;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#000;opacity:0;transition:opacity .8s ease}.cc-gallery-img:first-child{opacity:1}.cc-product-preview h3{margin:0 0 5px;font:900 16px Arial,sans-serif}.cc-product-preview p{margin:3px 0;color:#9fb2b6;font-size:10px}.cc-phone{font-size:18px!important;letter-spacing:1px}.cc-call{display:inline-block;margin-top:8px;padding:9px 11px;border:1px solid #00ffff;border-radius:9px;background:#071719;color:#00ffff;text-decoration:none;font:900 10px Arial,sans-serif}.cc-list{display:grid;gap:8px}.cc-list-item{border:1px solid #294349;border-radius:12px;padding:10px;background:#071012}.cc-list-item strong{display:block;color:#fff;font-size:12px}.cc-list-item span{display:block;margin-top:4px;color:#82979c;font-size:9px}.cc-list-item a{display:inline-block;margin-top:7px;color:#00ffff;font-weight:900;font-size:10px;text-decoration:none}" +
       "/* I1 Marketing world: identity-light header, discovery first, ChapChap compact, billboards dominant. */" +
-      "#afrilinkOverlay .afl-head{padding:5px 7px;gap:6px;min-height:48px;display:flex;align-items:center;overflow:hidden}" +
+      "#afrilinkOverlay .afl-head{padding:5px 7px;gap:5px;min-height:48px;display:flex;align-items:center;overflow:visible;flex-wrap:nowrap}" +
       "#afrilinkOverlay .afl-brand-mark{flex:0 0 36px;width:36px;height:36px;border-radius:10px;font-size:13px;box-shadow:none!important}" +
       "#afrilinkOverlay .afl-head-title{display:none}" +
       "#afrilinkOverlay .afl-head-actions{display:flex;flex:0 0 auto;margin-left:0;gap:3px}" +
@@ -156,7 +156,7 @@
       '<span id="ioneChapStatus">SINGLE-PRODUCT MARKET</span>' +
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
-    discovery.parentNode.insertBefore(dock, discovery.nextSibling);
+    if (head && head.parentNode) head.parentNode.insertBefore(dock, head.nextSibling); else return;
     document.getElementById("ioneChapOpen").addEventListener("click", function () { openSell(); });
     document.getElementById("ioneChapMine").addEventListener("click", function () { openMine(); });
   }
@@ -382,6 +382,14 @@
     }).join("");
     Array.prototype.forEach.call(rail.querySelectorAll(".ione-chap-card"), function (card) {
       card.addEventListener("click", function () { openProduct(card.getAttribute("data-id")); });
+    if (!rail._ioneSwipeReady) {
+      rail._ioneSwipeReady = true;
+      var drag = {on:false,x:0,left:0,moved:false};
+      rail.addEventListener("pointerdown", function(e){ if (e.pointerType === "mouse" && e.button !== 0) return; drag.on=true; drag.x=e.clientX; drag.left=rail.scrollLeft; drag.moved=false; }, {passive:true});
+      rail.addEventListener("pointermove", function(e){ if (!drag.on) return; var dx=e.clientX-drag.x; if (Math.abs(dx)>5) drag.moved=true; if (drag.moved) rail.scrollLeft=drag.left-dx; }, {passive:true});
+      rail.addEventListener("pointerup", function(){drag.on=false;},{passive:true});
+      rail.addEventListener("pointercancel", function(){drag.on=false;},{passive:true});
+    }
     });
   }
 
