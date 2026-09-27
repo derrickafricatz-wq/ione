@@ -100,7 +100,7 @@
     overlay.id = "ioneChapOverlay";
     overlay.innerHTML =
       '<div class="cc-card">' +
-        '<div class="cc-head"><h2 id="ioneCcTitle">CHAPCHAP</h2><button class="cc-close" id="ioneChapOverlayClose" type="button">CLOSE</button></div>' +
+        '<div class="cc-head"><h2 id="ioneChapOverlayTitle">CHAPCHAP</h2><button class="cc-close" id="ioneChapOverlayClose" type="button">CLOSE</button></div>' +
         '<div class="cc-kicker" id="ioneChapOverlayKicker">I|ONE • SINGLE-PRODUCT MARKET</div>' +
         '<div id="ioneChapOverlayBody"></div>' +
       '</div>';
@@ -111,7 +111,7 @@
 
   function openOverlay(title, kicker, body) {
     createOverlay();
-    document.getElementById("ioneCcTitle").textContent = title;
+    document.getElementById("ioneChapOverlayTitle").textContent = title;
     document.getElementById("ioneChapOverlayKicker").textContent = kicker || "I|ONE • SINGLE-PRODUCT MARKET";
     document.getElementById("ioneChapOverlayBody").innerHTML = body;
     document.getElementById("ioneChapOverlay").style.display = "flex";
@@ -172,7 +172,7 @@
       '<div class="cc-field"><label>LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="City / area"></div>' +
       '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ioneCcDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
       '<div class="cc-field"><label>PRODUCT PHOTOS • UP TO 4</label><div class="cc-images">' +
-      '<div class="cc-image-actions"><button id="ioneCcCameraBtn" class="cc-image-btn" type="button">📷 TAKE PHOTO</button><button id="ioneCcGalleryBtn" class="cc-image-btn" type="button">🖼 CHOOSE FILES</button></div>' +
+      '<div class="cc-image-actions"><button id="ioneCcCameraBtn" class="cc-image-btn" type="button">TAKE PHOTO</button><button id="ioneCcGalleryBtn" class="cc-image-btn" type="button">UPLOAD VIA FILE</button></div>' +
       '<input id="ioneCcCamera" type="file" accept="image/*" capture="environment" hidden>' +
       '<input id="ioneCcGallery" type="file" accept="image/*" multiple hidden>' +
       '<div id="ioneCcImageCount" class="cc-image-count">NO PHOTOS SELECTED • MAX 4</div></div></div>' +
