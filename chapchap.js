@@ -188,6 +188,7 @@
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
     if (head && head.parentNode) head.parentNode.insertBefore(dock, head.nextSibling); else return;
     document.getElementById("ioneChapOpen").addEventListener("pointerdown", function () { openSell(); }, { passive:true });
+    document.getElementById("ioneChapMine").addEventListener("pointerdown", function () { openMine(); }, { passive:true });
   }
 
   function createOverlay() {
