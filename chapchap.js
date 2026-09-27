@@ -111,9 +111,9 @@
       "/* Search + category are the first market controls, directly below I1. */" +
       "#afrilinkOverlay .afl-discovery{display:block;flex:1 1 auto;min-width:0;width:auto;padding:0;margin:0;border:0;background:transparent}" +
       "#afrilinkOverlay .afl-discovery-row{display:flex;justify-content:flex-start;gap:6px;width:100%;align-items:center}" +
-      "#afrilinkOverlay .afl-discovery-row input{flex:1 1 auto;min-width:0;width:1px;padding:8px;font-size:9px;border-radius:9px}" +
-      "#afrilinkOverlay .afl-discovery-row select{flex:0 0 96px;width:96px;padding:8px 6px;font-size:8px;border-radius:9px}" +
-      "#afrilinkOverlay .afl-discovery-hint{display:none}" +
+      "#afrilinkOverlay .afl-discovery-row input{flex:1 1 auto;min-width:0;width:1px;padding:7px 6px;font-size:7px;border-radius:9px}" +
+      "#afrilinkOverlay .afl-discovery-row select{flex:0 0 58px;width:58px;padding:7px 2px;font-size:6px;border-radius:9px}" +
+      "#afrilinkOverlay .afl-discovery-row input::placeholder{font-size:6.5px}" + "#afrilinkOverlay .afl-discovery-hint{display:none}" +
       "/* ChapChap becomes a small horizontal market shelf so billboards remain the visual hero. */" +
       "#ioneChapDock{margin:0 0 7px;padding:5px 4px 4px;border-bottom:1px solid #172a2e;background:transparent}" +
       "#ioneChapBar{display:grid!important;grid-template-columns:minmax(0,1fr) 94px auto;align-items:center;gap:5px;margin-bottom:4px}" +
