@@ -15,12 +15,16 @@
     });
   }
 
-  function money(value) {
-    return "TZS " + Number(value || 0).toLocaleString("en-US");
+  function money(value, currency) {
+    var code = currency || "TZS";
+    var number = Number(value || 0);
+    return code + " " + number.toLocaleString("en-US", code === "USD" ? {minimumFractionDigits: 2, maximumFractionDigits: 2} : {maximumFractionDigits: 0});
   }
 
   function normalizePhone(value) {
-    var p = String(value || "").replace(/\D/g, "");
+    var raw = String(value || "").trim();
+    var p = raw.replace(/\D/g, "");
+    if (raw.charAt(0) === "+" && p) return p;
     if (p.indexOf("255") === 0) return p;
     if (p.indexOf("0") === 0) return "255" + p.slice(1);
     if (p.indexOf("6") === 0 || p.indexOf("7") === 0) return "255" + p;
@@ -29,6 +33,26 @@
 
   function validPhone(value) {
     return /^255[67]\d{8}$/.test(normalizePhone(value));
+  }
+
+  function validInternationalPhone(value) {
+    return /^\d{8,15}$/.test(normalizePhone(value));
+  }
+
+  function parsePrice(value) {
+    var raw = String(value || "").replace(/,/g, "").replace(/\s/g, "");
+    var n = Number(raw);
+    return Number.isFinite(n) && n > 0 ? n : NaN;
+  }
+
+  function formatPriceInput(el) {
+    if (!el) return;
+    var raw = String(el.value || "").replace(/,/g, "").replace(/[^0-9.]/g, "");
+    var parts = raw.split(".");
+    var whole = (parts.shift() || "").replace(/^0+(?=\d)/, "");
+    if (!whole) whole = "0";
+    var decimals = parts.join("").slice(0, 2);
+    el.value = decimals ? Number(whole).toLocaleString("en-US") + "." + decimals : Number(whole).toLocaleString("en-US");
   }
 
   function fieldValue(id) {
@@ -64,7 +88,7 @@
       ".ione-chap-card{flex:0 0 178px;height:222px;scroll-snap-align:start;position:relative;border:1px solid #294349;border-radius:18px;background:linear-gradient(145deg,#101a1d,#050809);overflow:hidden;box-shadow:0 10px 25px rgba(0,0,0,.42);transform:perspective(700px) rotateY(-2deg);transition:transform .18s ease,border-color .18s ease;cursor:pointer}" +
       ".ione-chap-card:active{transform:perspective(700px) rotateY(0) scale(.985)}" +
       ".ione-chap-photo{height:126px;background:#091114;overflow:hidden;position:relative}" +
-      ".ione-chap-photo img{width:100%;height:100%;object-fit:cover;display:block}" +
+      ".ione-chap-photo img{width:100%;height:100%;object-fit:contain;display:block;background:#000}" +
       ".ione-chap-price{position:absolute;left:8px;top:8px;padding:6px 8px;border-radius:8px;background:#ffe600;color:#111;font:900 10px Arial,sans-serif;box-shadow:0 3px 0 rgba(0,0,0,.35)}" +
       ".ione-chap-sold{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#ff7d7d;font:900 20px Arial,sans-serif;letter-spacing:2px}" +
       ".ione-chap-info{padding:9px 10px}.ione-chap-title{color:#fff;font:900 13px/1.15 Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-chap-seller{margin-top:6px;color:#00ffff;font:800 9px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-chap-location{margin-top:5px;color:#71878c;font:700 8px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
@@ -122,6 +146,7 @@
     var el = document.getElementById("ioneChapOverlay");
     if (el) el.style.display = "none";
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    if (galleryTimer) { clearInterval(galleryTimer); galleryTimer = null; }
   }
 
   var smartFields = {
@@ -164,11 +189,12 @@
     openOverlay("SELL ON CHAPCHAP", "SELLER • ONE PRODUCT PER LISTING",
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>YOUR NAME</label><input id="ioneCcSellerName" maxlength="80" placeholder="Seller name"></div>' +
-      '<div class="cc-field"><label>YOUR PHONE</label><input id="ioneCcSellerPhone" class="cc-phone" inputmode="tel" maxlength="15" placeholder="07XXXXXXXX"></div>' +
+      '<div class="cc-field"><label>YOUR CALL NUMBER • INCLUDE COUNTRY CODE</label><input id="ioneCcSellerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
       '<div class="cc-field"><label>CATEGORY</label>' + categoryHtml() + "</div>" +
       '<div id="ioneCcSmartFields" class="cc-grid"></div>' +
       '<div class="cc-field"><label>PRODUCT NAME</label><input id="ioneCcTitle" maxlength="100" placeholder="One clear product name"></div>' +
-      '<div class="cc-field"><label>PRICE • TZS</label><input id="ioneCcPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="Example: 150000"></div>' +
+      '<div class="cc-field"><label>PRICE</label><div style="display:grid;grid-template-columns:1fr 96px;gap:8px"><input id="ioneCcPrice" type="text" inputmode="decimal" autocomplete="off" placeholder="Example: 250,000.00"><select id="ioneCcCurrency"><option value="TZS">TZS • TANZANIAN SHILLING</option><option value="USD">USD • US DOLLAR</option></select></div></div>' +
+      '<div class="cc-field"><label>PRICE TAG COLOR</label><select id="ioneCcTagColor"><option value="#ffe600">GOLD</option><option value="#ff3b30">RED</option><option value="#00a8ff">BLUE</option><option value="#22c55e">GREEN</option><option value="#a855f7">PURPLE</option><option value="#00ffff">CYAN</option><option value="#ffffff">WHITE</option><option value="#111111">BLACK</option></select></div>' +
       '<div class="cc-field"><label>LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="City / area"></div>' +
       '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ioneCcDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
       '<div class="cc-field"><label>PRODUCT PHOTOS • UP TO 4</label><div class="cc-images">' +
@@ -182,6 +208,8 @@
     );
     renderSmartFields();
     document.getElementById("ioneCcCategory").addEventListener("change", renderSmartFields);
+    var priceInput = document.getElementById("ioneCcPrice");
+    if (priceInput) priceInput.addEventListener("input", function () { formatPriceInput(priceInput); });
     document.getElementById("ioneCcSellCancel").addEventListener("click", closeOverlay);
     document.getElementById("ioneCcSellSubmit").addEventListener("click", submitListing);
     var camera = document.getElementById("ioneCcCamera");
@@ -233,14 +261,16 @@
       var phone = normalizePhone(fieldValue("ioneCcSellerPhone"));
       var category = fieldValue("ioneCcCategory");
       var title = fieldValue("ioneCcTitle");
-      var price = Math.round(Number(fieldValue("ioneCcPrice")));
+      var price = parsePrice(fieldValue("ioneCcPrice"));
+      var currency = fieldValue("ioneCcCurrency") || "TZS";
       var location = fieldValue("ioneCcLocation");
       var description = fieldValue("ioneCcDescription");
       if (!String(name).replace(/\s/g, "")) throw new Error("Enter your name.");
-      if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
+      if (!validInternationalPhone(phone)) throw new Error("Enter a valid call number with country code, for example +255712345678.");
       if (!String(title).replace(/\s/g, "")) throw new Error("Enter the product name.");
       if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
       if (!String(location).replace(/\s/g, "")) throw new Error("Enter the location.");
+      var tagColor = fieldValue("ioneCcTagColor") || "#ffe600";
       var files = window.ioneChapSelectedFiles || [];
       if (!files.length) throw new Error("Add at least one product photo.");
       status.textContent = "Uploading product photos…";
@@ -253,13 +283,17 @@
       });
       status.textContent = "Publishing product…";
       var sb = getSupabase();
+      var paymentTzs = currency === "USD" ? Math.round(price * 2656.35) : Math.round(price);
       var result = await sb.from("ione_single_products").insert({
         seller_id: session.user.id,
         seller_name: name,
         seller_phone: phone,
         category: category,
         title: title,
-        price_tzs: price,
+        price_tzs: paymentTzs,
+        price_amount: price,
+        price_currency: currency,
+        price_tag_color: tagColor,
         location: location,
         description: description,
         attributes: attrs,
@@ -289,10 +323,13 @@
     rail.innerHTML = rows.map(function (p) {
       var images = Array.isArray(p.image_urls) ? p.image_urls : [];
       var image = images[0] || "";
+      var currency = p.price_currency || "TZS";
+      var displayAmount = p.price_amount != null ? p.price_amount : p.price_tzs;
+      var tagColor = p.price_tag_color || "#ffe600";
       return '<article class="ione-chap-card" data-id="' + esc(p.id) + '">' +
         '<div class="ione-chap-photo">' +
         (image ? '<img src="' + esc(image) + '" alt="' + esc(p.title) + '" loading="lazy">' : "") +
-        '<span class="ione-chap-price">' + esc(money(p.price_tzs)) + "</span>" +
+        '<span class="ione-chap-price" style="background:' + esc(tagColor) + '">' + esc(money(displayAmount, currency)) + "</span>" +
         '</div><div class="ione-chap-info">' +
         '<div class="ione-chap-title">' + esc(p.title) + "</div>" +
         '<div class="ione-chap-seller">' + esc(p.seller_name) + "</div>" +
@@ -310,7 +347,7 @@
     if (!sb || !rail) return;
     try {
       var result = await sb.from("ione_single_products")
-        .select("id,seller_id,seller_name,seller_phone,category,title,price_tzs,location,description,attributes,image_urls,status,created_at")
+        .select("id,seller_id,seller_name,seller_phone,category,title,price_tzs,price_amount,price_currency,price_tag_color,location,description,attributes,image_urls,status,created_at")
         .eq("status", "active")
         .order("created_at", { ascending: false })
         .limit(30);
@@ -332,21 +369,50 @@
   function openProduct(id) {
     var p = getProduct(id);
     if (!p) return;
-    var image = Array.isArray(p.image_urls) && p.image_urls[0] ? p.image_urls[0] : "";
+    var images = Array.isArray(p.image_urls) ? p.image_urls.filter(Boolean) : [];
+    var currency = p.price_currency || "TZS";
+    var displayAmount = p.price_amount != null ? p.price_amount : p.price_tzs;
+    var tagColor = p.price_tag_color || "#ffe600";
+    var imageMarkup = images.length ? '<div class="cc-gallery" id="ioneCcGalleryView">' +
+      images.map(function (url, index) { return '<img class="cc-gallery-img" src="' + esc(url) + '" alt="" style="opacity:' + (index === 0 ? "1" : "0") + ';position:' + (index === 0 ? "relative" : "absolute") + '">'; }).join("") +
+      '</div>' : '<div class="cc-gallery"></div>';
     openOverlay("BUY • " + p.title, "CHAPCHAP • BUYER",
-      '<div class="cc-product-preview">' +
-      (image ? '<img src="' + esc(image) + '" alt="">' : '<div></div>') +
-      '<div><h3>' + esc(p.title) + '</h3><p>' + esc(money(p.price_tzs)) + '</p><p>' + esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
+      imageMarkup +
+      '<div class="cc-product-preview" style="grid-template-columns:1fr">' +
+      '<div><h3>' + esc(p.title) + '</h3><p><span style="display:inline-block;padding:6px 9px;border-radius:8px;background:' + esc(tagColor) + ';color:#111;font-weight:900">' + esc(money(displayAmount, currency)) + '</span></p><p>' + esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
       "</div>" +
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>SELLER</label><div style="color:#9eb0b5;font-size:11px;line-height:1.45">' + esc(p.description || "Product listed on I|ONE ChapChap.") + "</div></div>" +
-      '<div class="cc-field"><label>YOUR MOBILE NUMBER</label><input id="ioneCcBuyerPhone" class="cc-phone" inputmode="tel" maxlength="15" placeholder="07XXXXXXXX"></div>' +
+      '<div class="cc-actions" style="grid-template-columns:1fr 1fr"><a class="cc-secondary" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="tel:+' + esc(normalizePhone(p.seller_phone)) + '">CALL SELLER</a><a class="cc-secondary" style="display:flex;align-items:center;justify-content:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/' + esc(normalizePhone(p.seller_phone)) + '">CHAT SELLER</a></div>' +
+      '<div class="cc-field"><label>YOUR MOBILE NUMBER • +255</label><input id="ioneCcBuyerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
       '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button">CONFIRM PAYMENT</button></div>' +
-      '<div id="ioneCcBuyStatus" class="cc-status">A payment prompt will be sent to your phone. Enter your mobile-money PIN on the phone.</div>' +
+      '<div id="ioneCcBuyStatus" class="cc-status">BLMPay mobile prompts currently use Tanzanian mobile numbers (+255) and TZS.</div>' +
       "</div>"
     );
     document.getElementById("ioneCcBuyCancel").addEventListener("click", closeOverlay);
     document.getElementById("ioneCcBuySubmit").addEventListener("click", function () { startPayment(p); });
+    startGalleryLoop();
+  }
+
+  var galleryTimer = null;
+
+  function startGalleryLoop() {
+    if (galleryTimer) clearInterval(galleryTimer);
+    var gallery = document.getElementById("ioneCcGalleryView");
+    if (!gallery) return;
+    var imgs = Array.prototype.slice.call(gallery.querySelectorAll(".cc-gallery-img"));
+    if (imgs.length < 2) return;
+    var current = 0;
+    galleryTimer = setInterval(function () {
+      var next = (current + 1) % imgs.length;
+      imgs[next].style.position = "absolute";
+      imgs[next].style.opacity = "0";
+      imgs[next].style.transition = "opacity .8s ease";
+      imgs[current].style.transition = "opacity .8s ease";
+      imgs[next].style.opacity = "1";
+      imgs[current].style.opacity = "0";
+      current = next;
+    }, 3200);
   }
 
   async function startPayment(product) {
@@ -355,13 +421,14 @@
     try {
       btn.disabled = true;
       var phone = normalizePhone(fieldValue("ioneCcBuyerPhone"));
-      if (!validPhone(phone)) throw new Error("Enter a valid Tanzania mobile number.");
+      if (!validPhone(phone)) throw new Error("For the current BLMPay mobile prompt, enter a Tanzanian number beginning +255.");
       var session = await getSession();
       status.textContent = "Sending payment request…";
       var sb = getSupabase();
       var result = await sb.functions.invoke("ione-chapchap-payment", { body: { product_id: product.id, phone_number: phone } });
       if (result.error || !result.data || !result.data.success) {
-        throw new Error(result.data && result.data.error ? result.data.error : (result.error && result.error.message) || "Payment could not be started.");
+        var backendMessage = result.data && result.data.error ? result.data.error : "";
+        throw new Error(backendMessage || (result.error && result.error.message) || "Payment could not be started.");
       }
       var orderId = result.data.order_id;
       status.textContent = "Payment prompt sent. Enter your PIN on your phone. Waiting for confirmation…";
