@@ -647,6 +647,17 @@
     setTimeout(function () { if (!started) tryMount(); }, 3000);
   }
 
+
+  /* Final readability polish: keep SEARCH and POST bright and legible. */
+  try {
+    var readable = document.createElement("style");
+    readable.textContent = "#afrilinkOverlay .afl-discovery-row input{color:#fff!important;-webkit-text-fill-color:#fff!important;caret-color:#fff!important;text-shadow:0 1px 3px rgba(0,0,0,.95)!important;background:linear-gradient(135deg,#063a45,#1264a8)!important;border:2px solid rgba(255,255,255,.82)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 2px 5px rgba(0,0,0,.45)!important}" +
+      "#afrilinkOverlay .afl-discovery-row input::placeholder{color:#fff!important;opacity:1!important;-webkit-text-fill-color:#fff!important;text-shadow:0 1px 3px rgba(0,0,0,.95)!important}" +
+      "#afrilinkOverlay .afl-upload-top{color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 2px 3px rgba(0,0,0,.95)!important;background:linear-gradient(135deg,#00eaff,#2375ff 55%,#8d4dff)!important;border:2px solid rgba(255,255,255,.9)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 3px 7px rgba(0,0,0,.42)!important}" +
+      "#afrilinkOverlay .afl-upload-top:active{transform:translateY(2px)!important;filter:brightness(1.2)!important}";
+    document.head.appendChild(readable);
+  } catch (e) { console.warn("ChapChap readability polish:", e); }
+
   /* The existing marketing world is opened by I|ONE. We only mount inside it. */
   bootWhenReady();
   window.ioneChapChapRefresh = loadProducts;
