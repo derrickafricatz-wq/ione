@@ -117,13 +117,13 @@
       "/* ChapChap becomes a small horizontal market shelf so billboards remain the visual hero. */" +
       "#ioneChapDock{margin:0 0 7px;padding:5px 4px 4px;border-bottom:1px solid #172a2e;background:transparent}" +
       "#ioneChapBar{display:grid!important;grid-template-columns:minmax(0,1fr) 94px auto;align-items:center;gap:5px;margin-bottom:4px}" +
-      "#ioneChapOpen{min-height:39px;height:39px;padding:0 8px;border-radius:11px;font-size:9px;letter-spacing:.65px;line-height:1.05;box-shadow:0 3px 0 #005858}" +
-      "#ioneChapMine{min-height:39px;height:39px;padding:0 7px;border-radius:11px;font-size:8px;line-height:1.05}" +
+      "#ioneChapOpen{min-height:39px;height:39px;padding:0 8px;border-radius:11px;font-size:9px;letter-spacing:.65px;line-height:1.05;background:linear-gradient(135deg,#00ffff,#008cff)!important;border:1px solid #00ffff!important;color:#001014!important;box-shadow:none!important}" +
+      "#ioneChapMine{min-height:39px;height:39px;padding:0 7px;border-radius:11px;font-size:8px;line-height:1.05;background:linear-gradient(135deg,#ff4fd8,#7b5cff)!important;border:1px solid #ff8be7!important;color:#fff!important;box-shadow:none!important}" +
       "#ioneChapStatus{margin-left:0;min-width:43px;font-size:7px;line-height:1.05;text-align:center;letter-spacing:.25px}" +
       "#ioneChapRail{gap:7px;padding:2px 0 6px}" +
-      ".ione-chap-card{flex:0 0 137px;height:171px;border-radius:15px;transform:perspective(700px) rotateY(-1deg)}" +
+      ".ione-chap-card{flex:0 0 137px;height:171px;border-radius:15px;transform:none;scroll-snap-align:start;box-shadow:none!important}" +
       ".ione-chap-photo img{width:100%;height:100%;object-fit:cover;object-position:center center;background:#000}" +
-      ".ione-chap-price{left:6px;top:6px;padding:4px 6px;border-radius:7px;font-size:8px;opacity:.82;backdrop-filter:blur(2px);box-shadow:0 2px 0 rgba(0,0,0,.25)}" +
+      ".ione-chap-price{left:6px;top:6px;padding:4px 6px;border-radius:7px;font-size:8px;opacity:.92;box-shadow:none!important;backdrop-filter:none}" +
       ".ione-chap-info{padding:7px 8px 8px;background:linear-gradient(to top,rgba(0,0,0,.68),rgba(0,0,0,.02))}" +
       ".ione-chap-title{font-size:9px}.ione-chap-seller{font-size:7.5px}.ione-chap-location{font-size:6.5px}" +
       "/* Payment/product graphics remain visible beneath translucent UI elements. */" +
