@@ -187,8 +187,8 @@
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
     if (head && head.parentNode) head.parentNode.insertBefore(dock, head.nextSibling); else return;
-    document.getElementById("ioneChapOpen").addEventListener("click", function () { openSell(); });
-    document.getElementById("ioneChapMine").addEventListener("click", function () { openMine(); });
+    document.getElementById("ioneChapOpen").addEventListener("pointerup", function () { openSell(); }, { passive:true });
+    document.getElementById("ioneChapMine").addEventListener("pointerup", function () { openMine(); }, { passive:true });
   }
 
   function createOverlay() {
