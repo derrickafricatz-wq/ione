@@ -593,10 +593,14 @@
         'Paid: ' + esc(new Date(r.paid_at).toLocaleString()) +
         '</div>' +
         '<div style="margin-top:10px;font-size:11px;line-height:1.55">After receiving the product, immediately contact I|ONE Care: <a href="tel:+255742097868">+255 742 097 868</a> • <a href="mailto:ione.customercare.africa@gmail.com">ione.customercare.africa@gmail.com</a>.</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><button id="ioneCcPrintReceipt" class="cc-secondary" type="button">PRINT RECEIPT</button><button id="ioneCcReceivedBtn" class="cc-primary" type="button">I RECEIVED THE PRODUCT</button></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><button id="ioneCcViewReceipt" class="cc-primary" type="button">VIEW RECEIPT</button><button id="ioneCcReceivedBtn" class="cc-secondary" type="button">I RECEIVED THE PRODUCT</button></div>' +
         '</div>';
-      var print=document.getElementById("ioneCcPrintReceipt");
-      if(print)print.addEventListener("click",function(){printReceipt(r);});
+      var view=document.getElementById("ioneCcViewReceipt");
+      if(view)view.addEventListener("click",function(){
+        var saved=document.getElementById("ioneChapSavedReceiptBtn");
+        if(saved){saved.click();return;}
+        alert("Use the VIEW RECEIPT button in the ChapChap bar to open your saved receipt.");
+      });
       var received=document.getElementById("ioneCcReceivedBtn");
       if(received)received.addEventListener("click",function(){confirmReceived(orderId);});
     } catch(err) {
