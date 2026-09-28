@@ -201,16 +201,6 @@
       close.addEventListener("click",()=>{const panel=document.getElementById("authorityPressPanel");if(panel){panel.style.display="none";panel.setAttribute("aria-hidden","true");}});
     }
 
-    const chapOpen=document.getElementById("authorityChapChapOpen");
-    if(chapOpen && !chapOpen.dataset.bound){
-      chapOpen.dataset.bound="1";
-      chapOpen.onclick=async()=>{const p=document.getElementById("authorityChapChapPanel");if(p){p.style.display="block";p.setAttribute("aria-hidden","false");}await loadChapChapAuthority();};
-    }
-    const chapClose=document.getElementById("authorityChapChapClose");
-    if(chapClose && !chapClose.dataset.bound){
-      chapClose.dataset.bound="1";
-      chapClose.onclick=()=>{const p=document.getElementById("authorityChapChapPanel");if(p){p.style.display="none";p.setAttribute("aria-hidden","true");}};
-    }
     loadLivePlans();
   }
 
