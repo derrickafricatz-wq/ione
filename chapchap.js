@@ -561,14 +561,23 @@
     w.document.open(); w.document.write(html); w.document.close();
   }
 
-  async function showReceipt(orderId) {
+  async function showReceipt(orderId, attempt) {
     var status = document.getElementById("ioneCcBuyStatus");
+    attempt = Number(attempt || 0);
     try {
       var sb = getSupabase();
       var result = await sb.from("ione_chapchap_receipts").select("*").eq("order_id", orderId).maybeSingle();
       if (result.error) throw result.error;
       if (!result.data) {
-        if (status) status.textContent = "PAYMENT CONFIRMED. Your official receipt is being prepared. Please check again shortly.";
+        if (attempt < 5) {
+          if (status) status.textContent = "PAYMENT CONFIRMED • PREPARING YOUR OFFICIAL RECEIPT…";
+          setTimeout(function(){ showReceipt(orderId, attempt + 1); }, 2000);
+          return;
+        }
+        if (status) status.innerHTML = "PAYMENT CONFIRMED. Your official receipt is still being prepared." +
+          '<br><button id="ioneCcReceiptRetry" class="cc-secondary" type="button" style="margin-top:8px;width:100%">CHECK RECEIPT AGAIN</button>';
+        var retryReceipt=document.getElementById("ioneCcReceiptRetry");
+        if(retryReceipt)retryReceipt.addEventListener("click",function(){showReceipt(orderId,0);});
         return;
       }
       var r = result.data;
@@ -774,9 +783,9 @@
       var session = await getSession();
       var sb = getSupabase();
       var orders = await sb.from("ione_chapchap_orders")
-        .select("id,product_id,buyer_phone,amount_tzs,status,created_at,paid_at")
+        .select("id,product_id,buyer_phone,amount_tzs,status,created_at,paid_at,received_confirmed_at,payout_status,payout_reference")
         .eq("seller_id", session.user.id)
-        .eq("status", "paid")
+        .in("status", ["paid","received","disputed"])
         .order("created_at", { ascending: false })
         .limit(20);
       if (orders.error) throw orders.error;
