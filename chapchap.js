@@ -183,7 +183,7 @@
       '<div id="ioneChapBar">' +
       '<button id="ioneChapOpen" type="button">CHAPCHAP • BUY / SELL</button>' +
       '<button id="ioneChapMine" type="button">MY CHAPCHAP</button>' +
-      '<span id="ioneChapStatus">SINGLE-PRODUCT MARKET</span>' +
+      '<span id="ioneChapStatus" aria-hidden="true"></span>' +
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
     if (head && head.parentNode) head.parentNode.insertBefore(dock, head.nextSibling); else return;
@@ -474,7 +474,7 @@
       productCache = result.data || [];
       renderRail(productCache);
       var st = document.getElementById("ioneChapStatus");
-      if (st) st.textContent = productCache.length + " LIVE PRODUCT" + (productCache.length === 1 ? "" : "S");
+      if (st) st.textContent = "";
     } catch (err) {
       console.warn("ChapChap feed:", err);
       rail.innerHTML = '<div class="ione-chap-empty">CHAPCHAP IS TEMPORARILY UNAVAILABLE</div>';
@@ -784,47 +784,38 @@
     });
   }
 
+  async function revokeChapChapProduct(productId){
+    try{
+      if(!confirm("CONFIRM REVOKE\n\nThis will remove your product from the ChapChap marketplace.\n\nPress OK to revoke or Cancel to keep it listed.")) return;
+      var sb=getSupabase(),session=await getSession(),now=new Date().toISOString();
+      var result=await sb.from("ione_single_products").update({status:"revoked",revoked_at:now,updated_at:now}).eq("id",productId).eq("seller_id",session.user.id).eq("status","active").select("id").maybeSingle();
+      if(result.error) throw result.error;
+      if(!result.data) throw new Error("This product is no longer available to revoke.");
+      await loadProducts(); openMine();
+    }catch(err){alert(err?.message||"Could not revoke this product.");}
+  }
+
   async function openMine() {
     try {
-      await getSession();
-      var sb = getSupabase();
-      var result = await sb.functions.invoke("ione-chapchap-seller",{body:{action:"sales"}});
-      if(result.error||!result.data?.success) throw new Error(result.data?.error||result.error?.message||"Could not load seller sales.");
-      var sales=result.data.orders||[];
-      var body='<div class="cc-list">';
+      var session=await getSession(), sb=getSupabase();
+      var ordersResult=await sb.from("ione_chapchap_orders").select("id,product_id,buyer_full_name,buyer_phone,buyer_contact,buyer_email,buyer_address,amount_tzs,commission_tzs,seller_net_tzs,status,blmpay_reference,created_at,paid_at,received_confirmed_at,payout_status,payout_reference").eq("seller_id",session.user.id).in("status",["paid","received","disputed"]).order("created_at",{ascending:false}).limit(50);
+      if(ordersResult.error) throw ordersResult.error;
+      var sales=ordersResult.data||[], ids=sales.map(function(o){return o.id;}), receipts=[];
+      if(ids.length){var rr=await sb.from("ione_chapchap_receipts").select("*").in("order_id",ids);if(rr.error)throw rr.error;receipts=rr.data||[];}
+      var receiptMap={};receipts.forEach(function(r){receiptMap[String(r.order_id)]=r;});
+      var productsResult=await sb.from("ione_single_products").select("id,title,price_tzs,price_amount,price_currency,status,created_at").eq("seller_id",session.user.id).in("status",["active","pending_payment","sold"]).order("created_at",{ascending:false}).limit(50);
+      if(productsResult.error)throw productsResult.error;
+      var products=productsResult.data||[],body='<div class="cc-list">';
       if(sales.length){
-        body+=sales.map(function(o){
-          var r=o.receipt;
-          return '<div class="cc-list-item"><strong>SALE • '+esc(String(o.status||"PAID").toUpperCase())+'</strong><span>'+esc(money(o.amount_tzs))+' • '+esc(new Date(o.created_at).toLocaleString())+'<br>CLIENT: '+esc(o.buyer_full_name||r?.buyer_full_name||"—")+'<br>PHONE: '+esc(o.buyer_phone||o.buyer_contact||r?.buyer_contact||"—")+'<br>EMAIL: '+esc(o.buyer_email||r?.buyer_email||"—")+'<br>ADDRESS: '+esc(o.buyer_address||r?.buyer_address||"—")+'</span>'+(r?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-mine-view="'+esc(o.id)+'">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-mine-download="'+esc(o.id)+'">DOWNLOAD</button></div>':'<span>Receipt is being prepared.</span>')+'</div>';
-        }).join("");
-      }else{
-        var latest=await sb.functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
-        if(!latest.error&&latest.data?.success&&latest.data.receipt){
-          var r=latest.data.receipt;
-          body+='<div class="cc-list-item"><strong>RECENT CHAPCHAP TRANSACTION</strong><span>'+esc(r.receipt_number)+'<br>PRODUCT: '+esc(r.product_title||"—")+'<br>CLIENT: '+esc(r.buyer_full_name||"—")+'<br>PHONE: '+esc(r.buyer_contact||"—")+'<br>EMAIL: '+esc(r.buyer_email||"—")+'<br>ADDRESS: '+esc(r.buyer_address||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary" id="ioneMineRecentView">VIEW RECEIPT</button><button type="button" class="cc-secondary" id="ioneMineRecentDownload">DOWNLOAD</button></div></div>';
-          body+='</div>';
-          openOverlay("MY CHAPCHAP","SELLER • PAID SALES & RECEIPTS",body);
-          document.getElementById("ioneMineRecentView")?.addEventListener("click",function(){window.ioneChapChapOpenStandaloneReceipt?.(r);});
-          document.getElementById("ioneMineRecentDownload")?.addEventListener("click",function(){window.ioneChapChapDownloadReceipt?.(r);});
-          return;
-        }
-        body+='<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales will appear here.</span></div>';
-      }
-      body+='</div>';
-      openOverlay("MY CHAPCHAP","SELLER • PAID SALES & RECEIPTS",body);
-      body=null;
-      var currentOrders=sales;
-      document.querySelectorAll("[data-mine-view],[data-mine-download]").forEach(function(btn){
-        btn.addEventListener("click",async function(){
-          var o=currentOrders.find(function(x){return String(x.id)===String(btn.getAttribute("data-mine-view")||btn.getAttribute("data-mine-download"));});
-          if(!o?.receipt)return;
-          if(btn.hasAttribute("data-mine-download")) window.ioneChapChapDownloadReceipt?.(o.receipt);
-          else window.ioneChapChapOpenStandaloneReceipt?.(o.receipt);
-        });
-      });
-    } catch (err) {
-      openOverlay("MY CHAPCHAP","SELLER",'<div class="cc-status">'+esc(err&&err.message?err.message:"Could not load seller information.")+"</div>");
-    }
+        body+='<div class="cc-kicker">YOUR SALES</div>'+sales.map(function(o){var r=receiptMap[String(o.id)];return '<div class="cc-list-item"><strong>SALE • '+esc(String(o.status||"PAID").toUpperCase())+'</strong><span>'+esc(money(o.amount_tzs))+' • '+esc(new Date(o.created_at).toLocaleString())+'<br>CLIENT: '+esc(o.buyer_full_name||r?.buyer_full_name||"—")+'<br>PHONE: '+esc(o.buyer_phone||o.buyer_contact||r?.buyer_contact||"—")+'<br>EMAIL: '+esc(o.buyer_email||r?.buyer_email||"—")+'<br>ADDRESS: '+esc(o.buyer_address||r?.buyer_address||"—")+'</span>'+(r?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-mine-view="'+esc(o.id)+'">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-mine-download="'+esc(o.id)+'">DOWNLOAD</button></div>':'<span>Receipt is being prepared.</span>')+'</div>';}).join("");
+      }else body+='<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales will appear here. This area is private to your seller account.</span></div>';
+      body+='<div class="cc-kicker" style="margin-top:14px">YOUR PRODUCTS</div>';
+      if(products.length) body+=products.map(function(p){var price=p.price_amount!=null?p.price_amount:p.price_tzs;var action=p.status==="active"?'<button type="button" class="cc-secondary" data-revoke-product="'+esc(p.id)+'" style="width:100%;margin-top:8px;min-height:40px">REVOKE PRODUCT</button>':'<span>STATUS: '+esc(String(p.status||"").toUpperCase())+'</span>';return '<div class="cc-list-item"><strong>'+esc(p.title||"ChapChap product")+'</strong><span>'+esc(money(price,p.price_currency||"TZS"))+' • STATUS: '+esc(String(p.status||"").toUpperCase())+'</span>'+action+'</div>';}).join("");
+      else body+='<div class="cc-list-item"><strong>NO PRODUCTS</strong><span>Add your own ChapChap product from CHAPCHAP • BUY / SELL.</span></div>';
+      body+='</div>'; openOverlay("MY CHAPCHAP","SELLER • PRIVATE ACCOUNT",body);
+      document.querySelectorAll("[data-mine-view],[data-mine-download]").forEach(function(btn){btn.addEventListener("click",function(){var o=sales.find(function(x){return String(x.id)===String(btn.getAttribute("data-mine-view")||btn.getAttribute("data-mine-download"));});var r=o&&receiptMap[String(o.id)];if(!r)return;if(btn.hasAttribute("data-mine-download"))window.ioneChapChapDownloadReceipt?.(r);else window.ioneChapChapOpenStandaloneReceipt?.(r);});});
+      document.querySelectorAll("[data-revoke-product]").forEach(function(btn){btn.addEventListener("click",function(){revokeChapChapProduct(btn.getAttribute("data-revoke-product"));});});
+    }catch(err){openOverlay("MY CHAPCHAP","SELLER • PRIVATE ACCOUNT",'<div class="cc-status">'+esc(err&&err.message?err.message:"Could not load your private ChapChap account.")+"</div>");}
   }
 
   async function initialize() {
