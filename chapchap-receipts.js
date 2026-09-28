@@ -123,7 +123,7 @@
   }
 
   async function openLatestBuyerReceipt(){
-    var result=await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
+    var savedId="";try{savedId=localStorage.getItem("ione_chapchap_last_paid_order")||"";}catch(e){} var result=savedId?await sb().from("ione_chapchap_receipts").select("*").eq("order_id",savedId).maybeSingle():await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
     if(result.error||!result.data?.success||!result.data.receipt){
       alert(result.data?.error||result.error?.message||"No completed ChapChap receipt was found for this buyer.");
       return;
