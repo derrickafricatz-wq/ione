@@ -79,7 +79,7 @@
     panel.querySelector("#ccAuthorityBack")?.addEventListener("click",function(){refreshAuthority();});
   }
 
-  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:88px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapClose{position:absolute!important;top:9px!important;right:9px!important;z-index:21!important;min-height:38px!important;min-width:72px!important;border-radius:10px!important;touch-action:manipulation!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
+  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:68px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapPanel .authority-chapchap-head h3{margin:2px 0!important;font-size:14px!important;line-height:1.15!important;max-width:calc(100% - 4px)!important}#authorityChapChapClose{position:absolute!important;top:8px!important;right:8px!important;z-index:21!important;min-height:30px!important;height:30px!important;min-width:52px!important;width:52px!important;padding:0 7px!important;border-radius:9px!important;font:900 8px Arial,sans-serif!important;touch-action:manipulation!important}#ioneChapBar{display:flex!important;align-items:center!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;white-space:nowrap!important}#ioneChapBar::-webkit-scrollbar{display:none!important}#ioneChapBar #ioneChapStatus{flex:0 0 auto!important;margin-left:auto!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
   var authorityFilter="orders",authorityBusy=false,authorityWriting=false;
   async function refreshAuthority(){
     if(authorityBusy)return;
@@ -151,15 +151,31 @@
     box.querySelector("#ccQuickDownload").onclick=function(){downloadReceipt(r);box.style.display="none";};
   }
 
+  async function openLatestBuyerReceipt(){
+    var result=await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
+    if(result.error||!result.data?.success||!result.data.receipt){
+      alert(result.data?.error||result.error?.message||"No completed ChapChap receipt was found for this buyer.");
+      return;
+    }
+    var r=result.data.receipt;
+    var box=document.getElementById("ioneChapReceiptQuick");
+    if(!box){box=document.createElement("div");box.id="ioneChapReceiptQuick";box.style.cssText="position:fixed;inset:0;z-index:103000;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(0,0,0,.84);font-family:Arial,sans-serif;color:#fff";document.body.appendChild(box);}
+    box.innerHTML='<div style="width:min(500px,100%);max-height:92vh;overflow:auto;border:1px solid #00ffff;border-radius:20px;background:#071012;padding:18px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong style="color:#00ffff;font-size:18px">OFFICIAL CHAPCHAP RECEIPT</strong><button id="ccQuickClose" class="cc-secondary" type="button">CLOSE</button></div><div style="margin-top:12px;font-size:12px;line-height:1.7"><strong>'+esc(r.receipt_number)+'</strong><br>PRODUCT: '+esc(r.product_title)+'<br>CLIENT: '+esc(r.buyer_full_name||"—")+'<br>PHONE: '+esc(r.buyer_phone||r.buyer_contact||"—")+'<br>EMAIL: '+esc(r.buyer_email||"—")+'<br>ADDRESS: '+esc(r.buyer_address||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</div><button id="ccQuickDownload" class="cc-primary" type="button" style="width:100%;margin-top:14px">DOWNLOAD RECEIPT</button></div>';
+    box.style.display="flex";
+    box.querySelector("#ccQuickClose").onclick=function(){box.style.display="none";};
+    box.querySelector("#ccQuickDownload").onclick=function(){downloadReceipt(r);box.style.display="none";};
+  }
+
   function enhanceBuyerMarketReceipt(){
     var dock=document.getElementById("ioneChapDock");if(!dock)return;
-    var id="";try{id=localStorage.getItem("ione_chapchap_last_paid_order")||""}catch(e){}
-    var old=document.getElementById("ioneChapSavedReceiptBtn");
-    if(!id){if(old)old.remove();return;}
-    if(old)return;
     var bar=document.getElementById("ioneChapBar");if(!bar)return;
-    var b=document.createElement("button");b.id="ioneChapSavedReceiptBtn";b.type="button";b.textContent="VIEW RECEIPT";b.className="cc-primary";b.style.cssText="min-height:38px;height:38px;padding:0 11px;border-radius:10px;font:900 9px Arial,sans-serif;white-space:nowrap;touch-action:manipulation;letter-spacing:.3px";
-    b.onclick=openSavedBuyerReceipt;bar.appendChild(b);
+    var old=document.getElementById("ioneChapSavedReceiptBtn");
+    if(old)return;
+    var b=document.createElement("button");
+    b.id="ioneChapSavedReceiptBtn";b.type="button";b.textContent="VIEW RECEIPT";b.className="cc-primary";
+    b.style.cssText="flex:0 0 auto;min-height:37px;height:37px;padding:0 10px;border-radius:10px;font:900 9px Arial,sans-serif;white-space:nowrap;touch-action:manipulation;letter-spacing:.25px";
+    b.onclick=openLatestBuyerReceipt;
+    bar.appendChild(b);
   }
 
   function enhanceBuyerReceipt(){
