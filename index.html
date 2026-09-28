@@ -1823,11 +1823,11 @@ function getMedia(id){
         </div>
         <button type="button" id="authorityChapChapClose">CLOSE</button>
       </div>
-      <div class="authority-chapchap-grid">
-        <div class="authority-chapchap-card"><span>ORDERS</span><strong id="chapChapOrdersCount">—</strong></div>
-        <div class="authority-chapchap-card"><span>SELLER AGREEMENTS</span><strong id="chapChapAgreementsCount">—</strong></div>
-        <div class="authority-chapchap-card"><span>RECEIPTS</span><strong id="chapChapReceiptsCount">—</strong></div>
-        <div class="authority-chapchap-card"><span>PAYOUTS</span><strong id="chapChapPayoutsCount">—</strong></div>
+      <div class="authority-chapchap-grid" id="authorityChapChapFilters">
+        <button type="button" class="authority-chapchap-card is-selected" data-cc-filter="orders"><span>ORDERS</span><strong id="chapChapOrdersCount">—</strong></button>
+        <button type="button" class="authority-chapchap-card" data-cc-filter="agreements"><span>SELLER AGREEMENTS</span><strong id="chapChapAgreementsCount">—</strong></button>
+        <button type="button" class="authority-chapchap-card" data-cc-filter="receipts"><span>RECEIPTS</span><strong id="chapChapReceiptsCount">—</strong></button>
+        <button type="button" class="authority-chapchap-card" data-cc-filter="payouts"><span>PAYOUTS</span><strong id="chapChapPayoutsCount">—</strong></button>
       </div>
       <div class="authority-chapchap-note">
         <strong>PAYMENT / PAYOUT STATUS</strong>
@@ -7735,7 +7735,7 @@ preloadMedia();
 .authority-chapchap-head h3{margin:4px 0 0}
 .authority-chapchap-head button{border:1px solid rgba(255,255,255,.25);background:#111;color:#fff;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}
 .authority-chapchap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.authority-chapchap-card{min-height:78px;padding:13px;border:1px solid rgba(255,255,255,.14);border-radius:13px;background:rgba(255,255,255,.035);box-sizing:border-box}
+.authority-chapchap-card{min-height:78px;padding:13px;border:1px solid rgba(255,255,255,.14);border-radius:13px;background:rgba(255,255,255,.035);box-sizing:border-box}.authority-chapchap-card{cursor:pointer;text-align:left;transition:transform .12s ease,border-color .12s ease,background .12s ease}.authority-chapchap-card.is-selected{border-color:#00ffff;background:rgba(0,255,255,.08);transform:translateY(-1px)}.authority-chapchap-card:active{transform:scale(.985)}
 .authority-chapchap-card span{display:block;font-size:11px;letter-spacing:1px;opacity:.72}
 .authority-chapchap-card strong{display:block;margin-top:9px;font-size:25px;color:#00ffff}
 .authority-chapchap-note{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding:12px;border-radius:12px;background:rgba(0,255,255,.06);font-size:12px;line-height:1.45}
