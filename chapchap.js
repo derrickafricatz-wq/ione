@@ -569,6 +569,19 @@
     pendingCountdownTimer=setInterval(tick,1000);
   }
 
+async function showChapChapReceipt(orderId) {
+    var sb=getSupabase();
+    var r=await sb.from("ione_chapchap_receipts").select("*").eq("order_id",orderId).maybeSingle();
+    if(r.error) throw r.error;
+    if(!r.data){ openOverlay("PAYMENT CONFIRMED","RECEIPT IS BEING PREPARED",'<div class="cc-status">Your payment is confirmed. The official receipt is being prepared. Please check again shortly.</div>'); return; }
+    var x=r.data;
+    var care='<div style="margin-top:12px;padding:12px;border:1px solid #00ffff;border-radius:12px;background:#061719"><strong style="color:#00ffff">I|ONE CARE CENTER</strong><div style="margin-top:7px;font-size:10px;line-height:1.5">Once you receive your product, contact us immediately. Please do not ignore this confirmation.</div><div style="margin-top:7px">CALL: <a class="cc-call" href="tel:'+IONE_CARE_PHONE+'">'+IONE_CARE_PHONE+'</a></div><div style="margin-top:6px">WHATSAPP: <a class="cc-call" target="_blank" rel="noopener" href="https://wa.me/'+IONE_CARE_WHATSAPP+'">CHAT I|ONE CARE</a></div><div style="margin-top:6px">EMAIL: <a class="cc-call" href="mailto:'+IONE_CARE_EMAIL+'">'+IONE_CARE_EMAIL+'</a></div></div>';
+    var body='<div class="cc-list-item"><strong>CHAPCHAP OFFICIAL PAID RECEIPT</strong><span>Receipt No: '+esc(x.receipt_number)+'</span><span>Buyer: '+esc(x.buyer_full_name)+'</span><span>Product: '+esc(x.product_title)+'</span><span>Amount: '+esc(money(x.amount_tzs))+'</span><span>ChapChap fee: 1%</span><span>Status: PAID</span><span>Paid: '+esc(new Date(x.paid_at).toLocaleString())+'</span></div>'+care+'<div class="cc-actions"><button id="ioneCcReceiptPrint" class="cc-primary" type="button">PRINT RECEIPT</button><button id="ioneCcReceiptClose" class="cc-secondary" type="button">DONE</button></div>';
+    openOverlay("PAID RECEIPT","CHAPCHAP • OFFICIAL TRANSACTION RECEIPT",body);
+    document.getElementById("ioneCcReceiptClose").onclick=closeOverlay;
+    document.getElementById("ioneCcReceiptPrint").onclick=function(){var w=window.open("","_blank");if(!w)return;w.document.write("<html><body style='font-family:Arial;padding:30px'><h1>I|ONE CHAPCHAP</h1><h2>OFFICIAL PAID RECEIPT</h2><p>Receipt: "+esc(x.receipt_number)+"</p><p>Buyer: "+esc(x.buyer_full_name)+"</p><p>Product: "+esc(x.product_title)+"</p><p>Amount: "+esc(money(x.amount_tzs))+"</p><p>Status: PAID</p><hr><p>After receiving your product, contact I|ONE Care: "+IONE_CARE_PHONE+" • "+IONE_CARE_EMAIL+"</p></body></html>");w.document.close();w.print();};
+  }
+
 async function reconcilePayment(product) {
     var status = document.getElementById("ioneCcBuyStatus");
     var btn = document.getElementById("ioneCcBuySubmit");
@@ -607,8 +620,10 @@ async function reconcilePayment(product) {
         return;
       }
       if (result.data.status === "paid") {
-        if (status) status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
+        if (pendingCountdownTimer) clearInterval(pendingCountdownTimer);
+        if (status) status.textContent = "PAYMENT CONFIRMED • PRODUCT SOLD.";
         await loadProducts();
+        try { await showChapChapReceipt(result.data.order_id); } catch(e) { console.warn("ChapChap receipt:",e); }
         return;
       }
     } catch (err) {
@@ -687,8 +702,9 @@ async function reconcilePayment(product) {
           if (r.error) throw r.error;
           if (r.data && r.data.status === "paid") {
             clearInterval(pollTimer); pollTimer = null;
-            status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
+            status.textContent = "PAYMENT CONFIRMED • PRODUCT SOLD.";
             await loadProducts();
+            try { await showChapChapReceipt(orderId); } catch(e) { console.warn("ChapChap receipt:",e); }
             resolve();
             return;
           }
