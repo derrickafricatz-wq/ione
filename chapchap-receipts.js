@@ -13,7 +13,7 @@
         function line(label,value){doc.setFont("helvetica","bold");doc.text(label,20,y);doc.setFont("helvetica","normal");doc.text(String(value||"—"),62,y);y+=9;}
         doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text("I|ONE CHAPCHAP — OFFICIAL RECEIPT",20,y);y+=14;
         doc.setFontSize(11);
-        line("Receipt:",r.receipt_number);line("Product:",r.product_title);line("Amount:",money(r.amount_tzs));line("ChapChap fee:",money(r.chapchap_fee_tzs));line("BLMPay ref:",r.blmpay_reference||"—");line("Paid:",r.paid_at?new Date(r.paid_at).toLocaleString():"—");
+        line("Receipt:",r.receipt_number);line("Product:",r.product_title);line("CLIENT NAME:",r.buyer_full_name);line("PHONE:",r.buyer_phone||r.buyer_contact);line("EMAIL:",r.buyer_email);line("ADDRESS:",r.buyer_address);line("Amount:",money(r.amount_tzs));line("ChapChap fee:",money(r.chapchap_fee_tzs));line("BLMPay ref:",r.blmpay_reference||"—");line("Paid:",r.paid_at?new Date(r.paid_at).toLocaleString():"—");
         y+=5;doc.line(20,y,190,y);y+=10;doc.setFont("helvetica","bold");doc.text("I|ONE Care",20,y);y+=7;doc.setFont("helvetica","normal");doc.text("+255 742 097 868",20,y);y+=7;doc.text("ione.customercare.africa@gmail.com",20,y);
         var safe=String(r.receipt_number||"receipt").replace(/[^a-z0-9_-]/gi,"-");
         doc.save("IONE-ChapChap-"+safe+".pdf");
@@ -72,7 +72,7 @@
     var panel=document.getElementById("authorityChapChapOrders"); if(!panel)return;
     var old=panel.innerHTML;
     panel.innerHTML='<div class="authority-chapchap-order"><strong>OFFICIAL CHAPCHAP RECEIPT</strong><div class="cc-mini">'+
-      '<strong>'+esc(r.receipt_number)+'</strong><br>PRODUCT: '+esc(r.product_title)+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+
+      '<strong>'+esc(r.receipt_number)+'</strong><br>PRODUCT: '+esc(r.product_title)+'<br>CLIENT: '+esc(r.buyer_full_name||"—")+'<br>PHONE: '+esc(r.buyer_phone||r.buyer_contact||"—")+'<br>EMAIL: '+esc(r.buyer_email||"—")+'<br>ADDRESS: '+esc(r.buyer_address||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+
       '</div>'+receiptButton(r)+'<button type="button" id="ccAuthorityBack" class="cc-secondary" style="width:100%;margin-top:8px">BACK TO LIST</button></div>';
     panel.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(){openAuthorityReceipt(r);});
     panel.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(){downloadReceipt(r);});
