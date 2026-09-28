@@ -268,7 +268,8 @@
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>YOUR FULL NAME</label><input id="ioneCcSellerName" maxlength="80" placeholder="Full legal name"></div>
       <div class="cc-field"><label>YOUR EMAIL</label><input id="ioneCcSellerEmail" type="email" maxlength="160" placeholder="you@example.com"></div>
-      <div class="cc-field"><label>YOUR FULL ADDRESS</label><input id="ioneCcSellerAddress" maxlength="180" placeholder="Street / area / city / region"></div>' +
+      <div class="cc-field"><label>YOUR FULL ADDRESS</label><input id="ioneCcSellerAddress" maxlength="180" placeholder="Street / area / city / region"></div>
+      <div class="cc-field"><label>SELLER MOBILE NETWORK FOR PAYOUT</label><select id="ioneCcSellerNetwork"><option value="">SELECT NETWORK</option><option value="MPESA">M-PESA • VODACOM</option><option value="AIRTEL_MONEY">AIRTEL MONEY</option><option value="MIXX_BY_YAS">MIXX BY YAS</option><option value="HALOPESA">HALOPESA</option><option value="EZYPESA">EZYPESA</option><option value="TTCLPESA">TTCLPESA</option></select></div>' +
       '<div class="cc-field"><label>YOUR CALL NUMBER • INCLUDE COUNTRY CODE</label><input id="ioneCcSellerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
       '<div class="cc-field"><label>CATEGORY</label>' + categoryHtml() + "</div>" +
       '<div id="ioneCcSmartFields" class="cc-grid"></div>' +
@@ -347,6 +348,7 @@
       var phone = normalizePhone(fieldValue("ioneCcSellerPhone"));
       var sellerEmail = fieldValue("ioneCcSellerEmail").trim();
       var sellerAddress = fieldValue("ioneCcSellerAddress").trim();
+      var sellerNetwork = fieldValue("ioneCcSellerNetwork");
       var termsAccepted = !!document.getElementById("ioneCcSellerTerms")?.checked;
       var category = fieldValue("ioneCcCategory");
       var title = fieldValue("ioneCcTitle");
@@ -358,6 +360,7 @@
       if (!validInternationalPhone(phone)) throw new Error("Enter a valid call number with country code, for example +255712345678.");
       if (!sellerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sellerEmail)) throw new Error("Enter a valid seller email.");
       if (!sellerAddress) throw new Error("Enter your full address.");
+      if (!sellerNetwork) throw new Error("Select the mobile network for seller payout.");
       if (!termsAccepted) throw new Error("Read and accept the ChapChap Terms & Conditions before publishing.");
       if (!String(title).replace(/\s/g, "")) throw new Error("Enter the product name.");
       if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
@@ -382,6 +385,7 @@
         seller_phone: phone,
         seller_email: sellerEmail,
         seller_address: sellerAddress,
+        seller_network: sellerNetwork,
         terms_version: CHAPCHAP_TERMS_VERSION,
         terms_accepted_at: new Date().toISOString(),
         category: category,
