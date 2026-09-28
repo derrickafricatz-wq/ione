@@ -154,7 +154,7 @@
         if(!card)return;
         chapChapAuthorityFilter=card.getAttribute("data-cc-filter")||"orders";
         filters.querySelectorAll("[data-cc-filter]").forEach(el=>el.classList.toggle("is-selected",el===card));
-        loadChapChapAuthority();
+        if(chapChapAuthorityCache){ renderChapChapAuthority(chapChapAuthorityCache); } else { loadChapChapAuthority(); }
         setTimeout(()=>document.getElementById("authorityChapChapOrders")?.scrollIntoView({behavior:"smooth",block:"nearest"}),50);
       });
     }
