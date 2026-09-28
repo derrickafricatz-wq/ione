@@ -674,12 +674,14 @@
       var phone = normalizePhone(fieldValue("ioneCcBuyerPhone"));
       var buyerName = fieldValue("ioneCcBuyerName");
       var buyerAddress = fieldValue("ioneCcBuyerAddress");
-      var buyerEmail = fieldValue("ioneCcBuyerEmail");
+      var buyerEmail = fieldValue("ioneCcBuyerEmail").trim();
+      var buyerEmailInput = document.getElementById("ioneCcBuyerEmail");
+      if (buyerEmailInput) buyerEmailInput.value = buyerEmail;
       var buyerContact = normalizePhone(fieldValue("ioneCcBuyerContact"));
       var buyerConfirm = document.getElementById("ioneCcBuyerConfirm");
       if (!String(buyerName).replace(/\s/g, "")) throw new Error("Enter your full name.");
       if (!String(buyerAddress).replace(/\s/g, "")) throw new Error("Enter your full address.");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(buyerEmail))) throw new Error("Enter a valid email address.");
+      if (!buyerEmail || buyerEmail.length > 160 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail)) throw new Error("Enter a valid email address.");
       if (!validPhone(buyerContact)) throw new Error("Enter a valid contact number beginning +255.");
       if (!validPhone(phone)) throw new Error("For BLMPay, enter a Tanzanian number beginning +255.");
       if (!buyerConfirm || !buyerConfirm.checked) throw new Error("Please confirm that you contacted the seller and understand the receipt and I|ONE Care instructions.");
