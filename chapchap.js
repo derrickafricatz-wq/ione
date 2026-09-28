@@ -605,7 +605,19 @@
         return;
       }
       var r = result.data;
-      try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(r));}catch(e){}
+      try{
+        localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(r));
+        localStorage.setItem("ione_chapchap_last_paid_order",String(orderId));
+        var paidOrders=JSON.parse(localStorage.getItem("ione_chapchap_paid_orders")||"[]");
+        if(!Array.isArray(paidOrders))paidOrders=[];
+        paidOrders.unshift(String(orderId));
+        localStorage.setItem("ione_chapchap_paid_orders",JSON.stringify([...new Set(paidOrders)].slice(0,50)));
+        var cachedReceipts=JSON.parse(localStorage.getItem("ione_chapchap_receipts_cache")||"[]");
+        if(!Array.isArray(cachedReceipts))cachedReceipts=[];
+        cachedReceipts.unshift(r);
+        var receiptMap={};cachedReceipts.forEach(function(x){if(x&&x.order_id)receiptMap[String(x.order_id)]=x;});
+        localStorage.setItem("ione_chapchap_receipts_cache",JSON.stringify(Object.values(receiptMap).slice(0,50)));
+      }catch(e){}
       if (status) status.innerHTML =
         '<div style="padding:14px;border:1px solid rgba(0,255,255,.3);border-radius:14px;background:rgba(0,255,255,.035);text-align:left">' +
         '<strong style="display:block;font-size:16px;color:#00ffff">OFFICIAL CHAPCHAP RECEIPT</strong>' +
@@ -744,6 +756,17 @@
         throw new Error(backendMessage || (result.error && result.error.message) || "Payment could not be started.");
       }
       var orderId = result.data.order_id;
+      try{
+        localStorage.setItem("ione_chapchap_buyer_identity",JSON.stringify({
+          buyer_full_name:buyerName,
+          buyer_email:buyerEmail,
+          buyer_contact:buyerContact
+        }));
+        var paidOrders=JSON.parse(localStorage.getItem("ione_chapchap_paid_orders")||"[]");
+        if(!Array.isArray(paidOrders))paidOrders=[];
+        paidOrders.unshift(String(orderId));
+        localStorage.setItem("ione_chapchap_paid_orders",JSON.stringify([...new Set(paidOrders)].slice(0,50)));
+      }catch(e){}
       status.textContent = "Payment prompt sent. Enter your PIN on your phone. Waiting for confirmation…";
       await waitForPayment(orderId, product, phone);
     } catch (err) {
@@ -905,4 +928,4 @@
   window.ioneChapChapOpen = openSell;
 })();
 /* ChapChap receipt module loader */
-(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=10";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
+(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=11";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
