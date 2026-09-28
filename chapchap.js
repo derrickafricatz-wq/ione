@@ -659,6 +659,7 @@
         return;
       }
       if (result.data.status === "paid") {
+        try{localStorage.setItem("ione_chapchap_last_paid_order",String(result.data.order_id||""));}catch(e){}
         if (status) status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
         await loadProducts();
         await showReceipt(result.data.order_id || product.id);
@@ -743,6 +744,7 @@
             .maybeSingle();
           if (r.error) throw r.error;
           if (r.data && r.data.status === "paid") {
+            try{localStorage.setItem("ione_chapchap_last_paid_order",String(r.data.id||orderId));}catch(e){}
             clearInterval(pollTimer); pollTimer = null;
             status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
             await loadProducts();
@@ -870,4 +872,4 @@
   window.ioneChapChapOpen = openSell;
 })();
 /* ChapChap receipt module loader */
-(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=3";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
+(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=4";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
