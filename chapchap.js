@@ -267,10 +267,10 @@
   function openSell() {
     openOverlay("SELL ON CHAPCHAP", "SELLER • ONE PRODUCT PER LISTING",
       '<div class="cc-grid">' +
-      '<div class="cc-field"><label>YOUR FULL NAME</label><input id="ioneCcSellerName" maxlength="80" placeholder="Full legal name"></div>
-      <div class="cc-field"><label>YOUR EMAIL</label><input id="ioneCcSellerEmail" type="email" maxlength="160" placeholder="you@example.com"></div>
-      <div class="cc-field"><label>YOUR FULL ADDRESS</label><input id="ioneCcSellerAddress" maxlength="180" placeholder="Street / area / city / region"></div>
-      <div class="cc-field"><label>SELLER MOBILE NETWORK FOR PAYOUT</label><select id="ioneCcSellerNetwork"><option value="">SELECT NETWORK</option><option value="MPESA">M-PESA • VODACOM</option><option value="AIRTEL_MONEY">AIRTEL MONEY</option><option value="MIXX_BY_YAS">MIXX BY YAS</option><option value="HALOPESA">HALOPESA</option><option value="EZYPESA">EZYPESA</option><option value="TTCLPESA">TTCLPESA</option></select></div>' +
+      '<div class="cc-field"><label>YOUR FULL NAME</label><input id="ioneCcSellerName" maxlength="80" placeholder="Full legal name"></div>' +
+      '<div class="cc-field"><label>YOUR EMAIL</label><input id="ioneCcSellerEmail" type="email" maxlength="160" placeholder="you@example.com"></div>' +
+      '<div class="cc-field"><label>YOUR FULL ADDRESS</label><input id="ioneCcSellerAddress" maxlength="180" placeholder="Street / area / city / region"></div>' +
+      '<div class="cc-field"><label>SELLER MOBILE NETWORK FOR PAYOUT</label><select id="ioneCcSellerNetwork"><option value="">SELECT NETWORK</option><option value="MPESA">M-PESA • VODACOM</option><option value="AIRTEL_MONEY">AIRTEL MONEY</option><option value="MIXX_BY_YAS">MIXX BY YAS</option><option value="HALOPESA">HALOPESA</option><option value="EZYPESA">EZYPESA</option><option value="TTCLPESA">TTCLPESA</option></select></div>' +
       '<div class="cc-field"><label>YOUR CALL NUMBER • INCLUDE COUNTRY CODE</label><input id="ioneCcSellerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
       '<div class="cc-field"><label>CATEGORY</label>' + categoryHtml() + "</div>" +
       '<div id="ioneCcSmartFields" class="cc-grid"></div>' +
@@ -284,10 +284,10 @@
       '<input id="ioneCcCamera" type="file" accept="image/*" capture="environment" hidden>' +
       '<input id="ioneCcGallery" type="file" accept="image/*" multiple hidden>' +
       '<div id="ioneCcImageCount" class="cc-image-count">NO PHOTOS SELECTED • MAX 4</div></div></div>' +
-      '<details open style="border:1px solid #294349;border-radius:12px;padding:10px;background:#071012"><summary style="color:#00ffff;font-weight:900;font-size:11px">CHAPCHAP TERMS & CONDITIONS • VERSION 1.0</summary><div style="margin-top:8px;color:#a9bcc0;font-size:10px;line-height:1.55">You agree to provide truthful seller and product information; not to publish stolen, counterfeit, illegal or fraudulent goods; not to misrepresent ownership, condition, availability, price or location; to keep your contact details accurate; and to revoke products that are no longer available. Fraudulent or unlawful conduct may be reported to appropriate authorities where required or permitted by law.</div></details>
-      <label style="display:flex;gap:8px;align-items:flex-start;color:#fff;font-size:10px;line-height:1.4"><input id="ioneCcSellerTerms" type="checkbox"> I have read and agree to the ChapChap Terms & Conditions.</label>
-      <div class="cc-field"><label>CHAPCHAP PLATFORM FEE</label><div style="padding:11px;border:1px solid #294349;border-radius:10px;background:#071012;color:#fff;font-weight:900">1% of the transaction value. BLMPay processing and payout charges are separate.</div></div>
-      <div class="cc-actions"><button id="ioneCcSellCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcSellSubmit" class="cc-primary" type="button" disabled>PUBLISH PRODUCT</button></div>' +
+      '<details open style="border:1px solid #294349;border-radius:12px;padding:10px;background:#071012"><summary style="color:#00ffff;font-weight:900;font-size:11px">CHAPCHAP TERMS & CONDITIONS • VERSION 1.0</summary><div style="margin-top:8px;color:#a9bcc0;font-size:10px;line-height:1.55">You agree to provide truthful seller and product information; not to publish stolen, counterfeit, illegal or fraudulent goods; not to misrepresent ownership, condition, availability, price or location; to keep your contact details accurate; and to revoke products that are no longer available. Fraudulent or unlawful conduct may be reported to appropriate authorities where required or permitted by law.</div></details>' +
+      '<label style="display:flex;gap:8px;align-items:flex-start;color:#fff;font-size:10px;line-height:1.4"><input id="ioneCcSellerTerms" type="checkbox"> I have read and agree to the ChapChap Terms & Conditions.</label>' +
+      '<div class="cc-field"><label>CHAPCHAP PLATFORM FEE</label><div style="padding:11px;border:1px solid #294349;border-radius:10px;background:#071012;color:#fff;font-weight:900">1% of the transaction value. BLMPay processing and payout charges are separate.</div></div>' +
+      '<div class="cc-actions"><button id="ioneCcSellCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcSellSubmit" class="cc-primary" type="button" disabled>PUBLISH PRODUCT</button></div>' +
       '<div id="ioneCcSellStatus" class="cc-status"></div>' +
       "</div>"
     );
