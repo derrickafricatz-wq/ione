@@ -88,52 +88,61 @@
 
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
   let chapChapAuthorityFilter="orders";
-  async function loadChapChapAuthority(){
+  let chapChapAuthorityCache=null;
+  function renderChapChapAuthority(data){
     const status=document.getElementById("authorityChapChapLoadStatus");
     const list=document.getElementById("authorityChapChapOrders");
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
-    if(status)status.textContent="Loading ChapChap orders…";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load ChapChap management data.");
-      const orders=r.data.orders||[];
-      const counts=r.data.counts||{};
-      const orderCount=document.getElementById("chapChapOrdersCount");if(orderCount)orderCount.textContent=String(counts.orders ?? orders.length);
-      const agreementCount=document.getElementById("chapChapAgreementsCount");if(agreementCount)agreementCount.textContent=String(counts.agreements ?? 0);
-      const receiptCount=document.getElementById("chapChapReceiptsCount");if(receiptCount)receiptCount.textContent=String(counts.receipts ?? 0);
-      const payoutCount=document.getElementById("chapChapPayoutsCount");if(payoutCount)payoutCount.textContent=String(counts.payouts ?? 0);
-      const visibleOrders=orders.filter(o=>{
-        if(chapChapAuthorityFilter==="agreements")return !!o.has_agreement;
-        if(chapChapAuthorityFilter==="receipts")return !!o.has_receipt;
-        if(chapChapAuthorityFilter==="payouts")return String(o.payout_status||"")!=="";
-        return true;
-      });
-      if(list)list.innerHTML=visibleOrders.length?visibleOrders.map(o=>{
-        const p=o.product||{};
+    const orders=data?.orders||[];
+    const counts=data?.counts||{};
+    const orderCount=document.getElementById("chapChapOrdersCount");if(orderCount)orderCount.textContent=String(counts.orders ?? orders.length);
+    const agreementCount=document.getElementById("chapChapAgreementsCount");if(agreementCount)agreementCount.textContent=String(counts.agreements ?? 0);
+    const receiptCount=document.getElementById("chapChapReceiptsCount");if(receiptCount)receiptCount.textContent=String(counts.receipts ?? 0);
+    const payoutCount=document.getElementById("chapChapPayoutsCount");if(payoutCount)payoutCount.textContent=String(counts.payouts ?? 0);
+    const visibleOrders=orders.filter(o=>{
+      if(chapChapAuthorityFilter==="agreements")return !!o.has_agreement;
+      if(chapChapAuthorityFilter==="receipts")return !!o.has_receipt;
+      if(chapChapAuthorityFilter==="payouts")return !!o.payout_record || String(o.payout_status||"")!=="";
+      return true;
+    });
+    if(!list)return;
+    if(!visibleOrders.length){
+      list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';
+    }else{
+      list.innerHTML=visibleOrders.map(o=>{
+        const p=o.product||{},r=o.receipt||null;
         const ready=o.status==="received"&&o.payout_status!=="completed";
         const completed=o.payout_status==="completed";
         const safeId=authorityEsc(o.id);
-        return '<div class="authority-chapchap-order">'+
-          '<strong>'+authorityEsc(p.title||"ChapChap order")+'</strong>'+
-          '<div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>AMOUNT TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+' • CHAPCHAP 1% • SELLER NET TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+
-          '<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+' • PAYOUT: '+authorityEsc(String(o.payout_status||"").toUpperCase())+
-          (o.received_confirmed_at?'<br>RECEIVED: '+authorityEsc(new Date(o.received_confirmed_at).toLocaleString()):"")+
-          '</div>'+
-          (ready?'<div class="cc-mini cc-ready">READY FOR MANUAL PAYOUT</div>'+
-            '<div class="authority-payout-grid">'+
-            '<select id="chapNet_'+safeId+'"><option value="">NETWORK</option><option>MPESA / VODACOM</option><option>AIRTEL MONEY</option><option>MIXX BY YAS</option><option>HALOPESA</option><option>EZY PESA</option><option>TTCL PESA</option></select>'+
-            '<input id="chapPhone_'+safeId+'" inputmode="tel" placeholder="Recipient phone" value="'+authorityEsc(p.seller_phone||"")+'">'+
-            '<input id="chapFee_'+safeId+'" inputmode="numeric" placeholder="Payout fee (TZS)" value="0">'+
-            '<input id="chapRef_'+safeId+'" placeholder="Manual payout reference">'+
-            '<button type="button" data-payout="'+safeId+'">MARK MANUAL PAYOUT COMPLETE</button>'+
-            '</div>':
-            completed?'<div class="cc-mini cc-ready">MANUAL PAYOUT RECORDED • REF '+authorityEsc(o.payout_reference||"—")+'</div>':
-            '<div class="cc-mini">Payout remains locked until the buyer confirms receipt.</div>')+
+        const receiptBlock=r?'<div class="cc-mini" style="margin-top:8px"><strong>RECEIPT:</strong> '+authorityEsc(r.receipt_number||"OFFICIAL RECEIPT")+'<br>CLIENT: '+authorityEsc(r.buyer_full_name||o.buyer_full_name||"—")+'<br>PHONE: '+authorityEsc(r.buyer_phone||r.buyer_contact||o.buyer_phone||"—")+'<br>EMAIL: '+authorityEsc(r.buyer_email||o.buyer_email||"—")+'<br>ADDRESS: '+authorityEsc(r.buyer_address||o.buyer_address||"—")+'</div><div style="display:flex;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-authority-receipt="'+safeId+'" style="flex:1;min-height:38px">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-authority-download="'+safeId+'" style="flex:1;min-height:38px">DOWNLOAD</button></div>':"";
+        return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>BUYER: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||"—")+'<br>AMOUNT TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+' • CHAPCHAP 1% • SELLER NET TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+' • PAYOUT: '+authorityEsc(String(o.payout_status||"").toUpperCase())+(o.received_confirmed_at?'<br>RECEIVED: '+authorityEsc(new Date(o.received_confirmed_at).toLocaleString()):"")+'</div>'+receiptBlock+
+          (chapChapAuthorityFilter==="payouts"?(ready?'<div class="cc-mini cc-ready">READY FOR MANUAL PAYOUT</div><div class="authority-payout-grid"><select id="chapNet_'+safeId+'"><option value="">NETWORK</option><option>MPESA / VODACOM</option><option>AIRTEL MONEY</option><option>MIXX BY YAS</option><option>HALOPESA</option><option>EZY PESA</option><option>TTCL PESA</option></select><input id="chapPhone_'+safeId+'" inputmode="tel" placeholder="Recipient phone" value="'+authorityEsc(p.seller_phone||"")+'"><input id="chapFee_'+safeId+'" inputmode="numeric" placeholder="Payout fee (TZS)" value="0"><input id="chapRef_'+safeId+'" placeholder="Manual payout reference"><button type="button" data-payout="'+safeId+'">MARK MANUAL PAYOUT COMPLETE</button></div>':completed?'<div class="cc-mini cc-ready">MANUAL PAYOUT RECORDED • REF '+authorityEsc(o.payout_reference||"—")+'</div>':'<div class="cc-mini">Payout remains locked until the buyer confirms receipt.</div>'):"")+
           '</div>';
-      }).join(""):'<div class="authority-chapchap-order"><strong>NO PAID / RECEIVED ORDERS</strong><div class="cc-mini">Orders will appear here after BLMPay payment and buyer receipt confirmation.</div></div>';
-      list?.querySelectorAll("[data-payout]").forEach(btn=>btn.addEventListener("click",()=>manualChapChapPayout(btn.getAttribute("data-payout"))));
-      if(status)status.textContent="CONNECTED • MANUAL PAYOUT CONTROL";
+      }).join("");
+    }
+    list.querySelectorAll("[data-payout]").forEach(btn=>btn.addEventListener("click",()=>manualChapChapPayout(btn.getAttribute("data-payout"))));
+    list.querySelectorAll("[data-authority-receipt],[data-authority-download]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const id=btn.getAttribute("data-authority-receipt")||btn.getAttribute("data-authority-download");
+        const row=orders.find(o=>String(o.id)===String(id));
+        const r=row?.receipt;
+        if(!r)return;
+        if(btn.hasAttribute("data-authority-download")){window.ioneChapChapDownloadReceipt?.(r);return;}
+        window.ioneChapChapOpenReceipt?.(r);
+      });
+    });
+    if(status)status.textContent="CONNECTED • READY";
+  }
+  async function loadChapChapAuthority(force=false){
+    const status=document.getElementById("authorityChapChapLoadStatus");
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
+    if(!force&&chapChapAuthorityCache){renderChapChapAuthority(chapChapAuthorityCache);return;}
+    if(status)status.textContent="Loading marketplace data…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load ChapChap management data.");
+      chapChapAuthorityCache=r.data;
+      renderChapChapAuthority(r.data);
     }catch(e){if(status)status.textContent=e?.message||"Could not load ChapChap management data.";}
   }
 
@@ -156,7 +165,7 @@
       const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"complete_payout",password,order_id:orderId,recipient_network:network,recipient_phone:phone,payout_fee_tzs:fee,payout_reference:reference}});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not record payout.");
       if(status)status.textContent="MANUAL PAYOUT RECORDED • "+(r.data.message||"");
-      await loadChapChapAuthority();
+      await loadChapChapAuthority(true);
     }catch(e){if(status)status.textContent=e?.message||"Could not record payout.";if(button)button.disabled=false;}
   }
 
