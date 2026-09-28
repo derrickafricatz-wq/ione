@@ -93,23 +93,7 @@
     polishAuthorityPanel();
   }
 
-  async function enhanceMyShop(){
-    var overlay=document.getElementById("ioneChapOverlay"),title=overlay?.querySelector(".cc-head h2");
-    if(!overlay||overlay.style.display==="none"||!title||title.textContent!=="MY CHAPCHAP")return;
-    var list=overlay.querySelector(".cc-list"); if(!list||list.dataset.receiptEnhanced)return;
-    list.dataset.receiptEnhanced="1";
-    try{
-      var ordersResult=await sb().functions.invoke("ione-chapchap-seller",{body:{action:"sales"}}); if(ordersResult.error||!ordersResult.data?.success)throw new Error(ordersResult.data?.error||ordersResult.error?.message||"Could not load seller sales."); var orders={data:ordersResult.data.orders||[],error:null}; var map={}; (orders.data||[]).forEach(function(o){if(o.receipt)map[String(o.id)]=o.receipt;});
-      
-      if(orders.error)throw orders.error;
-      list.innerHTML=(orders.data||[]).length?(orders.data||[]).map(function(o){
-        var r=o.receipt||null;
-        return '<div class="cc-list-item"><strong>ORDER • '+esc(String(o.status).toUpperCase())+'</strong><span>'+esc(money(o.amount_tzs))+' • '+esc(new Date(o.created_at).toLocaleString())+'</span>'+(r?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary cc-shop-view" data-order="'+esc(o.id)+'">VIEW RECEIPT</button><button type="button" class="cc-secondary cc-shop-download" data-order="'+esc(o.id)+'">DOWNLOAD</button></div>':'<span>Receipt is being prepared.</span>')+'</div>';
-      }).join(""):'<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales will appear here.</span></div>';
-      list.querySelectorAll(".cc-shop-view").forEach(function(b){b.addEventListener("click",function(){viewSellerReceipt(b.dataset.order);});});
-      list.querySelectorAll(".cc-shop-download").forEach(function(b){b.addEventListener("click",function(){viewSellerReceipt(b.dataset.order,true);});});
-    }catch(e){list.dataset.receiptEnhanced="";console.warn("ChapChap My Shop receipt enhancement:",e);}
-  }
+  async function enhanceMyShop(){ return; }
 
   async function viewSellerReceipt(orderId,downloadOnly){
     var result=await sb().functions.invoke("ione-chapchap-seller",{body:{action:"sales"}});
@@ -189,13 +173,11 @@
     enhanceAuthority();
     enhanceBuyerReceipt();
     enhanceBuyerMarketReceipt();
-    enhanceMyShop();
   });
   mo.observe(document.documentElement,{subtree:true,childList:true});
   window.addEventListener("load",function(){
     enhanceAuthority();
     enhanceBuyerReceipt();
     enhanceBuyerMarketReceipt();
-    enhanceMyShop();
   });
 })();
