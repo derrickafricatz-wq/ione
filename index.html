@@ -1741,6 +1741,36 @@ function getMedia(id){
 
       <button type="button" id="authoritySavePrices" class="authority-save-button">SAVE PRICES</button>
       <div id="authoritySaveStatus" class="authority-save-status"></div>
+    <div class="authority-panel-section authority-chapchap-section">
+      <div class="authority-section-kicker">CHAPCHAP MARKETPLACE</div>
+      <h3>CHAPCHAP CONTROL CENTER</h3>
+      <p class="authority-section-note">Separate marketplace management area. Existing billboard subscription pricing above is unchanged.</p>
+      <div class="authority-chapchap-actions">
+        <button type="button" id="authorityChapChapOpen" class="authority-save-button">OPEN CHAPCHAP</button>
+      </div>
+      <div id="authorityChapChapStatus" class="authority-save-status">READY</div>
+    </div>
+
+    <div id="authorityChapChapPanel" class="authority-chapchap-panel" aria-hidden="true">
+      <div class="authority-chapchap-head">
+        <div>
+          <div class="authority-section-kicker">CHAPCHAP</div>
+          <h3>MARKETPLACE MANAGEMENT</h3>
+        </div>
+        <button type="button" id="authorityChapChapClose">CLOSE</button>
+      </div>
+      <div class="authority-chapchap-grid">
+        <div class="authority-chapchap-card"><span>ORDERS</span><strong id="chapChapOrdersCount">—</strong></div>
+        <div class="authority-chapchap-card"><span>SELLER AGREEMENTS</span><strong id="chapChapAgreementsCount">—</strong></div>
+        <div class="authority-chapchap-card"><span>RECEIPTS</span><strong id="chapChapReceiptsCount">—</strong></div>
+        <div class="authority-chapchap-card"><span>PAYOUTS</span><strong id="chapChapPayoutsCount">—</strong></div>
+      </div>
+      <div class="authority-chapchap-note">
+        <strong>PAYMENT / PAYOUT STATUS</strong>
+        <span>BLMPay payout actions are not enabled in this first Authority Press module.</span>
+      </div>
+      <div id="authorityChapChapLoadStatus" class="authority-save-status">Loading marketplace data…</div>
+    </div>
     </div>
   </div>
 </div>
@@ -7630,6 +7660,22 @@ preloadMedia();
 .afl-signage-video.afl-media-visible{opacity:1}
 .afl-screen.afl-signage-screen.video-active{background:#000}
 .afl-video-audio-toggle{z-index:9}
+
+/* ================= AUTHORITY PRESS • CHAPCHAP ================= */
+.authority-chapchap-section{margin-top:18px!important;border-top:1px solid rgba(0,255,255,.22)!important;padding-top:18px!important}
+.authority-chapchap-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.authority-chapchap-panel{display:none;margin-top:14px;padding:16px;border:1px solid rgba(0,255,255,.35);border-radius:16px;background:rgba(0,0,0,.38)}
+.authority-chapchap-panel.is-open{display:block}
+.authority-chapchap-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.authority-chapchap-head h3{margin:4px 0 0}
+.authority-chapchap-head button{border:1px solid rgba(255,255,255,.25);background:#111;color:#fff;border-radius:9px;padding:9px 12px;font-weight:800;cursor:pointer}
+.authority-chapchap-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.authority-chapchap-card{min-height:78px;padding:13px;border:1px solid rgba(255,255,255,.14);border-radius:13px;background:rgba(255,255,255,.035);box-sizing:border-box}
+.authority-chapchap-card span{display:block;font-size:11px;letter-spacing:1px;opacity:.72}
+.authority-chapchap-card strong{display:block;margin-top:9px;font-size:25px;color:#00ffff}
+.authority-chapchap-note{display:flex;flex-direction:column;gap:6px;margin-top:12px;padding:12px;border-radius:12px;background:rgba(0,255,255,.06);font-size:12px;line-height:1.45}
+.authority-chapchap-note strong{letter-spacing:.7px}
+@media(max-width:520px){.authority-chapchap-grid{grid-template-columns:1fr 1fr}.authority-chapchap-card{min-height:70px}}
 </style>
 
 <script>
@@ -7723,6 +7769,56 @@ if(input)input.onkeydown=function(e){
   }else{
     bindAuthorityPress();
   }
+})();
+</script>
+<script>
+/* ================= AUTHORITY PRESS • CHAPCHAP MODULE ================= */
+(function(){
+  function bindChapChapAuthority(){
+    const open=document.getElementById("authorityChapChapOpen");
+    const close=document.getElementById("authorityChapChapClose");
+    const panel=document.getElementById("authorityChapChapPanel");
+    const status=document.getElementById("authorityChapChapStatus");
+    const loadStatus=document.getElementById("authorityChapChapLoadStatus");
+    if(!open||!close||!panel)return;
+    if(open.dataset.bound)return;
+    open.dataset.bound="1";
+    async function loadCounts(){
+      if(loadStatus)loadStatus.textContent="Loading marketplace data…";
+      const targets=[
+        ["ione_chapchap_orders","chapChapOrdersCount"],
+        ["ione_chapchap_seller_agreements","chapChapAgreementsCount"],
+        ["ione_chapchap_receipts","chapChapReceiptsCount"],
+        ["ione_chapchap_payouts","chapChapPayoutsCount"]
+      ];
+      let success=0;
+      for(const [table,id] of targets){
+        const el=document.getElementById(id);
+        try{
+          const result=await heavensSupabase.from(table).select("id",{count:"exact",head:true});
+          if(result.error)throw result.error;
+          if(el)el.textContent=String(result.count ?? 0);
+          success++;
+        }catch(error){
+          if(el)el.textContent="—";
+        }
+      }
+      if(loadStatus)loadStatus.textContent=success===targets.length?"CONNECTED • LIVE COUNTS":"CONNECTED • SOME DATA IS RESTRICTED";
+    }
+    open.onclick=async function(){
+      panel.classList.add("is-open");
+      panel.setAttribute("aria-hidden","false");
+      if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
+      await loadCounts();
+    };
+    close.onclick=function(){
+      panel.classList.remove("is-open");
+      panel.setAttribute("aria-hidden","true");
+      if(status)status.textContent="READY";
+    };
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});
+  else bindChapChapAuthority();
 })();
 </script>
 </body>
