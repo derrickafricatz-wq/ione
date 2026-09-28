@@ -786,35 +786,44 @@
 
   async function openMine() {
     try {
-      var session = await getSession();
+      await getSession();
       var sb = getSupabase();
-      var orders = await sb.from("ione_chapchap_orders")
-        .select("id,product_id,buyer_phone,amount_tzs,status,created_at,paid_at,received_confirmed_at,payout_status,payout_reference")
-        .eq("seller_id", session.user.id)
-        .in("status", ["paid","received","disputed"])
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (orders.error) throw orders.error;
-      var notes = await sb.from("ione_chapchap_notifications")
-        .select("id,order_id,title,body,read_at,created_at")
-        .eq("seller_id", session.user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      if (notes.error) throw notes.error;
-      var body =
-        '<div class="cc-list">' +
-        (notes.data && notes.data.length ? notes.data.map(function (n) {
-          return '<div class="cc-list-item"><strong>' + esc(n.title) + '</strong><span>' + esc(n.body) + '</span>' +
-            (n.body && n.body.match(/255[67]\d{8}/) ? '<a href="tel:+' + esc(n.body.match(/255[67]\d{8}/)[0]) + '">CALL BUYER</a>' : "") +
-            "</div>";
-        }).join("") : '<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales notifications will appear here.</span></div>') +
-        (orders.data && orders.data.length ? orders.data.map(function (o) {
-          return '<div class="cc-list-item"><strong>ORDER • ' + esc(String(o.status).toUpperCase()) + '</strong><span>' + esc(money(o.amount_tzs)) + " • " + esc(new Date(o.created_at).toLocaleString()) + "</span></div>";
-        }).join("") : "") +
-        "</div>";
-      openOverlay("MY CHAPCHAP", "SELLER • PAID SALES & NOTIFICATIONS", body);
+      var result = await sb.functions.invoke("ione-chapchap-seller",{body:{action:"sales"}});
+      if(result.error||!result.data?.success) throw new Error(result.data?.error||result.error?.message||"Could not load seller sales.");
+      var sales=result.data.orders||[];
+      var body='<div class="cc-list">';
+      if(sales.length){
+        body+=sales.map(function(o){
+          var r=o.receipt;
+          return '<div class="cc-list-item"><strong>SALE • '+esc(String(o.status||"PAID").toUpperCase())+'</strong><span>'+esc(money(o.amount_tzs))+' • '+esc(new Date(o.created_at).toLocaleString())+'<br>CLIENT: '+esc(o.buyer_full_name||r?.buyer_full_name||"—")+'<br>PHONE: '+esc(o.buyer_phone||o.buyer_contact||r?.buyer_contact||"—")+'<br>EMAIL: '+esc(o.buyer_email||r?.buyer_email||"—")+'<br>ADDRESS: '+esc(o.buyer_address||r?.buyer_address||"—")+'</span>'+(r?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-mine-view="'+esc(o.id)+'">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-mine-download="'+esc(o.id)+'">DOWNLOAD</button></div>':'<span>Receipt is being prepared.</span>')+'</div>';
+        }).join("");
+      }else{
+        var latest=await sb.functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
+        if(!latest.error&&latest.data?.success&&latest.data.receipt){
+          var r=latest.data.receipt;
+          body+='<div class="cc-list-item"><strong>RECENT CHAPCHAP TRANSACTION</strong><span>'+esc(r.receipt_number)+'<br>PRODUCT: '+esc(r.product_title||"—")+'<br>CLIENT: '+esc(r.buyer_full_name||"—")+'<br>PHONE: '+esc(r.buyer_contact||"—")+'<br>EMAIL: '+esc(r.buyer_email||"—")+'<br>ADDRESS: '+esc(r.buyer_address||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary" id="ioneMineRecentView">VIEW RECEIPT</button><button type="button" class="cc-secondary" id="ioneMineRecentDownload">DOWNLOAD</button></div></div>';
+          body+='</div>';
+          openOverlay("MY CHAPCHAP","SELLER • PAID SALES & RECEIPTS",body);
+          document.getElementById("ioneMineRecentView")?.addEventListener("click",function(){window.ioneChapChapOpenReceipt?.(r);});
+          document.getElementById("ioneMineRecentDownload")?.addEventListener("click",function(){window.ioneChapChapDownloadReceipt?.(r);});
+          return;
+        }
+        body+='<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales will appear here.</span></div>';
+      }
+      body+='</div>';
+      openOverlay("MY CHAPCHAP","SELLER • PAID SALES & RECEIPTS",body);
+      body=null;
+      var currentOrders=sales;
+      document.querySelectorAll("[data-mine-view],[data-mine-download]").forEach(function(btn){
+        btn.addEventListener("click",async function(){
+          var o=currentOrders.find(function(x){return String(x.id)===String(btn.getAttribute("data-mine-view")||btn.getAttribute("data-mine-download"));});
+          if(!o?.receipt)return;
+          if(btn.hasAttribute("data-mine-download")) window.ioneChapChapDownloadReceipt?.(o.receipt);
+          else window.ioneChapChapOpenReceipt?.(o.receipt);
+        });
+      });
     } catch (err) {
-      openOverlay("MY CHAPCHAP", "SELLER", '<div class="cc-status">' + esc(err && err.message ? err.message : "Could not load seller information.") + "</div>");
+      openOverlay("MY CHAPCHAP","SELLER",'<div class="cc-status">'+esc(err&&err.message?err.message:"Could not load seller information.")+"</div>");
     }
   }
 
