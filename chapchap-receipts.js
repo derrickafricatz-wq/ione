@@ -275,14 +275,17 @@
 
   function openStandaloneReceipt(r,returnToHistory){
     if(!r)return;
+    var history=document.getElementById("ioneChapReceiptHistory");
+    if(history) history.style.display="none";
     var box=document.getElementById("ioneChapReceiptQuick");
     if(!box){
       box=document.createElement("div");
       box.id="ioneChapReceiptQuick";
-      box.style.cssText="position:fixed;inset:0;z-index:103000;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto";
+      box.style.cssText="position:fixed;inset:0;z-index:103004;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto";
       document.body.appendChild(box);
     }
     box.innerHTML='<div style="width:min(520px,100%);max-height:calc(100vh - 28px);overflow:auto;padding:0;box-sizing:border-box">'+officialReceiptHTML(r,"ccStandaloneBack")+'</div>';
+    box.style.zIndex="103004";
     box.style.display="flex";
     box.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openStandaloneReceipt(r);});
     box.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();downloadReceipt(r);});
