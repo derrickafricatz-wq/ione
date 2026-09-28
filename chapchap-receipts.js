@@ -80,7 +80,7 @@
   }
 
   function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapClose{position:relative!important;z-index:21!important;min-height:38px!important;border-radius:10px!important;touch-action:manipulation!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
-  var authorityFilter="orders",authorityBusy=false,authorityWriting=false,authorityRefreshTimer=null;
+  var authorityFilter="orders",authorityBusy=false,authorityWriting=false;
   async function refreshAuthority(){
     if(authorityBusy)return;
     authorityBusy=true;
@@ -115,11 +115,8 @@
       var ordersResult=await sb().functions.invoke("ione-chapchap-seller",{body:{action:"sales"}}); if(ordersResult.error||!ordersResult.data?.success)throw new Error(ordersResult.data?.error||ordersResult.error?.message||"Could not load seller sales."); var orders={data:ordersResult.data.orders||[],error:null}; var map={}; (orders.data||[]).forEach(function(o){if(o.receipt)map[String(o.id)]=o.receipt;});
       
       if(orders.error)throw orders.error;
-      var ids=(orders.data||[]).map(function(o){return o.id});
-      var rr=ids.length?await sb().from("ione_chapchap_receipts").select("*").in("order_id",ids):{data:[],error:null};if(rr.error)throw rr.error;
-      var map={};(rr.data||[]).forEach(function(r){map[String(r.order_id)]=r;});
       list.innerHTML=(orders.data||[]).length?(orders.data||[]).map(function(o){
-        var r=map[String(o.id)];
+        var r=o.receipt||null;
         return '<div class="cc-list-item"><strong>ORDER • '+esc(String(o.status).toUpperCase())+'</strong><span>'+esc(money(o.amount_tzs))+' • '+esc(new Date(o.created_at).toLocaleString())+'</span>'+(r?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary cc-shop-view" data-order="'+esc(o.id)+'">VIEW RECEIPT</button><button type="button" class="cc-secondary cc-shop-download" data-order="'+esc(o.id)+'">DOWNLOAD</button></div>':'<span>Receipt is being prepared.</span>')+'</div>';
       }).join(""):'<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales will appear here.</span></div>';
       list.querySelectorAll(".cc-shop-view").forEach(function(b){b.addEventListener("click",function(){viewSellerReceipt(b.dataset.order);});});
@@ -128,12 +125,15 @@
   }
 
   async function viewSellerReceipt(orderId,downloadOnly){
-    var r=await sb().from("ione_chapchap_receipts").select("*").eq("order_id",orderId).maybeSingle();
-    if(r.error||!r.data){alert("Receipt is still being prepared. Please try again shortly.");return;}
-    if(downloadOnly){downloadReceipt(r.data);return;}
+    var result=await sb().functions.invoke("ione-chapchap-seller",{body:{action:"sales"}});
+    if(result.error||!result.data?.success){alert(result.data?.error||result.error?.message||"Could not load seller sales.");return;}
+    var found=(result.data.orders||[]).find(function(o){return String(o.id)===String(orderId);});
+    var receipt=found&&found.receipt;
+    if(!receipt){alert("Receipt is still being prepared. Please try again shortly.");return;}
+    if(downloadOnly){downloadReceipt(receipt);return;}
     var o=document.getElementById("ioneChapOverlay");var list=o?.querySelector(".cc-list");if(!list)return;
-    list.innerHTML='<div class="cc-list-item"><strong>OFFICIAL CHAPCHAP RECEIPT</strong><span>'+esc(r.data.receipt_number)+' • '+esc(r.data.product_title)+'</span><span>AMOUNT: '+esc(money(r.data.amount_tzs))+'<br>FEE: '+esc(money(r.data.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.data.blmpay_reference||"—")+'<br>PAID: '+esc(r.data.paid_at?new Date(r.data.paid_at).toLocaleString():"—")+'</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px"><button type="button" id="ccSellerDownload" class="cc-primary">DOWNLOAD RECEIPT</button><button type="button" id="ccSellerBack" class="cc-secondary">BACK</button></div></div>';
-    document.getElementById("ccSellerDownload")?.addEventListener("click",function(){downloadReceipt(r.data);});
+    list.innerHTML='<div class="cc-list-item"><strong>OFFICIAL CHAPCHAP RECEIPT</strong><span>'+esc(receipt.receipt_number)+' • '+esc(receipt.product_title)+'</span><span>CLIENT: '+esc(receipt.buyer_full_name||found.buyer_full_name||"—")+'<br>PHONE: '+esc(receipt.buyer_phone||found.buyer_phone||found.buyer_contact||"—")+'<br>EMAIL: '+esc(receipt.buyer_email||found.buyer_email||"—")+'<br>ADDRESS: '+esc(receipt.buyer_address||found.buyer_address||"—")+'<br>AMOUNT: '+esc(money(receipt.amount_tzs))+'<br>FEE: '+esc(money(receipt.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(receipt.blmpay_reference||found.blmpay_reference||"—")+'<br>PAID: '+esc(receipt.paid_at?new Date(receipt.paid_at).toLocaleString():"—")+'</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px"><button type="button" id="ccSellerDownload" class="cc-primary">DOWNLOAD RECEIPT</button><button type="button" id="ccSellerBack" class="cc-secondary">BACK</button></div></div>';
+    document.getElementById("ccSellerDownload")?.addEventListener("click",function(){downloadReceipt(receipt);});
     document.getElementById("ccSellerBack")?.addEventListener("click",function(){if(o?.querySelector(".cc-list"))o.querySelector(".cc-list").dataset.receiptEnhanced="";enhanceMyShop();});
   }
 
@@ -180,12 +180,17 @@
   }
 
   var mo=new MutationObserver(function(){
+    if(authorityWriting)return;
     enhanceAuthority();
     enhanceBuyerReceipt();
     enhanceBuyerMarketReceipt();
     enhanceMyShop();
   });
   mo.observe(document.documentElement,{subtree:true,childList:true});
-  setInterval(function(){enhanceAuthority();enhanceBuyerReceipt();enhanceBuyerMarketReceipt();enhanceMyShop();},1000);
-  window.addEventListener("load",function(){enhanceAuthority();enhanceBuyerReceipt();enhanceMyShop();});
+  window.addEventListener("load",function(){
+    enhanceAuthority();
+    enhanceBuyerReceipt();
+    enhanceBuyerMarketReceipt();
+    enhanceMyShop();
+  });
 })();
