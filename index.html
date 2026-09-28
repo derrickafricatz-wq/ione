@@ -90,48 +90,29 @@
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
   function renderChapChapAuthority(data){
-    const status=document.getElementById("authorityChapChapLoadStatus");
-    const list=document.getElementById("authorityChapChapOrders");
-    const orders=data?.orders||[];
-    const counts=data?.counts||{};
-    const orderCount=document.getElementById("chapChapOrdersCount");if(orderCount)orderCount.textContent=String(counts.orders ?? orders.length);
-    const agreementCount=document.getElementById("chapChapAgreementsCount");if(agreementCount)agreementCount.textContent=String(counts.agreements ?? 0);
-    const receiptCount=document.getElementById("chapChapReceiptsCount");if(receiptCount)receiptCount.textContent=String(counts.receipts ?? 0);
-    const payoutCount=document.getElementById("chapChapPayoutsCount");if(payoutCount)payoutCount.textContent=String(counts.payouts ?? 0);
-    const visibleOrders=orders.filter(o=>{
-      if(chapChapAuthorityFilter==="agreements")return !!o.has_agreement;
-      if(chapChapAuthorityFilter==="receipts")return !!o.has_receipt;
-      if(chapChapAuthorityFilter==="payouts")return !!o.payout_record || String(o.payout_status||"")!=="";
-      return true;
-    });
+    const status=document.getElementById("authorityChapChapLoadStatus"),list=document.getElementById("authorityChapChapOrders"),orders=data?.orders||[],counts=data?.counts||{};
+    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([counts.orders,counts.agreements,counts.receipts,counts.payouts][i]??0);});
     if(!list)return;
-    if(!visibleOrders.length){
-      list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';
+    let rows=[];
+    if(chapChapAuthorityFilter==="orders") rows=orders;
+    else if(chapChapAuthorityFilter==="agreements") rows=orders.filter(o=>o.has_agreement);
+    else if(chapChapAuthorityFilter==="receipts") rows=orders.filter(o=>o.has_receipt);
+    else rows=orders.filter(o=>o.status==="received" && o.payout_status!=="completed");
+    if(!rows.length){list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';if(status)status.textContent="CONNECTED • READY";return;}
+    if(chapChapAuthorityFilter==="orders"){
+      list.innerHTML=rows.map(o=>{const p=o.product||{};return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>CLIENT: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+'</div></div>';}).join("");
+    }else if(chapChapAuthorityFilter==="agreements"){
+      list.innerHTML=rows.map(o=>{const a=o.agreement_record||{};return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT</strong><div class="cc-mini">SELLER: '+authorityEsc(a.seller_name||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'</div></div>';}).join("");
+    }else if(chapChapAuthorityFilter==="receipts"){
+      list.innerHTML=rows.map(o=>{const r=o.receipt||{};return '<div class="authority-chapchap-order"><strong>OFFICIAL RECEIPT • '+authorityEsc(r.receipt_number||"—")+'</strong><div class="cc-mini">PRODUCT: '+authorityEsc(r.product_title||"—")+'<br>CLIENT: '+authorityEsc(r.buyer_full_name||o.buyer_full_name||"—")+'<br>PHONE: '+authorityEsc(r.buyer_contact||o.buyer_phone||"—")+'<br>EMAIL: '+authorityEsc(r.buyer_email||o.buyer_email||"—")+'<br>ADDRESS: '+authorityEsc(r.buyer_address||o.buyer_address||"—")+'<br>AMOUNT: TZS '+Number(r.amount_tzs||o.amount_tzs||0).toLocaleString("en-US")+'<br>CHAPCHAP FEE: TZS '+Number(r.chapchap_fee_tzs||o.commission_tzs||0).toLocaleString("en-US")+'<br>BLMPAY: '+authorityEsc(r.blmpay_reference||"—")+'</div><div style="display:flex;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-authority-receipt="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-authority-download="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">DOWNLOAD</button></div></div>';}).join("");
     }else{
-      list.innerHTML=visibleOrders.map(o=>{
-        const p=o.product||{},r=o.receipt||null;
-        const ready=o.status==="received"&&o.payout_status!=="completed";
-        const completed=o.payout_status==="completed";
-        const safeId=authorityEsc(o.id);
-        const receiptBlock=r?'<div class="cc-mini" style="margin-top:8px"><strong>RECEIPT:</strong> '+authorityEsc(r.receipt_number||"OFFICIAL RECEIPT")+'<br>CLIENT: '+authorityEsc(r.buyer_full_name||o.buyer_full_name||"—")+'<br>PHONE: '+authorityEsc(r.buyer_phone||r.buyer_contact||o.buyer_phone||"—")+'<br>EMAIL: '+authorityEsc(r.buyer_email||o.buyer_email||"—")+'<br>ADDRESS: '+authorityEsc(r.buyer_address||o.buyer_address||"—")+'</div><div style="display:flex;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-authority-receipt="'+safeId+'" style="flex:1;min-height:38px">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-authority-download="'+safeId+'" style="flex:1;min-height:38px">DOWNLOAD</button></div>':"";
-        return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>BUYER: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||"—")+'<br>AMOUNT TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+' • CHAPCHAP 1% • SELLER NET TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+' • PAYOUT: '+authorityEsc(String(o.payout_status||"").toUpperCase())+(o.received_confirmed_at?'<br>RECEIVED: '+authorityEsc(new Date(o.received_confirmed_at).toLocaleString()):"")+'</div>'+receiptBlock+
-          (chapChapAuthorityFilter==="payouts"?(ready?'<div class="cc-mini cc-ready">READY FOR MANUAL PAYOUT</div><div class="authority-payout-grid"><select id="chapNet_'+safeId+'"><option value="">NETWORK</option><option>MPESA / VODACOM</option><option>AIRTEL MONEY</option><option>MIXX BY YAS</option><option>HALOPESA</option><option>EZY PESA</option><option>TTCL PESA</option></select><input id="chapPhone_'+safeId+'" inputmode="tel" placeholder="Recipient phone" value="'+authorityEsc(p.seller_phone||"")+'"><input id="chapFee_'+safeId+'" inputmode="numeric" placeholder="Payout fee (TZS)" value="0"><input id="chapRef_'+safeId+'" placeholder="Manual payout reference"><button type="button" data-payout="'+safeId+'">MARK MANUAL PAYOUT COMPLETE</button></div>':completed?'<div class="cc-mini cc-ready">MANUAL PAYOUT RECORDED • REF '+authorityEsc(o.payout_reference||"—")+'</div>':'<div class="cc-mini">Payout remains locked until the buyer confirms receipt.</div>'):"")+
-          '</div>';
-      }).join("");
+      list.innerHTML=rows.map(o=>{const p=o.product||{},a=o.agreement_record||{};return '<div class="authority-chapchap-order"><strong>PAYOUT • '+authorityEsc(a.seller_name||p.seller_name||"SELLER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>SELLER NET: TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+'<br>BUYER CONFIRMED PRODUCT RECEIVED</div><div class="authority-payout-grid" style="margin-top:9px"><input id="payoutName_'+authorityEsc(o.id)+'" placeholder="Seller name" value="'+authorityEsc(a.seller_name||p.seller_name||"")+'"><input id="payoutPhone_'+authorityEsc(o.id)+'" inputmode="tel" placeholder="Seller number" value="'+authorityEsc(a.seller_phone||p.seller_phone||"")+'"><select id="payoutNetwork_'+authorityEsc(o.id)+'"><option value="">NETWORK</option><option>MPESA</option><option>AIRTEL_MONEY</option><option>MIXX_BY_YAS</option><option>HALOPESA</option><option>EZYPESA</option><option>TTCLPESA</option></select><input id="payoutAmount_'+authorityEsc(o.id)+'" inputmode="numeric" placeholder="Amount TZS" value="'+Number(o.seller_net_tzs||0)+'"><button type="button" data-live-payout="'+authorityEsc(o.id)+'">VERIFY ACCOUNT &amp; SEND</button></div></div>';}).join("");
     }
-    list.querySelectorAll("[data-payout]").forEach(btn=>btn.addEventListener("click",()=>manualChapChapPayout(btn.getAttribute("data-payout"))));
-    list.querySelectorAll("[data-authority-receipt],[data-authority-download]").forEach(btn=>{
-      btn.addEventListener("click",()=>{
-        const id=btn.getAttribute("data-authority-receipt")||btn.getAttribute("data-authority-download");
-        const row=orders.find(o=>String(o.id)===String(id));
-        const r=row?.receipt;
-        if(!r)return;
-        if(btn.hasAttribute("data-authority-download")){window.ioneChapChapDownloadReceipt?.(r);return;}
-        window.ioneChapChapOpenReceipt?.(r);
-      });
-    });
+    list.querySelectorAll("[data-authority-receipt],[data-authority-download]").forEach(btn=>btn.addEventListener("click",()=>{const o=orders.find(x=>String(x.id)===String(btn.getAttribute("data-authority-receipt")||btn.getAttribute("data-authority-download")));const r=o?.receipt;if(!r)return;if(btn.hasAttribute("data-authority-download"))window.ioneChapChapDownloadReceipt?.(r);else window.ioneChapChapOpenReceipt?.(r);}));
+    list.querySelectorAll("[data-live-payout]").forEach(btn=>btn.addEventListener("click",()=>sendChapChapPayout(btn.getAttribute("data-live-payout"))));
     if(status)status.textContent="CONNECTED • READY";
   }
+
   async function loadChapChapAuthority(force=false){
     const status=document.getElementById("authorityChapChapLoadStatus");
     const password=String(document.getElementById("authorityPasswordInput")?.value||"");
@@ -146,59 +127,22 @@
     }catch(e){if(status)status.textContent=e?.message||"Could not load ChapChap management data.";}
   }
 
-  async function manualChapChapPayout(orderId){
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    const network=document.getElementById("chapNet_"+orderId)?.value||"";
-    const phone=document.getElementById("chapPhone_"+orderId)?.value||"";
-    const fee=Number(document.getElementById("chapFee_"+orderId)?.value||0);
-    const reference=String(document.getElementById("chapRef_"+orderId)?.value||"").trim();
-    const status=document.getElementById("authorityChapChapLoadStatus");
-    const button=document.querySelector('[data-payout="'+orderId+'"]');
-    if(!network){if(status)status.textContent="Select the seller payout network.";return;}
-    if(!/^\+?\d{8,15}$/.test(phone.replace(/[\s-]/g,""))){if(status)status.textContent="Enter a valid seller payout phone number.";return;}
-    if(!Number.isInteger(fee)||fee<0){if(status)status.textContent="Enter a valid payout fee.";return;}
-    if(!reference){if(status)status.textContent="Enter the external/manual payout reference.";return;}
-    if(!confirm("Confirm that you have already sent this seller payout externally and want Authority Press to record it as completed?"))return;
-    if(button)button.disabled=true;
-    if(status)status.textContent="Recording manual payout…";
+  async function sendChapChapPayout(orderId){
+    const password=String(document.getElementById("authorityPasswordInput")?.value||""),name=String(document.getElementById("payoutName_"+orderId)?.value||"").trim(),phone=String(document.getElementById("payoutPhone_"+orderId)?.value||"").trim(),network=String(document.getElementById("payoutNetwork_"+orderId)?.value||"").trim(),amount=Number(document.getElementById("payoutAmount_"+orderId)?.value||0),status=document.getElementById("authorityChapChapLoadStatus"),button=document.querySelector('[data-live-payout="'+orderId+'"]');
+    if(!name||!phone||!network||!Number.isInteger(amount)||amount<=0){if(status)status.textContent="Enter seller name, seller number, network and a whole TZS amount.";return;}
+    if(button)button.disabled=true;if(status)status.textContent="Verifying seller account and payout fee…";
     try{
-      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"complete_payout",password,order_id:orderId,recipient_network:network,recipient_phone:phone,payout_fee_tzs:fee,payout_reference:reference}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not record payout.");
-      if(status)status.textContent="MANUAL PAYOUT RECORDED • "+(r.data.message||"");
+      const q=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"payout_quote",password,order_id:orderId,seller_name:name,recipient_phone:phone,recipient_network:network,amount_tzs:amount}});
+      if(q.error||!q.data?.success)throw new Error(q.data?.error||q.error?.message||"Could not verify the seller payout.");
+      const d=q.data;
+      const yes=confirm("CONFIRM SELLER PAYOUT\n\nVerified account: "+d.account_name+"\nNumber: "+d.recipient_phone+"\nNetwork: "+d.network+"\nSeller receives: TZS "+Number(d.amount_tzs).toLocaleString("en-US")+"\nBLMPay fee: TZS "+Number(d.fee_tzs||0).toLocaleString("en-US")+"\nTotal debit: TZS "+Number(d.total_debit_tzs||0).toLocaleString("en-US")+"\n\nPress OK to SEND MONEY, or Cancel.");
+      if(!yes){if(status)status.textContent="Payout cancelled. No money was sent.";if(button)button.disabled=false;return;}
+      if(status)status.textContent="Sending payout…";
+      const sent=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"payout_send",password,order_id:orderId,account_name:d.account_name,recipient_phone:d.recipient_phone,recipient_network:d.network,amount_tzs:d.amount_tzs}});
+      if(sent.error||!sent.data?.success)throw new Error(sent.data?.error||sent.error?.message||"Payout could not be sent.");
+      if(status)status.textContent=sent.data.message||"Payout submitted.";
       await loadChapChapAuthority(true);
-    }catch(e){if(status)status.textContent=e?.message||"Could not record payout.";if(button)button.disabled=false;}
-  }
-
-  async function saveAuthorityPrices(){
-    const status=document.getElementById("authoritySaveStatus");
-    const button=document.getElementById("authoritySavePrices");
-    const read=id=>Number(document.getElementById(id)?.value);
-    const plans=[
-      {id:"2weeks",amount:read("authorityPrice2weeks")},
-      {id:"1month",amount:read("authorityPrice1month")},
-      {id:"3months",amount:read("authorityPrice3months")}
-    ];
-    if(plans.some(p=>!Number.isFinite(p.amount)||p.amount<0||!Number.isInteger(p.amount))){
-      if(status)status.textContent="Enter valid whole TZS amounts.";
-      return;
-    }
-    if(button)button.disabled=true;
-    if(status)status.textContent="Saving live prices…";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{
-        body:{action:"update",password:String(document.getElementById("authorityPasswordInput")?.value||""),plans}
-      });
-      if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not save prices.");
-      (r.data.plans||plans).forEach(p=>setPlanAmount(p.id,p.amount));
-      updateOpenGate();
-      if(status)status.textContent="SAVED • ALL USERS WILL SEE THE NEW PRICES";
-      const live=document.getElementById("authorityPriceStatus");
-      if(live)live.textContent="CONNECTED • LIVE";
-    }catch(e){
-      if(status)status.textContent=e?.message||"Could not save prices.";
-    }finally{
-      if(button)button.disabled=false;
-    }
+    }catch(e){if(status)status.textContent=e?.message||"Payout failed.";if(button)button.disabled=false;}
   }
 
   function bind(){
