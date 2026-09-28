@@ -239,7 +239,7 @@
       var quick=document.getElementById("ioneChapReceiptQuick");
       if(quick) quick.style.display="none";
     };
-    box.querySelectorAll(".cc-history-view").forEach(function(b){b.onclick=function(){openStandaloneReceipt(rows[Number(b.dataset.index)],true);};});
+    box.querySelectorAll(".cc-history-view").forEach(function(b){b.onclick=function(e){e.preventDefault();e.stopPropagation();var receipt=rows[Number(b.dataset.index)];if(!receipt)return;openStandaloneReceipt(receipt,true);};});
     box.querySelectorAll(".cc-history-download").forEach(function(b){b.onclick=function(){downloadReceipt(rows[Number(b.dataset.index)]);};});
   }
 
