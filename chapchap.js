@@ -261,20 +261,30 @@
   function openSell() {
     openOverlay("SELL ON CHAPCHAP", "SELLER • ONE PRODUCT PER LISTING",
       '<div class="cc-grid">' +
-      '<div class="cc-field"><label>YOUR NAME</label><input id="ioneCcSellerName" maxlength="80" placeholder="Seller name"></div>' +
+      '<div class="cc-field"><label>YOUR FULL NAME</label><input id="ioneCcSellerName" maxlength="100" placeholder="Full legal name"></div>' +
       '<div class="cc-field"><label>YOUR CALL NUMBER • INCLUDE COUNTRY CODE</label><input id="ioneCcSellerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
+      '<div class="cc-field"><label>YOUR EMAIL</label><input id="ioneCcSellerEmail" type="email" maxlength="160" placeholder="you@example.com"></div>' +
+      '<div class="cc-field"><label>YOUR FULL ADDRESS</label><textarea id="ioneCcSellerAddress" maxlength="240" placeholder="Full address"></textarea></div>' +
+      '<div class="cc-field"><label>YOUR LOCATION</label><input id="ioneCcSellerLocation" maxlength="120" placeholder="City / area / region"></div>' +
       '<div class="cc-field"><label>CATEGORY</label>' + categoryHtml() + "</div>" +
       '<div id="ioneCcSmartFields" class="cc-grid"></div>' +
       '<div class="cc-field"><label>PRODUCT NAME</label><input id="ioneCcTitle" maxlength="100" placeholder="One clear product name"></div>' +
       '<div class="cc-field"><label>PRICE</label><div style="display:grid;grid-template-columns:1fr 96px;gap:8px"><input id="ioneCcPrice" type="text" inputmode="decimal" autocomplete="off" placeholder="Example: 250,000.00"><select id="ioneCcCurrency"><option value="TZS">TZS • TANZANIAN SHILLING</option><option value="USD">USD • US DOLLAR</option></select></div></div>' +
       '<div class="cc-field"><label>PRICE TAG COLOR</label><select id="ioneCcTagColor"><option value="#ffe600">GOLD</option><option value="#ff3b30">RED</option><option value="#00a8ff">BLUE</option><option value="#22c55e">GREEN</option><option value="#a855f7">PURPLE</option><option value="#00ffff">CYAN</option><option value="#ffffff">WHITE</option><option value="#111111">BLACK</option></select></div>' +
-      '<div class="cc-field"><label>LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="City / area"></div>' +
+      '<div class="cc-field"><label>PRODUCT LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="Where the product is located"></div>' +
       '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ioneCcDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
       '<div class="cc-field"><label>PRODUCT PHOTOS • UP TO 4</label><div class="cc-images">' +
       '<div class="cc-image-actions"><button id="ioneCcCameraBtn" class="cc-image-btn" type="button">TAKE PHOTO</button><button id="ioneCcGalleryBtn" class="cc-image-btn" type="button">UPLOAD VIA FILE</button></div>' +
       '<input id="ioneCcCamera" type="file" accept="image/*" capture="environment" hidden>' +
       '<input id="ioneCcGallery" type="file" accept="image/*" multiple hidden>' +
       '<div id="ioneCcImageCount" class="cc-image-count">NO PHOTOS SELECTED • MAX 4</div></div></div>' +
+      '<div class="cc-field" style="border:1px solid rgba(0,255,255,.24);border-radius:12px;padding:12px;background:rgba(0,255,255,.035)">' +
+      '<label>CHAPCHAP TERMS & CONDITIONS • VERSION 1.0</label>' +
+      '<div style="font-size:11px;line-height:1.55;color:#d7e5e8;margin-top:7px">' +
+      'I confirm that the information I provide is truthful and that I have the right to sell this product. I will not list stolen, counterfeit, illegal, fraudulent or misleading goods. I will accurately state ownership, condition, availability, price and location, keep my contact details accurate, and revoke a listing when the product is no longer available. Unlawful or fraudulent conduct may be reported to appropriate authorities where required or permitted by law. I understand that ChapChap charges a 1% platform fee; BLMPay processing or payout fees are separate where applicable.' +
+      '</div>' +
+      '<label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:11px;line-height:1.4"><input id="ioneCcTerms" type="checkbox" style="margin-top:2px"> <span>I have read and agree to the ChapChap Terms & Conditions.</span></label>' +
+      '</div>' +
       '<div class="cc-actions"><button id="ioneCcSellCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcSellSubmit" class="cc-primary" type="button">PUBLISH PRODUCT</button></div>' +
       '<div id="ioneCcSellStatus" class="cc-status"></div>' +
       "</div>"
@@ -326,23 +336,32 @@
   async function submitListing() {
     var status = document.getElementById("ioneCcSellStatus");
     var btn = document.getElementById("ioneCcSellSubmit");
+    var createdProductId = null;
     try {
       btn.disabled = true;
       status.textContent = "Checking secure session…";
       var session = await getSession();
       var name = fieldValue("ioneCcSellerName");
       var phone = normalizePhone(fieldValue("ioneCcSellerPhone"));
+      var email = fieldValue("ioneCcSellerEmail");
+      var address = fieldValue("ioneCcSellerAddress");
+      var sellerLocation = fieldValue("ioneCcSellerLocation");
       var category = fieldValue("ioneCcCategory");
       var title = fieldValue("ioneCcTitle");
       var price = parsePrice(fieldValue("ioneCcPrice"));
       var currency = fieldValue("ioneCcCurrency") || "TZS";
-      var location = fieldValue("ioneCcLocation");
+      var productLocation = fieldValue("ioneCcLocation");
       var description = fieldValue("ioneCcDescription");
-      if (!String(name).replace(/\s/g, "")) throw new Error("Enter your name.");
+      var terms = document.getElementById("ioneCcTerms");
+      if (!String(name).replace(/\s/g, "")) throw new Error("Enter your full name.");
       if (!validInternationalPhone(phone)) throw new Error("Enter a valid call number with country code, for example +255712345678.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email))) throw new Error("Enter a valid email address.");
+      if (!String(address).replace(/\s/g, "")) throw new Error("Enter your full address.");
+      if (!String(sellerLocation).replace(/\s/g, "")) throw new Error("Enter your location.");
       if (!String(title).replace(/\s/g, "")) throw new Error("Enter the product name.");
       if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
-      if (!String(location).replace(/\s/g, "")) throw new Error("Enter the location.");
+      if (!String(productLocation).replace(/\s/g, "")) throw new Error("Enter the product location.");
+      if (!terms || !terms.checked) throw new Error("You must accept the ChapChap Terms & Conditions before publishing.");
       var tagColor = fieldValue("ioneCcTagColor") || "#ffe600";
       var files = window.ioneChapSelectedFiles || [];
       if (!files.length) throw new Error("Add at least one product photo.");
@@ -367,7 +386,7 @@
         price_amount: price,
         price_currency: currency,
         price_tag_color: tagColor,
-        location: location,
+        location: productLocation,
         description: description,
         attributes: attrs,
         image_urls: media.urls,
@@ -375,9 +394,27 @@
         status: "active"
       }).select("id").single();
       if (result.error) throw result.error;
-      status.textContent = "LIVE • Your product is now on ChapChap.";
+      createdProductId = result.data.id;
+      status.textContent = "Recording seller agreement…";
+      var agreement = await sb.from("ione_chapchap_seller_agreements").insert({
+        seller_id: session.user.id,
+        product_id: createdProductId,
+        seller_name: name,
+        seller_phone: phone,
+        seller_email: email,
+        seller_address: address,
+        seller_location: sellerLocation,
+        terms_version: "1.0",
+        accepted_at: new Date().toISOString()
+      }).select("id").single();
+      if (agreement.error) {
+        await sb.from("ione_single_products").delete().eq("id", createdProductId).eq("seller_id", session.user.id);
+        createdProductId = null;
+        throw new Error("The seller agreement could not be recorded. Your product was not published.");
+      }
+      status.textContent = "LIVE • Seller agreement recorded • 1% ChapChap fee disclosed.";
       await loadProducts();
-      setTimeout(closeOverlay, 700);
+      setTimeout(closeOverlay, 900);
     } catch (err) {
       console.error("ChapChap listing:", err);
       if (status) status.textContent = err && err.message ? err.message : "Could not publish product.";
