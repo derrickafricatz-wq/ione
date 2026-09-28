@@ -7761,79 +7761,77 @@ preloadMedia();
 })();
 </script>
 <script>
-/* AUTHORITY PRESS CLICK FIX */
+/* AUTHORITY PRESS CLICK FIX — stable delegated controls for repeated open/close */
 (function(){
-  function bindAuthorityPress(){
-    const button=document.getElementById("openAuthority");
-    const overlay=document.getElementById("authorityPasswordOverlay");
-    const input=document.getElementById("authorityPasswordInput");
-    const status=document.getElementById("authorityPasswordStatus");
-    const unlock=document.getElementById("authorityPasswordUnlock");
-    const cancel=document.getElementById("authorityPasswordCancel");
-    if(!button||!overlay)return;
-    button.onclick=function(e){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      overlay.style.display="flex";
-      overlay.setAttribute("aria-hidden","false");
-      if(status)status.textContent="";
-      if(input){
-        input.value="";
-        setTimeout(function(){input.focus();},50);
-      }
-    };
-    if(cancel)cancel.onclick=function(){
-      overlay.style.display="none";
-      overlay.setAttribute("aria-hidden","true");
-    };
-    if(unlock)unlock.onclick=async function(){
-      const password=String(input?.value||"");
-      if(!password){
-        if(status)status.textContent="ENTER PASSWORD.";
-        if(input)input.focus();
-        return;
-      }
-      if(unlock)unlock.disabled=true;
-      if(status)status.textContent="VERIFYING…";
-      try{
-        const result=await heavensSupabase.functions.invoke("ione-subscription-plans",{
-          body:{action:"verify",password}
-        });
-        if(result.error || !result.data?.success){
-          throw new Error(result.data?.error || result.error?.message || "Incorrect password.");
-        }
-        overlay.style.display="none";
-        overlay.setAttribute("aria-hidden","true");
-        const panel=document.getElementById("authorityPressPanel");
-        if(panel){
-          panel.style.display="block";
-          panel.setAttribute("aria-hidden","false");
-        }
-      }catch(error){
-        if(status)status.textContent=error?.message||"INCORRECT PASSWORD.";
-        if(input){input.value="";input.focus();}
-      }finally{
-        if(unlock)unlock.disabled=false;
-      }
-    };
-    const authorityPressCloseButton=document.getElementById("authorityPressClose");
-if(authorityPressCloseButton)authorityPressCloseButton.onclick=function(){
-  const panel=document.getElementById("authorityPressPanel");
-  if(panel){
-    panel.style.display="none";
-    panel.setAttribute("aria-hidden","true");
-  }
-};
-if(input)input.onkeydown=function(e){
-      if(e.key==="Enter"&&unlock)unlock.click();
-      if(e.key==="Escape"&&cancel)cancel.click();
+  if(document.documentElement.dataset.authorityPressDelegated==="1")return;
+  document.documentElement.dataset.authorityPressDelegated="1";
+
+  function els(){
+    return {
+      overlay:document.getElementById("authorityPasswordOverlay"),
+      input:document.getElementById("authorityPasswordInput"),
+      status:document.getElementById("authorityPasswordStatus"),
+      panel:document.getElementById("authorityPressPanel"),
+      unlock:document.getElementById("authorityPasswordUnlock")
     };
   }
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",bindAuthorityPress,{once:true});
-  }else{
-    bindAuthorityPress();
+  function closeChapChap(){
+    const panel=document.getElementById("authorityChapChapPanel");
+    const status=document.getElementById("authorityChapChapStatus");
+    if(panel){panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");}
+    if(status)status.textContent="READY";
   }
+  function closeAuthorityPanel(){
+    const e=els();
+    closeChapChap();
+    if(e.panel){e.panel.style.display="none";e.panel.setAttribute("aria-hidden","true");e.panel.scrollTop=0;}
+  }
+  function openPasswordGate(){
+    const e=els();
+    closeAuthorityPanel();
+    if(!e.overlay)return;
+    e.overlay.style.display="flex";
+    e.overlay.setAttribute("aria-hidden","false");
+    if(e.status)e.status.textContent="";
+    if(e.input){e.input.value="";setTimeout(()=>e.input.focus(),50);}
+  }
+  async function unlockAuthority(){
+    const e=els();
+    if(!e.input||!e.unlock)return;
+    const password=String(e.input.value||"");
+    if(!password){if(e.status)e.status.textContent="ENTER PASSWORD.";e.input.focus();return;}
+    e.unlock.disabled=true;
+    if(e.status)e.status.textContent="VERIFYING…";
+    try{
+      const result=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"verify",password}});
+      if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Incorrect password.");
+      if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}
+      if(e.panel){e.panel.style.display="block";e.panel.setAttribute("aria-hidden","false");e.panel.scrollTop=0;}
+      if(typeof window.ioneRefreshLivePlans==="function")window.ioneRefreshLivePlans().catch(()=>{});
+    }catch(error){
+      if(e.status)e.status.textContent=error?.message||"INCORRECT PASSWORD.";
+      e.input.value="";e.input.focus();
+    }finally{e.unlock.disabled=false;}
+  }
+
+  document.addEventListener("click",function(event){
+    const target=event.target;
+    if(!target||!target.closest)return;
+    if(target.closest("#openAuthority")){event.preventDefault();event.stopPropagation();openPasswordGate();return;}
+    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}return;}
+    if(target.closest("#authorityPasswordUnlock")){event.preventDefault();unlockAuthority();return;}
+    if(target.closest("#authorityPressClose")){event.preventDefault();closeAuthorityPanel();return;}
+  },true);
+
+  document.addEventListener("keydown",function(event){
+    if(event.key!=="Escape"&&event.key!=="Enter")return;
+    const e=els();
+    if(event.key==="Enter"&&e.overlay?.getAttribute("aria-hidden")==="false"&&document.activeElement===e.input){event.preventDefault();unlockAuthority();}
+    if(event.key==="Escape"){
+      if(e.overlay?.getAttribute("aria-hidden")==="false"){event.preventDefault();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}}
+      else if(e.panel?.getAttribute("aria-hidden")==="false"){event.preventDefault();closeAuthorityPanel();}
+    }
+  },true);
 })();
 </script>
 <script>
