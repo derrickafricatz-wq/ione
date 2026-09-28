@@ -91,19 +91,6 @@
 
   function enhanceAuthority(){
     polishAuthorityPanel();
-    var filters=document.getElementById("authorityChapChapFilters");
-    if(!filters||filters.dataset.receiptModuleBound)return;
-    filters.dataset.receiptModuleBound="1";
-    filters.addEventListener("click",function(e){
-      var card=e.target.closest("[data-cc-filter]");if(!card)return;
-      authorityFilter=card.getAttribute("data-cc-filter")||"orders";
-      setTimeout(refreshAuthority,80);
-    });
-    var unlock=document.getElementById("authorityPasswordUnlock");
-    if(unlock&&!unlock.dataset.receiptModuleBound){
-      unlock.dataset.receiptModuleBound="1";
-      unlock.addEventListener("click",function(){setTimeout(refreshAuthority,300);});
-    }
   }
 
   async function enhanceMyShop(){
@@ -195,6 +182,8 @@
     });
   }
 
+  window.ioneChapChapOpenReceipt=function(r){openAuthorityReceipt(r);};
+  window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
   var mo=new MutationObserver(function(){
     if(authorityWriting)return;
     enhanceAuthority();
