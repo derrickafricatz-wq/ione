@@ -86,6 +86,69 @@
     }
   }
 
+  function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
+  async function loadChapChapAuthority(){
+    const status=document.getElementById("authorityChapChapLoadStatus");
+    const list=document.getElementById("authorityChapChapOrders");
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
+    if(status)status.textContent="Loading ChapChap orders…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load ChapChap management data.");
+      const orders=r.data.orders||[];
+      const count=document.getElementById("chapChapOrdersCount");if(count)count.textContent=orders.length;
+      if(list)list.innerHTML=orders.length?orders.map(o=>{
+        const p=o.ione_single_products||{};
+        const ready=o.status==="received"&&o.payout_status!=="completed";
+        const completed=o.payout_status==="completed";
+        const safeId=authorityEsc(o.id);
+        return '<div class="authority-chapchap-order">'+
+          '<strong>'+authorityEsc(p.title||"ChapChap order")+'</strong>'+
+          '<div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>AMOUNT TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+' • CHAPCHAP 1% • SELLER NET TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+
+          '<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+' • PAYOUT: '+authorityEsc(String(o.payout_status||"").toUpperCase())+
+          (o.received_confirmed_at?'<br>RECEIVED: '+authorityEsc(new Date(o.received_confirmed_at).toLocaleString()):"")+
+          '</div>'+
+          (ready?'<div class="cc-mini cc-ready">READY FOR MANUAL PAYOUT</div>'+
+            '<div class="authority-payout-grid">'+
+            '<select id="chapNet_'+safeId+'"><option value="">NETWORK</option><option>MPESA / VODACOM</option><option>AIRTEL MONEY</option><option>MIXX BY YAS</option><option>HALOPESA</option><option>EZY PESA</option><option>TTCL PESA</option></select>'+
+            '<input id="chapPhone_'+safeId+'" inputmode="tel" placeholder="Recipient phone" value="'+authorityEsc(p.seller_phone||"")+'">'+
+            '<input id="chapFee_'+safeId+'" inputmode="numeric" placeholder="Payout fee (TZS)" value="0">'+
+            '<input id="chapRef_'+safeId+'" placeholder="Manual payout reference">'+
+            '<button type="button" data-payout="'+safeId+'">MARK MANUAL PAYOUT COMPLETE</button>'+
+            '</div>':
+            completed?'<div class="cc-mini cc-ready">MANUAL PAYOUT RECORDED • REF '+authorityEsc(o.payout_reference||"—")+'</div>':
+            '<div class="cc-mini">Payout remains locked until the buyer confirms receipt.</div>')+
+          '</div>';
+      }).join(""):'<div class="authority-chapchap-order"><strong>NO PAID / RECEIVED ORDERS</strong><div class="cc-mini">Orders will appear here after BLMPay payment and buyer receipt confirmation.</div></div>';
+      list?.querySelectorAll("[data-payout]").forEach(btn=>btn.addEventListener("click",()=>manualChapChapPayout(btn.getAttribute("data-payout"))));
+      if(status)status.textContent="CONNECTED • MANUAL PAYOUT CONTROL";
+    }catch(e){if(status)status.textContent=e?.message||"Could not load ChapChap management data.";}
+  }
+
+  async function manualChapChapPayout(orderId){
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    const network=document.getElementById("chapNet_"+orderId)?.value||"";
+    const phone=document.getElementById("chapPhone_"+orderId)?.value||"";
+    const fee=Number(document.getElementById("chapFee_"+orderId)?.value||0);
+    const reference=String(document.getElementById("chapRef_"+orderId)?.value||"").trim();
+    const status=document.getElementById("authorityChapChapLoadStatus");
+    const button=document.querySelector('[data-payout="'+orderId+'"]');
+    if(!network){if(status)status.textContent="Select the seller payout network.";return;}
+    if(!/^\+?\d{8,15}$/.test(phone.replace(/[\s-]/g,""))){if(status)status.textContent="Enter a valid seller payout phone number.";return;}
+    if(!Number.isInteger(fee)||fee<0){if(status)status.textContent="Enter a valid payout fee.";return;}
+    if(!reference){if(status)status.textContent="Enter the external/manual payout reference.";return;}
+    if(!confirm("Confirm that you have already sent this seller payout externally and want Authority Press to record it as completed?"))return;
+    if(button)button.disabled=true;
+    if(status)status.textContent="Recording manual payout…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"complete_payout",password,order_id:orderId,recipient_network:network,recipient_phone:phone,payout_fee_tzs:fee,payout_reference:reference}});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not record payout.");
+      if(status)status.textContent="MANUAL PAYOUT RECORDED • "+(r.data.message||"");
+      await loadChapChapAuthority();
+    }catch(e){if(status)status.textContent=e?.message||"Could not record payout.";if(button)button.disabled=false;}
+  }
+
   async function saveAuthorityPrices(){
     const status=document.getElementById("authoritySaveStatus");
     const button=document.getElementById("authoritySavePrices");
@@ -138,6 +201,16 @@
       close.addEventListener("click",()=>{const panel=document.getElementById("authorityPressPanel");if(panel){panel.style.display="none";panel.setAttribute("aria-hidden","true");}});
     }
 
+    const chapOpen=document.getElementById("authorityChapChapOpen");
+    if(chapOpen && !chapOpen.dataset.bound){
+      chapOpen.dataset.bound="1";
+      chapOpen.onclick=async()=>{const p=document.getElementById("authorityChapChapPanel");if(p){p.style.display="block";p.setAttribute("aria-hidden","false");}await loadChapChapAuthority();};
+    }
+    const chapClose=document.getElementById("authorityChapChapClose");
+    if(chapClose && !chapClose.dataset.bound){
+      chapClose.dataset.bound="1";
+      chapClose.onclick=()=>{const p=document.getElementById("authorityChapChapPanel");if(p){p.style.display="none";p.setAttribute("aria-hidden","true");}};
+    }
     loadLivePlans();
   }
 
@@ -528,6 +601,7 @@ body.landscape-mode #brandVideo {
   color:#fff;
   font-size:18px;
 }
+.authority-chapchap-orders{display:grid;gap:10px;margin-top:14px}.authority-chapchap-order{border:1px solid #294349;border-radius:14px;padding:12px;background:#071012}.authority-chapchap-order strong{color:#fff;font:900 13px Arial,sans-serif}.authority-chapchap-order .cc-mini{margin-top:5px;color:#91a6ab;font:700 10px/1.45 Arial,sans-serif}.authority-chapchap-order .cc-ready{color:#00ffff;font-weight:900}.authority-payout-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.authority-payout-grid input,.authority-payout-grid select{width:100%;box-sizing:border-box;min-height:39px;border:1px solid #31545a;border-radius:9px;background:#05090a;color:#fff;padding:8px;font-weight:700}.authority-payout-grid button{grid-column:1/-1;min-height:43px;border:1px solid #00ffff;border-radius:10px;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;font-weight:900;cursor:pointer}.authority-payout-grid button:disabled{opacity:.55}@media(max-width:520px){.authority-payout-grid{grid-template-columns:1fr}.authority-payout-grid button{grid-column:auto}}
 /* ================= END AUTHORITY PRESS PANEL ================= */
 
 /* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
@@ -1767,9 +1841,10 @@ function getMedia(id){
       </div>
       <div class="authority-chapchap-note">
         <strong>PAYMENT / PAYOUT STATUS</strong>
-        <span>BLMPay payout actions are not enabled in this first Authority Press module.</span>
+        <span>SELLER PAYOUTS ARE MANUAL. Buyer receipt confirmation is required first. Authority Press records the external payout reference; no automatic BLMPay payout is sent.</span>
       </div>
       <div id="authorityChapChapLoadStatus" class="authority-save-status">Loading marketplace data…</div>
+      <div id="authorityChapChapOrders" class="authority-chapchap-orders"></div>
     </div>
     </div>
   </div>
