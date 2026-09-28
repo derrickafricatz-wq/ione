@@ -94,8 +94,8 @@
       ".ione-chap-sold{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#ff7d7d;font:900 20px Arial,sans-serif;letter-spacing:2px}" +
       ".ione-chap-info{position:absolute;left:0;right:0;bottom:0;padding:34px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.62),rgba(0,0,0,0));z-index:2}.ione-chap-title{color:#fff;font:900 13px/1.15 Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-chap-seller{margin-top:6px;color:#00ffff;font:800 9px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-chap-location{margin-top:5px;color:#71878c;font:700 8px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".ione-chap-empty{min-width:100%;padding:18px;text-align:center;color:#789096;border:1px dashed #294349;border-radius:14px;font:800 10px/1.5 Arial,sans-serif}" +
-      "#ioneChapOverlay{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2147483646!important;display:none;align-items:center!important;justify-content:center!important;padding:14px!important;margin:0!important;box-sizing:border-box;background:rgba(0,0,0,.88)!important;opacity:1!important;isolation:isolate;overflow:hidden!important;font-family:Arial,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent}" +
-      "#ioneChapOverlay .cc-card{width:min(520px,calc(100vw - 28px))!important;height:auto!important;max-height:calc(100vh - 28px)!important;overflow:auto!important;box-sizing:border-box;border:1px solid #00ffff!important;border-radius:22px!important;background:linear-gradient(145deg,#102126,#05090a)!important;box-shadow:0 18px 50px rgba(0,0,0,.55)!important;padding:18px!important;margin:0!important}" +
+      "#ioneChapOverlay{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:2147483646!important;display:none;align-items:stretch!important;justify-content:stretch!important;padding:0!important;margin:0!important;box-sizing:border-box;background:#050809!important;opacity:1!important;isolation:isolate;overflow:hidden!important;font-family:Arial,sans-serif;color:#fff;-webkit-tap-highlight-color:transparent}" +
+      "#ioneChapOverlay .cc-card{width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;overflow:auto!important;box-sizing:border-box;border:0!important;border-radius:0!important;background:linear-gradient(160deg,#102b32 0%,#071417 42%,#030607 100%)!important;box-shadow:none!important;padding:18px!important;margin:0!important}" +
       "body.ione-chap-open{overflow:hidden!important}" +
       "#ioneChapOverlay .cc-card.cc-mychap{width:min(430px,calc(100vw - 30px))!important;max-height:calc(100vh - 30px)!important;border:1px solid rgba(255,79,216,.62)!important;background:linear-gradient(145deg,#171126 0%,#0a0c16 55%,#071012 100%)!important;box-shadow:0 22px 65px rgba(0,0,0,.7),0 0 28px rgba(255,79,216,.10)!important}" +
       ".cc-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.cc-head h2{margin:0;color:#00ffff;font:900 23px Arial,sans-serif}.cc-close{border:1px solid #334a50;background:#111;color:#fff;border-radius:10px;padding:8px 11px;font-weight:900;cursor:pointer}" +
@@ -189,8 +189,8 @@
       '</div>' +
       '<div id="ioneChapRail"><div class="ione-chap-empty">Loading ChapChap products…</div></div>';
     if (head && head.parentNode) head.parentNode.insertBefore(dock, head.nextSibling); else return;
-    document.getElementById("ioneChapOpen").addEventListener("pointerdown", function () { openSell(); }, { passive:true });
-    document.getElementById("ioneChapMine").addEventListener("pointerdown", function () { openMine(); }, { passive:true });
+    document.getElementById("ioneChapOpen").addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openSell(); });
+    document.getElementById("ioneChapMine").addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); openMine(); });
   }
 
   function createOverlay() {
@@ -217,6 +217,7 @@
     document.body.classList.add("ione-chap-open");
     var cc=document.querySelector("#ioneChapOverlay .cc-card");
     if(cc) cc.classList.toggle("cc-mychap", title==="MY CHAPCHAP");
+    if(cc && title!=="MY CHAPCHAP"){cc.style.width="100vw";cc.style.height="100vh";cc.style.maxWidth="none";cc.style.maxHeight="none";cc.style.borderRadius="0";cc.style.border="0";cc.style.boxShadow="none";}
     requestAnimationFrame(function(){var el=document.getElementById("ioneChapOverlay");if(el){el.style.display="flex";el.scrollTop=0;}});
   }
 
