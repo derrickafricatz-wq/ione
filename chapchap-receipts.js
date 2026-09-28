@@ -212,6 +212,8 @@
     }
   }
   function openReceiptHistory(rows){
+    var quick=document.getElementById("ioneChapReceiptQuick");
+    if(quick) quick.style.display="none";
     var box=document.getElementById("ioneChapReceiptHistory");
     if(!box){
       box=document.createElement("div");
@@ -232,8 +234,12 @@
           '<button type="button" class="cc-secondary cc-history-download" data-index="'+i+'">DOWNLOAD</button></div></div>';
       }).join("")+'</div></div>';
     box.style.display="flex";
-    box.querySelector("#ccHistoryClose").onclick=function(){box.style.display="none";};
-    box.querySelectorAll(".cc-history-view").forEach(function(b){b.onclick=function(){openStandaloneReceipt(rows[Number(b.dataset.index)]);};});
+    box.querySelector("#ccHistoryClose").onclick=function(){
+      box.style.display="none";
+      var quick=document.getElementById("ioneChapReceiptQuick");
+      if(quick) quick.style.display="none";
+    };
+    box.querySelectorAll(".cc-history-view").forEach(function(b){b.onclick=function(){openStandaloneReceipt(rows[Number(b.dataset.index)],true);};});
     box.querySelectorAll(".cc-history-download").forEach(function(b){b.onclick=function(){downloadReceipt(rows[Number(b.dataset.index)]);};});
   }
 
@@ -267,7 +273,7 @@
       '<button type="button" id="'+esc(backId||"ccStandaloneBack")+'" class="cc-secondary" style="width:100%;margin-top:8px">BACK TO LIST</button></div>';
   }
 
-  function openStandaloneReceipt(r){
+  function openStandaloneReceipt(r,returnToHistory){
     if(!r)return;
     var box=document.getElementById("ioneChapReceiptQuick");
     if(!box){
@@ -280,7 +286,13 @@
     box.style.display="flex";
     box.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openStandaloneReceipt(r);});
     box.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();downloadReceipt(r);});
-    box.querySelector("#ccStandaloneBack")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();box.style.display="none";});
+    box.querySelector("#ccStandaloneBack")?.addEventListener("click",function(e){
+      e.preventDefault();e.stopPropagation();box.style.display="none";
+      if(returnToHistory){
+        var history=document.getElementById("ioneChapReceiptHistory");
+        if(history) history.style.display="flex";
+      }
+    });
   }
 
   function enhanceBuyerReceipt(){
