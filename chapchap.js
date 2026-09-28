@@ -666,7 +666,7 @@
     }
   }
 
-  async function waitForPayment(orderId, product, buyerPhone) {
+  async async function waitForPayment(orderId, product, buyerPhone) {
     var sb = getSupabase();
     var status = document.getElementById("ioneCcBuyStatus");
     var startedAt = Date.now();
