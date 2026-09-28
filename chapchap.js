@@ -547,7 +547,29 @@
     }, 3200);
   }
 
-  async function reconcilePayment(product) {
+  function startPendingCountdown(until, product) {
+    if (pendingCountdownTimer) clearInterval(pendingCountdownTimer);
+    var status=document.getElementById("ioneCcBuyStatus");
+    if(!status) return;
+    var target=new Date(until).getTime();
+    function tick(){
+      var seconds=Math.max(0,Math.ceil((target-Date.now())/1000));
+      var m=Math.floor(seconds/60), s=seconds%60;
+      status.innerHTML='<strong style="color:#ffe600;font-size:15px">PAYMENT STILL PENDING</strong><br><span style="display:block;margin-top:6px;color:#fff">Fresh payment activation in</span><strong style="display:block;margin-top:5px;color:#00ffff;font-size:28px;letter-spacing:2px">'+String(m).padStart(2,"0")+':'+String(s).padStart(2,"0")+'</strong><button id="ioneCcCheckAgain" class="cc-secondary" type="button" style="margin-top:10px;width:100%">CHECK PAYMENT STATUS</button>';
+      var again=document.getElementById("ioneCcCheckAgain");
+      if(again) again.onclick=function(){reconcilePayment(product);};
+      if(seconds<=0){
+        clearInterval(pendingCountdownTimer); pendingCountdownTimer=null;
+        status.innerHTML='<strong style="color:#ffe600;font-size:15px">10-MINUTE WINDOW COMPLETE</strong><br><span style="display:block;margin-top:6px;color:#fff">Checking BLMPay before activating a fresh payment…</span><button id="ioneCcCheckAgain" class="cc-primary" type="button" style="margin-top:10px;width:100%">CHECK PAYMENT STATUS</button>';
+        var done=document.getElementById("ioneCcCheckAgain");
+        if(done) done.onclick=function(){reconcilePayment(product);};
+      }
+    }
+    tick();
+    pendingCountdownTimer=setInterval(tick,1000);
+  }
+
+async function reconcilePayment(product) {
     var status = document.getElementById("ioneCcBuyStatus");
     var btn = document.getElementById("ioneCcBuySubmit");
     try {
@@ -566,6 +588,10 @@
         } catch (errorRead) {}
       }
       if (result.error || !result.data || !result.data.success) {
+        if (result.data && result.data.pending_until) {
+          startPendingCountdown(result.data.pending_until, product);
+          return;
+        }
         if (status) {
           status.innerHTML = esc(message || "BLMPay is still processing this payment.") +
             '<br><button id="ioneCcCheckAgain" class="cc-secondary" type="button" style="margin-top:8px;width:100%">CHECK PAYMENT STATUS</button>';
