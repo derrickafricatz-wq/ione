@@ -870,4 +870,4 @@
   window.ioneChapChapOpen = openSell;
 })();
 /* ChapChap receipt module loader */
-(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=1";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
+(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=2";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
