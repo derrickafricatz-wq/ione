@@ -62,8 +62,8 @@
         return '<div class="authority-chapchap-order"><strong>'+esc(o.product?.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER: '+esc(o.id)+'<br>BUYER: '+esc(o.buyer_full_name||"—")+' • '+esc(o.buyer_phone||"—")+'<br>AMOUNT: '+esc(money(o.amount_tzs))+'<br>STATUS: '+esc(String(o.status||"").toUpperCase())+' • PAYOUT: '+esc(String(o.payout_status||"").toUpperCase())+'</div>'+(o.has_receipt&&o.receipt?receiptButton(o.receipt):'<div class="cc-mini">RECEIPT: PREPARING</div>')+'</div>';
       });
     }
-    list.innerHTML=rows.length?rows.join(""):'<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">This section will fill automatically when the matching ChapChap record is created.</div></div>';
-    list.querySelectorAll(".cc-authority-view-receipt").forEach(function(b){b.addEventListener("click",function(){openAuthorityReceipt(JSON.parse(b.dataset.receipt));});});
+    authorityWriting=true; list.innerHTML=rows.length?rows.join(""):'<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">This section will fill automatically when the matching ChapChap record is created.</div></div>';
+    setTimeout(function(){authorityWriting=false;},0);\n    list.querySelectorAll(".cc-authority-view-receipt").forEach(function(b){b.addEventListener("click",function(){openAuthorityReceipt(JSON.parse(b.dataset.receipt));});});
     list.querySelectorAll(".cc-authority-download-receipt").forEach(function(b){b.addEventListener("click",function(){downloadReceipt(JSON.parse(b.dataset.receipt));});});
   }
 
@@ -78,7 +78,7 @@
     panel.querySelector("#ccAuthorityBack")?.addEventListener("click",function(){refreshAuthority();});
   }
 
-  var authorityFilter="orders",authorityBusy=false;
+  var authorityFilter="orders",authorityBusy=false,authorityWriting=false,authorityRefreshTimer=null;
   async function refreshAuthority(){
     if(authorityBusy)return;
     authorityBusy=true;
