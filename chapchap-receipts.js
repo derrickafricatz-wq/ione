@@ -148,7 +148,9 @@
     if(old)return;
     var b=document.createElement("button");
     b.id="ioneChapSavedReceiptBtn";b.type="button";b.textContent="VIEW RECEIPT";b.className="cc-primary";
-    b.style.cssText="flex:0 0 auto;min-height:37px;height:37px;padding:0 12px;border-radius:10px;font:900 9px Arial,sans-serif;white-space:nowrap;touch-action:manipulation;letter-spacing:.45px;border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;box-shadow:none;transition:none;-webkit-tap-highlight-color:transparent";
+    b.style.cssText="flex:0 0 auto;min-height:37px;height:37px;padding:0 13px;border-radius:12px;font:1000 9px Arial,sans-serif;white-space:nowrap;touch-action:manipulation;letter-spacing:.6px;border:1px solid #ff9bea;background:linear-gradient(135deg,#ff4fd8 0%,#a855f7 48%,#625cff 100%);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 4px 10px rgba(98,92,255,.28);transition:transform .08s ease,filter .08s ease,box-shadow .08s ease;-webkit-tap-highlight-color:transparent";
+    b.onpointerdown=function(e){e.preventDefault();e.stopPropagation();b.style.transform="translateY(1px) scale(.985)";b.style.filter="brightness(1.12)";};
+    b.onpointerup=b.onpointercancel=function(){b.style.transform="";b.style.filter="";};
     b.onclick=function(e){e.preventDefault();e.stopPropagation();openLatestBuyerReceipt();};
     bar.appendChild(b);
   }
