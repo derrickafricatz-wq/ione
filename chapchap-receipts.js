@@ -144,8 +144,8 @@
     if(old)return;
     var b=document.createElement("button");
     b.id="ioneChapSavedReceiptBtn";b.type="button";b.textContent="VIEW RECEIPT";b.className="cc-primary";
-    b.style.cssText="flex:0 0 auto;min-height:37px;height:37px;padding:0 10px;border-radius:10px;font:900 9px Arial,sans-serif;white-space:nowrap;touch-action:manipulation;letter-spacing:.25px";
-    b.onclick=openLatestBuyerReceipt;
+    b.style.cssText="flex:0 0 auto;min-height:37px;height:37px;padding:0 12px;border-radius:10px;font:900 9px Arial,sans-serif;white-space:nowrap;touch-action:manipulation;letter-spacing:.45px;border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;box-shadow:none;transition:none;-webkit-tap-highlight-color:transparent";
+    b.onclick=function(e){e.preventDefault();e.stopPropagation();openLatestBuyerReceipt();};
     bar.appendChild(b);
   }
 
