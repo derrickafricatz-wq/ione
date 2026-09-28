@@ -70,12 +70,9 @@
 
   function openAuthorityReceipt(r){
     var panel=document.getElementById("authorityChapChapOrders"); if(!panel)return;
-    var old=panel.innerHTML;
-    panel.innerHTML='<div class="authority-chapchap-order"><strong>OFFICIAL CHAPCHAP RECEIPT</strong><div class="cc-mini">'+
-      '<strong>'+esc(r.receipt_number)+'</strong><br>PRODUCT: '+esc(r.product_title)+'<br>CLIENT: '+esc(r.buyer_full_name||"—")+'<br>PHONE: '+esc(r.buyer_phone||r.buyer_contact||"—")+'<br>EMAIL: '+esc(r.buyer_email||"—")+'<br>ADDRESS: '+esc(r.buyer_address||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+
-      '</div>'+receiptButton(r)+'<button type="button" id="ccAuthorityBack" class="cc-secondary" style="width:100%;margin-top:8px">BACK TO LIST</button></div>';
-    panel.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(){openAuthorityReceipt(r);});
-    panel.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(){downloadReceipt(r);});
+    panel.innerHTML=officialReceiptHTML(r,"ccAuthorityBack");
+    panel.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openAuthorityReceipt(r);});
+    panel.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();downloadReceipt(r);});
     panel.querySelector("#ccAuthorityBack")?.addEventListener("click",function(){refreshAuthority();});
   }
 
@@ -124,76 +121,94 @@
     openStandaloneReceipt(result.data.receipt);
   }
 
+  function getChapChapReceiptCache(){
+    try{
+      var rows=JSON.parse(localStorage.getItem("ione_chapchap_receipts_cache")||"[]");
+      return Array.isArray(rows)?rows:[];
+    }catch(e){return []}
+  }
+  function saveChapChapReceiptCache(rows){
+    try{
+      var map={};
+      getChapChapReceiptCache().concat(rows||[]).forEach(function(r){if(r&&r.order_id)map[String(r.order_id)]=r;});
+      localStorage.setItem("ione_chapchap_receipts_cache",JSON.stringify(Object.values(map).sort(function(a,b){return new Date(b.paid_at||0)-new Date(a.paid_at||0);}).slice(0,50)));
+    }catch(e){}
+  }
+  function getChapChapOrderIds(){
+    try{
+      var rows=JSON.parse(localStorage.getItem("ione_chapchap_paid_orders")||"[]");
+      if(!Array.isArray(rows))rows=[];
+      var last=String(localStorage.getItem("ione_chapchap_last_paid_order")||"").trim();
+      if(last)rows.unshift(last);
+      return [...new Set(rows.map(String).filter(Boolean))].slice(0,50);
+    }catch(e){return []}
+  }
+  function showChapChapReceiptRecovery(){
+    var box=document.getElementById("ioneChapReceiptRecovery");
+    if(!box){box=document.createElement("div");box.id="ioneChapReceiptRecovery";box.style.cssText="position:fixed;inset:0;z-index:103002;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.86);font-family:Arial,sans-serif;color:#fff";document.body.appendChild(box);}
+    box.innerHTML='<div style="width:min(420px,100%);border:1px solid #00ffff;border-radius:20px;background:#071012;padding:20px;box-sizing:border-box">'+
+      '<div style="font-size:20px;font-weight:900;color:#00ffff">FIND YOUR CHAPCHAP RECEIPTS</div>'+
+      '<div style="margin-top:7px;color:#9fb2b6;font:700 11px/1.5 Arial">Use the same details entered when you paid. Your receipts will then be saved on this device for future VIEW RECEIPT access.</div>'+
+      '<input id="ccRecoverName" placeholder="FULL NAME" style="width:100%;box-sizing:border-box;margin-top:14px;min-height:46px;padding:10px;border-radius:11px;border:1px solid #294349;background:#020708;color:#fff;font-weight:800">'+
+      '<input id="ccRecoverEmail" type="email" placeholder="EMAIL" style="width:100%;box-sizing:border-box;margin-top:8px;min-height:46px;padding:10px;border-radius:11px;border:1px solid #294349;background:#020708;color:#fff;font-weight:800">'+
+      '<input id="ccRecoverContact" placeholder="CONTACT NUMBER (+255...)" style="width:100%;box-sizing:border-box;margin-top:8px;min-height:46px;padding:10px;border-radius:11px;border:1px solid #294349;background:#020708;color:#fff;font-weight:800">'+
+      '<div id="ccRecoverStatus" style="min-height:22px;margin-top:10px;color:#9fb2b6;font:800 10px/1.4 Arial"></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button id="ccRecoverFind" class="cc-primary" type="button" style="min-height:46px">FIND RECEIPTS</button><button id="ccRecoverClose" class="cc-secondary" type="button" style="min-height:46px">CLOSE</button></div></div>';
+    box.style.display="flex";
+    var status=box.querySelector("#ccRecoverStatus");
+    box.querySelector("#ccRecoverClose").onclick=function(){box.style.display="none";};
+    box.querySelector("#ccRecoverFind").onclick=async function(){
+      var btn=this,name=box.querySelector("#ccRecoverName").value.trim(),email=box.querySelector("#ccRecoverEmail").value.trim().toLowerCase(),contact=box.querySelector("#ccRecoverContact").value.trim();
+      if(!name||!email||!contact){status.textContent="Enter all three details.";return;}
+      btn.disabled=true;status.textContent="CHECKING YOUR RECEIPTS…";
+      try{
+        var result=await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"receipts_by_details",buyer_full_name:name,buyer_email:email,buyer_contact:contact}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not find receipts.");
+        var rows=result.data.receipts||[];
+        if(!rows.length){status.textContent="No receipt matches those checkout details.";return;}
+        try{localStorage.setItem("ione_chapchap_buyer_identity",JSON.stringify({buyer_full_name:name,buyer_email:email,buyer_contact:contact}));}catch(e){}
+        saveChapChapReceiptCache(rows);
+        rows.forEach(function(r){try{localStorage.setItem("ione_chapchap_last_paid_order",String(r.order_id||""));}catch(e){}});
+        box.style.display="none";
+        openReceiptHistory(rows);
+      }catch(e){status.textContent=e&&e.message?e.message:"Could not find receipts.";}
+      finally{btn.disabled=false;}
+    };
+  }
+
   async function openLatestBuyerReceipt(){
     var client=sb();
-    if(!client){alert("CHAPCHAP RECEIPT DEBUG\\n\\nSupabase client is not available.");return;}
+    if(!client){alert("Supabase client is not available.");return;}
     try{
-      /*
-       * First use the paid order saved at checkout. This is more stable than
-       * relying only on the current anonymous buyer UUID after a refresh.
-       */
-      var savedOrderId="";
-      var savedReceiptRaw="";
-      try{
-        savedOrderId=String(localStorage.getItem("ione_chapchap_last_paid_order")||"").trim();
-        savedReceiptRaw=String(localStorage.getItem("ione_chapchap_last_receipt")||"").trim();
-      }catch(e){}
+      var cached=getChapChapReceiptCache();
+      if(cached.length){openReceiptHistory(cached);return;}
 
-      if(savedOrderId){
-        var byOrder=await client.from("ione_chapchap_receipts").select("*").eq("order_id",savedOrderId).maybeSingle();
-        if(!byOrder.error&&byOrder.data){
-          try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(byOrder.data));}catch(e){}
-          openStandaloneReceipt(byOrder.data);
+      var ids=getChapChapOrderIds(),found=[];
+      for(var i=0;i<ids.length;i++){
+        var q=await client.from("ione_chapchap_receipts").select("*").eq("order_id",ids[i]).maybeSingle();
+        if(!q.error&&q.data)found.push(q.data);
+      }
+      if(found.length){
+        saveChapChapReceiptCache(found);
+        openReceiptHistory(found);
+        return;
+      }
+
+      var identity=null;
+      try{identity=JSON.parse(localStorage.getItem("ione_chapchap_buyer_identity")||"null");}catch(e){}
+      if(identity?.buyer_full_name&&identity?.buyer_email&&identity?.buyer_contact){
+        var byDetails=await client.functions.invoke("ione-chapchap-buyer",{body:{action:"receipts_by_details",...identity}});
+        if(!byDetails.error&&byDetails.data?.success&&(byDetails.data.receipts||[]).length){
+          saveChapChapReceiptCache(byDetails.data.receipts);
+          openReceiptHistory(byDetails.data.receipts);
           return;
         }
       }
 
-      /*
-       * If the receipt was already cached locally, keep the buyer's receipt
-       * available even when the current anonymous session has changed.
-       */
-      if(savedReceiptRaw){
-        try{
-          var cached=JSON.parse(savedReceiptRaw);
-          if(cached && cached.receipt_number){
-            openStandaloneReceipt(cached);
-            return;
-          }
-        }catch(e){}
-      }
-
-      var session=await ensureHeavensAnonymousSession();
-      if(!session||!session.user) throw new Error("Secure ChapChap session is not ready.");
-
-      var q=await client.from("ione_chapchap_receipts")
-        .select("*")
-        .eq("buyer_id",session.user.id)
-        .order("paid_at",{ascending:false})
-        .limit(50);
-
-      if(q.error){
-        alert("CHAPCHAP RECEIPT DEBUG\\n\\nReceipt history lookup failed.\\n\\n"+(q.error.message||JSON.stringify(q.error))+"\\n\\nBuyer ID: "+session.user.id);
-        return;
-      }
-
-      var rows=q.data||[];
-      if(!rows.length){
-        alert("CHAPCHAP RECEIPT DEBUG\\n\\nNo saved receipt was found for this ChapChap account yet.\\n\\nIf you completed a ChapChap payment, the receipt is linked to the paid order created at checkout. Please reopen ChapChap once so the saved order can be checked.\\n\\nBuyer ID: "+session.user.id);
-        return;
-      }
-
-      if(rows.length===1){
-        try{
-          localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(rows[0]));
-          localStorage.setItem("ione_chapchap_last_paid_order",String(rows[0].order_id||""));
-        }catch(e){}
-        openStandaloneReceipt(rows[0]);
-        return;
-      }
-
-      openReceiptHistory(rows);
+      showChapChapReceiptRecovery();
     }catch(err){
-      alert("CHAPCHAP RECEIPT DEBUG\\n\\nReceipt history could not be opened.\\n\\n"+(err&&err.message?err.message:String(err)));
+      console.warn("ChapChap receipt history:",err);
+      showChapChapReceiptRecovery();
     }
   }
   function openReceiptHistory(rows){
@@ -236,41 +251,38 @@
     bar.appendChild(b);
   }
 
+  function officialReceiptHTML(r, backId){
+    return '<div class="authority-chapchap-order" style="width:100%;box-sizing:border-box">'+
+      '<strong>OFFICIAL CHAPCHAP RECEIPT</strong><div class="cc-mini">'+
+      '<strong>'+esc(r.receipt_number||"—")+'</strong><br>PRODUCT: '+esc(r.product_title||"—")+
+      '<br>CLIENT: '+esc(r.buyer_full_name||"—")+
+      '<br>PHONE: '+esc(r.buyer_phone||r.buyer_contact||"—")+
+      '<br>EMAIL: '+esc(r.buyer_email||"—")+
+      '<br>ADDRESS: '+esc(r.buyer_address||"—")+
+      '<br>AMOUNT: '+esc(money(r.amount_tzs))+
+      '<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+
+      '<br>BLMPAY: '+esc(r.blmpay_reference||"—")+
+      '<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+
+      '</div>'+receiptButton(r)+
+      '<button type="button" id="'+esc(backId||"ccStandaloneBack")+'" class="cc-secondary" style="width:100%;margin-top:8px">BACK TO LIST</button></div>';
+  }
+
   function openStandaloneReceipt(r){
     if(!r)return;
     var box=document.getElementById("ioneChapReceiptQuick");
     if(!box){
       box=document.createElement("div");
       box.id="ioneChapReceiptQuick";
-      box.style.cssText="position:fixed;inset:0;z-index:103000;display:flex;align-items:center;justify-content:center;padding:15px;background:#020708;font-family:Arial,sans-serif;color:#fff;overflow:auto";
+      box.style.cssText="position:fixed;inset:0;z-index:103000;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto";
       document.body.appendChild(box);
     }
-    box.innerHTML=
-      '<div style="width:min(430px,100%);max-height:calc(100vh - 30px);overflow:auto;border:1px solid #00ffff;border-radius:22px;background:#071012;padding:22px 18px;box-sizing:border-box;box-shadow:0 0 0 1px rgba(0,255,255,.05),0 16px 45px rgba(0,0,0,.55)">'+
-        '<div style="border:1px solid rgba(0,255,255,.22);border-radius:16px;background:#071012;padding:18px 16px">'+
-          '<div style="font-weight:900;font-size:22px;line-height:1.15;color:#fff;letter-spacing:.2px">OFFICIAL CHAPCHAP RECEIPT</div>'+
-          '<div style="margin-top:7px;font-size:18px;line-height:1.3;font-weight:900;color:#fff">'+esc(r.receipt_number)+'</div>'+
-          '<div style="margin-top:6px;font-size:16px;line-height:1.45;font-weight:800;color:#9aa9ad">'+
-            'PRODUCT: '+esc(r.product_title||"—")+'<br>'+
-            'CLIENT: '+esc(r.buyer_full_name||"—")+'<br>'+
-            'PHONE: '+esc(r.buyer_phone||r.buyer_contact||"—")+'<br>'+
-            'EMAIL: '+esc(r.buyer_email||"—")+'<br>'+
-            'ADDRESS: '+esc(r.buyer_address||"—")+'<br>'+
-            'AMOUNT: '+esc(money(r.amount_tzs))+'<br>'+
-            'CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>'+
-            'BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>'+
-            'PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+
-          '</div>'+
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">'+
-            '<button id="ccQuickDownload" type="button" style="min-height:58px;border:1px solid rgba(0,255,255,.42);border-radius:16px;background:#111;color:#fff;font:900 18px Arial,sans-serif;touch-action:manipulation">DOWNLOAD</button>'+
-            '<button id="ccQuickBack" type="button" style="min-height:58px;border:1px solid rgba(0,255,255,.42);border-radius:16px;background:#111;color:#fff;font:900 18px Arial,sans-serif;touch-action:manipulation">BACK</button>'+
-          '</div>'+
-        '</div>'+
-      '</div>';
+    box.innerHTML='<div style="width:min(520px,100%);max-height:calc(100vh - 28px);overflow:auto;padding:0;box-sizing:border-box">'+officialReceiptHTML(r,"ccStandaloneBack")+'</div>';
     box.style.display="flex";
-    box.querySelector("#ccQuickDownload").onclick=function(e){e.preventDefault();e.stopPropagation();downloadReceipt(r);};
-    box.querySelector("#ccQuickBack").onclick=function(e){e.preventDefault();e.stopPropagation();box.style.display="none";};
+    box.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openStandaloneReceipt(r);});
+    box.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();downloadReceipt(r);});
+    box.querySelector("#ccStandaloneBack")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();box.style.display="none";});
   }
+
   function enhanceBuyerReceipt(){
     var box=document.getElementById("ioneCcBuyStatus");if(!box||box.dataset.receiptEnhanced)return;
     if(!/OFFICIAL CHAPCHAP RECEIPT/i.test(box.textContent||""))return;
