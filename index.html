@@ -7846,8 +7846,8 @@ if(input)input.onkeydown=function(e){
     const status=document.getElementById("authorityChapChapStatus");
     const loadStatus=document.getElementById("authorityChapChapLoadStatus");
     if(!open||!close||!panel)return;
-    if(open.dataset.bound)return;
-    open.dataset.bound="1";
+    if(!open.dataset.chapChapCoreBound){
+    open.dataset.chapChapCoreBound="1";
     async function loadCounts(){
       if(loadStatus)loadStatus.textContent="Loading marketplace data…";
       const targets=[
@@ -7881,9 +7881,33 @@ if(input)input.onkeydown=function(e){
       panel.setAttribute("aria-hidden","true");
       if(status)status.textContent="READY";
     };
+    }
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});
   else bindChapChapAuthority();
+
+  /* Stable delegated controls: reopening must work every time Authority Press is opened. */
+  if(!document.documentElement.dataset.chapChapDelegated){
+    document.documentElement.dataset.chapChapDelegated="1";
+    document.addEventListener("click",function(event){
+      const openButton=event.target.closest && event.target.closest("#authorityChapChapOpen");
+      const closeButton=event.target.closest && event.target.closest("#authorityChapChapClose");
+      const panel=document.getElementById("authorityChapChapPanel");
+      const status=document.getElementById("authorityChapChapStatus");
+      if(openButton && panel){
+        panel.classList.add("is-open");
+        panel.setAttribute("aria-hidden","false");
+        if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
+        bindChapChapAuthority();
+        return;
+      }
+      if(closeButton && panel){
+        panel.classList.remove("is-open");
+        panel.setAttribute("aria-hidden","true");
+        if(status)status.textContent="READY";
+      }
+    });
+  }
 })();
 </script>
 </body>
