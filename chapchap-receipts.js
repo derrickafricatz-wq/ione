@@ -131,7 +131,7 @@
     var o=document.getElementById("ioneChapOverlay");var list=o?.querySelector(".cc-list");if(!list)return;
     list.innerHTML='<div class="cc-list-item"><strong>OFFICIAL CHAPCHAP RECEIPT</strong><span>'+esc(r.data.receipt_number)+' • '+esc(r.data.product_title)+'</span><span>AMOUNT: '+esc(money(r.data.amount_tzs))+'<br>FEE: '+esc(money(r.data.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.data.blmpay_reference||"—")+'<br>PAID: '+esc(r.data.paid_at?new Date(r.data.paid_at).toLocaleString():"—")+'</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px"><button type="button" id="ccSellerDownload" class="cc-primary">DOWNLOAD RECEIPT</button><button type="button" id="ccSellerBack" class="cc-secondary">BACK</button></div></div>';
     document.getElementById("ccSellerDownload")?.addEventListener("click",function(){downloadReceipt(r.data);});
-    document.getElementById("ccSellerBack")?.addEventListener("click",enhanceMyShop);
+    document.getElementById("ccSellerBack")?.addEventListener("click",function(){if(o?.querySelector(".cc-list"))o.querySelector(".cc-list").dataset.receiptEnhanced="";enhanceMyShop();});
   }
 
   function enhanceBuyerReceipt(){
