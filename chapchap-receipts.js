@@ -149,6 +149,16 @@
     bar.appendChild(b);
   }
 
+  function openStandaloneReceipt(r){
+    if(!r)return;
+    var box=document.getElementById("ioneChapReceiptQuick");
+    if(!box){box=document.createElement("div");box.id="ioneChapReceiptQuick";box.style.cssText="position:fixed;inset:0;z-index:103000;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(0,0,0,.84);font-family:Arial,sans-serif;color:#fff";document.body.appendChild(box);}
+    box.innerHTML='<div style="width:min(500px,100%);max-height:92vh;overflow:auto;border:1px solid #00ffff;border-radius:20px;background:#071012;padding:18px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><strong style="color:#00ffff;font-size:18px">OFFICIAL CHAPCHAP RECEIPT</strong><button id="ccQuickClose" class="cc-secondary" type="button">CLOSE</button></div><div style="margin-top:12px;font-size:12px;line-height:1.7"><strong>'+esc(r.receipt_number)+'</strong><br>PRODUCT: '+esc(r.product_title)+'<br>CLIENT: '+esc(r.buyer_full_name||"—")+'<br>PHONE: '+esc(r.buyer_phone||r.buyer_contact||"—")+'<br>EMAIL: '+esc(r.buyer_email||"—")+'<br>ADDRESS: '+esc(r.buyer_address||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</div><button id="ccQuickDownload" class="cc-primary" type="button" style="width:100%;margin-top:14px">DOWNLOAD RECEIPT</button></div>';
+    box.style.display="flex";
+    box.querySelector("#ccQuickClose").onclick=function(){box.style.display="none";};
+    box.querySelector("#ccQuickDownload").onclick=function(){downloadReceipt(r);box.style.display="none";};
+  }
+
   function enhanceBuyerReceipt(){
     var box=document.getElementById("ioneCcBuyStatus");if(!box||box.dataset.receiptEnhanced)return;
     if(!/OFFICIAL CHAPCHAP RECEIPT/i.test(box.textContent||""))return;
@@ -167,6 +177,7 @@
   }
 
   window.ioneChapChapOpenReceipt=function(r){openAuthorityReceipt(r);};
+  window.ioneChapChapOpenStandaloneReceipt=function(r){openStandaloneReceipt(r);};
   window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
   var mo=new MutationObserver(function(){
     if(authorityWriting)return;
