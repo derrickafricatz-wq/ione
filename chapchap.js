@@ -503,7 +503,8 @@
       '<div><h3>' + esc(p.title) + '</h3><p><span style="display:inline-block;padding:6px 9px;border-radius:8px;background:' + esc(tagColor) + ';color:#111;font-weight:900">' + esc(money(displayAmount, currency)) + '</span></p><p>' + esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
       "</div>" +
       '<div class="cc-grid">' +
-      '<div class="cc-field"><label>SELLER</label><div style="color:#9eb0b5;font-size:11px;line-height:1.45">' + esc(p.description || "Product listed on I|ONE ChapChap.") + "</div></div>" +
+      '<div class="cc-field"><label>PRODUCT DETAILS</label><div style="color:#9eb0b5;font-size:11px;line-height:1.45">' + esc(p.description || "No description supplied.") + "</div></div>" +
+      '<div class="cc-field"><label>SPECIFICATIONS / CONDITION</label><div style="color:#9eb0b5;font-size:10px;line-height:1.5">' + esc(Object.keys(p.attributes||{}).map(function(k){return k.replace(/_/g," ").toUpperCase()+": "+p.attributes[k];}).join(" • ") || "No additional specifications supplied.") + "</div></div>" +
       '<div class="cc-actions" style="grid-template-columns:1fr 1fr"><a class="cc-secondary" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="tel:+' + esc(normalizePhone(p.seller_phone)) + '">CALL SELLER</a><a class="cc-secondary" style="display:flex;align-items:center;justify-content:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/' + esc(normalizePhone(p.seller_phone)) + '">CHAT SELLER</a></div>' +
       '<div class="cc-field"><label>IMPORTANT BEFORE PAYMENT</label><div style="padding:11px;border:1px solid #ffe600;border-radius:10px;background:#171400;color:#fff3a0;font-size:10px;line-height:1.5">Contact or chat with the seller first. Confirm the seller is available, the product is physically available, and agree how and where you will receive it.</div></div>
       <div class="cc-field"><label>RECEIPT NOTICE</label><div style="padding:11px;border:1px solid #00ffff;border-radius:10px;background:#061719;color:#cfffff;font-size:10px;line-height:1.5">After successful payment, an official receipt will appear. Do not ignore it. After receiving the product, contact I|ONE Care immediately using the phone, WhatsApp or email on the receipt.</div></div>
@@ -513,7 +514,7 @@
       <div class="cc-field"><label>YOUR EMAIL</label><input id="ioneCcBuyerEmail" type="email" maxlength="160" placeholder="you@example.com"></div>
       <div class="cc-field"><label>YOUR CONTACT</label><input id="ioneCcBuyerContact" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>
       <div class="cc-field"><label>YOUR MOBILE NUMBER • +255</label><input id="ioneCcBuyerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
-      '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button">CONFIRM PAYMENT</button></div>' +
+      '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button" disabled>CONFIRM PAYMENT</button></div>' +
       '<div id="ioneCcBuyStatus" class="cc-status">BLMPay mobile prompts currently use Tanzanian mobile numbers (+255) and TZS.</div>' +
       "</div>"
     );
