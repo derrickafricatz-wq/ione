@@ -110,8 +110,8 @@
     var list=overlay.querySelector(".cc-list"); if(!list||list.dataset.receiptEnhanced)return;
     list.dataset.receiptEnhanced="1";
     try{
-      var session=await (typeof ensureHeavensAnonymousSession==="function"?ensureHeavensAnonymousSession():null);if(!session?.user)return;
-      var orders=await sb().from("ione_chapchap_orders").select("id,product_id,amount_tzs,status,created_at,paid_at,received_confirmed_at,payout_status,payout_reference").eq("seller_id",session.user.id).in("status",["paid","received","disputed"]).order("created_at",{ascending:false}).limit(20);
+      var ordersResult=await sb().functions.invoke("ione-chapchap-seller",{body:{action:"sales"}}); if(ordersResult.error||!ordersResult.data?.success)throw new Error(ordersResult.data?.error||ordersResult.error?.message||"Could not load seller sales."); var orders={data:ordersResult.data.orders||[],error:null}; var map={}; (orders.data||[]).forEach(function(o){if(o.receipt)map[String(o.id)]=o.receipt;});
+      
       if(orders.error)throw orders.error;
       var ids=(orders.data||[]).map(function(o){return o.id});
       var rr=ids.length?await sb().from("ione_chapchap_receipts").select("*").in("order_id",ids):{data:[],error:null};if(rr.error)throw rr.error;
