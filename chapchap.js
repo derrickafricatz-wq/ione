@@ -294,6 +294,9 @@
     var priceInput = document.getElementById("ioneCcPrice");
     if (priceInput) priceInput.addEventListener("input", function () { formatPriceInput(priceInput); });
     document.getElementById("ioneCcSellCancel").addEventListener("click", closeOverlay);
+    document.getElementById("ioneCcSellerTerms").addEventListener("change", function(){
+      document.getElementById("ioneCcSellSubmit").disabled=!this.checked;
+    });
     document.getElementById("ioneCcSellSubmit").addEventListener("click", submitListing);
     var camera = document.getElementById("ioneCcCamera");
     var gallery = document.getElementById("ioneCcGallery");
@@ -353,6 +356,9 @@
       var description = fieldValue("ioneCcDescription");
       if (!String(name).replace(/\s/g, "")) throw new Error("Enter your name.");
       if (!validInternationalPhone(phone)) throw new Error("Enter a valid call number with country code, for example +255712345678.");
+      if (!sellerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sellerEmail)) throw new Error("Enter a valid seller email.");
+      if (!sellerAddress) throw new Error("Enter your full address.");
+      if (!termsAccepted) throw new Error("Read and accept the ChapChap Terms & Conditions before publishing.");
       if (!String(title).replace(/\s/g, "")) throw new Error("Enter the product name.");
       if (!Number.isFinite(price) || price <= 0) throw new Error("Enter a valid price.");
       if (!String(location).replace(/\s/g, "")) throw new Error("Enter the location.");
@@ -392,6 +398,21 @@
         status: "active"
       }).select("id").single();
       if (result.error) throw result.error;
+      var agreement = await sb.from("ione_chapchap_seller_agreements").insert({
+        seller_id: session.user.id,
+        product_id: result.data.id,
+        seller_name: name,
+        seller_phone: phone,
+        seller_email: sellerEmail,
+        seller_address: sellerAddress,
+        seller_location: location,
+        terms_version: CHAPCHAP_TERMS_VERSION,
+        accepted_at: new Date().toISOString()
+      });
+      if (agreement.error) {
+        await sb.from("ione_single_products").update({status:"hidden"}).eq("id", result.data.id).eq("seller_id", session.user.id);
+        throw agreement.error;
+      }
       status.textContent = "LIVE • Your product is now on ChapChap.";
       await loadProducts();
       setTimeout(closeOverlay, 700);
@@ -446,7 +467,7 @@
     if (!sb || !rail) return;
     try {
       var result = await sb.from("ione_single_products")
-        .select("id,seller_id,seller_name,seller_phone,category,title,price_tzs,price_amount,price_currency,price_tag_color,location,description,attributes,image_urls,status,created_at")
+        .select("id,seller_id,seller_name,seller_phone,seller_email,seller_address,category,title,price_tzs,price_amount,price_currency,price_tag_color,location,description,attributes,image_urls,status,created_at,terms_version,terms_accepted_at")
         .in("status", ["active","pending_payment"])
         .order("created_at", { ascending: false })
         .limit(30);
@@ -475,6 +496,7 @@
     var imageMarkup = images.length ? '<div class="cc-gallery" id="ioneCcGalleryView">' +
       images.map(function (url, index) { return '<img class="cc-gallery-img" src="' + esc(url) + '" alt="" style="opacity:' + (index === 0 ? "1" : "0") + ';position:' + (index === 0 ? "relative" : "absolute") + '">'; }).join("") +
       '</div>' : '<div class="cc-gallery"></div>';
+    window.ioneChapCurrentProductId=p.id;
     openOverlay("BUY • " + p.title, "CHAPCHAP • BUYER",
       imageMarkup +
       '<div class="cc-product-preview" style="grid-template-columns:1fr">' +
@@ -483,12 +505,22 @@
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>SELLER</label><div style="color:#9eb0b5;font-size:11px;line-height:1.45">' + esc(p.description || "Product listed on I|ONE ChapChap.") + "</div></div>" +
       '<div class="cc-actions" style="grid-template-columns:1fr 1fr"><a class="cc-secondary" style="display:flex;align-items:center;justify-content:center;text-decoration:none" href="tel:+' + esc(normalizePhone(p.seller_phone)) + '">CALL SELLER</a><a class="cc-secondary" style="display:flex;align-items:center;justify-content:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/' + esc(normalizePhone(p.seller_phone)) + '">CHAT SELLER</a></div>' +
-      '<div class="cc-field"><label>YOUR MOBILE NUMBER • +255</label><input id="ioneCcBuyerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
+      '<div class="cc-field"><label>IMPORTANT BEFORE PAYMENT</label><div style="padding:11px;border:1px solid #ffe600;border-radius:10px;background:#171400;color:#fff3a0;font-size:10px;line-height:1.5">Contact or chat with the seller first. Confirm the seller is available, the product is physically available, and agree how and where you will receive it.</div></div>
+      <div class="cc-field"><label>RECEIPT NOTICE</label><div style="padding:11px;border:1px solid #00ffff;border-radius:10px;background:#061719;color:#cfffff;font-size:10px;line-height:1.5">After successful payment, an official receipt will appear. Do not ignore it. After receiving the product, contact I|ONE Care immediately using the phone, WhatsApp or email on the receipt.</div></div>
+      <label style="display:flex;gap:8px;align-items:flex-start;color:#fff;font-size:10px"><input id="ioneCcBuyerNotice" type="checkbox"> I have read and understood these important notices.</label>
+      <div class="cc-field"><label>YOUR FULL NAME</label><input id="ioneCcBuyerName" maxlength="120" placeholder="Full name"></div>
+      <div class="cc-field"><label>YOUR FULL ADDRESS</label><input id="ioneCcBuyerAddress" maxlength="180" placeholder="Street / area / city / region"></div>
+      <div class="cc-field"><label>YOUR EMAIL</label><input id="ioneCcBuyerEmail" type="email" maxlength="160" placeholder="you@example.com"></div>
+      <div class="cc-field"><label>YOUR CONTACT</label><input id="ioneCcBuyerContact" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>
+      <div class="cc-field"><label>YOUR MOBILE NUMBER • +255</label><input id="ioneCcBuyerPhone" class="cc-phone" inputmode="tel" maxlength="16" placeholder="+255712345678"></div>' +
       '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button">CONFIRM PAYMENT</button></div>' +
       '<div id="ioneCcBuyStatus" class="cc-status">BLMPay mobile prompts currently use Tanzanian mobile numbers (+255) and TZS.</div>' +
       "</div>"
     );
     document.getElementById("ioneCcBuyCancel").addEventListener("click", closeOverlay);
+    document.getElementById("ioneCcBuyerNotice").addEventListener("change", function(){
+      document.getElementById("ioneCcBuySubmit").disabled=!this.checked;
+    });
     document.getElementById("ioneCcBuySubmit").addEventListener("click", function () { startPayment(p); });
     startGalleryLoop();
   }
@@ -569,11 +601,20 @@
     try {
       btn.disabled = true;
       var phone = normalizePhone(fieldValue("ioneCcBuyerPhone"));
+      var buyerName=fieldValue("ioneCcBuyerName").trim();
+      var buyerAddress=fieldValue("ioneCcBuyerAddress").trim();
+      var buyerEmail=fieldValue("ioneCcBuyerEmail").trim();
+      var buyerContact=normalizePhone(fieldValue("ioneCcBuyerContact"));
       if (!validPhone(phone)) throw new Error("For the current BLMPay mobile prompt, enter a Tanzanian number beginning +255.");
+      if (!buyerName) throw new Error("Enter your full name.");
+      if (!buyerAddress) throw new Error("Enter your full address.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail)) throw new Error("Enter a valid email address.");
+      if (!validPhone(buyerContact)) throw new Error("Enter a valid contact number.");
+      if (!document.getElementById("ioneCcBuyerNotice")?.checked) throw new Error("Read and acknowledge the important notices first.");
       var session = await getSession();
       status.textContent = "Sending payment request…";
       var sb = getSupabase();
-      var result = await sb.functions.invoke("ione-chapchap-payment", { body: { product_id: product.id, phone_number: phone } });
+      var result = await sb.functions.invoke("ione-chapchap-payment", { body: { product_id: product.id, phone_number: phone, buyer_full_name: buyerName, buyer_address: buyerAddress, buyer_email: buyerEmail, buyer_contact: buyerContact } });
       if (result.error || !result.data || !result.data.success) {
         var backendMessage = result.data && result.data.error ? result.data.error : "";
         if (!backendMessage && result.error && result.error.context) {
