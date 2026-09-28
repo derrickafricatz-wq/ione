@@ -125,20 +125,52 @@
   }
 
   async function openLatestBuyerReceipt(){
-    var savedReceipt=null,savedId="";
-    try{savedReceipt=JSON.parse(localStorage.getItem("ione_chapchap_last_receipt")||"null");savedId=localStorage.getItem("ione_chapchap_last_paid_order")||"";}catch(e){}
-    if(savedReceipt){openStandaloneReceipt(savedReceipt);return;}
-    if(savedId){
-      var direct=await sb().from("ione_chapchap_receipts").select("*").eq("order_id",savedId).maybeSingle();
-      if(!direct.error&&direct.data){try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(direct.data));}catch(e){} openStandaloneReceipt(direct.data);return;}
-      if(direct.error){alert("CHAPCHAP RECEIPT DEBUG\n\nSaved receipt lookup failed.\n\n"+(direct.error.message||JSON.stringify(direct.error)));return;}
+    var client=sb();
+    if(!client){alert("CHAPCHAP RECEIPT DEBUG\n\nSupabase client is not available.");return;}
+    try{
+      var session=await ensureHeavensAnonymousSession();
+      if(!session||!session.user) throw new Error("Secure ChapChap session is not ready.");
+      var q=await client.from("ione_chapchap_receipts").select("*").eq("buyer_id",session.user.id).order("paid_at",{ascending:false}).limit(50);
+      if(q.error){
+        alert("CHAPCHAP RECEIPT DEBUG\n\nReceipt history lookup failed.\n\n"+(q.error.message||JSON.stringify(q.error))+"\n\nBuyer ID: "+session.user.id);
+        return;
+      }
+      var rows=q.data||[];
+      if(!rows.length){
+        alert("CHAPCHAP RECEIPT DEBUG\n\nNo saved receipt was found for this ChapChap account yet.\n\nBuyer ID: "+session.user.id);
+        return;
+      }
+      if(rows.length===1){try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(rows[0]));localStorage.setItem("ione_chapchap_last_paid_order",String(rows[0].order_id||""));}catch(e){} openStandaloneReceipt(rows[0]);return;}
+      openReceiptHistory(rows);
+    }catch(err){
+      alert("CHAPCHAP RECEIPT DEBUG\n\nReceipt history could not be opened.\n\n"+(err&&err.message?err.message:String(err)));
     }
-    var result=await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
-    if(result.error||!result.data?.success||!result.data.receipt){
-      alert("CHAPCHAP RECEIPT DEBUG\n\nNo saved receipt was found.\n\n"+(result.data?.error||result.error?.message||"No receipt returned."));
-      return;
+  }
+
+  function openReceiptHistory(rows){
+    var box=document.getElementById("ioneChapReceiptHistory");
+    if(!box){
+      box=document.createElement("div");
+      box.id="ioneChapReceiptHistory";
+      box.style.cssText="position:fixed;inset:0;z-index:103001;display:flex;align-items:center;justify-content:center;padding:0;background:#050809;font-family:Arial,sans-serif;color:#fff";
+      document.body.appendChild(box);
     }
-    openStandaloneReceipt(result.data.receipt);
+    box.innerHTML='<div style="width:100vw;height:100vh;box-sizing:border-box;overflow:auto;padding:18px;background:linear-gradient(160deg,#102b32,#071417 45%,#030607)">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;padding:5px 0 13px;background:linear-gradient(#102b32 78%,transparent);z-index:2">'+
+      '<div><strong style="display:block;color:#ff7be7;font-size:19px">RECEIPT HISTORY</strong><span style="display:block;margin-top:4px;color:#91a8ad;font-size:9px;letter-spacing:1.3px">YOUR CHAPCHAP PURCHASES</span></div>'+
+      '<button id="ccHistoryClose" class="cc-secondary" type="button">CLOSE</button></div>'+
+      '<div style="display:grid;gap:10px">'+rows.map(function(r,i){
+        return '<div style="border:1px solid rgba(255,79,216,.3);border-radius:15px;padding:12px;background:linear-gradient(145deg,rgba(255,79,216,.07),rgba(0,255,255,.035));box-shadow:inset 0 1px 0 rgba(255,255,255,.07)">'+
+          '<strong style="display:block;color:#fff;font-size:12px">'+esc(r.product_title||"ChapChap product")+'</strong>'+
+          '<span style="display:block;margin-top:5px;color:#9fb2b6;font-size:9px;line-height:1.5">'+esc(r.receipt_number||"—")+'<br>'+esc(money(r.amount_tzs))+' • '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</span>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px">'+
+          '<button type="button" class="cc-primary cc-history-view" data-index="'+i+'">VIEW</button>'+
+          '<button type="button" class="cc-secondary cc-history-download" data-index="'+i+'">DOWNLOAD</button></div></div>';
+      }).join("")+'</div></div>';
+    box.style.display="flex";
+    box.querySelector("#ccHistoryClose").onclick=function(){box.style.display="none";};
+    box.querySelectorAll(".cc-history-view").forEach(function(b){b.onclick=function(){openStandaloneReceipt(rows[Number(b.dataset.index)]);};});
+    box.querySelectorAll(".cc-history-download").forEach(function(b){b.onclick=function(){downloadReceipt(rows[Number(b.dataset.index)]);};});
   }
 
   function enhanceBuyerMarketReceipt(){
