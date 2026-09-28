@@ -525,6 +525,42 @@
     startGalleryLoop();
   }
 
+  async function confirmReceived(orderId) {
+    var status = document.getElementById("ioneCcBuyStatus");
+    var button = document.getElementById("ioneCcReceivedBtn");
+    if (button) button.disabled = true;
+    try {
+      var session = await getSession();
+      var sb = getSupabase();
+      var result = await sb.functions.invoke("ione-chapchap-payment", {
+        body: { action: "received", order_id: orderId, product_id: "" }
+      });
+      var message = result.data && result.data.error ? result.data.error : "";
+      if (!message && result.error && result.error.context) {
+        try {
+          var errorPayload = await result.error.context.json();
+          message = errorPayload && (errorPayload.error || errorPayload.message) ? (errorPayload.error || errorPayload.message) : "";
+        } catch (_) {}
+      }
+      if (result.error || !result.data || !result.data.success) throw new Error(message || (result.error && result.error.message) || "Could not confirm product receipt.");
+      if (status) {
+        status.innerHTML = '<div style="padding:14px;border:1px solid rgba(0,255,255,.35);border-radius:14px;background:rgba(0,255,255,.035);text-align:center"><strong style="display:block;color:#00ffff;font-size:16px">RECEIPT CONFIRMED</strong><div style="margin-top:8px;font-size:11px;line-height:1.5">I|ONE has recorded that you received the product. Authority Press can now handle the seller payout manually.</div><button id="ioneCcReceiptClose" class="cc-primary" type="button" style="width:100%;margin-top:12px">DONE</button></div>';
+        var done=document.getElementById("ioneCcReceiptClose");
+        if(done)done.addEventListener("click",closeOverlay);
+      }
+    } catch (err) {
+      if (status) status.textContent = err && err.message ? err.message : "Could not confirm product receipt.";
+      if (button) button.disabled = false;
+    }
+  }
+
+  function printReceipt(r) {
+    var w = window.open("", "_blank", "noopener,noreferrer,width=520,height=760");
+    if (!w) { alert("Please allow pop-ups to print the receipt."); return; }
+    var html = '<!doctype html><html><head><title>I|ONE ChapChap Receipt</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{font-size:20px}p{line-height:1.5}.line{border-top:1px solid #ccc;margin:14px 0;padding-top:10px}</style></head><body><h1>I|ONE CHAPCHAP — OFFICIAL RECEIPT</h1><p><strong>Receipt:</strong> '+esc(r.receipt_number)+'</p><p><strong>Product:</strong> '+esc(r.product_title)+'</p><p><strong>Amount:</strong> '+esc(money(r.amount_tzs))+'</p><p><strong>ChapChap fee:</strong> '+esc(money(r.chapchap_fee_tzs))+'</p><p><strong>BLMPay reference:</strong> '+esc(r.blmpay_reference||"—")+'</p><p><strong>Paid:</strong> '+esc(new Date(r.paid_at).toLocaleString())+'</p><div class="line"><strong>I|ONE Care</strong><br>+255 742 097 868<br>ione.customercare.africa@gmail.com</div><p>After receiving the product, immediately inform I|ONE Care.</p><script>window.onload=function(){setTimeout(function(){window.print()},250)};</script></body></html>';
+    w.document.open(); w.document.write(html); w.document.close();
+  }
+
   async function showReceipt(orderId) {
     var status = document.getElementById("ioneCcBuyStatus");
     try {
@@ -548,10 +584,12 @@
         'Paid: ' + esc(new Date(r.paid_at).toLocaleString()) +
         '</div>' +
         '<div style="margin-top:10px;font-size:11px;line-height:1.55">After receiving the product, immediately contact I|ONE Care: <a href="tel:+255742097868">+255 742 097 868</a> • <a href="mailto:ione.customercare.africa@gmail.com">ione.customercare.africa@gmail.com</a>.</div>' +
-        '<button id="ioneCcReceiptClose" class="cc-primary" type="button" style="width:100%;margin-top:12px">DONE</button>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px"><button id="ioneCcPrintReceipt" class="cc-secondary" type="button">PRINT RECEIPT</button><button id="ioneCcReceivedBtn" class="cc-primary" type="button">I RECEIVED THE PRODUCT</button></div>' +
         '</div>';
-      var done=document.getElementById("ioneCcReceiptClose");
-      if(done)done.addEventListener("click",closeOverlay);
+      var print=document.getElementById("ioneCcPrintReceipt");
+      if(print)print.addEventListener("click",function(){printReceipt(r);});
+      var received=document.getElementById("ioneCcReceivedBtn");
+      if(received)received.addEventListener("click",function(){confirmReceived(orderId);});
     } catch(err) {
       if(status)status.textContent="Payment confirmed, but the receipt could not be loaded yet. Please check again shortly.";
     }
@@ -614,6 +652,7 @@
       if (result.data.status === "paid") {
         if (status) status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
         await loadProducts();
+        await showReceipt(result.data.order_id || product.id);
         return;
       }
     } catch (err) {
@@ -632,7 +671,18 @@
     var btn = document.getElementById("ioneCcBuySubmit");
     try {
       btn.disabled = true;
-      var phone = normalizePhone(fieldValue("ioneCcBuyerPhone"));\n      var buyerName = fieldValue("ioneCcBuyerName");\n      var buyerAddress = fieldValue("ioneCcBuyerAddress");\n      var buyerEmail = fieldValue("ioneCcBuyerEmail");\n      var buyerContact = normalizePhone(fieldValue("ioneCcBuyerContact"));\n      var buyerConfirm = document.getElementById("ioneCcBuyerConfirm");\n      if (!String(buyerName).replace(/\\s/g, "")) throw new Error("Enter your full name.");\n      if (!String(buyerAddress).replace(/\\s/g, "")) throw new Error("Enter your full address.");\n      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(buyerEmail))) throw new Error("Enter a valid email address.");\n      if (!validPhone(buyerContact)) throw new Error("Enter a valid contact number beginning +255.");\n      if (!validPhone(phone)) throw new Error("For BLMPay, enter a Tanzanian number beginning +255.");\n      if (!buyerConfirm || !buyerConfirm.checked) throw new Error("Please confirm that you contacted the seller and understand the receipt and I|ONE Care instructions.");
+      var phone = normalizePhone(fieldValue("ioneCcBuyerPhone"));
+      var buyerName = fieldValue("ioneCcBuyerName");
+      var buyerAddress = fieldValue("ioneCcBuyerAddress");
+      var buyerEmail = fieldValue("ioneCcBuyerEmail");
+      var buyerContact = normalizePhone(fieldValue("ioneCcBuyerContact"));
+      var buyerConfirm = document.getElementById("ioneCcBuyerConfirm");
+      if (!String(buyerName).replace(/\\s/g, "")) throw new Error("Enter your full name.");
+      if (!String(buyerAddress).replace(/\\s/g, "")) throw new Error("Enter your full address.");
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(buyerEmail))) throw new Error("Enter a valid email address.");
+      if (!validPhone(buyerContact)) throw new Error("Enter a valid contact number beginning +255.");
+      if (!validPhone(phone)) throw new Error("For BLMPay, enter a Tanzanian number beginning +255.");
+      if (!buyerConfirm || !buyerConfirm.checked) throw new Error("Please confirm that you contacted the seller and understand the receipt and I|ONE Care instructions.");
       if (!validPhone(phone)) throw new Error("For the current BLMPay mobile prompt, enter a Tanzanian number beginning +255.");
       var session = await getSession();
       status.textContent = "Sending payment request…";
@@ -666,7 +716,7 @@
     }
   }
 
-  async async function waitForPayment(orderId, product, buyerPhone) {
+  async function waitForPayment(orderId, product, buyerPhone) {
     var sb = getSupabase();
     var status = document.getElementById("ioneCcBuyStatus");
     var startedAt = Date.now();
@@ -685,6 +735,7 @@
             clearInterval(pollTimer); pollTimer = null;
             status.innerHTML = "PAYMENT CONFIRMED • PRODUCT SOLD.<br><a class=\"cc-call\" href=\"tel:+" + esc(normalizePhone(product.seller_phone)) + "\">CALL SELLER • " + esc(product.seller_phone) + "</a>";
             await loadProducts();
+            await showReceipt(orderId);
             resolve();
             return;
           }
