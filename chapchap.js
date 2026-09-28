@@ -736,7 +736,16 @@ async function reconcilePayment(product) {
     });
   }
 
-  async function openMine() {
+  async function revokeChapChapProduct(productId) {
+    if(!window.confirm("REVOKE PRODUCT?\n\nIt will disappear from the public ChapChap marketplace because it is no longer available. The historical record remains.")) return;
+    var session=await getSession(), sb=getSupabase();
+    var r=await sb.from("ione_single_products").update({status:"revoked",revoked_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",productId).eq("seller_id",session.user.id).in("status",["active","hidden"]);
+    if(r.error) throw r.error;
+    await loadProducts();
+    openMine();
+  }
+
+async function openMine() {
     try {
       var session = await getSession();
       var sb = getSupabase();
@@ -764,7 +773,11 @@ async function reconcilePayment(product) {
           return '<div class="cc-list-item"><strong>ORDER • ' + esc(String(o.status).toUpperCase()) + '</strong><span>' + esc(money(o.amount_tzs)) + " • " + esc(new Date(o.created_at).toLocaleString()) + "</span></div>";
         }).join("") : "") +
         "</div>";
-      openOverlay("MY CHAPCHAP", "SELLER • PAID SALES & NOTIFICATIONS", body);
+      openOverlay("MY CHAPCHAP", "SELLER • SALES, RECEIPTS & PRODUCT CONTROL", body);
+      var mine=await sb.from("ione_single_products").select("id,title,status,price_amount,price_currency,created_at").eq("seller_id",session.user.id).order("created_at",{ascending:false}).limit(30);
+      var box=document.createElement("div"); box.className="cc-list"; box.innerHTML='<div class="cc-list-item"><strong>MY PRODUCTS</strong><span>Revoke a product if it has been sold outside ChapChap.</span></div>';
+      (mine.data||[]).forEach(function(p){var item=document.createElement("div");item.className="cc-list-item";item.innerHTML='<strong>'+esc(p.title)+'</strong><span>'+esc(String(p.status).toUpperCase())+' • '+esc(money(p.price_amount,p.price_currency))+'</span>';if(p.status==="active"||p.status==="hidden"){var b=document.createElement("button");b.className="cc-secondary";b.style.width="100%";b.style.marginTop="8px";b.textContent="REVOKE PRODUCT";b.onclick=function(){revokeChapChapProduct(p.id)};item.appendChild(b);}box.appendChild(item);});
+      var card=document.querySelector("#ioneChapOverlay .cc-card"); if(card) card.appendChild(box);
     } catch (err) {
       openOverlay("MY CHAPCHAP", "SELLER", '<div class="cc-status">' + esc(err && err.message ? err.message : "Could not load seller information.") + "</div>");
     }
