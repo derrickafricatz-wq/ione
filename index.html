@@ -97,7 +97,7 @@
     if(chapChapAuthorityFilter==="orders") rows=orders;
     else if(chapChapAuthorityFilter==="agreements") rows=orders.filter(o=>o.has_agreement);
     else if(chapChapAuthorityFilter==="receipts") rows=orders.filter(o=>o.has_receipt);
-    else rows=orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && (o.status==="received" || o.received_confirmed_at)));
+    else rows=orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && ["paid","received"].includes(String(o.status||"").toLowerCase())));
     if(!rows.length){list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';if(status)status.textContent="CONNECTED • READY";return;}
     if(chapChapAuthorityFilter==="orders"){
       list.innerHTML=rows.map(o=>{const p=o.product||{};return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>CLIENT: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+'</div></div>';}).join("");
