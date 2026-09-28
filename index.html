@@ -99,7 +99,7 @@
       const orders=r.data.orders||[];
       const count=document.getElementById("chapChapOrdersCount");if(count)count.textContent=orders.length;
       if(list)list.innerHTML=orders.length?orders.map(o=>{
-        const p=o.ione_single_products||{};
+        const p=o.product||{};
         const ready=o.status==="received"&&o.payout_status!=="completed";
         const completed=o.payout_status==="completed";
         const safeId=authorityEsc(o.id);
