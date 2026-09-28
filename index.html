@@ -87,6 +87,7 @@
   }
 
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
+  let chapChapAuthorityFilter="orders";
   async function loadChapChapAuthority(){
     const status=document.getElementById("authorityChapChapLoadStatus");
     const list=document.getElementById("authorityChapChapOrders");
@@ -97,8 +98,18 @@
       const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load ChapChap management data.");
       const orders=r.data.orders||[];
-      const count=document.getElementById("chapChapOrdersCount");if(count)count.textContent=orders.length;
-      if(list)list.innerHTML=orders.length?orders.map(o=>{
+      const counts=r.data.counts||{};
+      const orderCount=document.getElementById("chapChapOrdersCount");if(orderCount)orderCount.textContent=String(counts.orders ?? orders.length);
+      const agreementCount=document.getElementById("chapChapAgreementsCount");if(agreementCount)agreementCount.textContent=String(counts.agreements ?? 0);
+      const receiptCount=document.getElementById("chapChapReceiptsCount");if(receiptCount)receiptCount.textContent=String(counts.receipts ?? 0);
+      const payoutCount=document.getElementById("chapChapPayoutsCount");if(payoutCount)payoutCount.textContent=String(counts.payouts ?? 0);
+      const visibleOrders=orders.filter(o=>{
+        if(chapChapAuthorityFilter==="agreements")return !!o.has_agreement;
+        if(chapChapAuthorityFilter==="receipts")return !!o.has_receipt;
+        if(chapChapAuthorityFilter==="payouts")return String(o.payout_status||"")!=="";
+        return true;
+      });
+      if(list)list.innerHTML=visibleOrders.length?visibleOrders.map(o=>{
         const p=o.product||{};
         const ready=o.status==="received"&&o.payout_status!=="completed";
         const completed=o.payout_status==="completed";
@@ -182,6 +193,19 @@
   }
 
   function bind(){
+    const filters=document.getElementById("authorityChapChapFilters");
+    if(filters && !filters.dataset.bound){
+      filters.dataset.bound="1";
+      filters.addEventListener("click",function(e){
+        const card=e.target.closest("[data-cc-filter]");
+        if(!card)return;
+        chapChapAuthorityFilter=card.getAttribute("data-cc-filter")||"orders";
+        filters.querySelectorAll("[data-cc-filter]").forEach(el=>el.classList.toggle("is-selected",el===card));
+        loadChapChapAuthority();
+        setTimeout(()=>document.getElementById("authorityChapChapOrders")?.scrollIntoView({behavior:"smooth",block:"nearest"}),50);
+      });
+    }
+
     const save=document.getElementById("authoritySavePrices");
     if(save)save.onclick=saveAuthorityPrices;
 
