@@ -126,27 +126,76 @@
 
   async function openLatestBuyerReceipt(){
     var client=sb();
-    if(!client){alert("CHAPCHAP RECEIPT DEBUG\n\nSupabase client is not available.");return;}
+    if(!client){alert("CHAPCHAP RECEIPT DEBUG\\n\\nSupabase client is not available.");return;}
     try{
+      /*
+       * First use the paid order saved at checkout. This is more stable than
+       * relying only on the current anonymous buyer UUID after a refresh.
+       */
+      var savedOrderId="";
+      var savedReceiptRaw="";
+      try{
+        savedOrderId=String(localStorage.getItem("ione_chapchap_last_paid_order")||"").trim();
+        savedReceiptRaw=String(localStorage.getItem("ione_chapchap_last_receipt")||"").trim();
+      }catch(e){}
+
+      if(savedOrderId){
+        var byOrder=await client.from("ione_chapchap_receipts").select("*").eq("order_id",savedOrderId).maybeSingle();
+        if(!byOrder.error&&byOrder.data){
+          try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(byOrder.data));}catch(e){}
+          openStandaloneReceipt(byOrder.data);
+          return;
+        }
+      }
+
+      /*
+       * If the receipt was already cached locally, keep the buyer's receipt
+       * available even when the current anonymous session has changed.
+       */
+      if(savedReceiptRaw){
+        try{
+          var cached=JSON.parse(savedReceiptRaw);
+          if(cached && cached.receipt_number){
+            openStandaloneReceipt(cached);
+            return;
+          }
+        }catch(e){}
+      }
+
       var session=await ensureHeavensAnonymousSession();
       if(!session||!session.user) throw new Error("Secure ChapChap session is not ready.");
-      var q=await client.from("ione_chapchap_receipts").select("*").eq("buyer_id",session.user.id).order("paid_at",{ascending:false}).limit(50);
+
+      var q=await client.from("ione_chapchap_receipts")
+        .select("*")
+        .eq("buyer_id",session.user.id)
+        .order("paid_at",{ascending:false})
+        .limit(50);
+
       if(q.error){
-        alert("CHAPCHAP RECEIPT DEBUG\n\nReceipt history lookup failed.\n\n"+(q.error.message||JSON.stringify(q.error))+"\n\nBuyer ID: "+session.user.id);
+        alert("CHAPCHAP RECEIPT DEBUG\\n\\nReceipt history lookup failed.\\n\\n"+(q.error.message||JSON.stringify(q.error))+"\\n\\nBuyer ID: "+session.user.id);
         return;
       }
+
       var rows=q.data||[];
       if(!rows.length){
-        alert("CHAPCHAP RECEIPT DEBUG\n\nNo saved receipt was found for this ChapChap account yet.\n\nBuyer ID: "+session.user.id);
+        alert("CHAPCHAP RECEIPT DEBUG\\n\\nNo saved receipt was found for this ChapChap account yet.\\n\\nIf you completed a ChapChap payment, the receipt is linked to the paid order created at checkout. Please reopen ChapChap once so the saved order can be checked.\\n\\nBuyer ID: "+session.user.id);
         return;
       }
-      if(rows.length===1){try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(rows[0]));localStorage.setItem("ione_chapchap_last_paid_order",String(rows[0].order_id||""));}catch(e){} openStandaloneReceipt(rows[0]);return;}
+
+      if(rows.length===1){
+        try{
+          localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(rows[0]));
+          localStorage.setItem("ione_chapchap_last_paid_order",String(rows[0].order_id||""));
+        }catch(e){}
+        openStandaloneReceipt(rows[0]);
+        return;
+      }
+
       openReceiptHistory(rows);
     }catch(err){
-      alert("CHAPCHAP RECEIPT DEBUG\n\nReceipt history could not be opened.\n\n"+(err&&err.message?err.message:String(err)));
+      alert("CHAPCHAP RECEIPT DEBUG\\n\\nReceipt history could not be opened.\\n\\n"+(err&&err.message?err.message:String(err)));
     }
   }
-
   function openReceiptHistory(rows){
     var box=document.getElementById("ioneChapReceiptHistory");
     if(!box){
