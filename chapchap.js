@@ -581,6 +581,7 @@
         return;
       }
       var r = result.data;
+      try{localStorage.setItem("ione_chapchap_last_receipt",JSON.stringify(r));}catch(e){}
       if (status) status.innerHTML =
         '<div style="padding:14px;border:1px solid rgba(0,255,255,.3);border-radius:14px;background:rgba(0,255,255,.035);text-align:left">' +
         '<strong style="display:block;font-size:16px;color:#00ffff">OFFICIAL CHAPCHAP RECEIPT</strong>' +
