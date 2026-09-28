@@ -79,6 +79,7 @@
     panel.querySelector("#ccAuthorityBack")?.addEventListener("click",function(){refreshAuthority();});
   }
 
+  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapClose{position:relative!important;z-index:21!important;min-height:38px!important;border-radius:10px!important;touch-action:manipulation!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
   var authorityFilter="orders",authorityBusy=false,authorityWriting=false,authorityRefreshTimer=null;
   async function refreshAuthority(){
     if(authorityBusy)return;
@@ -89,6 +90,7 @@
   }
 
   function enhanceAuthority(){
+    polishAuthorityPanel();
     var filters=document.getElementById("authorityChapChapFilters");
     if(!filters||filters.dataset.receiptModuleBound)return;
     filters.dataset.receiptModuleBound="1";
