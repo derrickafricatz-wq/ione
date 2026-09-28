@@ -123,7 +123,7 @@
   }
 
   async function openLatestBuyerReceipt(){
-    var savedReceipt=null;try{savedReceipt=JSON.parse(localStorage.getItem("ione_chapchap_last_receipt")||"null");}catch(e){} var result=savedReceipt?{error:null,data:{success:true,receipt:savedReceipt}}:await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
+    var savedReceipt=null,savedId="";try{savedReceipt=JSON.parse(localStorage.getItem("ione_chapchap_last_receipt")||"null");savedId=localStorage.getItem("ione_chapchap_last_paid_order")||"";}catch(e){} if(!savedReceipt&&savedId){var direct=await sb().from("ione_chapchap_receipts").select("*").eq("order_id",savedId).maybeSingle();if(!direct.error&&direct.data)savedReceipt=direct.data;} var result=savedReceipt?{error:null,data:{success:true,receipt:savedReceipt}}:await sb().functions.invoke("ione-chapchap-buyer",{body:{action:"latest"}});
     if(result.error||!result.data?.success||!result.data.receipt){
       alert(result.data?.error||result.error?.message||"No completed ChapChap receipt was found for this buyer.");
       return;
