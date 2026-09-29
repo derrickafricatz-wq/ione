@@ -624,8 +624,10 @@
         '<div style="margin-top:8px;font-size:12px;line-height:1.6">' +
         '<strong>' + esc(r.receipt_number) + '</strong><br>' +
         'Product: ' + esc(r.product_title) + '<br>' +
-        'Amount: ' + esc(money(r.amount_tzs)) + '<br>' +
-        'ChapChap fee: ' + esc(money(r.chapchap_fee_tzs)) + '<br>' +
+        'Product price: ' + esc(money(r.amount_tzs)) + '<br>' +
+        'ChapChap platform fee (1%): ' + esc(money(r.chapchap_fee_tzs)) + '<br>' +
+        'BLMPay mobile-money fee (3%): ' + esc(money(r.blmpay_payment_fee_tzs || 0)) + '<br>' +
+        'Seller balance after transaction fees: ' + esc(money(r.seller_available_tzs || 0)) + '<br>' +
         'BLMPay reference: ' + esc(r.blmpay_reference || "—") + '<br>' +
         'Paid: ' + esc(new Date(r.paid_at).toLocaleString()) +
         '</div>' +
