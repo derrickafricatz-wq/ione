@@ -931,3 +931,243 @@
 })();
 /* ChapChap receipt module loader */
 (function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=11";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
+
+
+/* I|ONE SELLER-LEVEL AUTHORITY PAYOUT UI v1 */
+(function(){
+  "use strict";
+  var payoutQuoteCache = {};
+  var payoutBusy = false;
+
+  function ccEsc(v){
+    return String(v==null?"":v).replace(/[&<>"']/g,function(ch){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+    });
+  }
+  function ccMoney(v){ return "TZS "+Number(v||0).toLocaleString("en-US"); }
+  function ccStatus(msg){
+    var el=document.getElementById("authorityChapChapLoadStatus");
+    if(el) el.textContent=msg;
+  }
+  function ccPassword(){
+    return String(document.getElementById("authorityPasswordInput")?.value||"").trim();
+  }
+  async function ccInvoke(body){
+    var r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:body});
+    if(r.error || !r.data?.success){
+      var detail=r.data?.error||r.error?.message||"Authority payout request failed.";
+      try{
+        var ctx=r.error?.context;
+        if(ctx&&typeof ctx.json==="function"){
+          var b=await ctx.json();
+          detail=b?.error||b?.message||detail;
+          if(b?.details) detail+=" • "+JSON.stringify(b.details);
+        }
+      }catch(_){}
+      throw new Error(detail);
+    }
+    return r.data;
+  }
+
+  function installPayoutStyle(){
+    if(document.getElementById("ioneSellerPayoutStyle")) return;
+    var s=document.createElement("style");
+    s.id="ioneSellerPayoutStyle";
+    s.textContent=
+      ".ione-seller-payout{border:1px solid #31545a;border-radius:16px;padding:13px;margin:9px 0;background:linear-gradient(145deg,#102327,#05090a);box-shadow:0 7px 20px rgba(0,0,0,.25)}"+
+      ".ione-seller-payout h3{margin:0;color:#00ffff;font:900 15px Arial,sans-serif}"+
+      ".ione-seller-payout .sp-meta{margin-top:5px;color:#9db1b5;font:700 9px/1.45 Arial,sans-serif}"+
+      ".ione-seller-payout .sp-balance{margin:10px 0;padding:10px;border-radius:11px;background:#071719;border:1px solid #294349;color:#fff;font:900 15px Arial,sans-serif}"+
+      ".ione-seller-payout .sp-balance small{display:block;color:#6f858a;font-size:8px;letter-spacing:1px;margin-bottom:4px}"+
+      ".ione-seller-payout .sp-products{display:grid;gap:6px;margin:9px 0}"+
+      ".ione-seller-payout .sp-product{padding:8px;border:1px solid #233b40;border-radius:9px;background:#071012;color:#d7e5e7;font:700 9px/1.35 Arial,sans-serif}"+
+      ".ione-seller-payout .sp-product b{color:#fff;font-size:10px}"+
+      ".ione-seller-payout .sp-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}"+
+      ".ione-seller-payout input,.ione-seller-payout select{width:100%;box-sizing:border-box;min-height:42px;padding:9px;border:1px solid #31545a;border-radius:10px;background:#05090a;color:#fff;font:800 11px Arial,sans-serif;outline:none}"+
+      ".ione-seller-payout input:focus,.ione-seller-payout select:focus{border-color:#00ffff}"+
+      ".ione-seller-payout .sp-wide{grid-column:1/-1}"+
+      ".ione-seller-payout button{width:100%;min-height:44px;margin-top:8px;border-radius:11px;border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;font:900 10px Arial,sans-serif;cursor:pointer}"+
+      ".ione-seller-payout button.sp-send{background:linear-gradient(145deg,#ffe600,#ff9b00);border-color:#ffe600}"+
+      ".ione-seller-payout button:disabled{opacity:.55;cursor:wait}"+
+      ".ione-seller-payout .sp-quote{margin-top:9px;padding:10px;border-radius:11px;background:#071719;border:1px solid #00ffff;color:#dffeff;font:800 10px/1.55 Arial,sans-serif}"+
+      ".ione-seller-payout .sp-quote b{color:#fff}"+
+      ".ione-payout-history{margin-top:14px;border-top:1px solid #20383d;padding-top:10px}";
+    document.head.appendChild(s);
+  }
+
+  function sellerCard(g){
+    var sid=ccEsc(g.seller_id||"");
+    var products=g.products||[];
+    var rows=products.map(function(p){
+      return '<div class="sp-product"><b>'+ccEsc(p.title||"PRODUCT")+'</b><br>'+
+        'SALE: '+ccMoney(p.amount_tzs)+' • SELLER BALANCE: '+ccMoney(p.seller_available_tzs)+'</div>';
+    }).join("");
+    return '<div class="ione-seller-payout" data-seller-payout="'+sid+'">'+
+      '<h3>'+ccEsc(g.seller_name||"SELLER")+'</h3>'+
+      '<div class="sp-meta">SELLER ACCOUNT • '+ccEsc(g.seller_phone||"NUMBER NOT ON FILE")+'<br>'+
+      'PRODUCTS WITH UNPAID BALANCE: '+products.length+'</div>'+
+      '<div class="sp-balance"><small>COMBINED SELLER BALANCE</small>'+ccMoney(g.seller_balance_tzs)+'</div>'+
+      '<div class="sp-products">'+rows+'</div>'+
+      '<div class="sp-fields">'+
+        '<input class="sp-name" value="'+ccEsc(g.seller_name||"")+'" placeholder="Seller name" autocomplete="name">'+
+        '<input class="sp-phone" value="'+ccEsc(g.seller_phone||"")+'" inputmode="tel" placeholder="Seller phone" autocomplete="tel">'+
+        '<select class="sp-network sp-wide">'+
+          '<option value="">SELECT MOBILE NETWORK</option>'+
+          '<option value="MPESA">MPESA</option>'+
+          '<option value="AIRTEL_MONEY">AIRTEL MONEY</option>'+
+          '<option value="MIXX_BY_YAS">MIXX BY YAS</option>'+
+          '<option value="HALOPESA">HALOPESA</option>'+
+          '<option value="EZYPESA">EZYPESA</option>'+
+          '<option value="TTCLPESA">TTCL PESA</option>'+
+        '</select>'+
+      '</div>'+
+      '<button type="button" class="sp-calculate">CALCULATE PAYOUT FEE</button>'+
+      '<div class="sp-result"></div>'+
+    '</div>';
+  }
+
+  function historyHtml(items){
+    if(!items||!items.length) return "";
+    return '<div class="ione-payout-history"><div class="cc-kicker">RECENT SELLER PAYOUTS</div>'+
+      items.slice(0,10).map(function(p){
+        return '<div class="cc-list-item"><strong>'+ccEsc(p.seller_name||"SELLER")+' • '+ccEsc(String(p.status||"").toUpperCase())+
+          '</strong><span>RECEIVES: '+ccMoney(p.payout_amount_tzs)+' • FEE: '+ccMoney(p.blmpay_fee_tzs)+
+          '<br>DEBIT: '+ccMoney(p.total_debit_tzs)+' • NUMBER: '+ccEsc(p.recipient_phone||"—")+
+          '<br>BLMPay: '+ccEsc(p.blmpay_reference||"—")+'</span></div>';
+      }).join("")+'</div>';
+  }
+
+  async function renderSellerPayouts(){
+    var list=document.getElementById("authorityChapChapOrders");
+    if(!list) return;
+    var password=ccPassword();
+    if(!password){ccStatus("Unlock Authority Press first.");return;}
+    installPayoutStyle();
+    ccStatus("Loading seller payout balances…");
+    list.innerHTML='<div class="authority-chapchap-order"><strong>LOADING SELLER BALANCES…</strong><div class="cc-mini">Combining all unpaid product balances seller-by-seller.</div></div>';
+    try{
+      var data=await ccInvoke({action:"list",password:password});
+      var groups=data.seller_groups||[];
+      if(!groups.length){
+        list.innerHTML='<div class="authority-chapchap-order"><strong>NO SELLER PAYOUTS READY</strong><div class="cc-mini">There are no unpaid seller balances currently eligible for payout.</div>'+historyHtml(data.recent_seller_payouts||[])+'</div>';
+        ccStatus("CONNECTED • NO UNPAID SELLER BALANCES");
+        return;
+      }
+      list.innerHTML=
+        '<div class="authority-chapchap-order"><strong>SELLER-LEVEL PAYOUTS</strong><div class="cc-mini">Each seller is grouped once. All unpaid products belonging to that seller are combined into one payout. Each sale remains a separate receipt.</div></div>'+
+        groups.map(sellerCard).join("")+
+        historyHtml(data.recent_seller_payouts||[]);
+      list.querySelectorAll(".ione-seller-payout").forEach(function(card){
+        var sid=card.getAttribute("data-seller-payout");
+        var group=groups.find(function(x){return String(x.seller_id)===String(sid);});
+        var sel=card.querySelector(".sp-network");
+        if(sel && group && group.recipient_network) sel.value=group.recipient_network;
+        var btn=card.querySelector(".sp-calculate");
+        if(btn) btn.addEventListener("click",function(){calculateSellerPayout(card,group);});
+      });
+      ccStatus("CONNECTED • SELLER PAYOUTS READY");
+    }catch(e){
+      list.innerHTML='<div class="authority-chapchap-order"><strong>PAYOUT ERROR</strong><div class="cc-mini">'+ccEsc(e?.message||"Could not load seller payouts.")+'</div></div>';
+      ccStatus(e?.message||"Could not load seller payouts.");
+    }
+  }
+
+  async function calculateSellerPayout(card,group){
+    if(payoutBusy) return;
+    var name=String(card.querySelector(".sp-name")?.value||"").trim();
+    var phone=String(card.querySelector(".sp-phone")?.value||"").trim();
+    var network=String(card.querySelector(".sp-network")?.value||"").trim();
+    var result=card.querySelector(".sp-result"),btn=card.querySelector(".sp-calculate");
+    if(!name){result.innerHTML='<div class="sp-quote">Please enter the seller name.</div>';return;}
+    if(!phone){result.innerHTML='<div class="sp-quote">Please enter the seller phone number.</div>';return;}
+    if(!network){result.innerHTML='<div class="sp-quote">Please select the seller mobile network.</div>';return;}
+    if(!group?.seller_id){result.innerHTML='<div class="sp-quote">Seller account link is missing. Reload the payout section.</div>';return;}
+    payoutBusy=true;if(btn)btn.disabled=true;ccStatus("Calculating BLMPay fee for the full seller balance…");
+    try{
+      var d=await ccInvoke({
+        action:"payout_quote",password:ccPassword(),seller_id:group.seller_id,
+        seller_name:name,recipient_phone:phone,recipient_network:network
+      });
+      payoutQuoteCache[String(group.seller_id)]=d;
+      result.innerHTML='<div class="sp-quote">'+
+        '<b>VERIFIED PAYOUT QUOTE</b><br>'+
+        'REGISTERED ACCOUNT: '+ccEsc(d.account_name)+'<br>'+
+        'NUMBER: '+ccEsc(d.recipient_phone)+'<br>'+
+        'NETWORK: '+ccEsc(d.network)+'<br>'+
+        'COMBINED SELLER BALANCE: <b>'+ccMoney(d.seller_balance_tzs)+'</b><br>'+
+        'BLMPay PAYOUT FEE: <b>'+ccMoney(d.fee_tzs)+'</b><br>'+
+        'SELLER RECEIVES: <b>'+ccMoney(d.amount_tzs)+'</b><br>'+
+        'TOTAL DEBIT FROM SELLER BALANCE: <b>'+ccMoney(d.total_debit_tzs)+'</b><br>'+
+        'PRODUCTS INCLUDED: '+Number(d.order_count||0)+
+        '</div><button type="button" class="sp-send">SEND PAYOUT TO THIS SELLER</button>';
+      result.querySelector(".sp-send").addEventListener("click",function(){sendSellerPayout(card,group,d);});
+      ccStatus("PAYOUT CALCULATED • VERIFY THE DETAILS BEFORE SEND");
+    }catch(e){
+      result.innerHTML='<div class="sp-quote">'+ccEsc(e?.message||"Could not calculate the seller payout.")+'</div>';
+      ccStatus(e?.message||"Could not calculate seller payout.");
+    }finally{
+      payoutBusy=false;if(btn)btn.disabled=false;
+    }
+  }
+
+  async function sendSellerPayout(card,group,d){
+    if(payoutBusy) return;
+    var result=card.querySelector(".sp-result"),sendBtn=card.querySelector(".sp-send");
+    var ok=confirm(
+      "CONFIRM SELLER PAYOUT\n\n"+
+      "Seller: "+(d.account_name||group.seller_name||"SELLER")+"\n"+
+      "Number: "+d.recipient_phone+"\n"+
+      "Network: "+d.network+"\n\n"+
+      "Combined seller balance: TZS "+Number(d.seller_balance_tzs||0).toLocaleString("en-US")+"\n"+
+      "BLMPay payout fee: TZS "+Number(d.fee_tzs||0).toLocaleString("en-US")+"\n"+
+      "Seller receives: TZS "+Number(d.amount_tzs||0).toLocaleString("en-US")+"\n"+
+      "Total debit: TZS "+Number(d.total_debit_tzs||0).toLocaleString("en-US")+"\n\n"+
+      "Press OK to SEND MONEY, or Cancel."
+    );
+    if(!ok){ccStatus("Payout cancelled. No money was sent.");return;}
+    payoutBusy=true;if(sendBtn)sendBtn.disabled=true;ccStatus("Sending seller payout to BLMPay…");
+    try{
+      var sent=await ccInvoke({
+        action:"payout_send",password:ccPassword(),seller_id:group.seller_id,
+        account_name:d.account_name,recipient_phone:d.recipient_phone,recipient_network:d.network,
+        amount_tzs:d.amount_tzs,fee_tzs:d.fee_tzs,seller_balance_tzs:d.seller_balance_tzs,total_debit_tzs:d.total_debit_tzs
+      });
+      result.innerHTML='<div class="sp-quote"><b>PAYOUT SUBMITTED</b><br>'+ccEsc(sent.message||"Seller payout submitted to BLMPay.")+
+        '<br>BLMPay reference: <b>'+ccEsc(sent.payout?.blmpay_reference||"PROCESSING")+'</b></div>';
+      ccStatus(sent.message||"Seller payout submitted.");
+      setTimeout(renderSellerPayouts,700);
+    }catch(e){
+      if(sendBtn)sendBtn.disabled=false;
+      result.innerHTML='<div class="sp-quote">'+ccEsc(e?.message||"Payout could not be sent.")+'</div>';
+      ccStatus(e?.message||"Payout could not be sent.");
+    }finally{payoutBusy=false;}
+  }
+
+  function hookPayoutFilter(){
+    document.addEventListener("click",function(e){
+      var card=e.target.closest && e.target.closest('[data-cc-filter="payouts"]');
+      if(card) setTimeout(renderSellerPayouts,35);
+    },true);
+  }
+
+  function hookPanelRefresh(){
+    var observer=new MutationObserver(function(){
+      var panel=document.getElementById("authorityPressPanel");
+      if(!panel) return;
+      var selected=document.querySelector('[data-cc-filter="payouts"].is-selected');
+      if(selected && document.getElementById("authorityChapChapOrders") && !document.getElementById("ioneSellerPayoutStyle")) {
+        setTimeout(renderSellerPayouts,50);
+      }
+    });
+    observer.observe(document.documentElement,{childList:true,subtree:true});
+  }
+
+  function bootPayoutUI(){
+    hookPayoutFilter();
+    hookPanelRefresh();
+    if(document.querySelector('[data-cc-filter="payouts"].is-selected')) setTimeout(renderSellerPayouts,100);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",bootPayoutUI,{once:true});
+  else bootPayoutUI();
+})();
+
