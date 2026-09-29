@@ -133,13 +133,21 @@
     if(button)button.disabled=true;if(status)status.textContent="Verifying seller account and payout fee…";
     try{
       const q=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"payout_quote",password,order_id:orderId,seller_name:name,recipient_phone:phone,recipient_network:network,amount_tzs:amount}});
-      if(q.error||!q.data?.success)throw new Error(q.data?.error||q.error?.message||"Could not verify the seller payout.");
+      if(q.error||!q.data?.success){
+        let detail=q.data?.error||q.error?.message||"Could not verify the seller payout.";
+        try{const ctx=q.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;if(body?.details)detail+=" • "+JSON.stringify(body.details);}}catch(_){ }
+        throw new Error(detail);
+      }
       const d=q.data;
       const yes=confirm("CONFIRM SELLER PAYOUT\n\nVerified account: "+d.account_name+"\nNumber: "+d.recipient_phone+"\nNetwork: "+d.network+"\nSeller receives: TZS "+Number(d.amount_tzs).toLocaleString("en-US")+"\nBLMPay fee: TZS "+Number(d.fee_tzs||0).toLocaleString("en-US")+"\nTotal debit: TZS "+Number(d.total_debit_tzs||0).toLocaleString("en-US")+"\n\nPress OK to SEND MONEY, or Cancel.");
       if(!yes){if(status)status.textContent="Payout cancelled. No money was sent.";if(button)button.disabled=false;return;}
       if(status)status.textContent="Sending payout…";
       const sent=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"payout_send",password,order_id:orderId,account_name:d.account_name,recipient_phone:d.recipient_phone,recipient_network:d.network,amount_tzs:d.amount_tzs}});
-      if(sent.error||!sent.data?.success)throw new Error(sent.data?.error||sent.error?.message||"Payout could not be sent.");
+      if(sent.error||!sent.data?.success){
+        let detail=sent.data?.error||sent.error?.message||"Payout could not be sent.";
+        try{const ctx=sent.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;if(body?.details)detail+=" • "+JSON.stringify(body.details);}}catch(_){ }
+        throw new Error(detail);
+      }
       if(status)status.textContent=sent.data.message||"Payout submitted.";
       await loadChapChapAuthority(true);
     }catch(e){if(status)status.textContent=e?.message||"Payout failed.";if(button)button.disabled=false;}
