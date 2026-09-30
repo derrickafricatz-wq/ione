@@ -517,16 +517,131 @@
         "</div></article>";
     }).join("");
     Array.prototype.forEach.call(rail.querySelectorAll(".ione-chap-card"), function (card) {
-      card.addEventListener("click", function () { openProduct(card.getAttribute("data-id")); });
-    if (!rail._ioneSwipeReady) {
-      rail._ioneSwipeReady = true;
-      var drag = {on:false,x:0,left:0,moved:false};
-      rail.addEventListener("pointerdown", function(e){ if (e.pointerType === "mouse" && e.button !== 0) return; drag.on=true; drag.x=e.clientX; drag.left=rail.scrollLeft; drag.moved=false; }, {passive:true});
-      rail.addEventListener("pointermove", function(e){ if (!drag.on) return; var dx=e.clientX-drag.x; if (Math.abs(dx)>5) drag.moved=true; if (drag.moved) rail.scrollLeft=drag.left-dx; }, {passive:true});
-      rail.addEventListener("pointerup", function(){drag.on=false;},{passive:true});
-      rail.addEventListener("pointercancel", function(){drag.on=false;},{passive:true});
-    }
+      card.addEventListener("click", function () {
+        if (rail._ioneChapDragMoved) return;
+        openProduct(card.getAttribute("data-id"));
+      });
     });
+
+    /* Smart hybrid carousel:
+       - normal touch/mouse/wheel scrolling remains fully manual
+       - auto movement starts only after the user becomes idle
+       - advances exactly one product at a time, slowly
+       - pauses immediately during user interaction
+       - loops back to the first product at the end
+    */
+    if (rail._ioneSmartCarouselTimer) {
+      clearTimeout(rail._ioneSmartCarouselTimer);
+      rail._ioneSmartCarouselTimer = null;
+    }
+    if (!rail._ioneSmartCarouselReady) {
+      rail._ioneSmartCarouselReady = true;
+      rail._ioneChapDragMoved = false;
+
+      var drag = {on:false,x:0,left:0,moved:false};
+
+      function cardStep() {
+        var card = rail.querySelector(".ione-chap-card");
+        if (!card) return 0;
+        var style = window.getComputedStyle(rail);
+        var gap = parseFloat(style.columnGap || style.gap || "0") || 0;
+        return Math.max(1, card.getBoundingClientRect().width + gap);
+      }
+
+      function pauseSmartCarousel() {
+        if (rail._ioneSmartCarouselTimer) {
+          clearTimeout(rail._ioneSmartCarouselTimer);
+          rail._ioneSmartCarouselTimer = null;
+        }
+      }
+
+      function scheduleSmartCarousel(delay) {
+        pauseSmartCarousel();
+        rail._ioneSmartCarouselTimer = setTimeout(function tick() {
+          rail._ioneSmartCarouselTimer = null;
+          if (document.hidden || drag.on) {
+            scheduleSmartCarousel(1800);
+            return;
+          }
+
+          var max = Math.max(0, rail.scrollWidth - rail.clientWidth);
+          var step = cardStep();
+          if (max <= 2 || step <= 0) {
+            scheduleSmartCarousel(3200);
+            return;
+          }
+
+          var next = rail.scrollLeft + step;
+          if (next >= max - 3) {
+            /* Let the last card finish its slow movement, then restart cleanly. */
+            rail.scrollTo({left:max, behavior:"smooth"});
+            rail._ioneSmartCarouselTimer = setTimeout(function () {
+              if (!drag.on) rail.scrollTo({left:0, behavior:"smooth"});
+              scheduleSmartCarousel(3000);
+            }, 1500);
+          } else {
+            rail.scrollTo({left:next, behavior:"smooth"});
+            scheduleSmartCarousel(3000);
+          }
+        }, delay == null ? 3500 : delay);
+      }
+
+      function userActivity() {
+        pauseSmartCarousel();
+        scheduleSmartCarousel(3500);
+      }
+      rail._ioneSmartCarouselRestart = function(){ scheduleSmartCarousel(1800); };
+
+      rail.addEventListener("pointerdown", function(e){
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+        pauseSmartCarousel();
+        drag.on=true;
+        drag.x=e.clientX;
+        drag.left=rail.scrollLeft;
+        drag.moved=false;
+        rail._ioneChapDragMoved=false;
+      }, {passive:true});
+
+      rail.addEventListener("pointermove", function(e){
+        if (!drag.on) return;
+        var dx=e.clientX-drag.x;
+        if (Math.abs(dx)>5) {
+          drag.moved=true;
+          rail._ioneChapDragMoved=true;
+        }
+        if (drag.moved) rail.scrollLeft=drag.left-dx;
+      }, {passive:true});
+
+      function finishDrag(){
+        drag.on=false;
+        userActivity();
+        setTimeout(function(){ rail._ioneChapDragMoved=false; }, 120);
+      }
+
+      rail.addEventListener("pointerup", finishDrag, {passive:true});
+      rail.addEventListener("pointercancel", finishDrag, {passive:true});
+      rail.addEventListener("touchstart", userActivity, {passive:true});
+      rail.addEventListener("wheel", userActivity, {passive:true});
+      rail.addEventListener("scroll", function(){
+        /* Manual momentum/scrolling also counts as activity. */
+        if (!drag.on) {
+          pauseSmartCarousel();
+          scheduleSmartCarousel(3500);
+        }
+      }, {passive:true});
+
+      document.addEventListener("visibilitychange", function(){
+        if (document.hidden) pauseSmartCarousel();
+        else scheduleSmartCarousel(1800);
+      });
+
+      scheduleSmartCarousel(4200);
+    } else {
+      /* Product refresh: restart the idle countdown without creating
+         duplicate event listeners or timers. */
+      var restart = rail._ioneSmartCarouselRestart;
+      if (typeof restart === "function") restart();
+    }
   }
 
   async function loadProducts() {
