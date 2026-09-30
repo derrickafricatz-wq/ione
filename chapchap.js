@@ -186,7 +186,7 @@
         ".ione-chap-card{border:1px solid rgba(0,255,255,.28)!important;background:linear-gradient(145deg,#132d34,#06090b)!important;transition:transform .12s ease,border-color .12s ease!important;will-change:transform!important}" +
         ".ione-chap-card:after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,.10),transparent 28%,transparent 72%,rgba(0,255,255,.08))!important}" +
         ".ione-chap-card:hover{border-color:rgba(0,255,255,.72)!important;transform:translateY(-2px)!important}" +
-        ".ione-chap-price{background:linear-gradient(135deg,#ffe600,#ff9f00)!important;color:#171000!important;border:1px solid rgba(255,255,255,.65)!important}" +
+        ".ione-chap-price{background:var(--ione-chap-price-bg,rgba(255,230,0,.72))!important;color:#111!important;border:1px solid rgba(255,255,255,.65)!important;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}" +
         ".ione-chap-title{font-size:10px!important;text-shadow:0 1px 3px #000!important}" +
         ".ione-chap-seller{color:#6fffff!important}.ione-chap-location{color:#b5c7ca!important}" +
         "@keyframes ioneChapShine{0%{left:-35%;opacity:0}12%{opacity:1}30%{left:115%;opacity:0}100%{left:115%;opacity:0}}" +
@@ -483,6 +483,14 @@
     }
   }
 
+  function hexToRgba(hex, alpha){
+    var h=String(hex||"").trim().replace("#","");
+    if(h.length===3)h=h.split("").map(function(x){return x+x}).join("");
+    if(!/^[0-9a-fA-F]{6}$/.test(h))h="ffe600";
+    var r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+    return "rgba("+r+","+g+","+b+","+alpha+")";
+  }
+
   function renderRail(rows) {
     var rail = document.getElementById("ioneChapRail");
     if (!rail) return;
@@ -501,7 +509,7 @@
       return '<article class="ione-chap-card" data-id="' + esc(p.id) + '">' +
         '<div class="ione-chap-photo">' +
         (image ? '<img src="' + esc(image) + '" alt="' + esc(p.title) + '" loading="lazy">' : "") +
-        '<span class="ione-chap-price" style="background:'+esc(tagColor)+'">'+(pricing.active?'<span style="text-decoration:line-through;opacity:.65;font-size:7px;display:block">'+esc(money(pricing.original,currency))+'</span>':'')+esc(money(displayAmount,currency))+(pricing.active?' • -'+Math.round(pricing.percent)+'%':'')+"</span>" +
+        '<span class="ione-chap-price" style="--ione-chap-price-bg:'+esc(hexToRgba(tagColor,.72))+'">'+(pricing.active?'<span style="text-decoration:line-through;opacity:.65;font-size:7px;display:block">'+esc(money(pricing.original,currency))+'</span>':'')+esc(money(displayAmount,currency))+(pricing.active?' • -'+Math.round(pricing.percent)+'%':'')+"</span>" +
         '</div><div class="ione-chap-info">' +
         '<div class="ione-chap-title">' + esc(p.title) + "</div>" +
         '<div class="ione-chap-seller">' + esc(p.seller_name) + "</div>" +
@@ -564,7 +572,7 @@
     openOverlay("BUY • " + p.title, "CHAPCHAP • BUYER",
       imageMarkup +
       '<div class="cc-product-preview" style="grid-template-columns:1fr">' +
-      '<div><h3>'+esc(p.title)+'</h3><p>'+(pricing.active?'<span style="color:#91a1a6;text-decoration:line-through;margin-right:7px">'+esc(money(pricing.original,currency))+'</span><span style="display:inline-block;padding:6px 9px;border-radius:8px;background:'+esc(tagColor)+';color:#111;font-weight:900">'+esc(money(displayAmount,currency))+'</span><span style="color:#00ffff;font-weight:1000;margin-left:7px">SAVE '+esc(money(pricing.discount,currency))+' • -'+Math.round(pricing.percent)+'%</span>':'<span style="display:inline-block;padding:6px 9px;border-radius:8px;background:'+esc(tagColor)+';color:#111;font-weight:900">'+esc(money(displayAmount,currency))+'</span>')+'</p><p>'+esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
+      '<div><h3>'+esc(p.title)+'</h3><p>'+(pricing.active?'<span style="color:#91a1a6;text-decoration:line-through;margin-right:7px">'+esc(money(pricing.original,currency))+'</span><span style="display:inline-block;padding:6px 9px;border-radius:8px;background:'+esc(hexToRgba(tagColor,.72))+';color:#111;font-weight:900;border:1px solid rgba(255,255,255,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)">'+esc(money(displayAmount,currency))+'</span><span style="color:#00ffff;font-weight:1000;margin-left:7px">SAVE '+esc(money(pricing.discount,currency))+' • -'+Math.round(pricing.percent)+'%</span>':'<span style="display:inline-block;padding:6px 9px;border-radius:8px;background:'+esc(hexToRgba(tagColor,.72))+';color:#111;font-weight:900;border:1px solid rgba(255,255,255,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)">'+esc(money(displayAmount,currency))+'</span>')+'</p><p>'+esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
       "</div>" +
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>PRODUCT DETAILS</label><div style="color:#d7e5e8;font-size:11px;line-height:1.5">' + esc(p.description || "Product listed on I|ONE ChapChap.") + '</div>' + (attrMarkup ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;font-size:10px;color:#9eb0b5">' + attrMarkup + '</div>' : '') + '</div>' +
