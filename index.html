@@ -296,7 +296,7 @@
     if(!clean.length)return;
     text.innerHTML=clean.map((x,i)=>'<span class="dekaStyle">'+authorityEsc(x)+'</span>'+ (i<clean.length-1?'<span class="ione-banner-separator">✦</span>':'')).join("");
     text.classList.add("ione-banner-ready");
-    text.style.setProperty("--ione-banner-speed",Math.max(24,clean.join(" • ").length*0.45)+"s");
+    text.style.setProperty("--ione-banner-speed",Math.max(14,clean.join(" • ").length*0.24)+"s");
   }
 
   async function loadIoneBanners(){
