@@ -303,8 +303,12 @@
     requestAnimationFrame(()=>{
       const copy=text.querySelector(".ione-banner-copy");
       const distance=Math.max(1,copy?.offsetWidth||text.scrollWidth);
+      const startDistance=Math.max(1,text.parentElement?.clientWidth||window.innerWidth||1);
+      const totalDistance=startDistance+distance;
       const speed=150;
-      const duration=Math.max(8,distance/speed);
+      const duration=Math.max(8,totalDistance/speed);
+      text.style.setProperty("--ione-banner-start",startDistance+"px");
+      text.style.setProperty("--ione-banner-distance",distance+"px");
       text.style.setProperty("--ione-banner-speed",duration+"s");
     });
   }
@@ -876,6 +880,7 @@ body.landscape-mode #brandVideo {
   background: black;
   z-index: 10;
   padding: 8px 0;
+  overflow: hidden;
 }
 
 #scrollText {
@@ -887,6 +892,7 @@ body.landscape-mode #brandVideo {
   will-change: transform;
   animation: scroll 30s linear infinite;
   font-size: 40px;
+  transform: translateX(100vw);
 }
 
 /* I|ONE TV-STYLE MULTI-BANNER TICKER */
@@ -903,8 +909,8 @@ body.landscape-mode #brandVideo {
 .ione-banner-copy{display:inline-flex;align-items:center;flex:0 0 auto}
 
 @keyframes scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from { transform: translateX(var(--ione-banner-start, 100vw)); }
+  to { transform: translateX(calc(-1 * var(--ione-banner-distance, 1000px))); }
 }
 
 /* LESSON LABEL */
