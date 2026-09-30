@@ -86,6 +86,56 @@
     }
   }
 
+  async function saveAuthorityPrices(){
+    const status=document.getElementById("authoritySaveStatus");
+    const button=document.getElementById("authoritySavePrices");
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    const values={
+      "2weeks":Number(document.getElementById("authorityPrice2weeks")?.value),
+      "1month":Number(document.getElementById("authorityPrice1month")?.value),
+      "3months":Number(document.getElementById("authorityPrice3months")?.value)
+    };
+    if(!password){if(status)status.textContent="Authority session is missing. Close and unlock Authority Press again.";return;}
+    if(Object.values(values).some(v=>!Number.isFinite(v)||!Number.isInteger(v)||v<0)){
+      if(status)status.textContent="Enter valid whole TZS prices for all three plans.";
+      return;
+    }
+    if(button)button.disabled=true;
+    if(status)status.textContent="SAVING LIVE PRICES…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{
+        body:{
+          action:"update",
+          password,
+          plans:[
+            {id:"2weeks",amount:values["2weeks"]},
+            {id:"1month",amount:values["1month"]},
+            {id:"3months",amount:values["3months"]}
+          ]
+        }
+      });
+      if(r.error||!r.data?.success){
+        let detail=r.data?.error||r.error?.message||"Could not save subscription prices.";
+        try{const ctx=r.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;}}catch(_){}
+        throw new Error(detail);
+      }
+      (r.data.plans||[]).forEach(p=>{
+        const input=document.getElementById("authorityPrice"+p.id);
+        if(input)input.value=Number(p.amount);
+        setPlanAmount(p.id,p.amount);
+      });
+      window.ioneRemotePlansReady=true;
+      updateOpenGate();
+      if(status)status.textContent="SAVED • LIVE PRICES UPDATED";
+      const liveStatus=document.getElementById("authorityPriceStatus");
+      if(liveStatus)liveStatus.textContent="CONNECTED • LIVE";
+    }catch(e){
+      if(status)status.textContent=e?.message||"Could not save subscription prices.";
+    }finally{
+      if(button)button.disabled=false;
+    }
+  }
+
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
@@ -127,36 +177,114 @@
     }catch(e){if(status)status.textContent=e?.message||"Could not load ChapChap management data.";}
   }
 
+  function clearPayoutQuote(button){
+    if(!button)return;
+    const old=button.closest(".authority-chapchap-order")?.querySelector(".authority-payout-quote");
+    if(old)old.remove();
+    delete button._payoutQuote;
+    button.dataset.quoteReady="";
+    button.textContent="CALCULATE FEE & SEND";
+    button.disabled=false;
+  }
+
+  function showPayoutQuote(orderId,d,button){
+    const card=button?.closest(".authority-chapchap-order");
+    if(!card)return;
+    card.querySelector(".authority-payout-quote")?.remove();
+    const quote=document.createElement("div");
+    quote.className="authority-payout-quote";
+    quote.innerHTML=
+      '<div class="authority-payout-quote-title">CALCULATED PAYOUT</div>'+
+      '<div class="authority-payout-quote-grid">'+
+        '<div><span>VERIFIED NAME</span><strong>'+authorityEsc(d.account_name||"—")+'</strong></div>'+
+        '<div><span>NUMBER</span><strong>'+authorityEsc(d.recipient_phone||"—")+'</strong></div>'+
+        '<div><span>NETWORK</span><strong>'+authorityEsc(d.network||"—")+'</strong></div>'+
+        '<div><span>SELLER BALANCE</span><strong>TZS '+Number(d.seller_balance_tzs||0).toLocaleString("en-US")+'</strong></div>'+
+        '<div><span>BLMPAY PAYOUT FEE</span><strong>TZS '+Number(d.fee_tzs||0).toLocaleString("en-US")+'</strong></div>'+
+        '<div><span>SELLER RECEIVES</span><strong>TZS '+Number(d.amount_tzs||0).toLocaleString("en-US")+'</strong></div>'+
+        '<div class="full"><span>TOTAL DEBIT FROM SELLER BALANCE</span><strong>TZS '+Number(d.total_debit_tzs||0).toLocaleString("en-US")+'</strong></div>'+
+      '</div>'+
+      '<div class="authority-payout-quote-actions">'+
+        '<button type="button" class="authority-payout-cancel">CANCEL</button>'+
+        '<button type="button" class="authority-payout-send">SEND MONEY</button>'+
+      '</div>';
+    card.appendChild(quote);
+    button._payoutQuote=d;
+    button.dataset.quoteReady="1";
+    button.textContent="EDIT / RECALCULATE";
+    const cancel=quote.querySelector(".authority-payout-cancel");
+    if(cancel)cancel.onclick=()=>clearPayoutQuote(button);
+    const send=quote.querySelector(".authority-payout-send");
+    if(send)send.onclick=()=>sendChapChapPayout(orderId);
+    quote.scrollIntoView({behavior:"smooth",block:"nearest"});
+  }
+
   async function sendChapChapPayout(orderId){
-    const password=String(document.getElementById("authorityPasswordInput")?.value||""),name=String(document.getElementById("payoutName_"+orderId)?.value||"").trim(),phone=String(document.getElementById("payoutPhone_"+orderId)?.value||"").trim(),network=String(document.getElementById("payoutNetwork_"+orderId)?.value||"").trim(),amount=Number(document.getElementById("payoutAmount_"+orderId)?.value||0),status=document.getElementById("authorityChapChapLoadStatus"),button=document.querySelector('[data-live-payout="'+orderId+'"]');
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    const name=String(document.getElementById("payoutName_"+orderId)?.value||"").trim();
+    const phone=String(document.getElementById("payoutPhone_"+orderId)?.value||"").trim();
+    const network=String(document.getElementById("payoutNetwork_"+orderId)?.value||"").trim();
+    const amount=Number(document.getElementById("payoutAmount_"+orderId)?.value||0);
+    const status=document.getElementById("authorityChapChapLoadStatus");
+    const button=document.querySelector('[data-live-payout="'+orderId+'"]');
     const sellerId=String(document.getElementById("payoutSellerId_"+orderId)?.value||"").trim();
+
     if(!sellerId){if(status)status.textContent="Seller account link is missing. Reload Authority Press and calculate again.";return;}
     if(!name){if(status)status.textContent="Seller name is missing.";return;}
     if(!phone){if(status)status.textContent="Seller number is missing.";return;}
     if(!network){if(status)status.textContent="Select the seller mobile network.";return;}
     if(!Number.isInteger(amount)||amount<=0){if(status)status.textContent="Seller balance is invalid.";return;}
-    if(button)button.disabled=true;if(status)status.textContent="Verifying seller account and payout fee…";
+
+    if(button?.dataset.quoteReady==="1" && button._payoutQuote){
+      const d=button._payoutQuote;
+      const yes=confirm("CONFIRM SELLER PAYOUT\n\nVerified account: "+d.account_name+"\nNumber: "+d.recipient_phone+"\nNetwork: "+d.network+"\nSeller balance: TZS "+Number(d.seller_balance_tzs||0).toLocaleString("en-US")+"\nBLMPay payout fee: TZS "+Number(d.fee_tzs||0).toLocaleString("en-US")+"\nSeller receives: TZS "+Number(d.amount_tzs||0).toLocaleString("en-US")+"\nTotal debit from seller balance: TZS "+Number(d.total_debit_tzs||0).toLocaleString("en-US")+"\n\nPress OK to SEND MONEY, or Cancel.");
+      if(!yes){if(status)status.textContent="Payout cancelled. No money was sent.";return;}
+      if(button)button.disabled=true;
+      if(status)status.textContent="Sending payout…";
+      try{
+        const sent=await heavensSupabase.functions.invoke("ione-chapchap-authority",{
+          body:{
+            action:"payout_send",password,seller_id:(document.getElementById("payoutSellerId_"+orderId)?.value||d.seller_id||""),
+            order_id:orderId,account_name:d.account_name,recipient_phone:d.recipient_phone,recipient_network:d.network,
+            amount_tzs:d.amount_tzs,fee_tzs:d.fee_tzs,seller_balance_tzs:d.seller_balance_tzs,total_debit_tzs:d.total_debit_tzs
+          }
+        });
+        if(sent.error||!sent.data?.success){
+          let detail=sent.data?.error||sent.error?.message||"Payout could not be sent.";
+          try{const ctx=sent.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;if(body?.details)detail+=" • "+JSON.stringify(body.details);}}catch(_){}
+          throw new Error(detail);
+        }
+        if(status)status.textContent=sent.data.message||"Payout submitted.";
+        await loadChapChapAuthority(true);
+      }catch(e){
+        if(status)status.textContent=e?.message||"Payout failed.";
+        if(button)button.disabled=false;
+      }
+      return;
+    }
+
+    if(button)button.disabled=true;
+    if(status)status.textContent="Verifying seller account and calculating payout fee…";
     try{
-      const q=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"payout_quote",password,seller_id:(document.getElementById("payoutSellerId_"+orderId)?.value||""),order_id:orderId,seller_name:name,recipient_phone:phone,recipient_network:network,amount_tzs:amount}});
+      const q=await heavensSupabase.functions.invoke("ione-chapchap-authority",{
+        body:{
+          action:"payout_quote",password,seller_id:sellerId,order_id:orderId,
+          seller_name:name,recipient_phone:phone,recipient_network:network,amount_tzs:amount
+        }
+      });
       if(q.error||!q.data?.success){
         let detail=q.data?.error||q.error?.message||"Could not verify the seller payout.";
-        try{const ctx=q.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;if(body?.details)detail+=" • "+JSON.stringify(body.details);}}catch(_){ }
+        try{const ctx=q.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;if(body?.details)detail+=" • "+JSON.stringify(body.details);}}catch(_){}
         throw new Error(detail);
       }
-      const d=q.data;
-      const yes=confirm("CONFIRM SELLER PAYOUT\n\nVerified account: "+d.account_name+"\nNumber: "+d.recipient_phone+"\nNetwork: "+d.network+"\nSeller balance: TZS "+Number(d.seller_balance_tzs||0).toLocaleString("en-US")+"\nBLMPay payout fee: TZS "+Number(d.fee_tzs||0).toLocaleString("en-US")+"\nSeller receives: TZS "+Number(d.amount_tzs||0).toLocaleString("en-US")+"\nTotal debit from seller balance: TZS "+Number(d.total_debit_tzs||0).toLocaleString("en-US")+"\n\nPress OK to SEND MONEY, or Cancel.");
-      if(!yes){if(status)status.textContent="Payout cancelled. No money was sent.";if(button)button.disabled=false;return;}
-      if(status)status.textContent="Sending payout…";
-      const sent=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"payout_send",password,seller_id:(document.getElementById("payoutSellerId_"+orderId)?.value||d.seller_id||""),order_id:orderId,account_name:d.account_name,recipient_phone:d.recipient_phone,recipient_network:d.network,amount_tzs:d.amount_tzs,fee_tzs:d.fee_tzs,seller_balance_tzs:d.seller_balance_tzs,total_debit_tzs:d.total_debit_tzs}});
-      if(sent.error||!sent.data?.success){
-        let detail=sent.data?.error||sent.error?.message||"Payout could not be sent.";
-        try{const ctx=sent.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;if(body?.details)detail+=" • "+JSON.stringify(body.details);}}catch(_){ }
-        throw new Error(detail);
-      }
-      if(status)status.textContent=sent.data.message||"Payout submitted.";
-      await loadChapChapAuthority(true);
-    }catch(e){if(status)status.textContent=e?.message||"Payout failed.";if(button)button.disabled=false;}
+      showPayoutQuote(orderId,q.data,button);
+      if(status)status.textContent="CALCULATED • REVIEW THE PAYOUT DETAILS";
+    }catch(e){
+      if(status)status.textContent=e?.message||"Payout calculation failed.";
+      if(button)button.disabled=false;
+    }
   }
+
 
   function bind(){
     const filters=document.getElementById("authorityChapChapFilters");
@@ -581,7 +709,24 @@ body.landscape-mode #brandVideo {
   color:#fff;
   font-size:18px;
 }
-.authority-chapchap-orders{display:grid;gap:10px;margin-top:14px}.authority-chapchap-order{border:1px solid #294349;border-radius:14px;padding:12px;background:#071012}.authority-chapchap-order strong{color:#fff;font:900 13px Arial,sans-serif}.authority-chapchap-order .cc-mini{margin-top:5px;color:#91a6ab;font:700 10px/1.45 Arial,sans-serif}.authority-chapchap-order .cc-ready{color:#00ffff;font-weight:900}.authority-payout-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.authority-payout-grid input,.authority-payout-grid select{width:100%;box-sizing:border-box;min-height:39px;border:1px solid #31545a;border-radius:9px;background:#05090a;color:#fff;padding:8px;font-weight:700}.authority-payout-grid button{grid-column:1/-1;min-height:43px;border:1px solid #00ffff;border-radius:10px;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;font-weight:900;cursor:pointer}.authority-payout-grid button:disabled{opacity:.55}@media(max-width:520px){.authority-payout-grid{grid-template-columns:1fr}.authority-payout-grid button{grid-column:auto}}
+.authority-chapchap-orders{display:grid;gap:10px;margin-top:14px}.authority-chapchap-order{border:1px solid #294349;border-radius:14px;padding:12px;background:#071012}.authority-chapchap-order strong{color:#fff;font:900 13px Arial,sans-serif}.authority-chapchap-order .cc-mini{margin-top:5px;color:#91a6ab;font:700 10px/1.45 Arial,sans-serif}.authority-chapchap-order .cc-ready{color:#00ffff;font-weight:900}.authority-payout-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.authority-payout-grid input,.authority-payout-grid select{width:100%;box-sizing:border-box;min-height:39px;border:1px solid #31545a;border-radius:9px;background:#05090a;color:#fff;padding:8px;font-weight:700}.authority-payout-grid button{grid-column:1/-1;min-height:43px;border:1px solid #00ffff;border-radius:10px;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010;font-weight:900;cursor:pointer}.authority-payout-grid button:disabled{opacity:.55}
+.authority-payout-quote{width:100%;box-sizing:border-box;margin-top:10px;padding:11px;border:1px solid rgba(0,255,255,.42);border-radius:12px;background:linear-gradient(145deg,#0b171a,#05090a);overflow:hidden}
+.authority-payout-quote-title{color:#00ffff;font:900 11px/1 Arial,sans-serif;letter-spacing:1.3px;margin-bottom:9px}
+.authority-payout-quote-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:0}
+.authority-payout-quote-grid>div{min-width:0;padding:8px;border:1px solid #203c42;border-radius:9px;background:#050b0d;box-sizing:border-box}
+.authority-payout-quote-grid>div.full{grid-column:1/-1}
+.authority-payout-quote-grid span{display:block;color:#71888c;font:900 8px/1.2 Arial,sans-serif;letter-spacing:.7px}
+.authority-payout-quote-grid strong{display:block;margin-top:4px;color:#fff;font:900 12px/1.25 Arial,sans-serif;overflow-wrap:anywhere}
+.authority-payout-quote-actions{display:grid;grid-template-columns:1fr 1.35fr;gap:7px;margin-top:9px}
+.authority-payout-quote-actions button{min-height:40px;border-radius:9px;font-weight:900;cursor:pointer;box-sizing:border-box}
+.authority-payout-cancel{border:1px solid #334a50;background:#111;color:#fff}
+.authority-payout-send{border:1px solid #00ffff;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001010}
+@media(max-width:520px){
+  .authority-payout-grid{grid-template-columns:1fr}
+  .authority-payout-grid button{grid-column:auto}
+  .authority-payout-quote-grid{grid-template-columns:1fr}
+  .authority-payout-quote-grid>div.full{grid-column:auto}
+}
 /* ================= END AUTHORITY PRESS PANEL ================= */
 
 /* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
