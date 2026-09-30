@@ -306,8 +306,8 @@
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load banners.");
       const banners=Array.isArray(r.data.banners)?r.data.banners:[];
       renderIoneBanners(banners);
-      const input=document.getElementById("authorityBannersInput");
-      if(input)input.value=banners.join("\n");
+      const inputs=[1,2,3].map(i=>document.getElementById("authorityBanner"+i));
+      inputs.forEach((input,i)=>{if(input)input.value=banners[i]||"";});
       if(status)status.textContent="CONNECTED • LIVE";
     }catch(e){
       if(status)status.textContent="BANNER LOAD FAILED";
@@ -316,11 +316,11 @@
   }
 
   async function saveIoneBanners(){
-    const input=document.getElementById("authorityBannersInput");
+    const inputs=[1,2,3].map(i=>document.getElementById("authorityBanner"+i));
     const status=document.getElementById("authorityBannersSaveStatus");
     const button=document.getElementById("authoritySaveBanners");
     const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    const banners=String(input?.value||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean).slice(0,10);
+    const banners=inputs.map(input=>String(input?.value||"").trim()).filter(Boolean).slice(0,3);
     if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
     if(!banners.length){if(status)status.textContent="Add at least one banner.";return;}
     if(banners.some(x=>x.length>240)){if(status)status.textContent="Each banner must be 240 characters or fewer.";return;}
@@ -334,7 +334,8 @@
         throw new Error(detail);
       }
       renderIoneBanners(r.data.banners||banners);
-      if(input)input.value=(r.data.banners||banners).join("\n");
+      (r.data.banners||banners).slice(0,3).forEach((value,i)=>{if(inputs[i])inputs[i].value=value;});
+      for(let i=(r.data.banners||banners).length;i<3;i++){if(inputs[i])inputs[i].value="";}
       if(status)status.textContent="SAVED • LIVE BANNERS UPDATED";
       const live=document.getElementById("authorityBannersStatus");
       if(live)live.textContent="CONNECTED • LIVE";
@@ -2074,8 +2075,8 @@ function getMedia(id){
     <div class="authority-panel-section">
       <div class="authority-section-kicker">I|ONE COMMUNICATION</div>
       <h3>SCROLLING BANNERS</h3>
-      <p class="authority-section-note">Add multiple messages for the live I|ONE bottom banner. Put one banner message on each line. Changes are visible to app users after they refresh.</p>
-      <textarea id="authorityBannersInput" rows="6" maxlength="2400" placeholder="Welcome to I|ONE&#10;New products available now&#10;Your next banner message"></textarea>
+      <p class="authority-section-note">Add multiple messages for the live I|ONE bottom banner. Write up to 3 banner messages below — one banner on each row. Changes are visible to app users after they refresh.</p>
+      <div id="authorityBannersRows" style="display:grid;gap:10px;margin-top:10px"><input id="authorityBanner1" maxlength="240" placeholder="BANNER 1"><input id="authorityBanner2" maxlength="240" placeholder="BANNER 2"><input id="authorityBanner3" maxlength="240" placeholder="BANNER 3"></div>
       <div class="authority-live-row"><span>BANNER STATUS</span><strong id="authorityBannersStatus">Loading…</strong></div>
       <button type="button" id="authoritySaveBanners" class="authority-save-button">SAVE BANNERS</button>
       <div id="authorityBannersSaveStatus" class="authority-save-status"></div>
