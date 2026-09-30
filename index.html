@@ -293,13 +293,16 @@
     if(!text)return;
     const clean=(Array.isArray(banners)?banners:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,3);
     ioneBannersCache=clean;
+    text.classList.remove("ione-banner-ready");
+    text.innerHTML="";
+    text.style.removeProperty("--ione-banner-speed");
     if(!clean.length)return;
     const one=clean.map((x,i)=>'<span class="dekaStyle">'+authorityEsc(x)+'</span>'+ (i<clean.length-1?'<span class="ione-banner-separator">✦</span>':'')).join("");
-    text.innerHTML='<span class="ione-banner-copy">'+one+'</span><span class="ione-banner-copy">'+one+'</span>';
+    text.innerHTML='<span class="ione-banner-copy">'+one+'</span>';
     text.classList.add("ione-banner-ready");
     requestAnimationFrame(()=>{
       const copy=text.querySelector(".ione-banner-copy");
-      const distance=Math.max(1,copy?.offsetWidth||text.scrollWidth/2);
+      const distance=Math.max(1,copy?.offsetWidth||text.scrollWidth);
       const speed=150;
       const duration=Math.max(8,distance/speed);
       text.style.setProperty("--ione-banner-speed",duration+"s");
@@ -1990,9 +1993,7 @@ function getMedia(id){
 <div id="adImage"><img id="adImg"></div>
 
 <div id="scrollBanner">
-  <div id="scrollText">
-    <span class="dekaStyle">MBINGU DUNIANI</span> Madhabahu ya neno na maombi.
-  </div>
+  <div id="scrollText"></div>
 </div>
 
 <!-- SMART TOGGLE -->
