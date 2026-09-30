@@ -891,7 +891,13 @@
     if(status)status.textContent="SAVING DISCOUNT…";
     try{
       var session=await getSession(),sb=getSupabase();
-      var result=await sb.from("ione_single_products").select("id,title,price_amount,price_tzs,price_currency,status").eq("id",productId).eq("seller_id",session.user.id).maybeSingle();
+      if(!sb)throw new Error("I|ONE secure database is not ready. Please try again.");
+
+      var result=await sb.from("ione_single_products")
+        .select("id,title,price_amount,price_tzs,price_currency,status")
+        .eq("id",productId)
+        .eq("seller_id",session.user.id)
+        .maybeSingle();
       if(result.error)throw result.error;
       if(!result.data)throw new Error("Product not found in your ChapChap account.");
       if(String(result.data.status)!=="active")throw new Error("Only an active product can have its discount changed.");
@@ -903,8 +909,6 @@
       var d=active?calculateDiscount(original,type,value):{final:original,discount:0,percent:0};
       var finalTzs=String(result.data.price_currency||"TZS")==="USD"?Math.round(d.final*2656.35):Math.round(d.final);
 
-      /* Do the UPDATE separately from SELECT. This avoids treating a successful
-         UPDATE as failed just because PostgREST returns no row from RETURNING. */
       var saved=await sb.from("ione_single_products")
         .update({
           discount_active:active,
@@ -915,7 +919,8 @@
           updated_at:new Date().toISOString()
         })
         .eq("id",productId)
-        .eq("seller_id",session.user.id);
+        .eq("seller_id",session.user.id)
+        .eq("status","active");
       if(saved.error)throw saved.error;
 
       var verify=await sb.from("ione_single_products")
@@ -926,11 +931,23 @@
       if(verify.error)throw verify.error;
       if(!verify.data)throw new Error("The discount update was not confirmed. Please try again.");
 
+      if(Boolean(verify.data.discount_active)!==active ||
+         String(verify.data.discount_type||"")!==String(type) ||
+         Number(verify.data.discount_value||0)!==Number(value||0)){
+        throw new Error("The discount was not saved correctly. Please try again.");
+      }
+
       if(status)status.textContent="SAVED • DISCOUNT UPDATED";
-      await loadProducts();
-      await new Promise(function(resolve){setTimeout(resolve,180);});
       closeOverlay();
-      await openMine();
+
+      /* Refresh after the successful save. The editor must never stay stuck
+         waiting for the marketplace reload to finish. */
+      try{
+        await loadProducts();
+        await openMine();
+      }catch(refreshError){
+        console.warn("ChapChap discount refresh:",refreshError);
+      }
     }catch(e){
       console.error("ChapChap discount save:",e);
       if(status)status.textContent=e?.message||"Could not save the discount.";
