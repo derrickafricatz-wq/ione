@@ -1010,6 +1010,61 @@
 (function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=11";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
 
 
+/* I|ONE AUTHORITY • LIVE SUBSCRIPTION PRICE SAVE
+   * Keeps Authority Press pricing connected to the live Supabase plan table.
+   */
+(function(){
+  "use strict";
+  async function saveAuthorityPrices(){
+    var status=document.getElementById("authoritySaveStatus");
+    var password=String(document.getElementById("authorityPasswordInput")?.value||"").trim();
+    var plans=[
+      {id:"2weeks",amount:Number(document.getElementById("authorityPrice2weeks")?.value)},
+      {id:"1month",amount:Number(document.getElementById("authorityPrice1month")?.value)},
+      {id:"3months",amount:Number(document.getElementById("authorityPrice3months")?.value)}
+    ];
+    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
+    if(plans.some(function(p){return !Number.isInteger(p.amount)||p.amount<0;})){if(status)status.textContent="Enter whole TZS amounts for all plans.";return;}
+    var btn=document.getElementById("authoritySavePrices");
+    if(btn)btn.disabled=true;
+    if(status)status.textContent="SAVING LIVE PRICES…";
+    try{
+      var r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"update",password:password,plans:plans}});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not save subscription prices.");
+      (r.data.plans||plans).forEach(function(p){
+        var map={"2weeks":"twoWeeks","1month":"oneMonth","3months":"threeMonths"};
+        if(typeof IONE_UPLOAD_PLANS!=="undefined"&&IONE_UPLOAD_PLANS[map[p.id]])IONE_UPLOAD_PLANS[map[p.id]].amount=Number(p.amount);
+        var input=document.getElementById("authorityPrice"+p.id);if(input)input.value=Number(p.amount);
+      });
+      if(window.ioneRefreshLivePlans)await window.ioneRefreshLivePlans();
+      if(status)status.textContent="SAVED • LIVE PRICES UPDATED";
+    }catch(e){if(status)status.textContent=e?.message||"Could not save subscription prices.";}
+    finally{if(btn)btn.disabled=false;}
+  }
+  window.saveAuthorityPrices=saveAuthorityPrices;
+})();
+
+/* I|ONE AUTHORITY • KEEP PAYOUT QUOTE INSIDE THE MANAGEMENT PANEL */
+(function(){
+  var s=document.createElement("style");
+  s.id="ioneAuthorityPayoutFitStyle";
+  s.textContent=
+    "#authorityPressPanel{overflow-x:hidden!important}"+
+    "#authorityPressPanel .authority-panel-inner{max-width:100%;overflow-x:hidden;box-sizing:border-box}"+
+    "#authorityChapChapPanel{width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden;overflow-y:auto}"+
+    "#authorityChapChapOrders{width:100%;max-width:100%;box-sizing:border-box;overflow-x:hidden}"+
+    "#authorityChapChapOrders>*{max-width:100%;box-sizing:border-box}"+
+    ".ione-seller-payout{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden}"+
+    ".ione-seller-payout .sp-fields{min-width:0}"+
+    ".ione-seller-payout input,.ione-seller-payout select{min-width:0;max-width:100%;box-sizing:border-box}"+
+    ".ione-seller-payout .sp-result{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden}"+
+    ".ione-seller-payout .sp-quote{width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-wrap:anywhere;word-break:break-word}"+
+    ".ione-seller-payout .sp-send{width:100%;max-width:100%;box-sizing:border-box}"
+  ;
+  function install(){if(!document.getElementById("ioneAuthorityPayoutFitStyle"))document.head.appendChild(s);}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
+})();
+
 /* I|ONE SELLER-LEVEL AUTHORITY PAYOUT UI v1 */
 (function(){
   "use strict";
