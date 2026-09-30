@@ -291,12 +291,19 @@
   function renderIoneBanners(banners){
     const text=document.getElementById("scrollText");
     if(!text)return;
-    const clean=(Array.isArray(banners)?banners:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,10);
+    const clean=(Array.isArray(banners)?banners:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,3);
     ioneBannersCache=clean;
     if(!clean.length)return;
-    text.innerHTML=clean.map((x,i)=>'<span class="dekaStyle">'+authorityEsc(x)+'</span>'+ (i<clean.length-1?'<span class="ione-banner-separator">✦</span>':'')).join("");
+    const one=clean.map((x,i)=>'<span class="dekaStyle">'+authorityEsc(x)+'</span>'+ (i<clean.length-1?'<span class="ione-banner-separator">✦</span>':'')).join("");
+    text.innerHTML='<span class="ione-banner-copy">'+one+'</span><span class="ione-banner-copy">'+one+'</span>';
     text.classList.add("ione-banner-ready");
-    text.style.setProperty("--ione-banner-speed",Math.max(14,clean.join(" • ").length*0.24)+"s");
+    requestAnimationFrame(()=>{
+      const copy=text.querySelector(".ione-banner-copy");
+      const distance=Math.max(1,copy?.offsetWidth||text.scrollWidth/2);
+      const speed=150;
+      const duration=Math.max(8,distance/speed);
+      text.style.setProperty("--ione-banner-speed",duration+"s");
+    });
   }
 
   async function loadIoneBanners(){
@@ -870,24 +877,31 @@ body.landscape-mode #brandVideo {
 
 #scrollText {
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: none;
+  will-change: transform;
   animation: scroll 30s linear infinite;
   font-size: 40px;
 }
 
-/* I|ONE MULTI-BANNER ROTATION */
-.ione-banner-separator{display:inline-block;margin:0 55px;color:#ffffff;opacity:.8}
+/* I|ONE TV-STYLE MULTI-BANNER TICKER */
+.ione-banner-separator{display:inline-block;margin:0 55px;color:#ffffff;opacity:.8;flex:0 0 auto}
 #scrollText.ione-banner-ready{animation-duration:var(--ione-banner-speed,30s)}
-
 
 .dekaStyle {
   font-family: 'Russo One', sans-serif;
   color: #00ffff;
   font-size: 38px;
+  flex:0 0 auto;
 }
 
+.ione-banner-copy{display:inline-flex;align-items:center;flex:0 0 auto}
+
 @keyframes scroll {
-  from { transform: translateX(100%); }
-  to { transform: translateX(-100%); }
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
 /* LESSON LABEL */
