@@ -60,6 +60,29 @@
     return el && typeof el.value === "string" ? el.value : "";
   }
 
+  function calculateDiscount(baseAmount,type,value){
+    var base=Number(baseAmount),n=Number(value);
+    if(!Number.isFinite(base)||base<=0)throw new Error("Enter a valid original price.");
+    if(!Number.isFinite(n)||n<0)throw new Error("Enter a valid discount.");
+    if(type==="percentage"&&n>100)throw new Error("Percentage discount cannot be more than 100%.");
+    var discount=type==="percentage"?base*(n/100):n;
+    if(discount>=base)throw new Error("Discount must be less than the original price.");
+    return {discount:discount,final:Math.max(0,base-discount),percent:type==="percentage"?n:(discount/base)*100};
+  }
+  function productPricing(p){
+    var currency=p.price_currency||"TZS",original=Number(p.price_amount!=null?p.price_amount:p.price_tzs),active=p.discount_active===true;
+    if(!active||!Number.isFinite(original)||original<=0)return {currency:currency,original:original,final:original,discount:0,percent:0,active:false};
+    try{var d=calculateDiscount(original,p.discount_type||"percentage",p.discount_value||0);return {currency:currency,original:original,final:d.final,discount:d.discount,percent:d.percent,active:true};}catch(_){return {currency:currency,original:original,final:original,discount:0,percent:0,active:false};}
+  }
+  function updateDiscountPreview(){
+    var box=document.getElementById("ioneCcDiscountPreview");if(!box)return;
+    try{
+      var base=parsePrice(fieldValue("ioneCcPrice")),active=fieldValue("ioneCcDiscountActive")==="on",type=fieldValue("ioneCcDiscountType")||"percentage",value=parsePrice(fieldValue("ioneCcDiscountValue")),currency=fieldValue("ioneCcCurrency")||"TZS";
+      if(!active){box.textContent="DISCOUNT OFF • BUYER PAYS "+money(base,currency);return;}
+      var d=calculateDiscount(base,type,value);box.innerHTML="BUYER PAYS <b>"+esc(money(d.final,currency))+"</b> • SAVES "+esc(money(d.discount,currency))+" • -"+Math.round(d.percent)+"%";
+    }catch(e){box.textContent=e?.message||"Enter a valid discount.";}
+  }
+
   function getSupabase() {
     return typeof heavensSupabase !== "undefined" ? heavensSupabase : null;
   }
@@ -90,7 +113,7 @@
       ".ione-chap-card.pending-payment{cursor:default}.ione-chap-pending{position:absolute;inset:0;z-index:4;display:grid;place-items:center;padding:10px;text-align:center;background:linear-gradient(to bottom,rgba(0,0,0,.08),rgba(0,0,0,.55));color:#ffe600;font:900 11px/1.25 Arial,sans-serif;letter-spacing:1px;text-shadow:0 2px 5px #000}" +
       ".ione-chap-photo{position:absolute;inset:0;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center}" +
       ".ione-chap-photo img{width:100%;height:100%;object-fit:contain;display:block;background:#000}" +
-      ".ione-chap-price{position:absolute;left:8px;top:8px;z-index:3;padding:6px 8px;border-radius:8px;background:#ffe600;color:#111;font:900 10px Arial,sans-serif;box-shadow:none}" +
+      ".ione-chap-price{position:absolute;left:8px;top:8px;z-index:3;padding:6px 8px;border-radius:8px;background:#ffe600;color:#111;font:900 10px Arial,sans-serif;box-shadow:none}.ione-chap-original-price{color:#91a1a6;text-decoration:line-through}.ione-chap-sale-price{color:#fff;font-weight:1000}.ione-chap-discount-badge{display:inline-block;color:#071012;background:#00ffff;border-radius:6px;padding:3px 5px;font-size:8px;font-weight:1000}" +
       ".ione-chap-sold{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.68);color:#ff7d7d;font:900 20px Arial,sans-serif;letter-spacing:2px}" +
       ".ione-chap-info{position:absolute;left:0;right:0;bottom:0;padding:34px 10px 10px;background:linear-gradient(to top,rgba(0,0,0,.62),rgba(0,0,0,0));z-index:2}.ione-chap-title{color:#fff;font:900 13px/1.15 Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-chap-seller{margin-top:6px;color:#00ffff;font:800 9px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ione-chap-location{margin-top:5px;color:#71878c;font:700 8px Arial,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".ione-chap-empty{min-width:100%;padding:18px;text-align:center;color:#789096;border:1px dashed #294349;border-radius:14px;font:800 10px/1.5 Arial,sans-serif}" +
@@ -294,6 +317,7 @@
       '<div id="ioneCcSmartFields" class="cc-grid"></div>' +
       '<div class="cc-field"><label>PRODUCT NAME</label><input id="ioneCcTitle" maxlength="100" placeholder="One clear product name"></div>' +
       '<div class="cc-field"><label>PRICE</label><div style="display:grid;grid-template-columns:1fr 96px;gap:8px"><input id="ioneCcPrice" type="text" inputmode="decimal" autocomplete="off" placeholder="Example: 250,000.00"><select id="ioneCcCurrency"><option value="TZS">TZS • TANZANIAN SHILLING</option><option value="USD">USD • US DOLLAR</option></select></div></div>' +
+      '<div class="cc-field"><label>DISCOUNT</label><div style="display:grid;grid-template-columns:72px 1fr 90px;gap:7px"><select id="ioneCcDiscountActive"><option value="off">OFF</option><option value="on">ON</option></select><select id="ioneCcDiscountType"><option value="percentage">PERCENTAGE %</option><option value="fixed">FIXED AMOUNT</option></select><input id="ioneCcDiscountValue" type="text" inputmode="decimal" placeholder="10"></div><div id="ioneCcDiscountPreview" class="cc-status" style="margin-top:7px;text-align:left">DISCOUNT OFF</div></div>' +
       '<div class="cc-field"><label>PRICE TAG COLOR</label><select id="ioneCcTagColor"><option value="#ffe600">GOLD</option><option value="#ff3b30">RED</option><option value="#00a8ff">BLUE</option><option value="#22c55e">GREEN</option><option value="#a855f7">PURPLE</option><option value="#00ffff">CYAN</option><option value="#ffffff">WHITE</option><option value="#111111">BLACK</option></select></div>' +
       '<div class="cc-field"><label>PRODUCT LOCATION</label><input id="ioneCcLocation" maxlength="100" placeholder="Where the product is located"></div>' +
       '<div class="cc-field"><label>DESCRIPTION</label><textarea id="ioneCcDescription" maxlength="700" placeholder="Short product description"></textarea></div>' +
@@ -316,7 +340,9 @@
     renderSmartFields();
     document.getElementById("ioneCcCategory").addEventListener("change", renderSmartFields);
     var priceInput = document.getElementById("ioneCcPrice");
-    if (priceInput) priceInput.addEventListener("input", function () { formatPriceInput(priceInput); });
+    if(priceInput)priceInput.addEventListener("input",function(){formatPriceInput(priceInput);updateDiscountPreview();});
+    ["ioneCcDiscountActive","ioneCcDiscountType","ioneCcDiscountValue","ioneCcCurrency"].forEach(function(id){var el=document.getElementById(id);if(el){el.addEventListener("input",updateDiscountPreview);el.addEventListener("change",updateDiscountPreview);}});
+    updateDiscountPreview();
     document.getElementById("ioneCcSellCancel").addEventListener("click", closeOverlay);
     document.getElementById("ioneCcSellSubmit").addEventListener("click", submitListing);
     var camera = document.getElementById("ioneCcCamera");
@@ -374,6 +400,10 @@
       var title = fieldValue("ioneCcTitle");
       var price = parsePrice(fieldValue("ioneCcPrice"));
       var currency = fieldValue("ioneCcCurrency") || "TZS";
+      var discountActive=fieldValue("ioneCcDiscountActive")==="on";
+      var discountType=fieldValue("ioneCcDiscountType")||"percentage";
+      var discountValue=discountActive?parsePrice(fieldValue("ioneCcDiscountValue")):0;
+      var discount=discountActive?calculateDiscount(price,discountType,discountValue):{discount:0,final:price,percent:0};
       var productLocation = fieldValue("ioneCcLocation");
       var description = fieldValue("ioneCcDescription");
       var terms = document.getElementById("ioneCcTerms");
@@ -400,6 +430,7 @@
       status.textContent = "Publishing product…";
       var sb = getSupabase();
       var paymentTzs = currency === "USD" ? Math.round(price * 2656.35) : Math.round(price);
+      var finalPaymentTzs=currency==="USD"?Math.round(discount.final*2656.35):Math.round(discount.final);
       var result = await sb.from("ione_single_products").insert({
         seller_id: session.user.id,
         seller_name: name,
@@ -410,6 +441,11 @@
         price_amount: price,
         price_currency: currency,
         price_tag_color: tagColor,
+        discount_active:discountActive,
+        discount_type:discountType,
+        discount_value:discountValue,
+        discount_price_amount:discount.final,
+        discount_price_tzs:finalPaymentTzs,
         location: productLocation,
         description: description,
         attributes: attrs,
@@ -458,13 +494,14 @@
       var images = Array.isArray(p.image_urls) ? p.image_urls : [];
       var image = images[0] || "";
       var currency = p.price_currency || "TZS";
-      var displayAmount = p.price_amount != null ? p.price_amount : p.price_tzs;
-      var tagColor = p.price_tag_color || "#ffe600";
+      var pricing=productPricing(p);
+      var displayAmount=pricing.final;
+      var tagColor=p.price_tag_color||"#ffe600";
       var pending = String(p.status || "") === "pending_payment";
       return '<article class="ione-chap-card" data-id="' + esc(p.id) + '">' +
         '<div class="ione-chap-photo">' +
         (image ? '<img src="' + esc(image) + '" alt="' + esc(p.title) + '" loading="lazy">' : "") +
-        '<span class="ione-chap-price" style="background:' + esc(tagColor) + '">' + esc(money(displayAmount, currency)) + "</span>" +
+        '<span class="ione-chap-price" style="background:'+esc(tagColor)+'">'+(pricing.active?'<span style="text-decoration:line-through;opacity:.65;font-size:7px;display:block">'+esc(money(pricing.original,currency))+'</span>':'')+esc(money(displayAmount,currency))+(pricing.active?' • -'+Math.round(pricing.percent)+'%':'')+"</span>" +
         '</div><div class="ione-chap-info">' +
         '<div class="ione-chap-title">' + esc(p.title) + "</div>" +
         '<div class="ione-chap-seller">' + esc(p.seller_name) + "</div>" +
@@ -490,7 +527,7 @@
     if (!sb || !rail) return;
     try {
       var result = await sb.from("ione_single_products")
-        .select("id,seller_id,seller_name,seller_phone,category,title,price_tzs,price_amount,price_currency,price_tag_color,location,description,attributes,image_urls,status,created_at")
+        .select("id,seller_id,seller_name,seller_phone,category,title,price_tzs,price_amount,price_currency,price_tag_color,discount_active,discount_type,discount_value,discount_price_amount,discount_price_tzs,location,description,attributes,image_urls,status,created_at")
         .in("status", ["active","pending_payment"])
         .order("created_at", { ascending: false })
         .limit(30);
@@ -514,8 +551,9 @@
     if (!p) return;
     var images = Array.isArray(p.image_urls) ? p.image_urls.filter(Boolean) : [];
     var currency = p.price_currency || "TZS";
-    var displayAmount = p.price_amount != null ? p.price_amount : p.price_tzs;
-    var tagColor = p.price_tag_color || "#ffe600";
+    var pricing=productPricing(p);
+    var displayAmount=pricing.final;
+    var tagColor=p.price_tag_color||"#ffe600";
     var attrs = p.attributes && typeof p.attributes === "object" ? p.attributes : {};
     var attrMarkup = Object.keys(attrs).filter(function(k){ return String(attrs[k] || "").trim(); }).map(function(k){
       return '<div style="padding:7px 9px;border:1px solid rgba(255,255,255,.1);border-radius:8px"><strong>' + esc(k) + '</strong><br><span>' + esc(attrs[k]) + '</span></div>';
@@ -526,7 +564,7 @@
     openOverlay("BUY • " + p.title, "CHAPCHAP • BUYER",
       imageMarkup +
       '<div class="cc-product-preview" style="grid-template-columns:1fr">' +
-      '<div><h3>' + esc(p.title) + '</h3><p><span style="display:inline-block;padding:6px 9px;border-radius:8px;background:' + esc(tagColor) + ';color:#111;font-weight:900">' + esc(money(displayAmount, currency)) + '</span></p><p>' + esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
+      '<div><h3>'+esc(p.title)+'</h3><p>'+(pricing.active?'<span style="color:#91a1a6;text-decoration:line-through;margin-right:7px">'+esc(money(pricing.original,currency))+'</span><span style="display:inline-block;padding:6px 9px;border-radius:8px;background:'+esc(tagColor)+';color:#111;font-weight:900">'+esc(money(displayAmount,currency))+'</span><span style="color:#00ffff;font-weight:1000;margin-left:7px">SAVE '+esc(money(pricing.discount,currency))+' • -'+Math.round(pricing.percent)+'%</span>':'<span style="display:inline-block;padding:6px 9px;border-radius:8px;background:'+esc(tagColor)+';color:#111;font-weight:900">'+esc(money(displayAmount,currency))+'</span>')+'</p><p>'+esc(p.seller_name) + " • " + esc(p.location) + '</p></div>' +
       "</div>" +
       '<div class="cc-grid">' +
       '<div class="cc-field"><label>PRODUCT DETAILS</label><div style="color:#d7e5e8;font-size:11px;line-height:1.5">' + esc(p.description || "Product listed on I|ONE ChapChap.") + '</div>' + (attrMarkup ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px;font-size:10px;color:#9eb0b5">' + attrMarkup + '</div>' : '') + '</div>' +
@@ -838,6 +876,44 @@
     });
   }
 
+  async function saveChapChapDiscount(productId){
+    var status=document.getElementById("ioneCcDiscountEditStatus");
+    try{
+      var session=await getSession(),sb=getSupabase();
+      var result=await sb.from("ione_single_products").select("id,title,price_amount,price_tzs,price_currency,status").eq("id",productId).eq("seller_id",session.user.id).maybeSingle();
+      if(result.error)throw result.error;if(!result.data)throw new Error("Product not found in your ChapChap account.");
+      if(String(result.data.status)!=="active")throw new Error("Only an active product can have its discount changed.");
+      var active=document.getElementById("ioneCcEditDiscountActive")?.value==="on",type=document.getElementById("ioneCcEditDiscountType")?.value||"percentage",value=active?parsePrice(document.getElementById("ioneCcEditDiscountValue")?.value):0;
+      var original=Number(result.data.price_amount!=null?result.data.price_amount:result.data.price_tzs),d=active?calculateDiscount(original,type,value):{final:original,discount:0,percent:0};
+      var finalTzs=String(result.data.price_currency||"TZS")==="USD"?Math.round(d.final*2656.35):Math.round(d.final);
+      var saved=await sb.from("ione_single_products").update({discount_active:active,discount_type:type,discount_value:value,discount_price_amount:d.final,discount_price_tzs:finalTzs,updated_at:new Date().toISOString()}).eq("id",productId).eq("seller_id",session.user.id).eq("status","active").select("id").maybeSingle();
+      if(saved.error)throw saved.error;if(!saved.data)throw new Error("The discount could not be saved. Refresh MY CHAPCHAP and try again.");
+      closeOverlay();await loadProducts();await openMine();
+    }catch(e){if(status)status.textContent=e?.message||"Could not save the discount.";}
+  }
+
+  function openDiscountEditor(productId){
+    var p=productCache.find(function(x){return String(x.id)===String(productId);});
+    if(!p){
+      getSession().then(function(session){return getSupabase().from("ione_single_products").select("id,title,price_amount,price_tzs,price_currency,discount_active,discount_type,discount_value,status").eq("id",productId).eq("seller_id",session.user.id).maybeSingle();}).then(function(r){if(r&&r.data)openDiscountEditorWithProduct(r.data);else alert("Product not found.");}).catch(function(e){alert(e?.message||"Could not load this product.");});return;
+    }
+    openDiscountEditorWithProduct(p);
+  }
+
+  function openDiscountEditorWithProduct(p){
+    var q=productPricing(p),currency=p.price_currency||"TZS";
+    openOverlay("PRODUCT DISCOUNT","MY CHAPCHAP • "+(p.title||"PRODUCT"),
+      '<div class="cc-grid"><div class="cc-product-preview" style="grid-template-columns:1fr"><div><h3>'+esc(p.title||"Product")+'</h3><p>ORIGINAL PRICE: <b>'+esc(money(q.original,currency))+'</b></p><p>CURRENT BUYER PRICE: <b>'+esc(money(q.final,currency))+'</b></p></div></div>'+
+      '<div class="cc-field"><label>DISCOUNT STATUS</label><select id="ioneCcEditDiscountActive"><option value="off" '+(!q.active?'selected':'')+'>OFF</option><option value="on" '+(q.active?'selected':'')+'>ON</option></select></div>'+
+      '<div class="cc-field"><label>DISCOUNT TYPE</label><select id="ioneCcEditDiscountType"><option value="percentage" '+((p.discount_type||"percentage")==="percentage"?'selected':'')+'>PERCENTAGE %</option><option value="fixed" '+((p.discount_type||"percentage")==="fixed"?'selected':'')+'>FIXED AMOUNT</option></select></div>'+
+      '<div class="cc-field"><label>DISCOUNT VALUE</label><input id="ioneCcEditDiscountValue" type="text" inputmode="decimal" value="'+(q.active?esc(p.discount_value||""):"")+'" placeholder="Example: 10"></div>'+
+      '<div id="ioneCcDiscountEditStatus" class="cc-status">OFF = normal price. ON = buyer sees the discounted sale price.</div>'+
+      '<div class="cc-actions"><button id="ioneCcDiscountCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcDiscountSave" class="cc-primary" type="button">SAVE DISCOUNT</button></div></div>');
+    function preview(){var box=document.getElementById("ioneCcDiscountEditStatus");try{var active=document.getElementById("ioneCcEditDiscountActive")?.value==="on",type=document.getElementById("ioneCcEditDiscountType")?.value||"percentage",val=active?parsePrice(document.getElementById("ioneCcEditDiscountValue")?.value):0;if(!active){box.textContent="DISCOUNT OFF • BUYER PAYS "+money(q.original,currency);return;}var d=calculateDiscount(q.original,type,val);box.textContent="BUYER PAYS "+money(d.final,currency)+" • SAVES "+money(d.discount,currency)+" • -"+Math.round(d.percent)+"%";}catch(e){box.textContent=e?.message||"Enter a valid discount.";}}
+    ["ioneCcEditDiscountActive","ioneCcEditDiscountType","ioneCcEditDiscountValue"].forEach(function(id){var el=document.getElementById(id);if(el){el.addEventListener("input",preview);el.addEventListener("change",preview);}});
+    document.getElementById("ioneCcDiscountCancel").addEventListener("click",closeOverlay);document.getElementById("ioneCcDiscountSave").addEventListener("click",function(){saveChapChapDiscount(productId);});preview();
+  }
+
   async function revokeChapChapProduct(productId){
     try{
       if(!confirm("CONFIRM REVOKE\n\nThis will remove your product from the ChapChap marketplace.\n\nPress OK to revoke or Cancel to keep it listed.")) return;
@@ -857,17 +933,18 @@
       var sales=ordersResult.data||[], ids=sales.map(function(o){return o.id;}), receipts=[];
       if(ids.length){var rr=await sb.from("ione_chapchap_receipts").select("*").in("order_id",ids);if(rr.error)throw rr.error;receipts=rr.data||[];}
       var receiptMap={};receipts.forEach(function(r){receiptMap[String(r.order_id)]=r;});
-      var productsResult=await sb.from("ione_single_products").select("id,title,price_tzs,price_amount,price_currency,status,created_at").eq("seller_id",session.user.id).in("status",["active","pending_payment","sold"]).order("created_at",{ascending:false}).limit(50);
+      var productsResult=await sb.from("ione_single_products").select("id,title,price_tzs,price_amount,price_currency,discount_active,discount_type,discount_value,discount_price_amount,discount_price_tzs,status,created_at").eq("seller_id",session.user.id).in("status",["active","pending_payment","sold"]).order("created_at",{ascending:false}).limit(50);
       if(productsResult.error)throw productsResult.error;
       var products=productsResult.data||[],body='<div class="cc-list">';
       if(sales.length){
         body+='<div class="cc-kicker">YOUR SALES</div>'+sales.map(function(o){var r=receiptMap[String(o.id)];return '<div class="cc-list-item"><strong>SALE • '+esc(String(o.status||"PAID").toUpperCase())+'</strong><span>'+esc(money(o.amount_tzs))+' • '+esc(new Date(o.created_at).toLocaleString())+'<br>CLIENT: '+esc(o.buyer_full_name||r?.buyer_full_name||"—")+'<br>PHONE: '+esc(o.buyer_phone||o.buyer_contact||r?.buyer_contact||"—")+'<br>EMAIL: '+esc(o.buyer_email||r?.buyer_email||"—")+'<br>ADDRESS: '+esc(o.buyer_address||r?.buyer_address||"—")+'</span>'+(r?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-mine-view="'+esc(o.id)+'">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-mine-download="'+esc(o.id)+'">DOWNLOAD</button></div>':'<span>Receipt is being prepared.</span>')+'</div>';}).join("");
       }else body+='<div class="cc-list-item"><strong>NO SALES YET</strong><span>Your paid ChapChap sales will appear here. This area is private to your seller account.</span></div>';
       body+='<div class="cc-kicker" style="margin-top:14px">YOUR PRODUCTS</div>';
-      if(products.length) body+=products.map(function(p){var price=p.price_amount!=null?p.price_amount:p.price_tzs;var action=p.status==="active"?'<button type="button" class="cc-secondary" data-revoke-product="'+esc(p.id)+'" style="width:100%;margin-top:8px;min-height:40px">REVOKE PRODUCT</button>':'<span>STATUS: '+esc(String(p.status||"").toUpperCase())+'</span>';return '<div class="cc-list-item"><strong>'+esc(p.title||"ChapChap product")+'</strong><span>'+esc(money(price,p.price_currency||"TZS"))+' • STATUS: '+esc(String(p.status||"").toUpperCase())+'</span>'+action+'</div>';}).join("");
+      if(products.length) body+=products.map(function(p){var q=productPricing(p);var action=p.status==="active"?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px"><button type="button" class="cc-secondary" data-discount-product="'+esc(p.id)+'" style="width:100%;min-height:40px">'+(q.active?'EDIT DISCOUNT':'DISCOUNT')+'</button><button type="button" class="cc-secondary" data-revoke-product="'+esc(p.id)+'" style="width:100%;min-height:40px">REVOKE PRODUCT</button></div>':'<span>STATUS: '+esc(String(p.status||"").toUpperCase())+'</span>';var pricingLine=q.active?'<span style="color:#00ffff">SALE: '+esc(money(q.final,q.currency))+' • SAVE '+esc(money(q.discount,q.currency))+' • -'+Math.round(q.percent)+'%</span>':'<span>DISCOUNT: OFF</span>';return '<div class="cc-list-item"><strong>'+esc(p.title||"ChapChap product")+'</strong><span>ORIGINAL: '+esc(money(q.original,q.currency))+' • STATUS: '+esc(String(p.status||"").toUpperCase())+'</span><span>'+pricingLine+'</span>'+action+'</div>';}).join("");
       else body+='<div class="cc-list-item"><strong>NO PRODUCTS</strong><span>Add your own ChapChap product from CHAPCHAP • BUY / SELL.</span></div>';
       body+='</div>'; openOverlay("MY CHAPCHAP","SELLER • PRIVATE ACCOUNT",body);
       document.querySelectorAll("[data-mine-view],[data-mine-download]").forEach(function(btn){btn.addEventListener("click",function(){var o=sales.find(function(x){return String(x.id)===String(btn.getAttribute("data-mine-view")||btn.getAttribute("data-mine-download"));});var r=o&&receiptMap[String(o.id)];if(!r)return;if(btn.hasAttribute("data-mine-download"))window.ioneChapChapDownloadReceipt?.(r);else window.ioneChapChapOpenStandaloneReceipt?.(r);});});
+      document.querySelectorAll("[data-discount-product]").forEach(function(btn){btn.addEventListener("click",function(){openDiscountEditor(btn.getAttribute("data-discount-product"));});});
       document.querySelectorAll("[data-revoke-product]").forEach(function(btn){btn.addEventListener("click",function(){revokeChapChapProduct(btn.getAttribute("data-revoke-product"));});});
     }catch(err){openOverlay("MY CHAPCHAP","SELLER • PRIVATE ACCOUNT",'<div class="cc-status">'+esc(err&&err.message?err.message:"Could not load your private ChapChap account.")+"</div>");}
   }
