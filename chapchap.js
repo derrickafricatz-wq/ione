@@ -972,10 +972,10 @@
       '<div class="cc-field"><label>DISCOUNT TYPE</label><select id="ioneCcEditDiscountType"><option value="percentage" '+((p.discount_type||"percentage")==="percentage"?'selected':'')+'>PERCENTAGE %</option><option value="fixed" '+((p.discount_type||"percentage")==="fixed"?'selected':'')+'>FIXED AMOUNT</option></select></div>'+
       '<div class="cc-field"><label>DISCOUNT VALUE</label><input id="ioneCcEditDiscountValue" type="text" inputmode="decimal" value="'+(q.active?esc(p.discount_value||""):"")+'" placeholder="Example: 10"></div>'+
       '<div id="ioneCcDiscountEditStatus" class="cc-status">OFF = normal price. ON = buyer sees the discounted sale price.</div>'+
-      '<div class="cc-actions"><button id="ioneCcDiscountCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcDiscountSave" class="cc-primary" type="button">SAVE DISCOUNT</button></div></div>');
+      '<div class="cc-actions"><button id="ioneCcDiscountCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcDiscountSave" class="cc-primary" type="button">UPDATE DISCOUNT</button></div></div>');
     function preview(){var box=document.getElementById("ioneCcDiscountEditStatus");try{var active=document.getElementById("ioneCcEditDiscountActive")?.value==="on",type=document.getElementById("ioneCcEditDiscountType")?.value||"percentage",val=active?parsePrice(document.getElementById("ioneCcEditDiscountValue")?.value):0;if(!active){box.textContent="DISCOUNT OFF • BUYER PAYS "+money(q.original,currency);return;}var d=calculateDiscount(q.original,type,val);box.textContent="BUYER PAYS "+money(d.final,currency)+" • SAVES "+money(d.discount,currency)+" • -"+Math.round(d.percent)+"%";}catch(e){box.textContent=e?.message||"Enter a valid discount.";}}
     ["ioneCcEditDiscountActive","ioneCcEditDiscountType","ioneCcEditDiscountValue"].forEach(function(id){var el=document.getElementById(id);if(el){el.addEventListener("input",preview);el.addEventListener("change",preview);}});
-    document.getElementById("ioneCcDiscountCancel").addEventListener("click",closeOverlay);document.getElementById("ioneCcDiscountSave").addEventListener("click",function(){saveChapChapDiscount(productId);});preview();
+    document.getElementById("ioneCcDiscountCancel").addEventListener("click",closeOverlay);document.getElementById("ioneCcDiscountSave").addEventListener("click",function(e){e.preventDefault();e.stopPropagation();saveChapChapDiscount(p.id);});preview();
   }
 
   async function revokeChapChapProduct(productId){
