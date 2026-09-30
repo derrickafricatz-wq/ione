@@ -524,12 +524,9 @@
     });
 
     /* Smart hybrid carousel:
-       - normal touch/mouse/wheel scrolling remains fully manual
-       - auto movement starts only after the user becomes idle
-       - advances exactly one product at a time, slowly
-       - pauses immediately during user interaction
-       - loops back to the first product at the end
-    */
+       manual swipe/drag stays in control; automatic movement only runs
+       after idle time. Programmatic smooth scrolling is explicitly marked
+       so its scroll events never reset the automatic timer. */
     if (rail._ioneSmartCarouselTimer) {
       clearTimeout(rail._ioneSmartCarouselTimer);
       rail._ioneSmartCarouselTimer = null;
@@ -537,6 +534,7 @@
     if (!rail._ioneSmartCarouselReady) {
       rail._ioneSmartCarouselReady = true;
       rail._ioneChapDragMoved = false;
+      rail._ioneSmartAutoMoving = false;
 
       var drag = {on:false,x:0,left:0,moved:false};
 
@@ -567,34 +565,53 @@
           var max = Math.max(0, rail.scrollWidth - rail.clientWidth);
           var step = cardStep();
           if (max <= 2 || step <= 0) {
-            scheduleSmartCarousel(3200);
+            scheduleSmartCarousel(3000);
             return;
           }
 
           var next = rail.scrollLeft + step;
+          rail._ioneSmartAutoMoving = true;
+
           if (next >= max - 3) {
-            /* Let the last card finish its slow movement, then restart cleanly. */
             rail.scrollTo({left:max, behavior:"smooth"});
             rail._ioneSmartCarouselTimer = setTimeout(function () {
-              if (!drag.on) rail.scrollTo({left:0, behavior:"smooth"});
-              scheduleSmartCarousel(3000);
-            }, 1500);
+              if (!drag.on && !document.hidden) {
+                rail._ioneSmartAutoMoving = true;
+                rail.scrollTo({left:0, behavior:"smooth"});
+                rail._ioneSmartCarouselTimer = setTimeout(function(){
+                  rail._ioneSmartAutoMoving = false;
+                  scheduleSmartCarousel(3500);
+                }, 1100);
+              } else {
+                rail._ioneSmartAutoMoving = false;
+                scheduleSmartCarousel(1800);
+              }
+            }, 1300);
           } else {
             rail.scrollTo({left:next, behavior:"smooth"});
-            scheduleSmartCarousel(3000);
+            rail._ioneSmartCarouselTimer = setTimeout(function(){
+              rail._ioneSmartAutoMoving = false;
+              scheduleSmartCarousel(3500);
+            }, 1100);
           }
         }, delay == null ? 3500 : delay);
       }
 
       function userActivity() {
+        if (rail._ioneSmartAutoMoving) rail._ioneSmartAutoMoving = false;
         pauseSmartCarousel();
         scheduleSmartCarousel(3500);
       }
-      rail._ioneSmartCarouselRestart = function(){ scheduleSmartCarousel(1800); };
+
+      rail._ioneSmartCarouselRestart = function(){
+        rail._ioneSmartAutoMoving = false;
+        scheduleSmartCarousel(1800);
+      };
 
       rail.addEventListener("pointerdown", function(e){
         if (e.pointerType === "mouse" && e.button !== 0) return;
         pauseSmartCarousel();
+        rail._ioneSmartAutoMoving = false;
         drag.on=true;
         drag.x=e.clientX;
         drag.left=rail.scrollLeft;
@@ -623,22 +640,24 @@
       rail.addEventListener("touchstart", userActivity, {passive:true});
       rail.addEventListener("wheel", userActivity, {passive:true});
       rail.addEventListener("scroll", function(){
-        /* Manual momentum/scrolling also counts as activity. */
-        if (!drag.on) {
+        /* Ignore scroll events produced by our own smooth auto movement. */
+        if (!drag.on && !rail._ioneSmartAutoMoving) {
           pauseSmartCarousel();
           scheduleSmartCarousel(3500);
         }
       }, {passive:true});
 
       document.addEventListener("visibilitychange", function(){
-        if (document.hidden) pauseSmartCarousel();
-        else scheduleSmartCarousel(1800);
+        if (document.hidden) {
+          rail._ioneSmartAutoMoving = false;
+          pauseSmartCarousel();
+        } else {
+          scheduleSmartCarousel(1800);
+        }
       });
 
       scheduleSmartCarousel(4200);
     } else {
-      /* Product refresh: restart the idle countdown without creating
-         duplicate event listeners or timers. */
       var restart = rail._ioneSmartCarouselRestart;
       if (typeof restart === "function") restart();
     }
