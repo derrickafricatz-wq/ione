@@ -486,76 +486,139 @@ body.landscape-mode #brandVideo {
   transition: opacity 0.8s ease-in-out;
 }
 
-/* SMART TOGGLE (HIDDEN INITIALLY) */
-#smartToggle {
+/* SMART TOGGLE + SMART PANEL */
+#smartToggle{
   position:fixed;
-  bottom:80px;
-  left:20px;
-  border-radius:40px;
-  background:linear-gradient(145deg,#00ffff,#008f8f);
-  border:none;
-  color:black;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  padding:10px 16px;
-  z-index:30;
-  opacity:0;
-  transform:translateY(100px);
-  transition:0.4s;
-}
-
-/* ICON */
-.dekaIcon {
-  width:45px;
-  height:45px;
-  border-radius:50%;
-  background:black;
-  color:#00ffff;
+  left:18px;
+  bottom:22px;
+  min-width:64px;
+  min-height:64px;
+  padding:8px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,.55);
+  background:linear-gradient(145deg,rgba(0,255,255,.95),rgba(0,115,135,.92));
+  color:#001014;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-family:'Russo One';
-  font-size:20px;
+  gap:9px;
+  box-shadow:0 10px 0 rgba(0,35,42,.75),0 18px 35px rgba(0,0,0,.55),inset 0 2px 0 rgba(255,255,255,.55),inset 0 -5px 10px rgba(0,0,0,.25);
+  z-index:30;
+  opacity:0;
+  transform:translateY(100px) scale(.88);
+  transition:opacity .35s ease,transform .35s ease;
+  touch-action:manipulation;
 }
 
-/* LABEL */
-#smartLabel {
+#smartToggle.active{
+  transform:translateY(0) scale(1);
+}
+
+.dekaIcon{
+  width:48px;
+  height:48px;
+  border-radius:16px;
+  background:linear-gradient(145deg,#02090b,#102b30);
+  color:#7fffff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:'Russo One',Arial,sans-serif;
+  font-size:19px;
+  box-shadow:0 5px 0 #000,inset 0 1px 2px rgba(255,255,255,.25);
+}
+
+#smartLabel{
   opacity:0;
   transform:translateX(-10px);
-  transition:0.4s;
+  transition:.35s;
   white-space:nowrap;
+  text-align:left;
+  font-weight:900;
 }
 
-#smartToggle.active #smartLabel {
+#smartToggle.active #smartLabel{
   opacity:1;
   transform:translateX(0);
 }
 
-/* PANEL */
-#smartPanel {
+/* Large 3D smart buttons: the video remains visible behind the translucent panel. */
+#smartPanel{
   position:fixed;
-  bottom:150px;
-  left:20px;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+  left:50%;
+  bottom:98px;
+  transform:translateX(-50%);
+  width:min(94vw,620px);
+  max-height:calc(100vh - 125px);
+  box-sizing:border-box;
+  padding:12px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  overflow-y:auto;
   opacity:0;
   pointer-events:none;
-  transition:0.3s;
+  transition:opacity .3s ease,transform .3s ease;
   z-index:30;
+  border-radius:28px;
+  background:rgba(2,10,13,.28);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
 }
-#smartPanel.show {
+
+#smartPanel.show{
   opacity:1;
   pointer-events:auto;
 }
 
-.smart-item {
-  padding:12px;
-  border:none;
-  border-radius:12px;
-  background:#00ffff;
-  color:black;
+.smart-item{
+  min-height:112px;
+  width:100%;
+  padding:18px 12px;
+  box-sizing:border-box;
+  border:1px solid rgba(255,255,255,.45);
+  border-radius:24px;
+  color:#fff;
+  font-family:'Russo One',Arial,sans-serif;
+  font-size:clamp(13px,3.8vw,20px);
+  font-weight:900;
+  letter-spacing:.6px;
+  line-height:1.15;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  text-shadow:0 2px 3px rgba(0,0,0,.7);
+  box-shadow:0 8px 0 rgba(0,0,0,.48),0 16px 28px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.42),inset 0 -10px 18px rgba(0,0,0,.18);
+  transition:transform .16s ease,filter .16s ease;
+  touch-action:manipulation;
+}
+
+/* Cute glassy color variations while keeping the live video visible. */
+.smart-item:nth-child(1){background:linear-gradient(145deg,rgba(0,230,255,.90),rgba(0,92,180,.84));}
+.smart-item:nth-child(2){background:linear-gradient(145deg,rgba(255,93,172,.90),rgba(130,38,170,.84));}
+.smart-item:nth-child(3){background:linear-gradient(145deg,rgba(255,196,70,.92),rgba(190,76,25,.86));}
+.smart-item:nth-child(4){background:linear-gradient(145deg,rgba(98,255,178,.90),rgba(16,126,92,.84));}
+.smart-item:nth-child(5){background:linear-gradient(145deg,rgba(169,125,255,.90),rgba(67,49,158,.86));}
+
+.smart-item:active{
+  transform:translateY(5px) scale(.985);
+  filter:brightness(.94);
+  box-shadow:0 3px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.3);
+}
+
+.smart-item small{
+  font-family:Arial,sans-serif;
+  font-size:clamp(8px,2.2vw,11px);
+  letter-spacing:1px;
+  opacity:.9;
+}
+
+@media(max-width:420px){
+  #smartPanel{grid-template-columns:1fr;gap:11px;padding:10px;bottom:94px;max-height:calc(100vh - 112px);}
+  .smart-item{min-height:88px;border-radius:20px;padding:14px 10px;}
 }
 
 /* ================= AUTHORITY PRESS PASSWORD GATE ================= */
@@ -2325,7 +2388,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=71")
+  navigator.serviceWorker.register("sw.js?v=81")
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
 }
@@ -2403,7 +2466,8 @@ function hidePanel(){
 
 function resetTimer(){
   if(panelTimer) clearTimeout(panelTimer);
-  panelTimer=setTimeout(hidePanel,4000);
+  // Keep the smart menu available for 2 full minutes after the last activity.
+  panelTimer=setTimeout(hidePanel,120000);
 }
 
 smartToggle.onclick=()=>{
