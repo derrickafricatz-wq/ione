@@ -886,18 +886,57 @@
 
   async function saveChapChapDiscount(productId){
     var status=document.getElementById("ioneCcDiscountEditStatus");
+    var btn=document.getElementById("ioneCcDiscountSave");
+    if(btn)btn.disabled=true;
+    if(status)status.textContent="SAVING DISCOUNT…";
     try{
       var session=await getSession(),sb=getSupabase();
       var result=await sb.from("ione_single_products").select("id,title,price_amount,price_tzs,price_currency,status").eq("id",productId).eq("seller_id",session.user.id).maybeSingle();
-      if(result.error)throw result.error;if(!result.data)throw new Error("Product not found in your ChapChap account.");
+      if(result.error)throw result.error;
+      if(!result.data)throw new Error("Product not found in your ChapChap account.");
       if(String(result.data.status)!=="active")throw new Error("Only an active product can have its discount changed.");
-      var active=document.getElementById("ioneCcEditDiscountActive")?.value==="on",type=document.getElementById("ioneCcEditDiscountType")?.value||"percentage",value=active?parsePrice(document.getElementById("ioneCcEditDiscountValue")?.value):0;
-      var original=Number(result.data.price_amount!=null?result.data.price_amount:result.data.price_tzs),d=active?calculateDiscount(original,type,value):{final:original,discount:0,percent:0};
+
+      var active=document.getElementById("ioneCcEditDiscountActive")?.value==="on";
+      var type=document.getElementById("ioneCcEditDiscountType")?.value||"percentage";
+      var value=active?parsePrice(document.getElementById("ioneCcEditDiscountValue")?.value):0;
+      var original=Number(result.data.price_amount!=null?result.data.price_amount:result.data.price_tzs);
+      var d=active?calculateDiscount(original,type,value):{final:original,discount:0,percent:0};
       var finalTzs=String(result.data.price_currency||"TZS")==="USD"?Math.round(d.final*2656.35):Math.round(d.final);
-      var saved=await sb.from("ione_single_products").update({discount_active:active,discount_type:type,discount_value:value,discount_price_amount:d.final,discount_price_tzs:finalTzs,updated_at:new Date().toISOString()}).eq("id",productId).eq("seller_id",session.user.id).eq("status","active").select("id").maybeSingle();
-      if(saved.error)throw saved.error;if(!saved.data)throw new Error("The discount could not be saved. Refresh MY CHAPCHAP and try again.");
-      closeOverlay();await loadProducts();await openMine();
-    }catch(e){if(status)status.textContent=e?.message||"Could not save the discount.";}
+
+      /* Do the UPDATE separately from SELECT. This avoids treating a successful
+         UPDATE as failed just because PostgREST returns no row from RETURNING. */
+      var saved=await sb.from("ione_single_products")
+        .update({
+          discount_active:active,
+          discount_type:type,
+          discount_value:value,
+          discount_price_amount:d.final,
+          discount_price_tzs:finalTzs,
+          updated_at:new Date().toISOString()
+        })
+        .eq("id",productId)
+        .eq("seller_id",session.user.id);
+      if(saved.error)throw saved.error;
+
+      var verify=await sb.from("ione_single_products")
+        .select("id,discount_active,discount_type,discount_value,discount_price_amount,discount_price_tzs")
+        .eq("id",productId)
+        .eq("seller_id",session.user.id)
+        .maybeSingle();
+      if(verify.error)throw verify.error;
+      if(!verify.data)throw new Error("The discount update was not confirmed. Please try again.");
+
+      if(status)status.textContent="SAVED • DISCOUNT UPDATED";
+      await loadProducts();
+      await new Promise(function(resolve){setTimeout(resolve,180);});
+      closeOverlay();
+      await openMine();
+    }catch(e){
+      console.error("ChapChap discount save:",e);
+      if(status)status.textContent=e?.message||"Could not save the discount.";
+    }finally{
+      if(btn)btn.disabled=false;
+    }
   }
 
   function openDiscountEditor(productId){
