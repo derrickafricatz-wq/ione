@@ -15,9 +15,15 @@ const lessonHints = [
   const PUSH_FUNCTION = "ione-push";
   let vapidPublicKey = "";
 
-  function apiUrl(){
-    return String(window.IONE_SUPABASE_URL || "https://xbemkmvvbkxknuduthsg.supabase.co")
-      .replace(/\/$/,"") + "/functions/v1/" + PUSH_FUNCTION;
+  function sb(){ return typeof heavensSupabase !== "undefined" ? heavensSupabase : null; }
+
+  async function callPush(body){
+    const client=sb();
+    if(!client) throw new Error("I|ONE connection is not ready.");
+    const r=await client.functions.invoke(PUSH_FUNCTION,{body});
+    if(r.error) throw new Error(r.data?.error || r.error.message || "Push service request failed.");
+    if(!r.data?.success) throw new Error(r.data?.error || "Push service request failed.");
+    return r.data;
   }
 
   function uint8FromBase64Url(base64String){
@@ -28,17 +34,8 @@ const lessonHints = [
   }
 
   async function getPushConfig(){
-    const r = await fetch(apiUrl(), {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "apikey": window.IONE_SUPABASE_ANON_KEY || ""
-      },
-      body:JSON.stringify({action:"config"})
-    });
-    const data = await r.json().catch(()=>({}));
-    if(!r.ok || !data.success || !data.publicKey) throw new Error(data.error || "Push service is not ready.");
-    vapidPublicKey = data.publicKey;
+    const data=await callPush({action:"config"});
+    vapidPublicKey=data.publicKey;
     return data;
   }
 
@@ -67,24 +64,11 @@ const lessonHints = [
     }
 
     const raw = subscription.toJSON();
-    const r = await fetch(apiUrl(), {
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "apikey": window.IONE_SUPABASE_ANON_KEY || ""
-      },
-      body:JSON.stringify({
-        action:"subscribe",
-        subscription:{
-          endpoint:raw.endpoint,
-          keys:raw.keys || {}
-        },
-        user_agent:navigator.userAgent
-      })
+    await callPush({
+      action:"subscribe",
+      subscription:{endpoint:raw.endpoint,keys:raw.keys || {}},
+      user_agent:navigator.userAgent
     });
-
-    const data = await r.json().catch(()=>({}));
-    if(!r.ok || !data.success) throw new Error(data.error || "Could not register this phone for notifications.");
 
     localStorage.setItem("ionePushEnabled","1");
     return true;
@@ -98,17 +82,10 @@ const lessonHints = [
       const subscription = await registration.pushManager.getSubscription();
       if(!subscription) return;
       const raw = subscription.toJSON();
-      await fetch(apiUrl(),{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "apikey":window.IONE_SUPABASE_ANON_KEY || ""
-        },
-        body:JSON.stringify({
-          action:"subscribe",
-          subscription:{endpoint:raw.endpoint,keys:raw.keys || {}},
-          user_agent:navigator.userAgent
-        })
+      await callPush({
+        action:"subscribe",
+        subscription:{endpoint:raw.endpoint,keys:raw.keys || {}},
+        user_agent:navigator.userAgent
       });
       localStorage.setItem("ionePushEnabled","1");
     }catch(e){
@@ -162,7 +139,7 @@ const lessonHints = [
   window.ioneEnablePushNotifications = pushSubscribe;
 
   function start(){
-    if(!window.heavensSupabase) return;
+    if(!sb()) return;
     syncExistingPush();
     setTimeout(createButton,900);
   }
