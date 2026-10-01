@@ -2226,9 +2226,9 @@ document.body.addEventListener("click", goFullScreen, {once:true});
 const guideLanguages={
  sw:{title:"MWONGOZO WA KISWAHILI",steps:[
   "Karibu Mbingu Duniani — GUIDE inakusaidia kujifunza vipengele vipya vya app.",
-  "VIDEO: Video huanza kucheza kiotomatiki. Gusa skrini mara moja ukiitaji sauti.",
-  "SMART MENU: Gusa kitufe cha DK kufungua menyu kuu ya zana.",
-  "SYSTEM KEYPAD: Fungua keypad kutumia namba na OK kuchagua masomo na video.",
+  "",
+  "SMART PANEL: Tumia kadi nne za huduma kwenye home screen kufungua vipengele vya I|ONE.",
+  "",
   "SERMON TRANSCRIPT: Eneo hili ni la waandishi wa huduma walioidhinishwa. Ingiza ministry access key ili kufungua transcript.",
   "SAVE: Bonyeza SAVE kuhifadhi transcript yako tayari kwa kutengeneza kitabu.",
   "I|ONE: Fungua HOME OF MARKETING kuona live 3D billboards za biashara kutoka kwa watumiaji wote.",
@@ -2247,9 +2247,9 @@ const guideLanguages={
  ]},
  en:{title:"ENGLISH GUIDE",steps:[
   "Welcome to Mbingu Duniani — GUIDE explains the newest app features.",
-  "VIDEO: Videos can play automatically. Tap once if you need sound.",
-  "SMART MENU: Tap the DK button to open the main smart tools.",
-  "SYSTEM KEYPAD: Open the keypad and use number keys plus OK to choose lessons and videos.",
+  "",
+  "SMART PANEL: Use the four service cards on the home screen to open I|ONE features.",
+  "",
   "SERMON TRANSCRIPT: This area is reserved for authorized ministry authors. Enter the ministry access key to open the transcript.",
   "SAVE: Press SAVE to keep the sermon transcript ready for book creation.",
   "I|ONE: Open HOME OF MARKETING to see live 3D business billboards from users across the app.",
@@ -2281,9 +2281,8 @@ settingsBtn.onclick=()=>{guideOverlay.style.display="flex";showGuideHome();};
 
 /* ================= VIDEO ================= */
 const video = document.getElementById("brandVideo");
-document.body.addEventListener("click", () => {
-  video.muted = false; video.volume = 1; video.play().catch(()=>{});
-},{once:true});
+video.muted = true;
+video.volume = 0;
 
   
  /* =========================
@@ -2346,7 +2345,6 @@ function zoomVideo(amount) {
 /* ================= CLOCK ================= */
 
 const clockBox = document.getElementById("clockBox");
-setInterval(()=>clockBox.innerText=new Date().toLocaleTimeString(),1000);
 
 /* ================= ADS ================= */
 adImages.forEach(src=>{new Image().src=src;});
@@ -2355,28 +2353,14 @@ let lessonAdInterval, lessonAdIndex=0;
 
 function resetAdImage(){ adImg.classList.remove("lessonFade"); adImg.style.opacity="1"; adImage.style.right="-100%"; if(adImages.length>0) adImg.src=adImages[0]; }
 
-function showAd(){ if(currentLesson !== null && !lessonAds[currentLesson]) return; adImg.style.opacity="1"; adImg.src=adImages[adIndex]; setTimeout(()=>adImage.style.right="0",50); setTimeout(()=>adImage.style.right="-100%",8000); adIndex=(adIndex+1)%adImages.length; }
+function showAd(){ return; }
 
-function startAds(){ clearInterval(adInterval); resetAdImage(); showAd(); adInterval=setInterval(showAd,25000); }
+function startAds(){ clearInterval(adInterval); resetAdImage(); }
 function stopAds(){ clearInterval(adInterval); adImage.style.right="-100%"; }
 
 function stopLessonAds(){ if(lessonAdInterval){ clearInterval(lessonAdInterval); lessonAdInterval=null; } }
 
-function startLessonAds(lessonId){
-  stopLessonAds();
-  if(!lessonAds[lessonId]) return;
-  lessonAdIndex=0;
-  function showLessonAd(){
-    const ads=lessonAds[lessonId];
-    adImg.style.opacity="1"; adImg.src=ads[lessonAdIndex];
-    setTimeout(()=>adImage.style.right="0",50);
-    setTimeout(()=>adImage.style.right="-100%",8000);
-    lessonAdIndex=(lessonAdIndex+1)%ads.length;
-  }
-  showLessonAd();
-  lessonAdInterval=setInterval(showLessonAd,25000);
-}
-
+function startLessonAds(lessonId){ stopLessonAds(); }
 /* =========================
    OFFLINE VIDEO PLAYER
 ========================= */
@@ -2473,89 +2457,12 @@ const openAuthority=document.getElementById("openAuthority");
 const authorityPasswordOverlay=document.getElementById("authorityPasswordOverlay");
 /* AUTHORITY PRESS: backend-authenticated handler is installed by the final Authority Press binding below. */
 
-/* SMART SYSTEM */
-const smartToggle=document.getElementById("smartToggle");
+/* SMART HOME PANEL */
 const smartPanel=document.getElementById("smartPanel");
+smartPanel?.classList.add("show");
 
-/* ================= LEARNING CORE ROTATION ================= */
+/* /* ================= CONTROLS ================= */
 
-const healthMain = document.getElementById("healthMain");
-
-const healthHints = [
-  "HEAVEN ON EARTH",
-  "NENO LA MUNGU",
-  "MAFUNDISHO YA IMANI",
-  "MAISHA YA KIROHO",
-];
-
-let healthIndex = 0;
-
-// STYLE EFFECT
-healthMain.style.transition = "all 0.5s ease";
-healthMain.style.display = "block";
-
-function rotateHealthHints(){
-
-  if(!healthMain) return;
-
-  // FADE OUT
-  healthMain.style.opacity = "0";
-  healthMain.style.transform = "translateY(10px)";
-
-  setTimeout(()=>{
-
-    // CHANGE TEXT
-    healthMain.innerText = healthHints[healthIndex];
-
-    // FADE IN
-    healthMain.style.opacity = "1";
-    healthMain.style.transform = "translateY(0)";
-
-    healthIndex++;
-
-    if(healthIndex >= healthHints.length){
-      healthIndex = 0;
-    }
-
-  }, 400);
-}
-
-rotateHealthHints();
-
-setInterval(rotateHealthHints, 2200);
-
-let panelTimer=null;
-
-function showPanel(){
-  smartPanel.classList.add("show");
-  smartToggle.classList.add("active");
-  resetTimer();
-}
-
-function hidePanel(){
-  smartPanel.classList.remove("show");
-  smartToggle.classList.remove("active");
-}
-
-function resetTimer(){
-  if(panelTimer) clearTimeout(panelTimer);
-  // Keep the smart menu available for 2 full minutes after the last activity.
-  panelTimer=setTimeout(hidePanel,120000);
-}
-
-smartToggle.onclick=()=>{
-  if(smartPanel.classList.contains("show")){
-    hidePanel();
-  } else {
-    showPanel();
-  }
-};
-
-smartPanel.addEventListener("click",resetTimer);
-
-/* ================= CONTROLS ================= */
-
-const openControls = document.getElementById("openControls");
 const openTranscript = document.getElementById("openTranscript");
 const openAfrilink = document.getElementById("openAfrilink");
 const openHealth = document.getElementById("openHealth");
@@ -6551,9 +6458,6 @@ document.getElementById("stopTranscript").onclick = () => {
   }
 };
 
-openControls.onclick = () => {
-  controls.classList.toggle("show");
-};
 
 rew.onclick = () => {
   video.currentTime = Math.max(0, video.currentTime - 10);
@@ -6781,34 +6685,11 @@ let initialAutoRefreshDone = false;
 function initialAutoRefresh(){
   if (initialAutoRefreshDone) return;
   initialAutoRefreshDone = true;
-
-  const splash = document.getElementById("startupDeka");
-
-  // Never let startup work block the app from opening.
-  try {
-    refreshLessons(false);
-  } catch(err) {
-    console.warn("Startup playlist refresh skipped:", err);
-  }
-
-  // Keep the startup brand short and fail-safe. The CSS animation above also
-  // reveals the app if this JavaScript section encounters an unexpected error.
-  setTimeout(() => {
-    try { playVideo(0); } catch(err) { console.warn("Startup video skipped:", err); }
-    try { startAds(); } catch(err) { console.warn("Startup ads skipped:", err); }
-
-    if (splash) {
-      splash.style.animation = "none";
-      splash.style.opacity = "0";
-      splash.style.visibility = "hidden";
-      setTimeout(() => splash.remove(), 850);
-    }
-  }, 3500);
+  try { refreshLessons(false); } catch(err) { console.warn("Startup playlist refresh skipped:", err); }
 }
 
-// One automatic startup refresh per fresh app/page opening — never again until reopened.
+/* One playlist refresh only; no startup video, no startup voice, and no startup ad image. */
 initialAutoRefresh();
-try { startAds(); } catch(err) { console.warn("Initial ads skipped:", err); }
 display.addEventListener("keypress",e=>{if(e.key==="Enter") submitLesson();});
 
 
