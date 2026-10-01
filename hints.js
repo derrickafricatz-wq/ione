@@ -140,20 +140,34 @@ const lessonHints = [
 
   async function installAuthorityTestButton(){
     const passwordInput=document.getElementById("authorityPasswordInput");
-    if(!passwordInput || document.getElementById("ioneAuthorityPushTest")) return;
+    const panel=document.getElementById("authorityPressPanel");
+    const panelHead=panel?.querySelector(".authority-panel-head");
+    if(!passwordInput || !panel || !panelHead) return;
+
+    // Keep the test control INSIDE the unlocked Authority Press panel.
+    // If an older copy was placed beside the password field, remove it.
+    const existing=document.getElementById("ioneAuthorityPushTest");
+    if(existing && existing.parentElement !== panel) existing.remove();
+
+    const unlocked=panel.getAttribute("aria-hidden")==="false" && panel.style.display!=="none";
+    if(!unlocked) return;
+    if(document.getElementById("ioneAuthorityPushTest")) return;
+
     const button=document.createElement("button");
     button.id="ioneAuthorityPushTest";
     button.type="button";
-    button.textContent="SEND TEST PUSH";
+    button.textContent="🔔 SEND TEST PUSH";
     button.style.cssText=[
-      "display:block","width:100%","margin-top:8px","min-height:40px","padding:9px 12px",
-      "border:1px solid rgba(0,255,255,.35)","border-radius:12px",
-      "background:linear-gradient(145deg,#075d92,#043d67)","color:#fff",
-      "font:900 10px/1 Arial,sans-serif","letter-spacing:1px","cursor:pointer"
+      "display:block","width:100%","margin:0 0 16px","min-height:46px","padding:11px 14px",
+      "border:1px solid rgba(0,255,255,.40)","border-radius:13px",
+      "background:linear-gradient(145deg,#08dce8,#075d92 62%,#043d67)","color:#fff",
+      "font:900 11px/1 Arial,sans-serif","letter-spacing:1.2px","cursor:pointer",
+      "box-shadow:0 6px 0 rgba(0,0,0,.42),0 10px 22px rgba(0,0,0,.22)"
     ].join(";");
+
     button.addEventListener("click",async function(){
-      const password=String(passwordInput.value||"");
-      if(!password){ alert("Unlock Authority Press first."); return; }
+      const password=String(passwordInput.value||"").trim();
+      if(!password){ alert("Authority session is missing. Close and unlock Authority Press again."); return; }
       button.disabled=true;
       const old=button.textContent;
       button.textContent="SENDING…";
@@ -174,7 +188,9 @@ const lessonHints = [
         button.textContent=old;
       }
     });
-    passwordInput.insertAdjacentElement("afterend",button);
+
+    // Put it directly under the Authority Press header, inside the live panel.
+    panelHead.insertAdjacentElement("afterend",button);
   }
 
   function watchAuthorityPushButton(){
