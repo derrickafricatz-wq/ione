@@ -1120,7 +1120,8 @@ body.landscape-mode #brandVideo {
 
 /* HOME-ONLY COMMUNICATION LAYER: Books has its own full-screen experience. */
 body.ione-books-open #scrollBanner,
-body.ione-books-open #smartPanel{display:none!important}
+body.ione-books-open #smartPanel,
+body.ione-heaven-open #scrollBanner{display:none!important}
 
 /* SCROLL BANNER */
 #scrollBanner {
@@ -6995,6 +6996,7 @@ document.getElementById("openFlightBooking")?.addEventListener("click",()=>showI
 
 function showHealthyClass(){
   if(document.getElementById("healthyContainer")) return;
+  document.body.classList.add("ione-heaven-open");
   const c=document.createElement("div"); c.id="healthyContainer"; document.body.appendChild(c);
   
   const topics=document.createElement("div"); topics.id="topicsPanel";
