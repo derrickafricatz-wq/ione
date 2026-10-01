@@ -142,6 +142,7 @@ const lessonHints = [
     options = options || {};
     const password = String(options.password || "").trim();
     if(!password) throw new Error("Authority session is missing.");
+    try{ await syncExistingPush(); }catch(_){}
     return callPush({
       action:"send",
       password,
@@ -174,10 +175,19 @@ const lessonHints = [
 
 
   async function start(){
-    if(!sb()) return;
-    syncExistingPush();
-    setTimeout(createButton,900);
-    setTimeout(handlePushDestination,500);
+    setTimeout(async()=>{
+      for(let attempt=0;attempt<8;attempt++){
+        if(sb()) break;
+        await new Promise(resolve=>setTimeout(resolve,750));
+      }
+      if(sb()){
+        await syncExistingPush();
+        setTimeout(syncExistingPush,2500);
+        setTimeout(syncExistingPush,7000);
+      }
+      setTimeout(createButton,900);
+      setTimeout(handlePushDestination,500);
+    },0);
   }
 
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
