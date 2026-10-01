@@ -125,8 +125,14 @@ const lessonHints = [
       }catch(_){}
     }
     button.dataset.state=on?"on":"off";
-    button.textContent=on?"🔔":"🔕";
-    button.title=on?"I|ONE notifications ON — press to turn off":"I|ONE notifications OFF — press to turn on";
+    const icon=document.getElementById("ioneNotificationIcon");
+    const state=document.getElementById("ioneNotificationState");
+    if(icon) icon.textContent=on?"🔔":"🔕";
+    if(state) state.textContent=on?"ACTIVATED":"INACTIVE";
+    button.textContent="";
+    if(icon) button.appendChild(icon);
+    if(state) button.appendChild(state);
+    button.title=on?"I|ONE notifications ACTIVATED — press once to turn off":"I|ONE notifications INACTIVE — press once to turn on";
     button.setAttribute("aria-label",button.title);
   }
 
