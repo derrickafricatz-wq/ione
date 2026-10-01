@@ -313,9 +313,19 @@
     });
   }
 
-  function renderWordOfDay(word){
+  let ioneWordOfDayStyle="modern";
+  function applyWordOfDayStyle(style){
+    const el=document.getElementById("wordOfDayText"); if(!el)return;
+    const allowed=["modern","zigzag","street","elegant","handwritten","classic","luxury"];
+    ioneWordOfDayStyle=allowed.includes(String(style||""))?String(style):"modern";
+    el.className="word-font-"+ioneWordOfDayStyle;
+    const picker=document.getElementById("authorityWordOfDayStyle");
+    if(picker)picker.value=ioneWordOfDayStyle;
+  }
+  function renderWordOfDay(word,style){
     const el=document.getElementById("wordOfDayText");
     if(el)el.textContent=String(word||"").trim()||"No Word of the Day has been published yet.";
+    applyWordOfDayStyle(style||ioneWordOfDayStyle);
   }
   async function loadIoneBanners(){
     const status=document.getElementById("authorityBannersStatus");
@@ -323,9 +333,9 @@
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body:{action:"get"}});
       if(r.error||!r.data?.success)throw new Error("Could not load I|ONE communication data.");
       const banners=Array.isArray(r.data.banners)?r.data.banners:[];
-      renderIoneBanners(banners);renderWordOfDay(r.data.word_of_day||"");
+      renderIoneBanners(banners);renderWordOfDay(r.data.word_of_day||"",r.data.word_of_day_style||"modern");
       [1,2,3].forEach((i)=>{const el=document.getElementById("authorityBanner"+i);if(el)el.value=banners[i-1]||"";});
-      const word=document.getElementById("authorityWordOfDay");if(word)word.value=String(r.data.word_of_day||"");
+      const word=document.getElementById("authorityWordOfDay");if(word)word.value=String(r.data.word_of_day||""); applyWordOfDayStyle(r.data.word_of_day_style||"modern");
       if(status)status.textContent="CONNECTED • LIVE";
     }catch(e){if(status)status.textContent="BANNER LOAD FAILED";console.warn("I|ONE communication:",e);}
   }
@@ -335,13 +345,14 @@
     const secret=String(gate?.value||"");
     const banners=[1,2,3].map(i=>String(document.getElementById("authorityBanner"+i)?.value||"").trim()).filter(Boolean).slice(0,3);
     const word=String(document.getElementById("authorityWordOfDay")?.value||"").trim();
+    const wordStyle=String(document.getElementById("authorityWordOfDayStyle")?.value||"modern");
     if(!secret||!banners.length)return;
     if(button)button.disabled=true;
     try{
-      const body={action:"update",banners,word_of_day:word};body["pass"+"word"]=secret;
+      const body={action:"update",banners,word_of_day:word,word_of_day_style:wordStyle};body["pass"+"word"]=secret;
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||"Save failed.");
-      renderIoneBanners(r.data.banners||banners);renderWordOfDay(r.data.word_of_day||word);
+      renderIoneBanners(r.data.banners||banners);renderWordOfDay(r.data.word_of_day||word,r.data.word_of_day_style||wordStyle);
       if(status)status.textContent="SAVED • LIVE BANNERS UPDATED";
     }catch(e){if(status)status.textContent=e?.message||"Save failed.";}
     finally{if(button)button.disabled=false;}
@@ -351,15 +362,16 @@
     const gate=document.getElementById("authority"+"PasswordInput");
     const secret=String(gate?.value||"");
     const word=String(document.getElementById("authorityWordOfDay")?.value||"").trim();
+    const wordStyle=String(document.getElementById("authorityWordOfDayStyle")?.value||"modern");
     if(!secret)return;
     if(word.length>300){if(status)status.textContent="Word is too long.";return;}
     if(button)button.disabled=true;
     if(status)status.textContent="SAVING WORD…";
     try{
-      const body={action:"update",banners:ioneBannersCache,word_of_day:word};body["pass"+"word"]=secret;
+      const body={action:"update",banners:ioneBannersCache,word_of_day:word,word_of_day_style:wordStyle};body["pass"+"word"]=secret;
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||"Save failed.");
-      renderWordOfDay(r.data.word_of_day||word);if(status)status.textContent="SAVED • WORD OF THE DAY IS LIVE";
+      renderWordOfDay(r.data.word_of_day||word,r.data.word_of_day_style||wordStyle);if(status)status.textContent="SAVED • WORD OF THE DAY IS LIVE";
     }catch(e){if(status)status.textContent=e?.message||"Save failed.";}
     finally{if(button)button.disabled=false;}
   }
@@ -389,11 +401,15 @@
       if(!host)return;
       const box=document.createElement("div");
       box.className="authority-panel-section";
-      box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>WORD OF THE DAY</h3><p class="authority-section-note">Publish one motivational word or short message for the home screen. Replace it whenever the day changes, then save.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
+      box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>✦ WORD OF THE DAY ✦</h3><p class="authority-section-note">Publish the public Word of the Day and choose the visual writing style shown on the home screen.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><label class="authority-word-style-label" for="authorityWordOfDayStyle">WORD STYLE</label><select id="authorityWordOfDayStyle" class="authority-word-style"><option value="modern">MODERN • I|ONE</option><option value="zigzag">ZIGZAG HANDWRITING</option><option value="street">STREET STYLE</option><option value="elegant">ELEGANT</option><option value="handwritten">HANDWRITTEN</option><option value="classic">CLASSIC</option><option value="luxury">LUXURY DISPLAY</option></select><div id="authorityWordStylePreview" class="authority-word-style-preview">WORD OF THE DAY</div><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
       host.parentNode.insertBefore(box,host.nextSibling);
     }
     ensureWordOfDayEditor();
     const saveWord=document.getElementById("authoritySaveWordOfDay");
+    const stylePicker=document.getElementById("authorityWordOfDayStyle");
+    const stylePreview=document.getElementById("authorityWordStylePreview");
+    if(stylePicker && !stylePicker.dataset.bound){stylePicker.dataset.bound="1";stylePicker.addEventListener("change",()=>{applyWordOfDayStyle(stylePicker.value);if(stylePreview)stylePreview.className="authority-word-style-preview word-font-"+stylePicker.value;});}
+    if(stylePreview){stylePreview.className="authority-word-style-preview word-font-"+ioneWordOfDayStyle;}
     if(saveWord)saveWord.onclick=saveWordOfDay;
     if(saveBanners)saveBanners.onclick=saveIoneBanners;
 
@@ -1671,20 +1687,44 @@ html,body{background:#020607!important}
 #brandVideo{display:none!important}
 #ioneHomeShell{position:fixed;inset:0;z-index:8;box-sizing:border-box;padding:72px 14px 88px;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
 #wordOfDayPanel{width:min(92vw,760px);box-sizing:border-box;min-height:104px;padding:18px 20px;border:1px solid rgba(0,255,255,.48);border-radius:22px;background:linear-gradient(145deg,rgba(7,32,37,.97),rgba(2,11,14,.97));box-shadow:0 9px 0 rgba(0,0,0,.55),0 18px 36px rgba(0,0,0,.35);text-align:center;display:flex;flex-direction:column;justify-content:center}
-.word-day-kicker{font:900 10px/1 'Russo One',Arial,sans-serif;letter-spacing:3px;color:#00ffff;margin-bottom:10px}
-#wordOfDayText{font:700 clamp(18px,4.7vw,30px)/1.25 'Russo One',Arial,sans-serif;color:#fff;overflow-wrap:anywhere}
+.word-day-kicker{font:400 clamp(18px,5vw,28px)/1 'Bangers',cursive;letter-spacing:2px;color:#00ffff;margin-bottom:10px;text-shadow:2px 3px 0 rgba(0,0,0,.75),0 0 12px rgba(0,255,255,.22);transform:rotate(-1deg)}
+.word-day-kicker span{display:inline-block;font-family:'Monoton',cursive;font-size:.65em;vertical-align:middle;margin:0 5px}
+#wordOfDayText{font-weight:700;font-size:clamp(17px,4.2vw,29px);line-height:1.22;color:#fff;overflow-wrap:anywhere;transition:font-family .2s ease,transform .2s ease}
+#wordOfDayText.word-font-modern{font-family:'Russo One',Arial,sans-serif}
+#wordOfDayText.word-font-zigzag{font-family:'Dancing Script',cursive;font-weight:700;transform:rotate(-1deg)}
+#wordOfDayText.word-font-street{font-family:'Bangers',cursive;letter-spacing:1px}
+#wordOfDayText.word-font-elegant{font-family:'Playfair Display',serif;font-style:italic}
+#wordOfDayText.word-font-handwritten{font-family:'Pacifico',cursive}
+#wordOfDayText.word-font-classic{font-family:'Cinzel',serif;font-weight:600;letter-spacing:.5px}
+#wordOfDayText.word-font-luxury{font-family:'Monoton',cursive;font-weight:400;letter-spacing:1px}
 #smartPanel{position:relative!important;left:auto!important;bottom:auto!important;transform:none!important;width:min(92vw,760px)!important;max-height:none!important;box-sizing:border-box;padding:16px!important;display:block!important;opacity:1!important;pointer-events:auto!important;overflow:visible!important;border-radius:26px!important;background:linear-gradient(145deg,rgba(8,20,24,.96),rgba(2,8,10,.98))!important;border:1px solid rgba(0,255,255,.20);box-shadow:0 12px 0 rgba(0,0,0,.48),0 24px 50px rgba(0,0,0,.28)}
-.smart-panel-heading{text-align:center;color:#9eeff2;font:900 10px/1 'Russo One',Arial,sans-serif;letter-spacing:3px;margin:2px 0 14px}
+.smart-panel-heading{text-align:center;color:#9eeff2;font:900 11px/1 'Russo One',Arial,sans-serif;letter-spacing:3px;margin:2px 0 14px}
 .smart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.smart-item{min-height:142px!important;width:100%;box-sizing:border-box;padding:18px 12px!important;border:1px solid rgba(255,255,255,.32)!important;border-radius:22px!important;color:#fff!important;font-family:'Russo One',Arial,sans-serif!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;text-align:center!important;box-shadow:0 9px 0 rgba(0,0,0,.52),0 16px 25px rgba(0,0,0,.32),inset 0 2px 0 rgba(255,255,255,.35)!important}
-.smart-grid .smart-item:nth-child(1){background:linear-gradient(145deg,#08dce8,#075d92)!important}.smart-grid .smart-item:nth-child(2){background:linear-gradient(145deg,#ffb93d,#a9431f)!important}.smart-grid .smart-item:nth-child(3){background:linear-gradient(145deg,#9a78ff,#46318d)!important}.smart-grid .smart-item:nth-child(4){background:linear-gradient(145deg,#52e69c,#126c58)!important}
-.smart-item .smart-icon{font-size:28px;line-height:1;color:#fff}.smart-item strong{font-size:clamp(12px,3.4vw,18px);line-height:1.15}.smart-item small{font:800 8px/1.2 Arial,sans-serif!important;letter-spacing:1.3px;opacity:.88}.smart-item:active{transform:translateY(5px) scale(.985)!important}
+.smart-item{min-height:142px!important;width:100%;box-sizing:border-box;padding:18px 12px!important;border:1px solid rgba(0,255,255,.34)!important;border-radius:22px!important;color:#fff!important;font-family:'Russo One',Arial,sans-serif!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;text-align:center!important;background:linear-gradient(145deg,#073f4a,#06232c 58%,#020c10)!important;box-shadow:0 9px 0 rgba(0,0,0,.52),0 16px 25px rgba(0,0,0,.32),inset 0 2px 0 rgba(255,255,255,.22),inset 0 0 22px rgba(0,255,255,.08)!important}
+.smart-item .smart-icon{font-size:27px;line-height:1;color:#00ffff;text-shadow:0 0 12px rgba(0,255,255,.3)}.smart-item strong{font-size:clamp(12px,3.3vw,17px);line-height:1.15}.smart-item small{font:800 8px/1.2 Arial,sans-serif!important;letter-spacing:1.1px;opacity:.86}.smart-item:active{transform:translateY(5px) scale(.985)!important}
+.smart-item.smart-coming-soon{cursor:default}
+.smart-item.smart-coming-soon .smart-icon{font-family:'Russo One',Arial,sans-serif;font-size:22px;letter-spacing:1px}
+#wordOfDayPanel{position:relative;overflow:hidden}
+#wordOfDayPanel:before,#wordOfDayPanel:after{content:"";position:absolute;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(0,255,255,.55),transparent)}
+#wordOfDayPanel:before{top:10px}#wordOfDayPanel:after{bottom:10px}
 #scrollBanner{position:fixed!important;left:50%!important;bottom:10px!important;transform:translateX(-50%)!important;width:min(92vw,760px)!important;height:54px;box-sizing:border-box;padding:0!important;background:transparent!important;z-index:120!important;overflow:hidden!important}
 .ione-banner-frame{height:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 12px;border:1px solid rgba(0,255,255,.38);border-radius:17px;background:linear-gradient(145deg,rgba(7,29,34,.97),rgba(2,10,12,.98));box-shadow:0 7px 0 rgba(0,0,0,.52),0 12px 24px rgba(0,0,0,.32);overflow:hidden}.ione-banner-label{flex:0 0 auto;font:900 9px/1 'Russo One',Arial,sans-serif;letter-spacing:1.7px;color:#00ffff;padding-right:9px;border-right:1px solid rgba(0,255,255,.22)}
-#scrollText{font-size:clamp(15px,3.8vw,23px)!important;line-height:1!important;min-width:0;flex:1;overflow:visible!important}
+#scrollText{font-size:clamp(10px,2.55vw,16px)!important;line-height:1.05!important;min-width:0;flex:1;overflow:visible!important;white-space:nowrap;letter-spacing:.15px}
 #authorityWordOfDay{width:100%;box-sizing:border-box;border:1px solid #294349;border-radius:11px;background:#05090a;color:#fff;padding:12px;font:600 14px/1.35 Arial,sans-serif;resize:vertical}
+.authority-word-style-label{display:block;margin-top:12px;margin-bottom:7px;color:#9eeff2;font:900 9px/1 'Russo One',Arial,sans-serif;letter-spacing:2px}
+.authority-word-style{width:100%;box-sizing:border-box;min-height:46px;border:1px solid #294349;border-radius:11px;background:#05090a;color:#fff;padding:10px 12px;font:800 13px/1.2 'Russo One',Arial,sans-serif}
+.authority-word-style-preview{margin-top:10px;padding:14px;border:1px solid rgba(0,255,255,.22);border-radius:12px;text-align:center;color:#fff;font-size:20px;background:rgba(0,255,255,.04)}
+.ione-coming-soon-overlay{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box;backdrop-filter:blur(9px)}
+.ione-coming-soon-card{width:min(430px,100%);padding:28px 22px;border:1px solid rgba(0,255,255,.4);border-radius:24px;background:linear-gradient(145deg,#07343d,#02090b);box-shadow:0 12px 0 rgba(0,0,0,.55),0 24px 50px rgba(0,255,255,.08);text-align:center}
+.ione-coming-soon-icon{font:900 34px/1 'Russo One',Arial,sans-serif;color:#00ffff;margin-bottom:12px}
+.ione-coming-soon-kicker{font:900 9px/1 'Russo One',Arial,sans-serif;letter-spacing:2px;color:#91dce0}
+.ione-coming-soon-card h2{font:900 25px/1.1 'Russo One',Arial,sans-serif;margin:10px 0;color:#fff}
+.ione-coming-soon-card p{font:800 13px/1.4 Arial,sans-serif;letter-spacing:1px;color:#b8d5d8}
+.ione-coming-soon-card button{margin-top:14px;min-height:46px;padding:10px 20px;border:1px solid #00ffff;border-radius:13px;background:#00ffff;color:#001010;font:900 13px 'Russo One',Arial,sans-serif;box-shadow:0 6px 0 #005858}
 @media(max-width:520px){#ioneHomeShell{padding:68px 10px 82px;gap:11px}.smart-grid{gap:10px}.smart-item{min-height:126px!important;border-radius:19px!important;padding:14px 8px!important}}
-@media(max-width:370px){.smart-grid{grid-template-columns:1fr}.smart-item{min-height:104px!important}}
+@media(max-width:370px){.smart-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.smart-item{min-height:112px!important;padding:11px 6px!important}.smart-item strong{font-size:11px}.smart-item small{font-size:7px;letter-spacing:.6px}.smart-item .smart-icon{font-size:22px}#scrollText{font-size:10px!important}}
+@media(max-height:700px){.smart-item{min-height:122px!important;padding:13px 9px!important}.smart-grid{gap:9px}#wordOfDayPanel{min-height:88px;padding:14px 16px}.ione-banner-frame{height:48px}}
+
 </style>
 </head>
 
@@ -2024,12 +2064,14 @@ function getMedia(id){
 <div id="lessonLabel" aria-hidden="true" style="display:none"></div>
 <div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
 <div id="ioneHomeShell">
-<section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText">Loading today's word…</div></section>
-<section id="smartPanel" aria-label="I|ONE smart panel"><div class="smart-panel-heading">I|ONE SMART PANEL</div><div class="smart-grid">
+<section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker"><span>✦</span> WORD OF THE DAY <span>✦</span></div><div id="wordOfDayText">Loading today's word…</div></section>
+<section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div><div class="smart-grid">
+<button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>SERMON TRANSCRIPT</strong><small>AUTHORIZED MINISTRY</small></button>
-<button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
-<button class="smart-item" id="openAfrilink"><span class="smart-icon">I|ONE</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>HEAVEN ON EARTH</strong><small>NENO • MAFUNDISHO • IMANI</small></button>
+<button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
+<button class="smart-item smart-coming-soon" id="openBusBooking" type="button"><span class="smart-icon">BUS</span><strong>I|ONE BUS</strong><small>BUS BOOKING • COMING SOON</small></button>
+<button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">✈</span><strong>I|ONE AIR</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
 </div></section></div>
 <div id="scrollBanner" aria-label="I|ONE scrolling information"><div class="ione-banner-frame"><span class="ione-banner-label">I|ONE</span><div id="scrollText"></div></div></div>
 
@@ -6718,6 +6760,17 @@ window._inner=null, window._outer=null, window._lesson=null, window._topics=null
 let topicsExpanded = true;
 
 openHealth.onclick=showHealthyClass;
+
+function showIoneComingSoon(service){
+  smartPanel?.classList.remove("show");
+  const overlay=document.createElement("div");
+  overlay.className="ione-coming-soon-overlay";
+  overlay.innerHTML='<div class="ione-coming-soon-card"><div class="ione-coming-soon-icon">'+(service==="BUS"?"BUS":"✈")+'</div><div class="ione-coming-soon-kicker">I|ONE FUTURE SERVICE</div><h2>I|ONE '+service+'</h2><p>'+(service==="BUS"?"BUS BOOKING":"FLIGHT BOOKING")+' IS COMING SOON</p><button type="button">BACK TO I|ONE</button></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector("button").onclick=()=>{overlay.remove();smartPanel?.classList.add("show");};
+}
+document.getElementById("openBusBooking")?.addEventListener("click",()=>showIoneComingSoon("BUS"));
+document.getElementById("openFlightBooking")?.addEventListener("click",()=>showIoneComingSoon("AIR"));
 
 function showHealthyClass(){
   if(document.getElementById("healthyContainer")) return;
