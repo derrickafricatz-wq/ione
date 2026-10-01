@@ -172,3 +172,14 @@ const lessonHints = [
     }catch(e){ console.warn("I|ONE push destination:",e); }
   }
 
+
+  async function start(){
+    if(!sb()) return;
+    syncExistingPush();
+    setTimeout(createButton,900);
+    setTimeout(handlePushDestination,500);
+  }
+
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
+  else start();
+})();
