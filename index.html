@@ -8004,6 +8004,74 @@ preloadMedia();
 @media(max-height:700px){#smartPanel{padding-bottom:28px!important}}
 #openFlightBooking .smart-icon{font-size:21px!important;letter-spacing:1px!important}
 
+/* I|ONE 1.0.90 — cleaner Word of the Day + unified business services */
+.word-day-kicker{
+  position:relative!important;
+  width:max-content!important;
+  max-width:100%!important;
+  margin:0 auto 13px!important;
+  padding:0 4px 10px!important;
+  border:0!important;
+  color:#f4ffff!important;
+  font:900 clamp(18px,5vw,27px)/1.05 'Russo One',Arial,sans-serif!important;
+  letter-spacing:2.4px!important;
+  text-align:center!important;
+  text-transform:uppercase!important;
+  text-shadow:0 2px 5px rgba(0,0,0,.72),0 0 12px rgba(0,255,255,.14)!important;
+  transform:none!important;
+}
+.word-day-kicker:after{
+  content:"";
+  position:absolute;
+  left:18%;
+  right:18%;
+  bottom:0;
+  height:3px;
+  border-radius:99px;
+  background:linear-gradient(90deg,transparent,#00ffff 18%,#ffffff 50%,#00ffff 82%,transparent);
+  box-shadow:0 0 8px rgba(0,255,255,.38);
+}
+.word-day-kicker span{display:none!important}
+
+/* One unified premium business color for all six services. */
+.smart-grid .smart-item:nth-child(1),
+.smart-grid .smart-item:nth-child(2),
+.smart-grid .smart-item:nth-child(3),
+.smart-grid .smart-item:nth-child(4),
+.smart-grid .smart-item:nth-child(5),
+.smart-grid .smart-item:nth-child(6){
+  background:linear-gradient(145deg,#08dce8,#075d92 62%,#043d67)!important;
+  border-color:rgba(255,255,255,.34)!important;
+}
+.smart-grid .smart-item .smart-icon{
+  color:#ffffff!important;
+  text-shadow:0 0 12px rgba(255,255,255,.28);
+}
+
+/* Remove the artificial empty-looking bottom padding; use a soft visual extension instead. */
+#smartPanel{
+  padding-bottom:16px!important;
+  box-shadow:0 12px 0 rgba(3,45,66,.58),0 23px 42px rgba(0,0,0,.30)!important;
+}
+#smartPanel:after{
+  content:"";
+  position:absolute;
+  left:10%;
+  right:10%;
+  bottom:-13px;
+  height:18px;
+  border-radius:0 0 22px 22px;
+  background:linear-gradient(180deg,rgba(7,93,122,.48),rgba(3,45,66,.12),transparent);
+  pointer-events:none;
+}
+@media(max-width:370px){
+  #smartPanel{padding-bottom:12px!important}
+  #smartPanel:after{bottom:-10px;height:15px}
+}
+@media(max-height:700px){
+  #smartPanel{padding-bottom:13px!important}
+}
+
 </style>
 
 <script>
