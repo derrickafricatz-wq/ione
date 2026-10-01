@@ -1649,7 +1649,27 @@ body.landscape-mode #brandVideo {
 .authority-save-button:disabled{opacity:.55;cursor:wait}
 .authority-save-status{min-height:20px;margin-top:12px;text-align:center;color:#9fb0b4;font:700 12px/1.4 Arial,sans-serif}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
-</style></head>
+</style><style id="ione-home-redesign">
+html,body{background:#020607!important}
+#brandVideo{display:none!important}
+#ioneHomeShell{position:fixed;inset:0;z-index:8;box-sizing:border-box;padding:72px 14px 88px;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
+#wordOfDayPanel{width:min(92vw,760px);box-sizing:border-box;min-height:104px;padding:18px 20px;border:1px solid rgba(0,255,255,.48);border-radius:22px;background:linear-gradient(145deg,rgba(7,32,37,.97),rgba(2,11,14,.97));box-shadow:0 9px 0 rgba(0,0,0,.55),0 18px 36px rgba(0,0,0,.35);text-align:center;display:flex;flex-direction:column;justify-content:center}
+.word-day-kicker{font:900 10px/1 'Russo One',Arial,sans-serif;letter-spacing:3px;color:#00ffff;margin-bottom:10px}
+#wordOfDayText{font:700 clamp(18px,4.7vw,30px)/1.25 'Russo One',Arial,sans-serif;color:#fff;overflow-wrap:anywhere}
+#smartPanel{position:relative!important;left:auto!important;bottom:auto!important;transform:none!important;width:min(92vw,760px)!important;max-height:none!important;box-sizing:border-box;padding:16px!important;display:block!important;opacity:1!important;pointer-events:auto!important;overflow:visible!important;border-radius:26px!important;background:linear-gradient(145deg,rgba(8,20,24,.96),rgba(2,8,10,.98))!important;border:1px solid rgba(0,255,255,.20);box-shadow:0 12px 0 rgba(0,0,0,.48),0 24px 50px rgba(0,0,0,.28)}
+.smart-panel-heading{text-align:center;color:#9eeff2;font:900 10px/1 'Russo One',Arial,sans-serif;letter-spacing:3px;margin:2px 0 14px}
+.smart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.smart-item{min-height:142px!important;width:100%;box-sizing:border-box;padding:18px 12px!important;border:1px solid rgba(255,255,255,.32)!important;border-radius:22px!important;color:#fff!important;font-family:'Russo One',Arial,sans-serif!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;text-align:center!important;box-shadow:0 9px 0 rgba(0,0,0,.52),0 16px 25px rgba(0,0,0,.32),inset 0 2px 0 rgba(255,255,255,.35)!important}
+.smart-grid .smart-item:nth-child(1){background:linear-gradient(145deg,#08dce8,#075d92)!important}.smart-grid .smart-item:nth-child(2){background:linear-gradient(145deg,#ffb93d,#a9431f)!important}.smart-grid .smart-item:nth-child(3){background:linear-gradient(145deg,#9a78ff,#46318d)!important}.smart-grid .smart-item:nth-child(4){background:linear-gradient(145deg,#52e69c,#126c58)!important}
+.smart-item .smart-icon{font-size:28px;line-height:1;color:#fff}.smart-item strong{font-size:clamp(12px,3.4vw,18px);line-height:1.15}.smart-item small{font:800 8px/1.2 Arial,sans-serif!important;letter-spacing:1.3px;opacity:.88}.smart-item:active{transform:translateY(5px) scale(.985)!important}
+#scrollBanner{position:fixed!important;left:50%!important;bottom:10px!important;transform:translateX(-50%)!important;width:min(92vw,760px)!important;height:54px;box-sizing:border-box;padding:0!important;background:transparent!important;z-index:120!important;overflow:hidden!important}
+.ione-banner-frame{height:100%;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:0 12px;border:1px solid rgba(0,255,255,.38);border-radius:17px;background:linear-gradient(145deg,rgba(7,29,34,.97),rgba(2,10,12,.98));box-shadow:0 7px 0 rgba(0,0,0,.52),0 12px 24px rgba(0,0,0,.32);overflow:hidden}.ione-banner-label{flex:0 0 auto;font:900 9px/1 'Russo One',Arial,sans-serif;letter-spacing:1.7px;color:#00ffff;padding-right:9px;border-right:1px solid rgba(0,255,255,.22)}
+#scrollText{font-size:clamp(15px,3.8vw,23px)!important;line-height:1!important;min-width:0;flex:1;overflow:visible!important}
+#authorityWordOfDay{width:100%;box-sizing:border-box;border:1px solid #294349;border-radius:11px;background:#05090a;color:#fff;padding:12px;font:600 14px/1.35 Arial,sans-serif;resize:vertical}
+@media(max-width:520px){#ioneHomeShell{padding:68px 10px 82px;gap:11px}.smart-grid{gap:10px}.smart-item{min-height:126px!important;border-radius:19px!important;padding:14px 8px!important}}
+@media(max-width:370px){.smart-grid{grid-template-columns:1fr}.smart-item{min-height:104px!important}}
+</style>
+</head>
 
 <body>
 
@@ -1981,67 +2001,20 @@ function getMedia(id){
 
   </script>
 
-<video id="brandVideo" autoplay muted playsinline></video>
-
-<!-- ONE-TIME STARTUP SCREEN: shown only during the first automatic refresh of each app opening. -->
-<div id="startupDeka" aria-hidden="true">
-  <div class="startup-deka-text">powered by deka</div>
-  <div class="startup-line"></div>
-</div>
-
-<div id="clockBox"></div>
-<button id="settingsBtn" aria-label="Open guide" style="
-  position:fixed;top:10px;right:20px;padding:10px 14px;border:none;border-radius:10px;
-  background:#00ffff;color:black;font-size:18px;font-weight:900;letter-spacing:.5px;z-index:200;
-">GUIDE</button>
-<div id="lessonLabel">powered by deka</div>
-
-<div id="adImage"><img id="adImg"></div>
-
-<div id="scrollBanner">
-  <div id="scrollText"></div>
-</div>
-
-<!-- SMART TOGGLE -->
-<button id="smartToggle">
-  <span class="dekaIcon">DK</span>
-  <div id="smartLabel">
-    <div>Heaven On Earth</div>
-    <small>powered by deka</small>
-  </div>
-</button>
-
-<div id="smartPanel">
-  <button class="smart-item" id="openControls">SYSTEM KEYPAD</button>
- 
-  <button class="smart-item" id="openTranscript">
-    SERMON TRANSCRIPT
-  </button>
-
-  <button class="smart-item" id="openAuthority">
-    AUTHORITY PRESS
-  </button>
-
-  <button class="smart-item" id="openAfrilink">
-    I|ONE
-    <small>HOME OF MARKETING</small>
-  </button>
-  
-  <button class="smart-item" id="openHealth">
-
-  <div id="healthMain">
-    HEAVEN ON EARTH
-  </div>
-
-
-
-
-  <small>
-    NENO • MAFUNDISHO • IMANI
-  </small>
-
-</button>
-</div>
+<video id="brandVideo" muted playsinline aria-hidden="true"></video>
+<button id="settingsBtn" aria-label="Open guide" style="position:fixed;top:12px;right:14px;padding:10px 16px;border:1px solid rgba(0,255,255,.55);border-radius:12px;background:linear-gradient(145deg,#11ffff,#007f8c);color:#001014;font-size:16px;font-weight:900;z-index:200;">GUIDE</button>
+<div id="clockBox" aria-hidden="true" style="display:none"></div>
+<div id="lessonLabel" aria-hidden="true" style="display:none"></div>
+<div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
+<div id="ioneHomeShell">
+<section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText">Loading today's word…</div></section>
+<section id="smartPanel" aria-label="I|ONE smart panel"><div class="smart-panel-heading">I|ONE SMART PANEL</div><div class="smart-grid">
+<button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>SERMON TRANSCRIPT</strong><small>AUTHORIZED MINISTRY</small></button>
+<button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
+<button class="smart-item" id="openAfrilink"><span class="smart-icon">I|ONE</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
+<button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>HEAVEN ON EARTH</strong><small>NENO • MAFUNDISHO • IMANI</small></button>
+</div></section></div>
+<div id="scrollBanner" aria-label="I|ONE scrolling information"><div class="ione-banner-frame"><span class="ione-banner-label">I|ONE</span><div id="scrollText"></div></div></div>
 
 <div id="authorityPasswordOverlay" aria-hidden="true">
   <div class="authority-password-card">
