@@ -138,10 +138,55 @@ const lessonHints = [
 
   window.ioneEnablePushNotifications = pushSubscribe;
 
+  async function installAuthorityTestButton(){
+    const passwordInput=document.getElementById("authorityPasswordInput");
+    if(!passwordInput || document.getElementById("ioneAuthorityPushTest")) return;
+    const button=document.createElement("button");
+    button.id="ioneAuthorityPushTest";
+    button.type="button";
+    button.textContent="SEND TEST PUSH";
+    button.style.cssText=[
+      "display:block","width:100%","margin-top:8px","min-height:40px","padding:9px 12px",
+      "border:1px solid rgba(0,255,255,.35)","border-radius:12px",
+      "background:linear-gradient(145deg,#075d92,#043d67)","color:#fff",
+      "font:900 10px/1 Arial,sans-serif","letter-spacing:1px","cursor:pointer"
+    ].join(";");
+    button.addEventListener("click",async function(){
+      const password=String(passwordInput.value||"");
+      if(!password){ alert("Unlock Authority Press first."); return; }
+      button.disabled=true;
+      const old=button.textContent;
+      button.textContent="SENDING…";
+      try{
+        const result=await callPush({
+          action:"send",
+          password,
+          title:"I|ONE TEST NOTIFICATION",
+          body:"Real push notifications are connected. This message can arrive even when I|ONE is closed.",
+          url:"./",
+          tag:"ione-push-test"
+        });
+        alert("TEST SENT • "+Number(result.sent||0)+" DEVICE(S) REACHED");
+      }catch(e){
+        alert(e?.message||"Could not send the test notification.");
+      }finally{
+        button.disabled=false;
+        button.textContent=old;
+      }
+    });
+    passwordInput.insertAdjacentElement("afterend",button);
+  }
+
+  function watchAuthorityPushButton(){
+    installAuthorityTestButton();
+    setTimeout(watchAuthorityPushButton,1200);
+  }
+
   function start(){
     if(!sb()) return;
     syncExistingPush();
     setTimeout(createButton,900);
+    setTimeout(watchAuthorityPushButton,1200);
   }
 
   if(document.readyState === "loading") document.addEventListener("DOMContentLoaded",start,{once:true});
