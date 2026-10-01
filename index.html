@@ -334,6 +334,16 @@
     });
   }
 
+  function restoreIoneHomeBanner(){
+    const banner=document.getElementById("scrollBanner");
+    if(banner) banner.style.removeProperty("display");
+    if(ioneBannersCache.length){
+      renderIoneBanners(ioneBannersCache);
+    }else{
+      try{ loadIoneBanners(); }catch(e){ console.warn("I|ONE banner restore:",e); }
+    }
+  }
+
   let ioneWordOfDayStyle="modern";
   function applyWordOfDayStyle(style){
     const el=document.getElementById("wordOfDayText"); if(!el)return;
@@ -1903,6 +1913,13 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 </style><style id="ione-home-redesign">
 html,body{background:#020607!important}
 #brandVideo{display:none!important}
+#ioneTopActions{position:fixed;top:10px;right:12px;z-index:200;display:flex;align-items:center;gap:8px}
+#ioneTopActions button{box-sizing:border-box;min-height:44px;border:1px solid rgba(0,255,255,.55);border-radius:13px;background:linear-gradient(145deg,#11ffff,#007f8c);color:#001014;font-family:'Russo One',Arial,sans-serif;font-weight:900;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.45),0 10px 20px rgba(0,0,0,.18)}
+#ioneNotificationBtn{width:46px;padding:8px;font-size:21px;line-height:1}
+#ioneNotificationBtn[data-state="on"]{background:linear-gradient(145deg,#18ffff,#008f8f);box-shadow:0 6px 0 #005858,0 10px 20px rgba(0,255,255,.18)}
+#ioneNotificationBtn[data-state="off"]{background:linear-gradient(145deg,#18272b,#071114);color:#9eeff2}
+#settingsBtn{padding:9px 15px;font-size:14px}
+@media(max-width:370px){#ioneTopActions{right:8px;gap:6px}#ioneNotificationBtn{width:42px}#settingsBtn{padding:8px 11px;font-size:12px}}
 #ioneHomeShell{position:fixed;inset:0;z-index:8;box-sizing:border-box;padding:72px 14px 88px;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
 #wordOfDayPanel{width:min(92vw,760px);box-sizing:border-box;min-height:104px;padding:18px 20px;border:1px solid rgba(0,255,255,.48);border-radius:22px;background:linear-gradient(145deg,rgba(7,32,37,.97),rgba(2,11,14,.97));box-shadow:0 9px 0 rgba(0,0,0,.55),0 18px 36px rgba(0,0,0,.35);text-align:center;display:flex;flex-direction:column;justify-content:center}
 .word-day-kicker{font:400 clamp(18px,5vw,28px)/1 'Bangers',cursive;letter-spacing:2px;color:#00ffff;margin-bottom:10px;text-shadow:2px 3px 0 rgba(0,0,0,.75),0 0 12px rgba(0,255,255,.22);transform:rotate(-1deg)}
@@ -2277,7 +2294,10 @@ function getMedia(id){
   </script>
 
 <video id="brandVideo" muted playsinline aria-hidden="true"></video>
-<button id="settingsBtn" aria-label="Open guide" style="position:fixed;top:12px;right:14px;padding:10px 16px;border:1px solid rgba(0,255,255,.55);border-radius:12px;background:linear-gradient(145deg,#11ffff,#007f8c);color:#001014;font-size:16px;font-weight:900;z-index:200;">GUIDE</button>
+<div id="ioneTopActions" aria-label="I|ONE controls">
+  <button id="ioneNotificationBtn" type="button" aria-label="I|ONE notifications off" title="I|ONE notifications">🔕</button>
+  <button id="settingsBtn" aria-label="Open guide">GUIDE</button>
+</div>
 <div id="clockBox" aria-hidden="true" style="display:none"></div>
 <div id="lessonLabel" aria-hidden="true" style="display:none"></div>
 <div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
@@ -2492,13 +2512,22 @@ function getMedia(id){
 
 <script>
 /* ================= FULLSCREEN KIOSK ================= */
-function goFullScreen(){
-  const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen();
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+async function goFullScreen(){
+  try{
+    if(document.fullscreenElement || document.webkitFullscreenElement) return;
+    const el=document.documentElement;
+    if(el.requestFullscreen) await el.requestFullscreen();
+    else if(el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+    else if(el.msRequestFullscreen) await el.msRequestFullscreen();
+  }catch(e){
+    // Browsers may require a user gesture; installed PWA fullscreen is handled by manifest.
+  }
 }
-document.body.addEventListener("click", goFullScreen, {once:true});
+goFullScreen();
+window.addEventListener("focus",()=>{ setTimeout(goFullScreen,120); });
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible") setTimeout(goFullScreen,120);
+});
 
 const guideLanguages={
  sw:{title:"MWONGOZO WA KISWAHILI",steps:[
@@ -7017,6 +7046,7 @@ exitBtn.style.background = "red";
 exitBtn.style.color = "white";
 
 exitBtn.onclick = () => {
+  document.body.classList.remove("ione-heaven-open");
   document.getElementById("healthyContainer").remove();
 
   // Restore video + ads system
@@ -7031,6 +7061,7 @@ exitBtn.onclick = () => {
   adIndex = 0;
   resetAdImage();
   setTimeout(() => startAds(), 200);
+  try{ restoreIoneHomeBanner(); }catch(e){ console.warn("I|ONE home banner restore:",e); }
 };
 
 // HEAVEN'S BOOKSTORE BUTTON
@@ -7472,6 +7503,7 @@ async function openHeavensBookstore(){
   store.querySelector("#hbClose").onclick=()=>{
     document.body.classList.remove("ione-books-open");
     store.remove();
+    try{ restoreIoneHomeBanner(); }catch(e){ console.warn("I|ONE home banner restore:",e); }
   };
   render();
 
