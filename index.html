@@ -306,6 +306,8 @@
   let ioneWordOfDayCache="";
   let ioneTopTrendingCache="";
   let ioneNewBooksCache="";
+  let ioneUpdateCache="";
+  let ioneImportantNoticeCache="";
 
   function renderIoneBanners(banners){
     const text=document.getElementById("scrollText");
@@ -355,11 +357,15 @@
       const banners=Array.isArray(r.data.banners)?r.data.banners:[];
       ioneTopTrendingCache=String(r.data.top_trending||"").trim();
       ioneNewBooksCache=String(r.data.new_books||"").trim();
+      ioneUpdateCache=String(r.data.ione_update||"").trim();
+      ioneImportantNoticeCache=String(r.data.important_notice||"").trim();
       renderIoneBanners(banners);renderWordOfDay(r.data.word_of_day||"",r.data.word_of_day_style||"modern");
       [1,2,3].forEach((i)=>{const el=document.getElementById("authorityBanner"+i);if(el)el.value=banners[i-1]||"";});
       const word=document.getElementById("authorityWordOfDay");if(word)word.value=String(r.data.word_of_day||"");
       const trending=document.getElementById("authorityTopTrending");if(trending)trending.value=ioneTopTrendingCache;
       const books=document.getElementById("authorityNewBooks");if(books)books.value=ioneNewBooksCache;
+      const upd=document.getElementById("authorityIoneUpdate");if(upd)upd.value=ioneUpdateCache;
+      const notice=document.getElementById("authorityImportantNotice");if(notice)notice.value=ioneImportantNoticeCache;
       applyWordOfDayStyle(r.data.word_of_day_style||"modern");
       if(status)status.textContent="CONNECTED • LIVE";
     }catch(e){if(status)status.textContent="BANNER LOAD FAILED";console.warn("I|ONE communication:",e);}
@@ -378,12 +384,14 @@
     if(!secret||!banners.length)return;
     if(button)button.disabled=true;
     try{
-      const body={action:"update",banners,word_of_day:word,word_of_day_style:wordStyle,top_trending:topTrending,new_books:newBooks};body["pass"+"word"]=secret;
+      const body={action:"update",banners,word_of_day:word,word_of_day_style:wordStyle,top_trending:topTrending,new_books:newBooks,ione_update:ioneUpdateCache,important_notice:ioneImportantNoticeCache};body["pass"+"word"]=secret;
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||"Save failed.");
       renderIoneBanners(r.data.banners||banners);renderWordOfDay(r.data.word_of_day||word,r.data.word_of_day_style||wordStyle);
       ioneTopTrendingCache=String(r.data.top_trending||topTrending).trim();
       ioneNewBooksCache=String(r.data.new_books||newBooks).trim();
+      ioneUpdateCache=String(r.data.ione_update||ioneUpdateCache).trim();
+      ioneImportantNoticeCache=String(r.data.important_notice||ioneImportantNoticeCache).trim();
       const bannerChanged=JSON.stringify(previousBanners)!==JSON.stringify(ioneBannersCache);
       const wordChanged=previousWord!==ioneWordOfDayCache;
       if(bannerChanged && typeof window.ioneSendAuthorityPush==="function"){
@@ -464,7 +472,7 @@
     if(!value){if(status)status.textContent="Write the Top Trending message first.";return;}
     if(button)button.disabled=true;if(status)status.textContent="PUBLISHING TOP TRENDING…";
     try{
-      const body={action:"update",banners:ioneBannersCache,word_of_day:ioneWordOfDayCache,word_of_day_style:ioneWordOfDayStyle,top_trending:value,new_books:ioneNewBooksCache};body["pass"+"word"]=secret;
+      const body={action:"update",banners:ioneBannersCache,word_of_day:ioneWordOfDayCache,word_of_day_style:ioneWordOfDayStyle,top_trending:value,new_books:ioneNewBooksCache,ione_update:ioneUpdateCache,important_notice:ioneImportantNoticeCache};body["pass"+"word"]=secret;
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish Top Trending.");
       ioneTopTrendingCache=String(r.data.top_trending||value).trim();
@@ -484,7 +492,7 @@
     if(!value){if(status)status.textContent="List at least one new book first.";return;}
     if(button)button.disabled=true;if(status)status.textContent="PUBLISHING NEW BOOKS…";
     try{
-      const body={action:"update",banners:ioneBannersCache,word_of_day:ioneWordOfDayCache,word_of_day_style:ioneWordOfDayStyle,top_trending:ioneTopTrendingCache,new_books:value};body["pass"+"word"]=secret;
+      const body={action:"update",banners:ioneBannersCache,word_of_day:ioneWordOfDayCache,word_of_day_style:ioneWordOfDayStyle,top_trending:ioneTopTrendingCache,new_books:value,ione_update:ioneUpdateCache,important_notice:ioneImportantNoticeCache};body["pass"+"word"]=secret;
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish New Books.");
       ioneNewBooksCache=String(r.data.new_books||value).trim();
@@ -494,6 +502,38 @@
       }
     }catch(e){if(status)status.textContent=e?.message||"Could not publish New Books.";}
     finally{if(button)button.disabled=false;}
+  }
+
+  async function saveAuthorityExtraPublication(field,title,inputId,statusId,buttonId,destination,tag,maxLength){
+    const status=document.getElementById(statusId),button=document.getElementById(buttonId);
+    const secret=String(document.getElementById("authorityPasswordInput")?.value||"");
+    const value=String(document.getElementById(inputId)?.value||"").trim();
+    if(!secret)return;
+    if(!value){if(status)status.textContent="Write the "+title+" message first.";return;}
+    if(value.length>maxLength){if(status)status.textContent=title+" is too long.";return;}
+    if(button)button.disabled=true;if(status)status.textContent="PUBLISHING "+title+"…";
+    try{
+      const body={action:"update",banners:ioneBannersCache,word_of_day:ioneWordOfDayCache,word_of_day_style:ioneWordOfDayStyle,top_trending:ioneTopTrendingCache,new_books:ioneNewBooksCache,ione_update:ioneUpdateCache,important_notice:ioneImportantNoticeCache};
+      body[field]=value;body["pass"+"word"]=secret;
+      const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish "+title+".");
+      ioneUpdateCache=String(r.data.ione_update||ioneUpdateCache).trim();
+      ioneImportantNoticeCache=String(r.data.important_notice||ioneImportantNoticeCache).trim();
+      const saved=document.getElementById(inputId);if(saved)saved.value=field==="ione_update"?ioneUpdateCache:ioneImportantNoticeCache;
+      if(status)status.textContent="PUBLISHED • LIVE";
+      if(typeof window.ioneSendAuthorityPush==="function"){
+        window.ioneSendAuthorityPush({password:secret,title:title==="I|ONE UPDATE"?"I|ONE UPDATE":"IMPORTANT NOTICE",body:value,url:"./?ionePushDestination="+destination,tag}).catch(e=>console.warn("I|ONE "+title+" push:",e));
+      }
+    }catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
+    finally{if(button)button.disabled=false;}
+  }
+
+  async function saveIoneUpdate(){
+    return saveAuthorityExtraPublication("ione_update","I|ONE UPDATE","authorityIoneUpdate","authorityIoneUpdateStatus","authoritySaveIoneUpdate","home","ione-update",600);
+  }
+
+  async function saveImportantNotice(){
+    return saveAuthorityExtraPublication("important_notice","IMPORTANT NOTICE","authorityImportantNotice","authorityImportantNoticeStatus","authoritySaveImportantNotice","home","ione-important-notice",600);
   }
 
   function ensureAuthorityPublicationEditors(){
@@ -512,6 +552,12 @@
     panel.querySelector(".authority-panel-inner")?.appendChild(host);
     panel.querySelector(".authority-panel-inner")?.appendChild(books);
     document.getElementById("authoritySaveTopTrending").onclick=saveTopTrending;
+    const update=authorityPublicationSection("authorityIoneUpdate","I|ONE SYSTEM","I|ONE UPDATE","Publish an important new feature, system improvement or app update.","Write the I|ONE update…","authorityIoneUpdateStatus","authoritySaveIoneUpdate",600);
+    const notice=authorityPublicationSection("authorityImportantNotice","I|ONE OFFICIAL","IMPORTANT NOTICE","Publish an official notice for all I|ONE users when it does not belong to the other communication categories.","Write the important notice…","authorityImportantNoticeStatus","authoritySaveImportantNotice",600);
+    panel.querySelector(".authority-panel-inner")?.appendChild(update);
+    panel.querySelector(".authority-panel-inner")?.appendChild(notice);
+    document.getElementById("authoritySaveIoneUpdate").onclick=saveIoneUpdate;
+    document.getElementById("authoritySaveImportantNotice").onclick=saveImportantNotice;;
     document.getElementById("authoritySaveNewBooks").onclick=saveNewBooks;
     document.getElementById("authorityTopTrending").value=ioneTopTrendingCache;
     document.getElementById("authorityNewBooks").value=ioneNewBooksCache;
@@ -1071,6 +1117,10 @@ body.landscape-mode #brandVideo {
 /* ================= END AUTHORITY PRESS PANEL ================= */
 
 /* ================= END AUTHORITY PRESS PASSWORD GATE ================= */
+
+/* HOME-ONLY COMMUNICATION LAYER: Books has its own full-screen experience. */
+body.ione-books-open #scrollBanner,
+body.ione-books-open #smartPanel{display:none!important}
 
 /* SCROLL BANNER */
 #scrollBanner {
@@ -7304,6 +7354,7 @@ function markBookPaid(book){
 }
 
 async function openHeavensBookstore(){
+  document.body.classList.add("ione-books-open");
   const existing=document.getElementById("heavensBookstore"); if(existing) existing.remove();
   const store=document.createElement("div"); store.id="heavensBookstore";
   let books=JSON.parse(localStorage.getItem("savedBooks")||"[]");
@@ -7416,7 +7467,10 @@ async function openHeavensBookstore(){
     });
   }
   search.oninput=render; store.querySelector("#hbSearchBtn").onclick=render;
-  store.querySelector("#hbClose").onclick=()=>store.remove();
+  store.querySelector("#hbClose").onclick=()=>{
+    document.body.classList.remove("ione-books-open");
+    store.remove();
+  };
   render();
 
   // Refresh the storefront from the server, while keeping local editor books visible.
