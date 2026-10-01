@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v90";
+const CACHE_NAME = "ione-app-v91";
 
 const APP_FILES = [
   "./",
@@ -95,6 +95,51 @@ self.addEventListener("fetch", (event) => {
           }
           return Response.error();
         });
+    })
+  );
+});
+
+
+/* ================= I|ONE REAL PUSH NOTIFICATIONS ================= */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (_) {
+    data = { body: event.data ? event.data.text() : "" };
+  }
+
+  const title = String(data.title || "I|ONE");
+  const options = {
+    body: String(data.body || "New information is available on I|ONE."),
+    icon: data.icon || "./icon-192.png",
+    badge: data.badge || "./icon-192.png",
+    tag: String(data.tag || "ione-notification"),
+    renotify: true,
+    data: { url: String(data.url || "./") }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const target = event.notification?.data?.url || "./";
+
+  event.waitUntil(
+    self.clients.matchAll({ type:"window", includeUncontrolled:true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) {
+          try {
+            const targetUrl = new URL(target, self.location.origin).href;
+            if ("navigate" in client) client.navigate(targetUrl);
+          } catch (_) {}
+          return client.focus();
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+      return undefined;
     })
   );
 });
