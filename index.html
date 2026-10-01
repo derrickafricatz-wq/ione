@@ -316,7 +316,7 @@
   let ioneWordOfDayStyle="modern";
   function applyWordOfDayStyle(style){
     const el=document.getElementById("wordOfDayText"); if(!el)return;
-    const allowed=["modern","zigzag","street","elegant","handwritten","classic","luxury"];
+    const allowed=["modern","zigzag","street","elegant","handwritten","classic","luxury","futuristic","tech","impact","retro","marker","arcade","royal","signature","typewriter"];
     ioneWordOfDayStyle=allowed.includes(String(style||""))?String(style):"modern";
     el.className="word-font-"+ioneWordOfDayStyle;
     const picker=document.getElementById("authorityWordOfDayStyle");
@@ -401,7 +401,7 @@
       if(!host)return;
       const box=document.createElement("div");
       box.className="authority-panel-section";
-      box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>✦ WORD OF THE DAY ✦</h3><p class="authority-section-note">Publish the public Word of the Day and choose the visual writing style shown on the home screen.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><label class="authority-word-style-label" for="authorityWordOfDayStyle">WORD STYLE</label><select id="authorityWordOfDayStyle" class="authority-word-style"><option value="modern">MODERN • I|ONE</option><option value="zigzag">ZIGZAG HANDWRITING</option><option value="street">STREET STYLE</option><option value="elegant">ELEGANT</option><option value="handwritten">HANDWRITTEN</option><option value="classic">CLASSIC</option><option value="luxury">LUXURY DISPLAY</option></select><div id="authorityWordStylePreview" class="authority-word-style-preview">WORD OF THE DAY</div><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
+      box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>WORD OF THE DAY</h3><p class="authority-section-note">Publish the public Word of the Day and choose the visual writing style shown on the home screen.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><label class="authority-word-style-label" for="authorityWordOfDayStyle">WORD STYLE</label><select id="authorityWordOfDayStyle" class="authority-word-style"><option value="modern">MODERN • I|ONE</option><option value="zigzag">ZIGZAG HANDWRITING</option><option value="street">STREET STYLE</option><option value="elegant">ELEGANT</option><option value="handwritten">HANDWRITTEN</option><option value="classic">CLASSIC</option><option value="luxury">LUXURY DISPLAY</option><option value="futuristic">FUTURISTIC • ORBITRON</option><option value="tech">TECH • AUDIOWIDE</option><option value="impact">IMPACT • BEBAS</option><option value="retro">RETRO • LOBSTER</option><option value="marker">MARKER • PERMANENT</option><option value="arcade">ARCADE • PRESS START</option><option value="royal">ROYAL • RIGHTEOUS</option><option value="signature">SIGNATURE • SATISFY</option><option value="typewriter">TYPEWRITER • SPECIAL ELITE</option></select><div id="authorityWordStylePreview" class="authority-word-style-preview">WORD OF THE DAY</div><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
       host.parentNode.insertBefore(box,host.nextSibling);
     }
     ensureWordOfDayEditor();
@@ -2064,14 +2064,14 @@ function getMedia(id){
 <div id="lessonLabel" aria-hidden="true" style="display:none"></div>
 <div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
 <div id="ioneHomeShell">
-<section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker"><span>✦</span> WORD OF THE DAY <span>✦</span></div><div id="wordOfDayText">Loading today's word…</div></section>
+<section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText">Loading today's word…</div></section>
 <section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div><div class="smart-grid">
 <button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>SERMON TRANSCRIPT</strong><small>AUTHORIZED MINISTRY</small></button>
 <button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>HEAVEN ON EARTH</strong><small>NENO • MAFUNDISHO • IMANI</small></button>
 <button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
 <button class="smart-item smart-coming-soon" id="openBusBooking" type="button"><span class="smart-icon">BUS</span><strong>I|ONE BUS</strong><small>BUS BOOKING • COMING SOON</small></button>
-<button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">✈</span><strong>I|ONE AIR</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
+<button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">SW</span><strong>SPACEWAY</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
 </div></section></div>
 <div id="scrollBanner" aria-label="I|ONE scrolling information"><div class="ione-banner-frame"><span class="ione-banner-label">I|ONE</span><div id="scrollText"></div></div></div>
 
@@ -6765,12 +6765,16 @@ function showIoneComingSoon(service){
   smartPanel?.classList.remove("show");
   const overlay=document.createElement("div");
   overlay.className="ione-coming-soon-overlay";
-  overlay.innerHTML='<div class="ione-coming-soon-card"><div class="ione-coming-soon-icon">'+(service==="BUS"?"BUS":"✈")+'</div><div class="ione-coming-soon-kicker">I|ONE FUTURE SERVICE</div><h2>I|ONE '+service+'</h2><p>'+(service==="BUS"?"BUS BOOKING":"FLIGHT BOOKING")+' IS COMING SOON</p><button type="button">BACK TO I|ONE</button></div>';
+  const isBus=service==="BUS";
+  const icon=isBus?"BUS":"SW";
+  const title=isBus?"I|ONE BUS":"SPACEWAY";
+  const subtitle=isBus?"BUS BOOKING":"FLIGHT BOOKING";
+  overlay.innerHTML='<div class="ione-coming-soon-card"><div class="ione-coming-soon-icon">'+icon+'</div><div class="ione-coming-soon-kicker">I|ONE FUTURE SERVICE</div><h2>'+title+'</h2><p>'+subtitle+' IS COMING SOON</p><button type="button">BACK TO I|ONE</button></div>';
   document.body.appendChild(overlay);
   overlay.querySelector("button").onclick=()=>{overlay.remove();smartPanel?.classList.add("show");};
 }
 document.getElementById("openBusBooking")?.addEventListener("click",()=>showIoneComingSoon("BUS"));
-document.getElementById("openFlightBooking")?.addEventListener("click",()=>showIoneComingSoon("AIR"));
+document.getElementById("openFlightBooking")?.addEventListener("click",()=>showIoneComingSoon("SPACEWAY"));
 
 function showHealthyClass(){
   if(document.getElementById("healthyContainer")) return;
@@ -7965,6 +7969,41 @@ preloadMedia();
 .authority-chapchap-note span{display:block;max-width:100%;min-width:0;white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important;font-size:9px!important;line-height:1.4!important}
 #authorityChapChapLoadStatus{white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important;max-width:100%;box-sizing:border-box;padding:0 4px;font-size:9px!important;line-height:1.35!important}
 @media(max-width:520px){.authority-chapchap-grid{grid-template-columns:1fr 1fr}.authority-chapchap-card{min-height:70px}}
+/* I|ONE 1.0.89 — premium smart-services + Word of the Day refinement */
+.word-day-kicker{
+  width:max-content;
+  max-width:100%;
+  margin:0 auto 10px!important;
+  padding:0 0 8px!important;
+  border-bottom:1px solid rgba(0,255,255,.42);
+  color:#e9feff!important;
+  font:800 clamp(18px,5vw,27px)/1 'Orbitron',sans-serif!important;
+  letter-spacing:2.6px!important;
+  text-align:center;
+  text-shadow:0 2px 5px rgba(0,0,0,.75),0 0 14px rgba(0,255,255,.16)!important;
+  transform:none!important;
+}
+.word-day-kicker span{display:none!important}
+#wordOfDayText.word-font-futuristic,.authority-word-style-preview.word-font-futuristic{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px}
+#wordOfDayText.word-font-tech,.authority-word-style-preview.word-font-tech{font-family:'Audiowide',cursive;font-weight:400;letter-spacing:.7px}
+#wordOfDayText.word-font-impact,.authority-word-style-preview.word-font-impact{font-family:'Bebas Neue',sans-serif;font-weight:400;letter-spacing:2px}
+#wordOfDayText.word-font-retro,.authority-word-style-preview.word-font-retro{font-family:'Lobster',cursive;font-weight:400}
+#wordOfDayText.word-font-marker,.authority-word-style-preview.word-font-marker{font-family:'Permanent Marker',cursive;font-weight:400}
+#wordOfDayText.word-font-arcade,.authority-word-style-preview.word-font-arcade{font-family:'Press Start 2P',cursive;font-weight:400;letter-spacing:.5px;font-size:.72em}
+#wordOfDayText.word-font-royal,.authority-word-style-preview.word-font-royal{font-family:'Righteous',cursive;font-weight:400;letter-spacing:.5px}
+#wordOfDayText.word-font-signature,.authority-word-style-preview.word-font-signature{font-family:'Satisfy',cursive;font-weight:400}
+#wordOfDayText.word-font-typewriter,.authority-word-style-preview.word-font-typewriter{font-family:'Special Elite',cursive;font-weight:400;letter-spacing:.4px}
+.smart-grid .smart-item:nth-child(1){background:linear-gradient(145deg,#08dce8,#075d92)!important}
+.smart-grid .smart-item:nth-child(2){background:linear-gradient(145deg,#ffb93d,#a9431f)!important}
+.smart-grid .smart-item:nth-child(3){background:linear-gradient(145deg,#9a78ff,#46318d)!important}
+.smart-grid .smart-item:nth-child(4){background:linear-gradient(145deg,#52e69c,#126c58)!important}
+.smart-grid .smart-item:nth-child(5){background:linear-gradient(145deg,#4f8cff,#173b8f)!important}
+.smart-grid .smart-item:nth-child(6){background:linear-gradient(145deg,#ff6fae,#8d2453)!important}
+#smartPanel{padding-bottom:32px!important}
+@media(max-width:370px){#smartPanel{padding-bottom:24px!important}}
+@media(max-height:700px){#smartPanel{padding-bottom:28px!important}}
+#openFlightBooking .smart-icon{font-size:21px!important;letter-spacing:1px!important}
+
 </style>
 
 <script>
