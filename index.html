@@ -63,6 +63,8 @@
 
   window.ioneRefreshLivePlans=loadLivePlans;
 
+  let ioneAuthorityLoadedPrices={"2weeks":null,"1month":null,"3months":null};
+
   async function openAuthorityPanel(){
     const panel=document.getElementById("authorityPressPanel");
     if(!panel)return;
@@ -79,7 +81,7 @@
         "1month":document.getElementById("authorityPrice1month"),
         "3months":document.getElementById("authorityPrice3months")
       };
-      plans.forEach(p=>{if(inputs[p.id])inputs[p.id].value=Number(p.amount);setPlanAmount(p.id,p.amount);});
+      plans.forEach(p=>{if(inputs[p.id])inputs[p.id].value=Number(p.amount);setPlanAmount(p.id,p.amount);ioneAuthorityLoadedPrices[p.id]=Number(p.amount);});
       if(status)status.textContent="CONNECTED • LIVE";
     }catch(e){
       if(status)status.textContent="Could not load live prices.";
@@ -90,11 +92,7 @@
     const status=document.getElementById("authoritySaveStatus");
     const button=document.getElementById("authoritySavePrices");
     const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    const oldValues={
-      "2weeks":Number(document.getElementById("authorityPrice2weeks")?.value),
-      "1month":Number(document.getElementById("authorityPrice1month")?.value),
-      "3months":Number(document.getElementById("authorityPrice3months")?.value)
-    };
+    const oldValues={...ioneAuthorityLoadedPrices};
     const values={
       "2weeks":Number(document.getElementById("authorityPrice2weeks")?.value),
       "1month":Number(document.getElementById("authorityPrice1month")?.value),
@@ -128,6 +126,7 @@
         const input=document.getElementById("authorityPrice"+p.id);
         if(input)input.value=Number(p.amount);
         setPlanAmount(p.id,p.amount);
+        ioneAuthorityLoadedPrices[p.id]=Number(p.amount);
       });
       window.ioneRemotePlansReady=true;
       updateOpenGate();
