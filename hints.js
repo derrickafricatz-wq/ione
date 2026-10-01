@@ -96,8 +96,63 @@ const lessonHints = [
       localStorage.setItem("ionePushEnabled","1");
     }catch(e){
       console.warn("I|ONE push sync:",e);
+    }finally{
+      try{ await updateNotificationBell(); }catch(_){}
     }
   }
+
+  async function disablePush(){
+    if(!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if(subscription){
+      const endpoint=subscription.endpoint;
+      try{ await callPush({action:"unsubscribe",endpoint}); }catch(e){ console.warn("I|ONE push unsubscribe:",e); }
+      try{ await subscription.unsubscribe(); }catch(e){ console.warn("I|ONE browser unsubscribe:",e); }
+    }
+    localStorage.removeItem("ionePushEnabled");
+    await updateNotificationBell();
+  }
+
+  async function updateNotificationBell(){
+    const button=document.getElementById("ioneNotificationBtn");
+    if(!button || !("Notification" in window)) return;
+    let on=false;
+    if(Notification.permission==="granted" && "serviceWorker" in navigator && "PushManager" in window){
+      try{
+        const registration=await navigator.serviceWorker.ready;
+        on=!!(await registration.pushManager.getSubscription());
+      }catch(_){}
+    }
+    button.dataset.state=on?"on":"off";
+    button.textContent=on?"🔔":"🔕";
+    button.title=on?"I|ONE notifications ON — press to turn off":"I|ONE notifications OFF — press to turn on";
+    button.setAttribute("aria-label",button.title);
+  }
+
+  async function togglePushFromBell(){
+    const button=document.getElementById("ioneNotificationBtn");
+    if(button) button.disabled=true;
+    try{
+      if("Notification" in window && Notification.permission==="granted"){
+        const registration=await navigator.serviceWorker.ready;
+        const subscription=await registration.pushManager.getSubscription();
+        if(subscription){
+          await disablePush();
+          return;
+        }
+      }
+      await pushSubscribe();
+      await updateNotificationBell();
+    }catch(e){
+      alert(e?.message || "Could not change I|ONE notification settings.");
+      await updateNotificationBell();
+    }finally{
+      if(button) button.disabled=false;
+    }
+  }
+
+  window.ioneTogglePushNotifications=togglePushFromBell;
 
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncExistingPush(); });
   window.addEventListener("focus",()=>syncExistingPush());
@@ -135,6 +190,7 @@ const lessonHints = [
       try{
         await pushSubscribe();
         button.remove();
+        await updateNotificationBell();
       }catch(e){
         button.disabled = false;
         button.textContent = original;
@@ -194,7 +250,7 @@ const lessonHints = [
         setTimeout(syncExistingPush,2500);
         setTimeout(syncExistingPush,7000);
       }
-      setTimeout(createButton,900);
+      setTimeout(updateNotificationBell,900);
       setTimeout(handlePushDestination,500);
     },0);
   }
