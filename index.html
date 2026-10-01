@@ -382,6 +382,17 @@
     if(save)save.onclick=saveAuthorityPrices;
 
     const saveBanners=document.getElementById("authoritySaveBanners");
+    function ensureWordOfDayEditor(){
+      if(document.getElementById("authorityWordOfDay"))return;
+      const sections=document.querySelectorAll("#authorityPressPanel .authority-panel-section");
+      const host=sections[sections.length-1];
+      if(!host)return;
+      const box=document.createElement("div");
+      box.className="authority-panel-section";
+      box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>WORD OF THE DAY</h3><p class="authority-section-note">Publish one motivational word or short message for the home screen. Replace it whenever the day changes, then save.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
+      host.parentNode.insertBefore(box,host.nextSibling);
+    }
+    ensureWordOfDayEditor();
     const saveWord=document.getElementById("authoritySaveWordOfDay");
     if(saveWord)saveWord.onclick=saveWordOfDay;
     if(saveBanners)saveBanners.onclick=saveIoneBanners;
