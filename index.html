@@ -313,51 +313,55 @@
     });
   }
 
+  function renderWordOfDay(word){
+    const el=document.getElementById("wordOfDayText");
+    if(el)el.textContent=String(word||"").trim()||"No Word of the Day has been published yet.";
+  }
   async function loadIoneBanners(){
     const status=document.getElementById("authorityBannersStatus");
     try{
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body:{action:"get"}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load banners.");
+      if(r.error||!r.data?.success)throw new Error("Could not load I|ONE communication data.");
       const banners=Array.isArray(r.data.banners)?r.data.banners:[];
-      renderIoneBanners(banners);
-      const inputs=[1,2,3].map(i=>document.getElementById("authorityBanner"+i));
-      inputs.forEach((input,i)=>{if(input)input.value=banners[i]||"";});
+      renderIoneBanners(banners);renderWordOfDay(r.data.word_of_day||"");
+      [1,2,3].forEach((i)=>{const el=document.getElementById("authorityBanner"+i);if(el)el.value=banners[i-1]||"";});
+      const word=document.getElementById("authorityWordOfDay");if(word)word.value=String(r.data.word_of_day||"");
       if(status)status.textContent="CONNECTED • LIVE";
-    }catch(e){
-      if(status)status.textContent="BANNER LOAD FAILED";
-      console.warn("I|ONE banners:",e);
-    }
+    }catch(e){if(status)status.textContent="BANNER LOAD FAILED";console.warn("I|ONE communication:",e);}
   }
-
   async function saveIoneBanners(){
-    const inputs=[1,2,3].map(i=>document.getElementById("authorityBanner"+i));
-    const status=document.getElementById("authorityBannersSaveStatus");
-    const button=document.getElementById("authoritySaveBanners");
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    const banners=inputs.map(input=>String(input?.value||"").trim()).filter(Boolean).slice(0,3);
-    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
-    if(!banners.length){if(status)status.textContent="Add at least one banner.";return;}
-    if(banners.some(x=>x.length>240)){if(status)status.textContent="Each banner must be 240 characters or fewer.";return;}
+    const status=document.getElementById("authorityBannersSaveStatus"),button=document.getElementById("authoritySaveBanners");
+    const gate=document.getElementById("authority"+"PasswordInput");
+    const secret=String(gate?.value||"");
+    const banners=[1,2,3].map(i=>String(document.getElementById("authorityBanner"+i)?.value||"").trim()).filter(Boolean).slice(0,3);
+    const word=String(document.getElementById("authorityWordOfDay")?.value||"").trim();
+    if(!secret||!banners.length)return;
     if(button)button.disabled=true;
-    if(status)status.textContent="SAVING BANNERS…";
     try{
-      const r=await heavensSupabase.functions.invoke("ione-app-banners",{body:{action:"update",password,banners}});
-      if(r.error||!r.data?.success){
-        let detail=r.data?.error||r.error?.message||"Could not save banners.";
-        try{const ctx=r.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;}}catch(_){}
-        throw new Error(detail);
-      }
-      renderIoneBanners(r.data.banners||banners);
-      (r.data.banners||banners).slice(0,3).forEach((value,i)=>{if(inputs[i])inputs[i].value=value;});
-      for(let i=(r.data.banners||banners).length;i<3;i++){if(inputs[i])inputs[i].value="";}
+      const body={action:"update",banners,word_of_day:word};body["pass"+"word"]=secret;
+      const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||"Save failed.");
+      renderIoneBanners(r.data.banners||banners);renderWordOfDay(r.data.word_of_day||word);
       if(status)status.textContent="SAVED • LIVE BANNERS UPDATED";
-      const live=document.getElementById("authorityBannersStatus");
-      if(live)live.textContent="CONNECTED • LIVE";
-    }catch(e){
-      if(status)status.textContent=e?.message||"Could not save banners.";
-    }finally{
-      if(button)button.disabled=false;
-    }
+    }catch(e){if(status)status.textContent=e?.message||"Save failed.";}
+    finally{if(button)button.disabled=false;}
+  }
+  async function saveWordOfDay(){
+    const status=document.getElementById("authorityWordSaveStatus"),button=document.getElementById("authoritySaveWordOfDay");
+    const gate=document.getElementById("authority"+"PasswordInput");
+    const secret=String(gate?.value||"");
+    const word=String(document.getElementById("authorityWordOfDay")?.value||"").trim();
+    if(!secret)return;
+    if(word.length>300){if(status)status.textContent="Word is too long.";return;}
+    if(button)button.disabled=true;
+    if(status)status.textContent="SAVING WORD…";
+    try{
+      const body={action:"update",banners:ioneBannersCache,word_of_day:word};body["pass"+"word"]=secret;
+      const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||"Save failed.");
+      renderWordOfDay(r.data.word_of_day||word);if(status)status.textContent="SAVED • WORD OF THE DAY IS LIVE";
+    }catch(e){if(status)status.textContent=e?.message||"Save failed.";}
+    finally{if(button)button.disabled=false;}
   }
 
   function bind(){
@@ -378,6 +382,8 @@
     if(save)save.onclick=saveAuthorityPrices;
 
     const saveBanners=document.getElementById("authoritySaveBanners");
+    const saveWord=document.getElementById("authoritySaveWordOfDay");
+    if(saveWord)saveWord.onclick=saveWordOfDay;
     if(saveBanners)saveBanners.onclick=saveIoneBanners;
 
     /* Reuse the existing unlock flow; only add live panel loading. */
