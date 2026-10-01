@@ -78,9 +78,15 @@ const lessonHints = [
     try{
       if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
       if(Notification.permission !== "granted") return;
+      await getPushConfig();
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      if(!subscription) return;
+      let subscription = await registration.pushManager.getSubscription();
+      if(!subscription){
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly:true,
+          applicationServerKey:uint8FromBase64Url(vapidPublicKey)
+        });
+      }
       const raw = subscription.toJSON();
       await callPush({
         action:"subscribe",
@@ -92,6 +98,9 @@ const lessonHints = [
       console.warn("I|ONE push sync:",e);
     }
   }
+
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncExistingPush(); });
+  window.addEventListener("focus",()=>syncExistingPush());
 
   function createButton(){
     if(document.getElementById("ionePushEnableButton")) return;
