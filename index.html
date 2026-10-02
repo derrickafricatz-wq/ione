@@ -2550,36 +2550,38 @@ async function goFullScreen(){
   First trusted touch enters fullscreen and starts the lock for this app session.
   The lock lives only in memory, so closing/reopening the app starts a new session.
 */
-document.body.addEventListener("pointerdown", function firstFullscreenGesture(){
+document.body.addEventListener("click", function firstFullscreenGesture(){
   if(!ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
     goFullScreen().catch(()=>{});
   }
-}, {once:true, passive:true});
+}, {once:true});
 
 /*
   If the browser/OS unexpectedly leaves fullscreen during the same session,
   remember that fullscreen should be restored. We do not force a new fullscreen
   request without a user gesture because browsers can reject that for security.
 */
-document.addEventListener("fullscreenchange", function(){
-  if(ioneFullscreenLocked && !document.fullscreenElement){
+function ioneFullscreenStateChanged(){
+  if(ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
     ioneFullscreenRestorePending = true;
   }
-});
+}
+document.addEventListener("fullscreenchange", ioneFullscreenStateChanged);
+document.addEventListener("webkitfullscreenchange", ioneFullscreenStateChanged);
 
 /*
   Any later user interaction can restore fullscreen while the session lock is
   active. This also covers feature buttons that may be pressed after fullscreen
   was unexpectedly lost.
 */
-document.addEventListener("pointerdown", function(){
+document.addEventListener("click", function(){
   if(ioneFullscreenLocked &&
      ioneFullscreenRestorePending &&
      !document.fullscreenElement &&
      !document.webkitFullscreenElement){
     goFullScreen().catch(()=>{});
   }
-}, {passive:true});
+});
 
 const guideLanguages={
  sw:{title:"MWONGOZO WA KISWAHILI",steps:[
