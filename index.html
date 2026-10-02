@@ -6,7 +6,7 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00ffff">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 
 <!-- Safe font connection hints: improve first-load font connection without changing the app's fonts. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1925,23 +1925,51 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
 </style>
 <style id="ione-mobile-stability">
-/* I|ONE MOBILE STABILITY
-   Keep Android keyboard/focus transitions on the same painted surface.
-   No feature is hidden or resized by JavaScript while the keyboard is open. */
-html{
-  background:#071417!important;
-  overscroll-behavior:none;
-}
+/* I|ONE MOBILE STABILITY • compositor-safe keyboard/focus mode */
 html,body{
   min-height:100%;
   background:#071417!important;
+  overscroll-behavior:none;
+  -webkit-text-size-adjust:100%;
 }
 body{
   isolation:isolate;
-  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
 }
 body.ione-keyboard-open{
   background:#071417!important;
+}
+
+/* Never allow a keyboard transition to trigger expensive full-screen effects. */
+body.ione-keyboard-open *,
+body.ione-paste-active *{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+body.ione-keyboard-open [style*="backdrop-filter"],
+body.ione-paste-active [style*="backdrop-filter"]{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+body.ione-keyboard-open .afl-call-orb,
+body.ione-keyboard-open .afl-owner-book,
+body.ione-keyboard-open .afl-book-cover-screen,
+body.ione-paste-active .afl-call-orb,
+body.ione-paste-active .afl-owner-book,
+body.ione-paste-active .afl-book-cover-screen{
+  animation:none!important;
+}
+body.ione-keyboard-open .afl-service-overlay,
+body.ione-keyboard-open .afl-call-overlay,
+body.ione-keyboard-open .afl-delete-overlay,
+body.ione-keyboard-open .heavens-payment-overlay,
+body.ione-keyboard-open #ioneSubscriptionGate,
+body.ione-keyboard-open #authorityPasswordOverlay,
+body.ione-keyboard-open .ione-coming-soon-overlay,
+body.ione-keyboard-open .ministry-access-overlay{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+  transition:none!important;
 }
 body.ione-keyboard-open #ioneHomeShell,
 body.ione-keyboard-open #smartPanel,
@@ -1950,23 +1978,37 @@ body.ione-keyboard-open .afl-service-overlay,
 body.ione-keyboard-open .afl-editor-overlay{
   background-color:transparent;
 }
+
+/* Do not animate full-screen shells while the IME is opening/closing. */
+body.ione-keyboard-open .afl-service-overlay > *,
+body.ione-keyboard-open .afl-call-overlay > *,
+body.ione-keyboard-open .afl-delete-overlay > *,
+body.ione-keyboard-open .heavens-payment-overlay > *,
+body.ione-keyboard-open #ioneSubscriptionGate > *,
+body.ione-keyboard-open #authorityPasswordOverlay > *{
+  transition:none!important;
+}
+
+/* Stable native-looking editable controls. */
 input,textarea,select,[contenteditable="true"]{
   -webkit-appearance:none;
   appearance:none;
   -webkit-tap-highlight-color:transparent;
-  scroll-margin-top:18px;
-  scroll-margin-bottom:120px;
+  scroll-margin-top:24px;
+  scroll-margin-bottom:140px;
 }
 input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
-  scroll-margin-top:18px;
-  scroll-margin-bottom:120px;
+  scroll-margin-top:24px;
+  scroll-margin-bottom:140px;
+  outline:none;
 }
-/* Avoid expensive mobile backdrop compositing while the keyboard is active. */
-body.ione-keyboard-open .ione-coming-soon-overlay,
-body.ione-keyboard-open .ministry-access-overlay,
-body.ione-keyboard-open #ioneSubscriptionGate{
-  backdrop-filter:none!important;
-  -webkit-backdrop-filter:none!important;
+
+/* Paste/selection can briefly invalidate compositor layers; keep the app on one painted surface. */
+body.ione-paste-active{
+  background:#071417!important;
+}
+body.ione-paste-active *{
+  transition:none!important;
 }
 </style><style id="ione-home-redesign">
 html,body{background:#071417!important}
@@ -2576,7 +2618,7 @@ function getMedia(id){
 </div>
 
 <script>
-/* ================= FULLSCREEN KIOSK — SESSION LOCK ================= */
+/* ================= FULLSCREEN KIOSK — STABLE SESSION ================= */
 let ioneFullscreenLocked = false;
 let ioneFullscreenRestorePending = false;
 
@@ -2585,62 +2627,53 @@ async function goFullScreen(){
   try{
     if(el.requestFullscreen){
       await el.requestFullscreen();
-      ioneFullscreenLocked = true;
-      ioneFullscreenRestorePending = false;
+      ioneFullscreenLocked=true;
+      ioneFullscreenRestorePending=false;
       return true;
     }
     if(el.webkitRequestFullscreen){
       el.webkitRequestFullscreen();
-      ioneFullscreenLocked = true;
-      ioneFullscreenRestorePending = false;
+      ioneFullscreenLocked=true;
+      ioneFullscreenRestorePending=false;
       return true;
     }
     if(el.msRequestFullscreen){
       el.msRequestFullscreen();
-      ioneFullscreenLocked = true;
-      ioneFullscreenRestorePending = false;
+      ioneFullscreenLocked=true;
+      ioneFullscreenRestorePending=false;
       return true;
     }
   }catch(_){}
   return false;
 }
 
-/*
-  First trusted touch enters fullscreen and starts the lock for this app session.
-  The lock lives only in memory, so closing/reopening the app starts a new session.
-*/
-document.body.addEventListener("click", function firstFullscreenGesture(){
+/* Initial user gesture may enter fullscreen once. */
+document.body.addEventListener("click",function firstFullscreenGesture(){
   if(!ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
     goFullScreen().catch(()=>{});
   }
-}, {once:true});
+},{once:true});
 
 /*
-  If the browser/OS unexpectedly leaves fullscreen during the same session,
-  remember that fullscreen should be restored. We do not force a new fullscreen
-  request without a user gesture because browsers can reject that for security.
+  IMPORTANT:
+  Do not automatically re-enter fullscreen after Android leaves it.
+  The OS/browser may leave fullscreen while opening the keyboard, selecting text,
+  pasting, or changing a feature overlay. Re-requesting fullscreen on the next
+  click can create a black compositor flash.
 */
 function ioneFullscreenStateChanged(){
   if(ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
-    ioneFullscreenRestorePending = true;
+    ioneFullscreenRestorePending=false;
   }
 }
-document.addEventListener("fullscreenchange", ioneFullscreenStateChanged);
-document.addEventListener("webkitfullscreenchange", ioneFullscreenStateChanged);
+document.addEventListener("fullscreenchange",ioneFullscreenStateChanged);
+document.addEventListener("webkitfullscreenchange",ioneFullscreenStateChanged);
 
-/*
-  Any later user interaction can restore fullscreen while the session lock is
-  active. This also covers feature buttons that may be pressed after fullscreen
-  was unexpectedly lost.
-*/
-document.addEventListener("click", function(){
-  if(ioneFullscreenLocked &&
-     ioneFullscreenRestorePending &&
-     !document.fullscreenElement &&
-     !document.webkitFullscreenElement){
-    goFullScreen().catch(()=>{});
-  }
-});
+/* Never request fullscreen from field, keyboard, paste, or selection interactions. */
+document.addEventListener("click",function(e){
+  if(window.ioneKeyboardInteractionActive || document.body.classList.contains("ione-paste-active")) return;
+  /* Deliberately no automatic fullscreen restoration here. */
+},true);
 
 const guideLanguages={
  sw:{title:"MWONGOZO WA KISWAHILI",steps:[
@@ -2717,61 +2750,92 @@ if(ioneNotificationBtn){
 /* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY */
 (function ioneMobileStability(){
   let keyboardTimer=0;
-  let lastViewportHeight=0;
+  let pasteTimer=0;
+  let lastHeight=0;
+  let lastWidth=0;
 
-  function focusedField(){
-    const el=document.activeElement;
-    if(!el)return null;
-    return el.matches?.('input,textarea,select,[contenteditable="true"]')?el:null;
+  const isField=el=>!!el && !!el.matches?.('input,textarea,select,[contenteditable="true"]');
+  const activeField=()=>isField(document.activeElement)?document.activeElement:null;
+
+  function setKeyboardState(on){
+    document.body.classList.toggle("ione-keyboard-open",!!on);
   }
 
-  function syncKeyboardState(){
+  function syncViewport(){
     const vv=window.visualViewport;
     const h=Math.round(vv?.height||window.innerHeight||0);
-    const field=focusedField();
-    const keyboardLikely=!!field && !!vv && lastViewportHeight>0 && h < lastViewportHeight-90;
-    document.body.classList.toggle("ione-keyboard-open",keyboardLikely);
-    lastViewportHeight=h;
-    if(keyboardLikely){
-      clearTimeout(keyboardTimer);
-      keyboardTimer=setTimeout(()=>{
-        const f=focusedField();
-        if(!f)return;
-        try{f.scrollIntoView({block:"nearest",inline:"nearest"});}catch(_){}
-      },90);
-    }
+    const w=Math.round(vv?.width||window.innerWidth||0);
+    const f=activeField();
+    const widthChanged=lastWidth>0 && Math.abs(w-lastWidth)>2;
+    const heightDrop=lastHeight>0 && h<lastHeight-90;
+    const likely=!!f && !widthChanged && heightDrop;
+    if(f) setKeyboardState(true);
+    else if(!document.body.classList.contains("ione-paste-active")) setKeyboardState(likely);
+    lastHeight=h;
+    lastWidth=w;
+  }
+
+  function gentlyReveal(field){
+    if(!field || !document.body.contains(field)) return;
+    clearTimeout(keyboardTimer);
+    keyboardTimer=setTimeout(()=>{
+      if(!activeField()) return;
+      try{
+        field.scrollIntoView({block:"nearest",inline:"nearest",behavior:"auto"});
+      }catch(_){}
+    },180);
   }
 
   document.addEventListener("focusin",e=>{
-    if(!e.target?.matches?.('input,textarea,select,[contenteditable="true"]'))return;
-    document.body.classList.add("ione-keyboard-open");
-    clearTimeout(keyboardTimer);
-    keyboardTimer=setTimeout(()=>{
-      try{e.target.scrollIntoView({block:"nearest",inline:"nearest"});}catch(_){}
-      syncKeyboardState();
-    },120);
-  },{passive:true});
+    if(!isField(e.target)) return;
+    setKeyboardState(true);
+    gentlyReveal(e.target);
+    window.ioneKeyboardInteractionActive=true;
+  },true);
 
   document.addEventListener("focusout",()=>{
     clearTimeout(keyboardTimer);
     keyboardTimer=setTimeout(()=>{
-      if(!focusedField())document.body.classList.remove("ione-keyboard-open");
-      syncKeyboardState();
-    },220);
-  },{passive:true});
+      if(!activeField() && !document.body.classList.contains("ione-paste-active")){
+        setKeyboardState(false);
+        window.ioneKeyboardInteractionActive=false;
+      }
+    },280);
+  },true);
+
+  document.addEventListener("paste",e=>{
+    if(!isField(e.target)) return;
+    window.ioneKeyboardInteractionActive=true;
+    document.body.classList.add("ione-paste-active","ione-keyboard-open");
+    clearTimeout(pasteTimer);
+    pasteTimer=setTimeout(()=>{
+      document.body.classList.remove("ione-paste-active");
+      if(!activeField()){
+        document.body.classList.remove("ione-keyboard-open");
+        window.ioneKeyboardInteractionActive=false;
+      }
+    },650);
+  },true);
+
+  document.addEventListener("touchstart",e=>{
+    if(isField(e.target)) window.ioneKeyboardInteractionActive=true;
+  },{passive:true,capture:true});
 
   if(window.visualViewport){
-    lastViewportHeight=Math.round(window.visualViewport.height||0);
-    window.visualViewport.addEventListener("resize",syncKeyboardState,{passive:true});
+    lastHeight=Math.round(window.visualViewport.height||0);
+    lastWidth=Math.round(window.visualViewport.width||0);
+    window.visualViewport.addEventListener("resize",syncViewport,{passive:true});
     window.visualViewport.addEventListener("scroll",()=>{
-      if(focusedField())document.body.classList.add("ione-keyboard-open");
+      if(activeField()) setKeyboardState(true);
     },{passive:true});
   }
-  window.addEventListener("resize",syncKeyboardState,{passive:true});
+  window.addEventListener("resize",syncViewport,{passive:true});
 
   window.addEventListener("pageshow",()=>{
-    document.body.classList.remove("ione-keyboard-open");
-    lastViewportHeight=Math.round(window.visualViewport?.height||window.innerHeight||0);
+    document.body.classList.remove("ione-keyboard-open","ione-paste-active");
+    window.ioneKeyboardInteractionActive=false;
+    lastHeight=Math.round(window.visualViewport?.height||window.innerHeight||0);
+    lastWidth=Math.round(window.visualViewport?.width||window.innerWidth||0);
   },{passive:true});
 })();
  
