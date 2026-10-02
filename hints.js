@@ -125,14 +125,11 @@ const lessonHints = [
       }catch(_){}
     }
     button.dataset.state=on?"on":"off";
-    const icon=document.getElementById("ioneNotificationIcon");
     const state=document.getElementById("ioneNotificationState");
-    if(icon) icon.textContent=on?"🔔":"🔕";
-    if(state) state.textContent=on?"ACTIVATED":"INACTIVE";
+    if(state) state.textContent=on?"ACTIVE":"INACTIVE";
     button.textContent="";
-    if(icon) button.appendChild(icon);
     if(state) button.appendChild(state);
-    button.title=on?"I|ONE notifications ACTIVATED — press once to turn off":"I|ONE notifications INACTIVE — press once to turn on";
+    button.title=on?"ACCESS TRENDING ACTIVE — press once to turn off":"ACCESS DENIED INACTIVE — press once to turn on";
     button.setAttribute("aria-label",button.title);
   }
 
@@ -171,7 +168,7 @@ const lessonHints = [
     const button = document.createElement("button");
     button.id = "ionePushEnableButton";
     button.type = "button";
-    button.textContent = "🔔 ENABLE I|ONE NOTIFICATIONS";
+    button.textContent = "ENABLE I|ONE NOTIFICATIONS";
     button.style.cssText = [
       "position:fixed",
       "top:72px",
