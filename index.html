@@ -703,8 +703,39 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* The old full-screen lesson-video layer has been removed.
-   Only HOME OF MARKETING billboard videos remain. */
+#brandVideo {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100svh;
+  min-height: 100svh;
+  object-fit: contain;
+  object-position: center center;
+  z-index: 0;
+  background:#071417;
+}
+
+#brandVideo{
+  /* Keep the persistent video layer on its own compositor surface so
+     keyboard/focus/overlay changes do not repeatedly repaint a black frame. */
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  will-change:transform;
+}
+
+  /* =========================
+   SMART VIDEO ORIENTATION
+========================= */
+
+body.portrait-mode #brandVideo,
+body.landscape-mode #brandVideo {
+  width: 100vw;
+  height: 100svh;
+  min-height: 100svh;
+  object-fit: contain;
+  object-position: center center;
+}
 
 /* ONE-TIME STARTUP BRAND — FULL SCREEN SMART STYLE */
 #startupDeka{
@@ -1916,6 +1947,7 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
 </style><style id="ione-home-redesign">
 html,body{background:#071417!important}
+#brandVideo{display:none!important;background:#071417!important}
 body, #ioneHomeShell, #smartPanel{overscroll-behavior:none}
 #ioneTopActions{position:fixed;top:10px;right:12px;z-index:200;display:flex;align-items:center;gap:8px}
 #ioneTopActions button{box-sizing:border-box;min-height:44px;border:1px solid rgba(0,255,255,.55);border-radius:13px;background:linear-gradient(145deg,#11ffff,#007f8c);color:#001014;font-family:'Russo One',Arial,sans-serif;font-weight:900;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.45),0 10px 20px rgba(0,0,0,.18)}
@@ -2223,8 +2255,87 @@ City tour — TZS 80,000"></textarea>
 <script src="hints.js"></script>
 <script>
 
-<!-- The old first-open lesson videos have been permanently removed.
-     Billboard videos remain fully independent inside HOME OF MARKETING. -->
+/* =========================
+   OFFLINE VIDEO DATABASE
+========================= */
+
+const DB_NAME = "afya-media-db-v33";
+const STORE_NAME = "media-files";
+
+let db;
+
+/* OPEN DATABASE */
+function openDatabase(){
+
+  return new Promise((resolve,reject)=>{
+
+    const request = indexedDB.open(DB_NAME,1);
+
+    request.onupgradeneeded = (e)=>{
+
+      db = e.target.result;
+
+      if(!db.objectStoreNames.contains(STORE_NAME)){
+
+        db.createObjectStore(STORE_NAME);
+
+      }
+
+    };
+
+    request.onsuccess = (e)=>{
+
+      db = e.target.result;
+
+      resolve();
+
+    };
+
+    request.onerror = ()=>{
+
+      reject();
+
+    };
+
+  });
+
+}
+
+/* SAVE VIDEO */
+async function saveMedia(id,url){
+
+  const response = await fetch(url);
+
+  const blob = await response.blob();
+
+  const tx = db.transaction(STORE_NAME,"readwrite");
+
+  tx.objectStore(STORE_NAME).put(blob,id);
+
+}
+
+/* GET VIDEO */
+function getMedia(id){
+
+  return new Promise((resolve)=>{
+
+    const tx = db.transaction(STORE_NAME,"readonly");
+
+    const req = tx.objectStore(STORE_NAME).get(id);
+
+    req.onsuccess = ()=>{
+
+      resolve(req.result);
+
+    };
+
+  });
+
+}
+
+  </script>
+
+<video id="brandVideo" muted playsinline preload="none" aria-hidden="true" style="display:none!important" src=""></video>
 <div id="ioneTopActions" aria-label="I|ONE controls">
   <button id="ioneNotificationBtn" type="button" aria-label="ACCESS DENIED INACTIVE" title="I|ONE notifications INACTIVE"><span id="ioneNotificationState">INACTIVE</span></button>
   <button id="settingsBtn" aria-label="Open guide">GUIDE</button>
@@ -2363,7 +2474,17 @@ City tour — TZS 80,000"></textarea>
 
 <div id="controls">
 <div id="controlGrid">
-  <div></div>
+
+  <!-- VIDEO CONTROLS -->
+<button class="ctrl-btn" id="rew">⏮️</button>
+<button class="ctrl-btn" id="playPause">⏯️</button>
+<button class="ctrl-btn" id="ff">⏭️</button>
+
+<button class="ctrl-btn" onclick="zoomVideo(-0.1)">⏬</button>
+<span id="zoomLevel">100%</span>
+<button class="ctrl-btn" onclick="zoomVideo(0.1)">⏫</button>
+
+<div></div>
 
   <!-- INPUT -->
   <input 
@@ -2570,16 +2691,100 @@ if(ioneNotificationBtn){
   };
 }
 
-/* ================= FIRST-OPEN VIDEO REMOVED =================
-   The original five lesson videos no longer exist in I|ONE.
-   Billboard videos under HOME OF MARKETING are handled separately.
-   Keep a tiny compatibility stub for older lesson/keypad handlers so they
-   do nothing instead of creating a video layer or network request.
-=============================================================== */
-function playVideo(){ return Promise.resolve(); }
-function stopHomeVideo(){ return; }
+/* ================= VIDEO ================= */
+const video = document.getElementById("brandVideo");
+video.muted = true;
+video.volume = 0;
+
+  
+ /* =========================
+   SMART DEVICE ORIENTATION
+========================= */
+
+function updateAppOrientation() {
+
+  const isLandscape =
+    window.matchMedia("(orientation: landscape)").matches;
+
+  document.body.classList.toggle(
+    "landscape-mode",
+    isLandscape
+  );
+
+  document.body.classList.toggle(
+    "portrait-mode",
+    !isLandscape
+  );
+
+  console.log(
+    isLandscape
+      ? "LANDSCAPE MODE"
+      : "PORTRAIT MODE"
+  );
+}
+
+/* Do not react to keyboard/viewport resize here.
+   Android can fire resize while the virtual keyboard is opening/closing.
+   Re-running orientation layout during that transition causes visible
+   compositor flashes. Orientation changes are handled below. */
+
+window.addEventListener(
+  "orientationchange",
+  () => {
+    setTimeout(updateAppOrientation, 300);
+  }
+);
+
+updateAppOrientation();
+
+/* ================= VIDEO ZOOM ================= */
+
 let videoZoom = 1;
-function zoomVideo(){ return; }
+
+function zoomVideo(amount) {
+
+  videoZoom += amount;
+
+  if (videoZoom < 1) videoZoom = 1;
+  if (videoZoom > 4) videoZoom = 4;
+
+  video.style.transform = `scale(${videoZoom})`;
+
+  document.getElementById("zoomLevel").innerText =
+    Math.round(videoZoom * 100) + "%";
+}
+
+/* ================= CLOCK ================= */
+
+const clockBox = document.getElementById("clockBox");
+
+/* ================= ADS ================= */
+adImages.forEach(src=>{new Image().src=src;});
+let adIndex=0, adInterval, currentLesson=null;
+let lessonAdInterval, lessonAdIndex=0;
+
+function resetAdImage(){ adImg.classList.remove("lessonFade"); adImg.style.opacity="1"; adImage.style.right="-100%"; if(adImages.length>0) adImg.src=adImages[0]; }
+
+function showAd(){ return; }
+
+function startAds(){ clearInterval(adInterval); resetAdImage(); }
+function stopAds(){ clearInterval(adInterval); adImage.style.right="-100%"; }
+
+function stopLessonAds(){ if(lessonAdInterval){ clearInterval(lessonAdInterval); lessonAdInterval=null; } }
+
+function startLessonAds(lessonId){ stopLessonAds(); }
+/* =========================
+   OFFLINE VIDEO PLAYER
+========================= */
+
+let playlist = [].concat(...Object.values(lessons));
+
+let index = 0;
+
+/* OBSOLETE LESSON VIDEO SYSTEM DISABLED.
+   The old five-video lesson player is no longer part of I|ONE.
+   Keep a harmless compatibility function so legacy keypad calls cannot break the app. */
+async function playVideo(){ return Promise.resolve(); }
 
 /* INSTALL APP */
 let deferredPrompt;
@@ -2908,6 +3113,9 @@ closeTranscript.onclick = () => {
 
 const controls = document.getElementById("controls");
 
+const rew = document.getElementById("rew");
+const ff = document.getElementById("ff");
+const playPause = document.getElementById("playPause");
 
 async function verifyMinistryAccess(key){
   const session=await ensureHeavensAnonymousSession();
@@ -6624,6 +6832,24 @@ document.getElementById("stopTranscript").onclick = () => {
 };
 
 
+rew.onclick = () => {
+  video.currentTime = Math.max(0, video.currentTime - 10);
+};
+
+ff.onclick = () => {
+  video.currentTime = Math.min(
+    video.duration || Infinity,
+    video.currentTime + 10
+  );
+};
+
+playPause.onclick = () => {
+  if (video.paused) {
+    video.play().catch(() => {});
+  } else {
+    video.pause();
+  }
+};
 
 let currentVersion = localStorage.getItem("app_version") || "1.0.0";
 
@@ -6807,8 +7033,6 @@ function submitLesson(){
     playlist = lessons[v];
 
     index = 0;
-
-    playVideo(0);
 
     stopAds();
 
@@ -7994,9 +8218,10 @@ document.addEventListener("touchend",(e)=>{
   }
 });
 
-  /* Old five-video startup/cache system removed.
-   No first-open lesson videos are downloaded, cached, or started anymore.
-   HOME OF MARKETING billboard videos are separate and remain active. */
+  /* OBSOLETE FIVE-VIDEO PRELOAD DISABLED.
+   No n1.mp4–n5.mp4 files are downloaded or cached anymore. */
+async function preloadMedia(){ return; }
+function ioneRunBackgroundMediaPreload(){ return; }
 
 </script>
 <style>
