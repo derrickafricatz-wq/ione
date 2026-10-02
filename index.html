@@ -1921,6 +1921,9 @@ html,body{background:#020607!important}
 #ioneNotificationBtn[data-state="on"] #ioneNotificationState{color:#001010}
 
 #ioneNotificationBtn[data-state="off"]{background:linear-gradient(145deg,#18272b,#071114);color:#9eeff2}
+button:active,[role="button"]:active{-webkit-tap-highlight-color:transparent;box-shadow:none!important}
+button,[role="button"]{-webkit-tap-highlight-color:transparent}
+body.ione-non-home #ioneTopActions{display:none!important}
 #settingsBtn{padding:9px 15px;font-size:14px}
 @media(max-width:370px){#ioneTopActions{right:8px;gap:6px}#ioneNotificationBtn{min-width:82px}#settingsBtn{padding:8px 11px;font-size:12px}}
 #ioneHomeShell{position:fixed;inset:0;z-index:8;box-sizing:border-box;padding:72px 14px 88px;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
@@ -2298,7 +2301,7 @@ function getMedia(id){
 
 <video id="brandVideo" muted playsinline aria-hidden="true"></video>
 <div id="ioneTopActions" aria-label="I|ONE controls">
-  <button id="ioneNotificationBtn" type="button" aria-label="I|ONE notifications INACTIVE" title="I|ONE notifications INACTIVE"><span id="ioneNotificationIcon">🔕</span><span id="ioneNotificationState">INACTIVE</span></button>
+  <button id="ioneNotificationBtn" type="button" aria-label="ACCESS DENIED INACTIVE" title="I|ONE notifications INACTIVE"><span id="ioneNotificationState">INACTIVE</span></button>
   <button id="settingsBtn" aria-label="Open guide">GUIDE</button>
 </div>
 <div id="clockBox" aria-hidden="true" style="display:none"></div>
@@ -2577,10 +2580,15 @@ function showGuideHome(){activeGuideLanguage=null;guideHome.style.display="block
 document.getElementById("guideSwahili").onclick=()=>openGuideLanguage("sw");
 document.getElementById("guideEnglish").onclick=()=>openGuideLanguage("en");
 document.getElementById("guideBack").onclick=showGuideHome;
-document.getElementById("closeGuideHome").onclick=()=>{guideOverlay.style.display="none";showGuideHome();};
-nextGuide.onclick=()=>{if(!activeGuideLanguage)return;const d=guideLanguages[activeGuideLanguage];guideIndex++;if(guideIndex>=d.steps.length){guideOverlay.style.display="none";showGuideHome();return;}guideText.textContent=d.steps[guideIndex];nextGuide.textContent=guideIndex===d.steps.length-1?"DONE":"NEXT";};
+document.getElementById("closeGuideHome").onclick=()=>{guideOverlay.style.display="none";showGuideHome();ioneSetHomeControls(true);};
+nextGuide.onclick=()=>{if(!activeGuideLanguage)return;const d=guideLanguages[activeGuideLanguage];guideIndex++;if(guideIndex>=d.steps.length){guideOverlay.style.display="none";showGuideHome();ioneSetHomeControls(true);return;}guideText.textContent=d.steps[guideIndex];nextGuide.textContent=guideIndex===d.steps.length-1?"DONE":"NEXT";};
 const settingsBtn=document.getElementById("settingsBtn");
-settingsBtn.onclick=()=>{guideOverlay.style.display="flex";showGuideHome();};
+const ioneTopActions=document.getElementById("ioneTopActions");
+function ioneSetHomeControls(isHome){
+  document.body.classList.toggle("ione-non-home",!isHome);
+  if(ioneTopActions) ioneTopActions.setAttribute("aria-hidden",isHome?"false":"true");
+}
+settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="flex";showGuideHome();};
 
 const ioneNotificationBtn=document.getElementById("ioneNotificationBtn");
 if(ioneNotificationBtn){
@@ -2774,6 +2782,10 @@ const authorityPasswordOverlay=document.getElementById("authorityPasswordOverlay
 /* SMART HOME PANEL */
 const smartPanel=document.getElementById("smartPanel");
 smartPanel?.classList.add("show");
+ioneSetHomeControls(true);
+document.querySelectorAll("#smartPanel .smart-item").forEach(btn=>{
+  btn.addEventListener("click",()=>ioneSetHomeControls(false));
+});
 
 /* /* ================= CONTROLS ================= */
 
@@ -3051,6 +3063,7 @@ const closeTranscript = document.getElementById("closeTranscript");
 
 closeTranscript.onclick = () => {
   transcriptPanel.style.display = "none";
+  ioneSetHomeControls(true);
 
   // The guide/settings button belongs to the main screen,
   // not the transcript panel.
@@ -3073,6 +3086,7 @@ async function verifyMinistryAccess(key){
 }
 
 function openTranscriptAfterAuthorization(){
+  ioneSetHomeControls(false);
   settingsBtn.style.display="none";
   transcriptPanel.style.display="block";
   transcriptText.scrollTop=0;
@@ -4197,6 +4211,7 @@ function aflStartLoops(){
 }
 
 function aflOpenWorld(){
+  ioneSetHomeControls(false);
   smartPanel.classList.remove("show");
   aflOverlay.style.display="flex";
   aflOverlay.setAttribute("aria-hidden","false");
@@ -4205,6 +4220,7 @@ function aflOpenWorld(){
 
 function aflCloseWorld(){
   aflOverlay.style.display="none";
+  ioneSetHomeControls(true);
   aflOverlay.setAttribute("aria-hidden","true");
   if(aflFeedTimer)clearInterval(aflFeedTimer);
   aflFeedTimer=null;aflRefreshTimer=null;
@@ -7026,13 +7042,14 @@ function showIoneComingSoon(service){
   const subtitle=isBus?"BUS BOOKING":"FLIGHT BOOKING";
   overlay.innerHTML='<div class="ione-coming-soon-card"><div class="ione-coming-soon-icon">'+icon+'</div><div class="ione-coming-soon-kicker">I|ONE FUTURE SERVICE</div><h2>'+title+'</h2><p>'+subtitle+' IS COMING SOON</p><button type="button">BACK TO I|ONE</button></div>';
   document.body.appendChild(overlay);
-  overlay.querySelector("button").onclick=()=>{overlay.remove();smartPanel?.classList.add("show");};
+  overlay.querySelector("button").onclick=()=>{overlay.remove();smartPanel?.classList.add("show");ioneSetHomeControls(true);};
 }
 document.getElementById("openBusBooking")?.addEventListener("click",()=>showIoneComingSoon("BUS"));
 document.getElementById("openFlightBooking")?.addEventListener("click",()=>showIoneComingSoon("SPACEWAY"));
 
 function showHealthyClass(){
   if(document.getElementById("healthyContainer")) return;
+  ioneSetHomeControls(false);
   document.body.classList.add("ione-heaven-open");
   const c=document.createElement("div"); c.id="healthyContainer"; document.body.appendChild(c);
   
@@ -7056,6 +7073,7 @@ exitBtn.style.color = "white";
 exitBtn.onclick = () => {
   document.body.classList.remove("ione-heaven-open");
   document.getElementById("healthyContainer").remove();
+  ioneSetHomeControls(true);
 
   // Restore video + ads system
   stopLessonAds();
