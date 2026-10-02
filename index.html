@@ -1925,40 +1925,88 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
 </style>
 <style id="ione-mobile-stability">
-/* I|ONE MOBILE STABILITY • compositor-safe keyboard/focus mode */
+/* I|ONE MOBILE STABILITY • one consistent input surface across every panel */
 html,body{
   min-height:100%;
   background:#071417!important;
   overscroll-behavior:none;
   -webkit-text-size-adjust:100%;
-}
-body{
-  isolation:isolate;
   -webkit-tap-highlight-color:transparent;
+  scroll-behavior:auto!important;
 }
-body.ione-keyboard-open{
+body{isolation:isolate}
+body.ione-keyboard-open,
+body.ione-paste-active,
+body.ione-input-transition{
   background:#071417!important;
 }
 
-/* Never allow a keyboard transition to trigger expensive full-screen effects. */
+/* During input/keyboard work, freeze visual effects rather than letting Android
+   repeatedly promote/demote full-screen layers. */
+body.ione-input-transition *,
 body.ione-keyboard-open *,
 body.ione-paste-active *{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
+  animation:none!important;
 }
+body.ione-input-transition [style*="backdrop-filter"],
 body.ione-keyboard-open [style*="backdrop-filter"],
 body.ione-paste-active [style*="backdrop-filter"]{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
 }
-body.ione-keyboard-open .afl-call-orb,
-body.ione-keyboard-open .afl-owner-book,
-body.ione-keyboard-open .afl-book-cover-screen,
-body.ione-paste-active .afl-call-orb,
-body.ione-paste-active .afl-owner-book,
-body.ione-paste-active .afl-book-cover-screen{
-  animation:none!important;
+body.ione-input-transition [style*="transition"],
+body.ione-keyboard-open [style*="transition"],
+body.ione-paste-active [style*="transition"]{
+  transition:none!important;
 }
+
+/* Do not make an active panel transparent. Its own surface remains standing
+   independently while the keyboard changes the visual viewport. */
+body.ione-input-transition #ioneHomeShell,
+body.ione-input-transition #smartPanel,
+body.ione-keyboard-open #ioneHomeShell,
+body.ione-keyboard-open #smartPanel{
+  background-color:initial;
+}
+
+/* Every editable control gets the same stable interaction rules. */
+input,textarea,select,[contenteditable="true"]{
+  -webkit-appearance:none;
+  appearance:none;
+  -webkit-tap-highlight-color:transparent;
+  scroll-margin-top:20px;
+  scroll-margin-bottom:120px;
+  scroll-behavior:auto!important;
+  touch-action:manipulation;
+}
+input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
+  outline:none;
+  scroll-margin-top:20px;
+  scroll-margin-bottom:120px;
+}
+/* Give fields a quiet, consistent focus state without moving their layout. */
+input:focus-visible,textarea:focus-visible,select:focus-visible,[contenteditable="true"]:focus-visible{
+  outline:2px solid rgba(0,255,255,.48);
+  outline-offset:1px;
+}
+
+/* Native text selection/paste must never inherit a panel transition. */
+body.ione-paste-active,
+body.ione-paste-active *{
+  transition:none!important;
+}
+
+/* Keep full-screen shells from using expensive effects while an input is active. */
+body.ione-input-transition .afl-service-overlay,
+body.ione-input-transition .afl-call-overlay,
+body.ione-input-transition .afl-delete-overlay,
+body.ione-input-transition .heavens-payment-overlay,
+body.ione-input-transition #ioneSubscriptionGate,
+body.ione-input-transition #authorityPasswordOverlay,
+body.ione-input-transition .ione-coming-soon-overlay,
+body.ione-input-transition .ministry-access-overlay,
 body.ione-keyboard-open .afl-service-overlay,
 body.ione-keyboard-open .afl-call-overlay,
 body.ione-keyboard-open .afl-delete-overlay,
@@ -1969,45 +2017,6 @@ body.ione-keyboard-open .ione-coming-soon-overlay,
 body.ione-keyboard-open .ministry-access-overlay{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
-  transition:none!important;
-}
-body.ione-keyboard-open #ioneHomeShell,
-body.ione-keyboard-open #smartPanel,
-body.ione-keyboard-open .afl-scroll,
-body.ione-keyboard-open .afl-service-overlay,
-body.ione-keyboard-open .afl-editor-overlay{
-  background-color:transparent;
-}
-
-/* Do not animate full-screen shells while the IME is opening/closing. */
-body.ione-keyboard-open .afl-service-overlay > *,
-body.ione-keyboard-open .afl-call-overlay > *,
-body.ione-keyboard-open .afl-delete-overlay > *,
-body.ione-keyboard-open .heavens-payment-overlay > *,
-body.ione-keyboard-open #ioneSubscriptionGate > *,
-body.ione-keyboard-open #authorityPasswordOverlay > *{
-  transition:none!important;
-}
-
-/* Stable native-looking editable controls. */
-input,textarea,select,[contenteditable="true"]{
-  -webkit-appearance:none;
-  appearance:none;
-  -webkit-tap-highlight-color:transparent;
-  scroll-margin-top:24px;
-  scroll-margin-bottom:140px;
-}
-input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
-  scroll-margin-top:24px;
-  scroll-margin-bottom:140px;
-  outline:none;
-}
-
-/* Paste/selection can briefly invalidate compositor layers; keep the app on one painted surface. */
-body.ione-paste-active{
-  background:#071417!important;
-}
-body.ione-paste-active *{
   transition:none!important;
 }
 </style><style id="ione-home-redesign">
@@ -2747,18 +2756,43 @@ if(ioneNotificationBtn){
   };
 }
 
-/* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY */
+/* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY
+   One controller for every input on every panel. */
 (function ioneMobileStability(){
   let keyboardTimer=0;
+  let settleTimer=0;
   let pasteTimer=0;
   let lastHeight=0;
   let lastWidth=0;
 
-  const isField=el=>!!el && !!el.matches?.('input,textarea,select,[contenteditable="true"]');
+  const fieldSelector='input,textarea,select,[contenteditable="true"]';
+  const isField=el=>!!el && !!el.matches?.(fieldSelector);
   const activeField=()=>isField(document.activeElement)?document.activeElement:null;
 
-  function setKeyboardState(on){
+  function setInputMode(on){
+    document.body.classList.toggle("ione-input-transition",!!on);
+  }
+  function setKeyboardMode(on){
     document.body.classList.toggle("ione-keyboard-open",!!on);
+  }
+
+  /* Only move a field when it is genuinely hidden behind the keyboard.
+     Never call scrollIntoView just because focus changed. */
+  function revealIfObscured(field){
+    if(!field || !document.body.contains(field)) return;
+    clearTimeout(keyboardTimer);
+    keyboardTimer=setTimeout(()=>{
+      if(activeField()!==field) return;
+      const vv=window.visualViewport;
+      const rect=field.getBoundingClientRect();
+      const top=(vv?.offsetTop||0)+18;
+      const bottom=(vv?.offsetTop||0)+(vv?.height||window.innerHeight)-18;
+      if(rect.top<top || rect.bottom>bottom){
+        try{
+          field.scrollIntoView({block:"nearest",inline:"nearest",behavior:"auto"});
+        }catch(_){}
+      }
+    },360);
   }
 
   function syncViewport(){
@@ -2766,73 +2800,93 @@ if(ioneNotificationBtn){
     const h=Math.round(vv?.height||window.innerHeight||0);
     const w=Math.round(vv?.width||window.innerWidth||0);
     const f=activeField();
+    const heightDrop=lastHeight>0 && h<lastHeight-80;
     const widthChanged=lastWidth>0 && Math.abs(w-lastWidth)>2;
-    const heightDrop=lastHeight>0 && h<lastHeight-90;
-    const likely=!!f && !widthChanged && heightDrop;
-    if(f) setKeyboardState(true);
-    else if(!document.body.classList.contains("ione-paste-active")) setKeyboardState(likely);
+
+    if(f){
+      setInputMode(true);
+      if(heightDrop && !widthChanged) setKeyboardMode(true);
+    }else if(!document.body.classList.contains("ione-paste-active")){
+      setKeyboardMode(false);
+      setInputMode(false);
+    }
+
     lastHeight=h;
     lastWidth=w;
   }
 
-  function gentlyReveal(field){
-    if(!field || !document.body.contains(field)) return;
-    clearTimeout(keyboardTimer);
-    keyboardTimer=setTimeout(()=>{
-      if(!activeField()) return;
-      try{
-        field.scrollIntoView({block:"nearest",inline:"nearest",behavior:"auto"});
-      }catch(_){}
-    },180);
-  }
-
   document.addEventListener("focusin",e=>{
     if(!isField(e.target)) return;
-    setKeyboardState(true);
-    gentlyReveal(e.target);
+    setInputMode(true);
+    setKeyboardMode(true);
     window.ioneKeyboardInteractionActive=true;
+    revealIfObscured(e.target);
   },true);
 
   document.addEventListener("focusout",()=>{
     clearTimeout(keyboardTimer);
-    keyboardTimer=setTimeout(()=>{
+    clearTimeout(settleTimer);
+    settleTimer=setTimeout(()=>{
       if(!activeField() && !document.body.classList.contains("ione-paste-active")){
-        setKeyboardState(false);
+        setKeyboardMode(false);
+        setInputMode(false);
         window.ioneKeyboardInteractionActive=false;
       }
-    },280);
+    },420);
   },true);
 
   document.addEventListener("paste",e=>{
     if(!isField(e.target)) return;
     window.ioneKeyboardInteractionActive=true;
-    document.body.classList.add("ione-paste-active","ione-keyboard-open");
+    setInputMode(true);
+    setKeyboardMode(true);
+    document.body.classList.add("ione-paste-active");
     clearTimeout(pasteTimer);
     pasteTimer=setTimeout(()=>{
       document.body.classList.remove("ione-paste-active");
-      if(!activeField()){
-        document.body.classList.remove("ione-keyboard-open");
+      if(activeField()){
+        setInputMode(false);
+        setKeyboardMode(true);
+      }else{
+        setInputMode(false);
+        setKeyboardMode(false);
         window.ioneKeyboardInteractionActive=false;
       }
-    },650);
+    },700);
   },true);
 
   document.addEventListener("touchstart",e=>{
-    if(isField(e.target)) window.ioneKeyboardInteractionActive=true;
+    if(isField(e.target)){
+      setInputMode(true);
+      window.ioneKeyboardInteractionActive=true;
+    }
   },{passive:true,capture:true});
 
+  /* Keep focus inside the current field during viewport movement. */
   if(window.visualViewport){
     lastHeight=Math.round(window.visualViewport.height||0);
     lastWidth=Math.round(window.visualViewport.width||0);
     window.visualViewport.addEventListener("resize",syncViewport,{passive:true});
     window.visualViewport.addEventListener("scroll",()=>{
-      if(activeField()) setKeyboardState(true);
+      if(activeField()){
+        setInputMode(true);
+        setKeyboardMode(true);
+      }
     },{passive:true});
   }
   window.addEventListener("resize",syncViewport,{passive:true});
 
+  /* Leaving a panel/page always clears the temporary input state. */
+  window.addEventListener("pagehide",()=>{
+    clearTimeout(keyboardTimer);
+    clearTimeout(settleTimer);
+    clearTimeout(pasteTimer);
+    document.body.classList.remove("ione-input-transition","ione-keyboard-open","ione-paste-active");
+    window.ioneKeyboardInteractionActive=false;
+  },{passive:true});
+
   window.addEventListener("pageshow",()=>{
-    document.body.classList.remove("ione-keyboard-open","ione-paste-active");
+    document.body.classList.remove("ione-input-transition","ione-keyboard-open","ione-paste-active");
     window.ioneKeyboardInteractionActive=false;
     lastHeight=Math.round(window.visualViewport?.height||window.innerHeight||0);
     lastWidth=Math.round(window.visualViewport?.width||window.innerWidth||0);
