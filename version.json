@@ -1,5 +1,5 @@
 {
   "version": "1.0.12",
-  "message": "Safely disable obsolete lesson video without breaking I|ONE",
+  "message": "Stabilize startup and remove obsolete black video layer",
   "force": false
 }
