@@ -684,6 +684,15 @@ html, body {
   background: black;
 }
 
+#brandVideo{
+  /* Keep the persistent video layer on its own compositor surface so
+     keyboard/focus/overlay changes do not repeatedly repaint a black frame. */
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  will-change:transform;
+}
+
   /* =========================
    SMART VIDEO ORIENTATION
 ========================= */
@@ -2687,10 +2696,10 @@ function updateAppOrientation() {
   );
 }
 
-window.addEventListener(
-  "resize",
-  updateAppOrientation
-);
+/* Do not react to keyboard/viewport resize here.
+   Android can fire resize while the virtual keyboard is opening/closing.
+   Re-running orientation layout during that transition causes visible
+   compositor flashes. Orientation changes are handled below. */
 
 window.addEventListener(
   "orientationchange",
