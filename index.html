@@ -694,7 +694,7 @@ html, body {
   padding: 0;
   height: 100%;
   width: 100%;
-  background: black;
+  background: #071417;
   color: white;
   font-family: Arial, Helvetica, sans-serif;
   overflow: hidden;
@@ -703,38 +703,16 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
-#brandVideo {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100svh;
-  min-height: 100svh;
-  object-fit: contain;
-  object-position: center center;
-  z-index: 0;
-  background:#071417;
-}
-
+/* Obsolete lesson-video layer is retained only as a hidden compatibility node.
+   It never paints, plays, loads, or creates a full-screen black compositor layer. */
 #brandVideo{
-  /* Keep the persistent video layer on its own compositor surface so
-     keyboard/focus/overlay changes do not repeatedly repaint a black frame. */
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-  will-change:transform;
-}
-
-  /* =========================
-   SMART VIDEO ORIENTATION
-========================= */
-
-body.portrait-mode #brandVideo,
-body.landscape-mode #brandVideo {
-  width: 100vw;
-  height: 100svh;
-  min-height: 100svh;
-  object-fit: contain;
-  object-position: center center;
+  display:none!important;
+  visibility:hidden!important;
+  width:0!important;
+  height:0!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  background:transparent!important;
 }
 
 /* ONE-TIME STARTUP BRAND — FULL SCREEN SMART STYLE */
