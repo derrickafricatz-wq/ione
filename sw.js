@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v101";
+const CACHE_NAME = "ione-app-v102";
 
 const APP_FILES = [
   "./",
