@@ -1,5 +1,5 @@
 {
-  "version": "1.0.15",
-  "message": "Remove obsolete video layer and refresh app cache",
+  "version": "1.0.11",
+  "message": "Safely disable obsolete lesson video without breaking I|ONE",
   "force": false
 }
