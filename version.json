@@ -1,5 +1,5 @@
 {
-  "version": "1.0.9",
-  "message": "Remove obsolete first-open lesson videos",
+  "version": "1.0.10",
+  "message": "Remove obsolete video layer and refresh app cache",
   "force": false
 }
