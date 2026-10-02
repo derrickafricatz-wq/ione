@@ -712,7 +712,7 @@ html, body {
   object-fit: contain;
   object-position: center center;
   z-index: 0;
-  background: black;
+  background:#071417;
 }
 
 #brandVideo{
@@ -1946,8 +1946,9 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 .authority-save-status{min-height:20px;margin-top:12px;text-align:center;color:#9fb0b4;font:700 12px/1.4 Arial,sans-serif}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
 </style><style id="ione-home-redesign">
-html,body{background:#020607!important}
-#brandVideo{display:none!important}
+html,body{background:#071417!important}
+#brandVideo{display:none!important;background:#071417!important}
+body, #ioneHomeShell, #smartPanel{overscroll-behavior:none}
 #ioneTopActions{position:fixed;top:10px;right:12px;z-index:200;display:flex;align-items:center;gap:8px}
 #ioneTopActions button{box-sizing:border-box;min-height:44px;border:1px solid rgba(0,255,255,.55);border-radius:13px;background:linear-gradient(145deg,#11ffff,#007f8c);color:#001014;font-family:'Russo One',Arial,sans-serif;font-weight:900;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.45),0 10px 20px rgba(0,0,0,.18)}
 #ioneNotificationBtn{min-width:92px;padding:6px 8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:20px;line-height:1}
@@ -7124,8 +7125,14 @@ function initialAutoRefresh(){
   try { refreshLessons(false); } catch(err) { console.warn("Startup playlist refresh skipped:", err); }
 }
 
-/* One playlist refresh only; no startup video, no startup voice, and no startup ad image. */
-initialAutoRefresh();
+/* Keep startup light: refresh the playlist after the first paint/interaction window.
+   This avoids competing with feature navigation, keyboard focus, and the first UI frame. */
+function ioneRunStartupRefresh(){
+  const run=()=>{ try{ initialAutoRefresh(); }catch(err){ console.warn("Startup playlist refresh skipped:",err); } };
+  if("requestIdleCallback" in window) requestIdleCallback(run,{timeout:2500});
+  else setTimeout(run,1400);
+}
+ioneRunStartupRefresh();
 display.addEventListener("keypress",e=>{if(e.key==="Enter") submitLesson();});
 
 
@@ -8321,8 +8328,16 @@ async function preloadMedia(){
 
 }
 
-/* START DOWNLOAD */
-preloadMedia();
+/* START DOWNLOAD
+   Do not download five videos during app startup. Cache them only when the browser
+   is idle, after the app has had time to paint and become interactive. */
+function ioneRunBackgroundMediaPreload(){
+  const run=()=>{ preloadMedia().catch(err=>console.warn("Background media preload:",err)); };
+  if("requestIdleCallback" in window) requestIdleCallback(run,{timeout:12000});
+  else setTimeout(run,10000);
+}
+if(document.visibilityState==="visible") ioneRunBackgroundMediaPreload();
+else document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible") ioneRunBackgroundMediaPreload();},{once:true});
 
 </script>
 <style>
