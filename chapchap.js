@@ -485,17 +485,21 @@
             pushHeaders.Authorization = "Bearer " + authSession.data.session.access_token;
           }
         } catch (_) {}
-        var pushResponse = await fetch(pushFn, {
-          method: "POST",
-          headers: pushHeaders,
-          body: JSON.stringify({
-            action: "product_send",
-            product_id: createdProductId
-          })
-        });
-        if (!pushResponse.ok) {
-          var pushText = await pushResponse.text();
-          console.warn("Product push notification failed:", pushResponse.status, pushText);
+        var pushResponse = null;
+        var pushText = "";
+        var pushBody = JSON.stringify({ action:"product_send", product_id:createdProductId });
+        for (var pushAttempt=0; pushAttempt<2; pushAttempt++) {
+          pushResponse = await fetch(pushFn, {
+            method: "POST",
+            headers: pushHeaders,
+            body: pushBody
+          });
+          pushText = await pushResponse.text();
+          if (pushResponse.ok) break;
+          if (pushAttempt===0) await new Promise(function(resolve){setTimeout(resolve,180);});
+        }
+        if (!pushResponse || !pushResponse.ok) {
+          console.warn("Product push notification failed:", pushResponse && pushResponse.status, pushText);
         }
       } catch (pushErr) {
         console.warn("Product push notification:", pushErr);
