@@ -112,8 +112,8 @@ self.addEventListener("push", (event) => {
   const title = String(data.title || "I|ONE");
   const options = {
     body: String(data.body || "New information is available on I|ONE."),
-    icon: data.icon || "./icon-192.png",
-    badge: data.badge || "./icon-192.png",
+    icon: new URL(data.icon || "./icon-192.png", self.registration.scope).href,
+    badge: new URL(data.badge || "./icon-192.png", self.registration.scope).href,
     tag: String(data.tag || "ione-notification"),
     renotify: true,
     data: { url: String(data.url || "./") }
