@@ -125,10 +125,9 @@ const lessonHints = [
       }catch(_){}
     }
     button.dataset.state=on?"on":"off";
-    const state=document.getElementById("ioneNotificationState");
-    if(state) state.textContent=on?"ACTIVE":"INACTIVE";
-    button.textContent="";
-    if(state) button.appendChild(state);
+    button.innerHTML=on
+      ? '<span class="ione-notification-main">ACCESS TRENDING</span><span id="ioneNotificationState">ACTIVE</span>'
+      : '<span class="ione-notification-main">ACCESS DENIED</span><span id="ioneNotificationState">INACTIVE</span>';
     button.title=on?"ACCESS TRENDING ACTIVE — press once to turn off":"ACCESS DENIED INACTIVE — press once to turn on";
     button.setAttribute("aria-label",button.title);
   }
