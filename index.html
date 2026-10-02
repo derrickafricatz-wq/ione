@@ -10,9 +10,30 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Audiowide&family=Bangers&family=Bebas+Neue&family=Cinzel:wght@400;600;700&family=Dancing+Script:wght@400;600;700&family=Lobster&family=Monoton&family=Orbitron:wght@400;600;700;800&family=Pacifico&family=Permanent+Marker&family=Playfair+Display:wght@400;600;700;800&family=Press+Start+2P&family=Righteous&family=Roboto:wght@400;500;700&family=Russo+One&family=Satisfy&family=Special+Elite&display=swap" rel="stylesheet">
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+ <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+ <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+ <script>
+/* I|ONE SAFE PDF LAZY LOADER
+   Keep heavy book/PDF libraries out of the initial app load.
+   They are loaded only when the user actually saves/exports a book. */
+window.ioneEnsureBookPdfLibraries = async function(){
+  const load = (src, ready) => new Promise((resolve, reject) => {
+    if(ready()) return resolve();
+    const existing = document.querySelector('script[data-ione-pdf-src="'+src+'"]');
+    if(existing){ existing.addEventListener('load', resolve, {once:true}); existing.addEventListener('error', reject, {once:true}); return; }
+    const s=document.createElement('script');
+    s.src=src;
+    s.async=true;
+    s.dataset.ionePdfSrc=src;
+    s.onload=resolve;
+    s.onerror=reject;
+    document.head.appendChild(s);
+  });
+  await load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>!!window.jspdf);
+  await load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>!!window.html2canvas);
+};
+ </script>
 
  <!-- Supabase public client key: safe for browser use. NEVER put BLMPay/API or service-role secrets here. -->
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -6364,6 +6385,8 @@ bookScreen.querySelector("#bookEditorInner").appendChild(saveBookBtn);
   updateBookSaveProgress(3,"Preparing book");
   await new Promise(r=>setTimeout(r,40));
   try{
+  updateBookSaveProgress(5,"Loading PDF tools");
+  await window.ioneEnsureBookPdfLibraries();
   const bookTitle = document.getElementById("bookTitle").innerText.trim();
 
 const chapters = [];
