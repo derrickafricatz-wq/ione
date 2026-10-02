@@ -703,39 +703,8 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
-#brandVideo {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100svh;
-  min-height: 100svh;
-  object-fit: contain;
-  object-position: center center;
-  z-index: 0;
-  background:#071417;
-}
-
-#brandVideo{
-  /* Keep the persistent video layer on its own compositor surface so
-     keyboard/focus/overlay changes do not repeatedly repaint a black frame. */
-  transform:translateZ(0);
-  backface-visibility:hidden;
-  -webkit-backface-visibility:hidden;
-  will-change:transform;
-}
-
-  /* =========================
-   SMART VIDEO ORIENTATION
-========================= */
-
-body.portrait-mode #brandVideo,
-body.landscape-mode #brandVideo {
-  width: 100vw;
-  height: 100svh;
-  min-height: 100svh;
-  object-fit: contain;
-  object-position: center center;
-}
+/* The old full-screen lesson-video layer has been removed.
+   Only HOME OF MARKETING billboard videos remain. */
 
 /* ONE-TIME STARTUP BRAND — FULL SCREEN SMART STYLE */
 #startupDeka{
