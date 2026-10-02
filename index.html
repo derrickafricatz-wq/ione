@@ -2517,17 +2517,69 @@ function getMedia(id){
 </div>
 
 <script>
-/* ================= FULLSCREEN KIOSK ================= */
-function goFullScreen(){
+/* ================= FULLSCREEN KIOSK — SESSION LOCK ================= */
+let ioneFullscreenLocked = false;
+let ioneFullscreenRestorePending = false;
+
+async function goFullScreen(){
   const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+  try{
+    if(el.requestFullscreen){
+      await el.requestFullscreen();
+      ioneFullscreenLocked = true;
+      ioneFullscreenRestorePending = false;
+      return true;
+    }
+    if(el.webkitRequestFullscreen){
+      el.webkitRequestFullscreen();
+      ioneFullscreenLocked = true;
+      ioneFullscreenRestorePending = false;
+      return true;
+    }
+    if(el.msRequestFullscreen){
+      el.msRequestFullscreen();
+      ioneFullscreenLocked = true;
+      ioneFullscreenRestorePending = false;
+      return true;
+    }
+  }catch(_){}
+  return false;
 }
-// Keep the original I|ONE kiosk behavior: fullscreen is entered on the first
-// user interaction when the browser allows it, while installed PWA mode uses
-// the manifest's fullscreen display automatically.
-document.body.addEventListener("click", goFullScreen, {once:true});
+
+/*
+  First trusted touch enters fullscreen and starts the lock for this app session.
+  The lock lives only in memory, so closing/reopening the app starts a new session.
+*/
+document.body.addEventListener("pointerdown", function firstFullscreenGesture(){
+  if(!ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
+    goFullScreen().catch(()=>{});
+  }
+}, {once:true, passive:true});
+
+/*
+  If the browser/OS unexpectedly leaves fullscreen during the same session,
+  remember that fullscreen should be restored. We do not force a new fullscreen
+  request without a user gesture because browsers can reject that for security.
+*/
+document.addEventListener("fullscreenchange", function(){
+  if(ioneFullscreenLocked && !document.fullscreenElement){
+    ioneFullscreenRestorePending = true;
+  }
+});
+
+/*
+  Any later user interaction can restore fullscreen while the session lock is
+  active. This also covers feature buttons that may be pressed after fullscreen
+  was unexpectedly lost.
+*/
+document.addEventListener("pointerdown", function(){
+  if(ioneFullscreenLocked &&
+     ioneFullscreenRestorePending &&
+     !document.fullscreenElement &&
+     !document.webkitFullscreenElement){
+    goFullScreen().catch(()=>{});
+  }
+}, {passive:true});
 
 const guideLanguages={
  sw:{title:"MWONGOZO WA KISWAHILI",steps:[
