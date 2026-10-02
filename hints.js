@@ -81,6 +81,8 @@ const lessonHints = [
     return true;
   }
 
+  window.ioneEnsurePushSubscription = ensurePushSubscription;
+
   async function pushSubscribe(){
     if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)){
       throw new Error("This device/browser does not support I|ONE push notifications.");
