@@ -7611,12 +7611,12 @@ async function openHeavensBookstore(){
 function escapeBookHtml(v){return String(v).replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));}
 
 function heavensNormalizeViewport(){
-  try{
-    document.documentElement.style.zoom="1";
-    document.body.style.zoom="1";
-    document.body.style.transform="none";
-    document.body.style.transformOrigin="top left";
-  }catch(e){}
+  /*
+    Keep this compatibility hook without forcing document/body zoom or
+    transforms. Those writes can trigger a full mobile layout/compositor
+    repaint after keyboard and fullscreen viewport changes.
+  */
+  return;
 }
 
 let heavensPaymentPollTimer = null;
