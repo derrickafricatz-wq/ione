@@ -1923,6 +1923,51 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 .authority-save-button:disabled{opacity:.55;cursor:wait}
 .authority-save-status{min-height:20px;margin-top:12px;text-align:center;color:#9fb0b4;font:700 12px/1.4 Arial,sans-serif}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
+</style>
+<style id="ione-mobile-stability">
+/* I|ONE MOBILE STABILITY
+   Keep Android keyboard/focus transitions on the same painted surface.
+   No feature is hidden or resized by JavaScript while the keyboard is open. */
+html{
+  background:#071417!important;
+  overscroll-behavior:none;
+}
+html,body{
+  min-height:100%;
+  background:#071417!important;
+}
+body{
+  isolation:isolate;
+  -webkit-text-size-adjust:100%;
+}
+body.ione-keyboard-open{
+  background:#071417!important;
+}
+body.ione-keyboard-open #ioneHomeShell,
+body.ione-keyboard-open #smartPanel,
+body.ione-keyboard-open .afl-scroll,
+body.ione-keyboard-open .afl-service-overlay,
+body.ione-keyboard-open .afl-editor-overlay{
+  background-color:transparent;
+}
+input,textarea,select,[contenteditable="true"]{
+  -webkit-appearance:none;
+  appearance:none;
+  -webkit-tap-highlight-color:transparent;
+  scroll-margin-top:18px;
+  scroll-margin-bottom:120px;
+}
+input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
+  scroll-margin-top:18px;
+  scroll-margin-bottom:120px;
+}
+/* Avoid expensive mobile backdrop compositing while the keyboard is active. */
+body.ione-keyboard-open .ione-coming-soon-overlay,
+body.ione-keyboard-open .ministry-access-overlay,
+body.ione-keyboard-open #ioneSubscriptionGate{
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
 </style><style id="ione-home-redesign">
 html,body{background:#071417!important}
 #brandVideo{display:none!important;background:#071417!important}
@@ -2669,6 +2714,67 @@ if(ioneNotificationBtn){
   };
 }
 
+/* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY */
+(function ioneMobileStability(){
+  let keyboardTimer=0;
+  let lastViewportHeight=0;
+
+  function focusedField(){
+    const el=document.activeElement;
+    if(!el)return null;
+    return el.matches?.('input,textarea,select,[contenteditable="true"]')?el:null;
+  }
+
+  function syncKeyboardState(){
+    const vv=window.visualViewport;
+    const h=Math.round(vv?.height||window.innerHeight||0);
+    const field=focusedField();
+    const keyboardLikely=!!field && !!vv && lastViewportHeight>0 && h < lastViewportHeight-90;
+    document.body.classList.toggle("ione-keyboard-open",keyboardLikely);
+    lastViewportHeight=h;
+    if(keyboardLikely){
+      clearTimeout(keyboardTimer);
+      keyboardTimer=setTimeout(()=>{
+        const f=focusedField();
+        if(!f)return;
+        try{f.scrollIntoView({block:"nearest",inline:"nearest"});}catch(_){}
+      },90);
+    }
+  }
+
+  document.addEventListener("focusin",e=>{
+    if(!e.target?.matches?.('input,textarea,select,[contenteditable="true"]'))return;
+    document.body.classList.add("ione-keyboard-open");
+    clearTimeout(keyboardTimer);
+    keyboardTimer=setTimeout(()=>{
+      try{e.target.scrollIntoView({block:"nearest",inline:"nearest"});}catch(_){}
+      syncKeyboardState();
+    },120);
+  },{passive:true});
+
+  document.addEventListener("focusout",()=>{
+    clearTimeout(keyboardTimer);
+    keyboardTimer=setTimeout(()=>{
+      if(!focusedField())document.body.classList.remove("ione-keyboard-open");
+      syncKeyboardState();
+    },220);
+  },{passive:true});
+
+  if(window.visualViewport){
+    lastViewportHeight=Math.round(window.visualViewport.height||0);
+    window.visualViewport.addEventListener("resize",syncKeyboardState,{passive:true});
+    window.visualViewport.addEventListener("scroll",()=>{
+      if(focusedField())document.body.classList.add("ione-keyboard-open");
+    },{passive:true});
+  }
+  window.addEventListener("resize",syncKeyboardState,{passive:true});
+
+  window.addEventListener("pageshow",()=>{
+    document.body.classList.remove("ione-keyboard-open");
+    lastViewportHeight=Math.round(window.visualViewport?.height||window.innerHeight||0);
+  },{passive:true});
+})();
+ 
 /* ================= VIDEO ================= */
 const video = document.getElementById("brandVideo");
 video.muted = true;
