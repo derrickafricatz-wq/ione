@@ -473,6 +473,8 @@
         throw new Error("The seller agreement could not be recorded. Your product was not published.");
       }
       status.textContent = "LIVE • Seller agreement recorded • 1% ChapChap fee disclosed.";
+      // Sync an existing granted push subscription before the first seller publish.
+      try { if (typeof syncExistingPush === "function") await syncExistingPush(); } catch (_) {}
       try {
         var pushBase = (typeof SUPABASE_URL !== "undefined" ? SUPABASE_URL : (window.SUPABASE_URL || ""));
         var pushFn = String(pushBase || "").replace(/\/$/, "") + "/functions/v1/ione-push";
