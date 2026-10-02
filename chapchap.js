@@ -474,7 +474,8 @@
       }
       status.textContent = "LIVE • Seller agreement recorded • 1% ChapChap fee disclosed.";
       try {
-        var pushFn = (window.SUPABASE_URL || "").replace(/\/$/, "") + "/functions/v1/ione-push";
+        var pushBase = (typeof SUPABASE_URL !== "undefined" ? SUPABASE_URL : (window.SUPABASE_URL || ""));
+        var pushFn = String(pushBase || "").replace(/\/$/, "") + "/functions/v1/ione-push";
         var pushHeaders = { "Content-Type": "application/json" };
         try {
           var authSession = await sb.auth.getSession();
@@ -482,7 +483,7 @@
             pushHeaders.Authorization = "Bearer " + authSession.data.session.access_token;
           }
         } catch (_) {}
-        await fetch(pushFn, {
+        var pushResponse = await fetch(pushFn, {
           method: "POST",
           headers: pushHeaders,
           body: JSON.stringify({
@@ -490,6 +491,10 @@
             product_id: createdProductId
           })
         });
+        if (!pushResponse.ok) {
+          var pushText = await pushResponse.text();
+          console.warn("Product push notification failed:", pushResponse.status, pushText);
+        }
       } catch (pushErr) {
         console.warn("Product push notification:", pushErr);
       }
