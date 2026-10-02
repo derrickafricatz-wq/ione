@@ -34,9 +34,51 @@ const lessonHints = [
   }
 
   async function getPushConfig(){
+    if(!vapidPublicKey){
+      try{ vapidPublicKey=localStorage.getItem("ioneVapidPublicKey") || ""; }catch(_){}
+    }
+    if(vapidPublicKey) return {success:true,publicKey:vapidPublicKey,cached:true};
     const data=await callPush({action:"config"});
     vapidPublicKey=data.publicKey;
+    try{ localStorage.setItem("ioneVapidPublicKey",vapidPublicKey); }catch(_){}
     return data;
+  }
+
+  async function pushUserId(){
+    try{
+      const client=sb();
+      if(!client || !client.auth || !client.auth.getSession) return null;
+      const s=await client.auth.getSession();
+      return s?.data?.session?.user?.id || null;
+    }catch(_){ return null; }
+  }
+
+  async function savePushSubscription(subscription){
+    const raw=subscription.toJSON();
+    const userId=await pushUserId();
+    return callPush({
+      action:"subscribe",
+      subscription:{endpoint:raw.endpoint,keys:raw.keys || {}},
+      user_id:userId,
+      user_agent:navigator.userAgent
+    });
+  }
+
+  async function ensurePushSubscription(){
+    if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return false;
+    if(Notification.permission !== "granted") return false;
+    await getPushConfig();
+    const registration=await navigator.serviceWorker.ready;
+    let subscription=await registration.pushManager.getSubscription();
+    if(!subscription){
+      subscription=await registration.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:uint8FromBase64Url(vapidPublicKey)
+      });
+    }
+    await savePushSubscription(subscription);
+    localStorage.setItem("ionePushEnabled","1");
+    return true;
   }
 
   async function pushSubscribe(){
@@ -63,12 +105,7 @@ const lessonHints = [
       });
     }
 
-    const raw = subscription.toJSON();
-    await callPush({
-      action:"subscribe",
-      subscription:{endpoint:raw.endpoint,keys:raw.keys || {}},
-      user_agent:navigator.userAgent
-    });
+    await savePushSubscription(subscription);
 
     localStorage.setItem("ionePushEnabled","1");
     return true;
@@ -87,12 +124,7 @@ const lessonHints = [
           applicationServerKey:uint8FromBase64Url(vapidPublicKey)
         });
       }
-      const raw = subscription.toJSON();
-      await callPush({
-        action:"subscribe",
-        subscription:{endpoint:raw.endpoint,keys:raw.keys || {}},
-        user_agent:navigator.userAgent
-      });
+      await savePushSubscription(subscription);
       localStorage.setItem("ionePushEnabled","1");
     }catch(e){
       console.warn("I|ONE push sync:",e);
@@ -209,15 +241,24 @@ const lessonHints = [
     options = options || {};
     const password = String(options.password || "").trim();
     if(!password) throw new Error("Authority session is missing.");
-    try{ await syncExistingPush(); }catch(_){}
-    return callPush({
+    try{ await ensurePushSubscription(); }catch(_){ try{ await syncExistingPush(); }catch(__){} }
+    let lastError=null;
+    for(let attempt=0;attempt<2;attempt++){
+      try{
+        return await callPush({
       action:"send",
       password,
       title:String(options.title || "I|ONE").slice(0,80),
       body:String(options.body || "").trim().slice(0,240),
       url:String(options.url || "./").slice(0,500),
       tag:String(options.tag || "ione-authority").slice(0,80)
-    });
+        });
+      }catch(e){
+        lastError=e;
+        if(attempt===0) await new Promise(resolve=>setTimeout(resolve,180));
+      }
+    }
+    throw lastError || new Error("Authority notification failed.");
   };
 
   async function handlePushDestination(){
