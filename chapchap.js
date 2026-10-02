@@ -473,6 +473,26 @@
         throw new Error("The seller agreement could not be recorded. Your product was not published.");
       }
       status.textContent = "LIVE • Seller agreement recorded • 1% ChapChap fee disclosed.";
+      try {
+        var pushFn = (window.SUPABASE_URL || "").replace(/\/$/, "") + "/functions/v1/ione-push";
+        var pushHeaders = { "Content-Type": "application/json" };
+        try {
+          var authSession = await sb.auth.getSession();
+          if (authSession && authSession.data && authSession.data.session && authSession.data.session.access_token) {
+            pushHeaders.Authorization = "Bearer " + authSession.data.session.access_token;
+          }
+        } catch (_) {}
+        await fetch(pushFn, {
+          method: "POST",
+          headers: pushHeaders,
+          body: JSON.stringify({
+            action: "product_send",
+            product_id: createdProductId
+          })
+        });
+      } catch (pushErr) {
+        console.warn("Product push notification:", pushErr);
+      }
       await loadProducts();
       setTimeout(closeOverlay, 900);
     } catch (err) {
@@ -1159,6 +1179,12 @@
       started = true;
       if (typeof ensureHeavensAnonymousSession === "function") ensureHeavensAnonymousSession().catch(function () {});
       await loadProducts();
+      try {
+        var productParam = new URLSearchParams(window.location.search || "").get("ioneProduct");
+        if (productParam) {
+          setTimeout(function () { openProduct(productParam); }, 350);
+        }
+      } catch (_) {}
       return true;
     } catch (err) {
       console.warn("ChapChap isolated module:", err);
