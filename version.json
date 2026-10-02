@@ -1,5 +1,5 @@
 {
-  "version": "1.0.10",
+  "version": "1.0.15",
   "message": "Remove obsolete video layer and refresh app cache",
   "force": false
 }
