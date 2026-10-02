@@ -7045,7 +7045,22 @@ function rotateLessonHints(){
 
 rotateLessonHints();
 
-setInterval(rotateLessonHints, 2000);
+/* SAFE LIGHTWEIGHT KEYPAD HINTS: do not spend a timer while I|ONE is hidden. */
+let ioneHintTimer = null;
+function startIoneHintTimer(){
+  if(ioneHintTimer || document.hidden) return;
+  ioneHintTimer = setInterval(rotateLessonHints, 2000);
+}
+function stopIoneHintTimer(){
+  if(!ioneHintTimer) return;
+  clearInterval(ioneHintTimer);
+  ioneHintTimer = null;
+}
+startIoneHintTimer();
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden) stopIoneHintTimer();
+  else { rotateLessonHints(); startIoneHintTimer(); }
+});
 
 function pressKey(n){ display.value+=n; }
 function clearInput(){ display.value=""; }
