@@ -716,6 +716,12 @@ html, body {
 }
 
 /* ONE-TIME STARTUP BRAND — FULL SCREEN SMART STYLE */
+html.ione-first-paint, html.ione-first-paint body{background:#071417!important;}
+html.ione-first-paint *, html.ione-first-paint *::before, html.ione-first-paint *::after{
+  animation:none!important;
+  transition:none!important;
+  scroll-behavior:auto!important;
+}
 #startupDeka{
   position:fixed;
   inset:0;
@@ -733,8 +739,8 @@ html, body {
   pointer-events:none;
   opacity:1;
   overflow:hidden;
-  transition:opacity .22s ease;
-  animation: startupDekaFailOpen 1.35s ease forwards;
+  transition:none!important;
+  animation:none!important;
 }
 
 /* Safety net: even if another script fails during startup, the app UI is revealed. */
@@ -1972,6 +1978,10 @@ body.ione-keyboard-open #smartPanel{
 }
 
 /* Every editable control gets the same stable interaction rules. */
+button,a,input,textarea,select,[contenteditable="true"]{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
 input,textarea,select,[contenteditable="true"]{
   -webkit-appearance:none;
   appearance:none;
@@ -2756,7 +2766,8 @@ if(ioneNotificationBtn){
 }
 
 /* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY
-   One controller for every input on every panel. */
+   Native keyboard owns the viewport. I|ONE never moves, scrolls, transforms,
+   resizes, or re-enters fullscreen while an editable field is active. */
 (function ioneMobileStability(){
   let releaseTimer=0, pasteTimer=0;
   const fieldSelector='input,textarea,select,[contenteditable="true"]';
@@ -7242,7 +7253,12 @@ bookstoreBtn.innerText = "HEAVEN'S BOOKS";
 bookstoreBtn.style.background = "#00ffff";
 bookstoreBtn.style.color = "#001015";
 bookstoreBtn.style.fontWeight = "900";
-bookstoreBtn.onclick = () => openHeavensBookstore();
+bookstoreBtn.onclick = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  openHeavensBookstore();
+};
+bookstoreBtn.addEventListener("touchend",e=>{e.preventDefault();e.stopPropagation();},{passive:false});
 
 // ADD HIDE, BOOKSTORE AND EXIT
 topBar.appendChild(toggle);
