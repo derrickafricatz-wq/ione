@@ -193,6 +193,17 @@
         "@media(max-width:420px){#ioneChapBar{grid-template-columns:minmax(0,1fr) 82px 94px!important}.ione-chap-card{flex-basis:132px!important;height:165px!important}#afrilinkOverlay .afl-discovery-row select{width:45px!important;min-width:45px!important;flex-basis:45px!important}#afrilinkOverlay .afl-top-btn{width:29px!important;min-width:29px!important;padding:0 1px!important;font-size:5.5px!important}}";
 
     style.textContent += "#afrilinkOverlay .afl-head{gap:6px!important;padding:4px 6px!important}"+"#afrilinkOverlay .afl-discovery{flex:1 1 0!important;min-width:0!important;margin:0!important;padding:0!important}"+"#afrilinkOverlay .afl-discovery-row{display:flex!important;gap:6px!important;width:100%!important}"+"#afrilinkOverlay .afl-discovery-row input{flex:1.35 1 0!important;width:0!important;min-width:0!important;height:36px!important;margin:0!important;padding:0 10px!important;font-size:9px!important;font-weight:900!important;letter-spacing:.15px!important;border-radius:11px!important;box-sizing:border-box!important}"+"#afrilinkOverlay .afl-discovery-row select{flex:1 1 0!important;width:0!important;min-width:0!important;height:36px!important;margin:0!important;padding:0 7px!important;font-size:8px!important;font-weight:900!important;letter-spacing:.1px!important;border-radius:11px!important;box-sizing:border-box!important}"+"#afrilinkOverlay .afl-head-actions{flex:1.9 1 0!important;min-width:0!important;display:flex!important;gap:6px!important;padding:0!important;margin:0!important}"+"#afrilinkOverlay .afl-top-btn{flex:1 1 0!important;width:0!important;min-width:0!important;height:36px!important;min-height:36px!important;padding:0 4px!important;font-size:8px!important;font-weight:1000!important;letter-spacing:.2px!important;border-radius:11px!important;box-sizing:border-box!important;white-space:nowrap!important;text-shadow:0 1px 0 rgba(255,255,255,.18)!important}"+"#afrilinkOverlay .afl-upload-top,#afrilinkOverlay .afl-owner-only-top,#afrilinkOverlay .afl-close{flex:1 1 0!important;width:0!important;min-width:0!important}"+"#afrilinkOverlay .afl-discovery-row input,#afrilinkOverlay .afl-discovery-row select,#afrilinkOverlay .afl-top-btn{border:1px solid rgba(130,255,255,.48)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.26),inset 0 -2px 0 rgba(0,0,0,.22),0 2px 0 rgba(0,0,0,.34)!important;background:linear-gradient(145deg,rgba(0,255,255,.22),rgba(65,80,255,.22) 55%,rgba(190,70,255,.2))!important;transition:transform .08s ease,filter .08s ease,border-color .08s ease!important;-webkit-tap-highlight-color:transparent!important;touch-action:manipulation!important}"+"#afrilinkOverlay .afl-discovery-row input:focus,#afrilinkOverlay .afl-discovery-row select:focus{border-color:rgba(0,255,255,.9)!important;outline:none!important}"+"#afrilinkOverlay .afl-top-btn:active,#afrilinkOverlay .afl-discovery-row select:active{transform:translateY(2px)!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.2),inset 0 -1px 0 rgba(0,0,0,.2),0 0 0 rgba(0,0,0,0)!important;filter:brightness(1.15)!important}"+"#afrilinkOverlay .afl-close{background:linear-gradient(145deg,rgba(255,90,175,.34),rgba(130,65,255,.28))!important;border-color:rgba(255,150,215,.68)!important}";+"#afrilinkOverlay .afl-discovery-row input{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;text-shadow:0 1px 2px rgba(0,0,0,.75)!important;background:linear-gradient(145deg,rgba(0,255,255,.34),rgba(35,85,255,.3))!important}"+"#afrilinkOverlay .afl-discovery-row input::placeholder{color:#ffffff!important;opacity:1!important;-webkit-text-fill-color:#ffffff!important;text-shadow:0 1px 2px rgba(0,0,0,.75)!important}"+"#afrilinkOverlay .afl-upload-top{color:#ffffff!important;-webkit-text-fill-color:#ffffff!important;text-shadow:0 1px 2px #061018!important;background:linear-gradient(145deg,#00dfff,#3d65ff 58%,#8a4dff)!important;border-color:rgba(170,255,255,.8)!important}"+"#afrilinkOverlay .afl-upload-top:active{transform:translateY(2px)!important;filter:brightness(1.2)!important}"
+    style.textContent +=
+      "/* CHAPCHAP SMOOTH PANEL CORE — mobile-first, native keyboard friendly */" +
+      "#ioneChapOverlay{height:100dvh!important;max-height:100dvh!important;overscroll-behavior:contain!important;touch-action:pan-y!important}" +
+      "#ioneChapOverlay .cc-card{height:100dvh!important;max-height:100dvh!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;scroll-behavior:auto!important;contain:layout style}" +
+      "#ioneChapOverlay .cc-card.cc-mychap{height:auto!important;max-height:calc(100dvh - 30px)!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important}" +
+      "#ioneChapOverlay .cc-field{contain:layout style}" +
+      "#ioneChapOverlay input,#ioneChapOverlay select,#ioneChapOverlay textarea{touch-action:manipulation;transform:none!important;transition:none!important;animation:none!important}" +
+      "#ioneChapOverlay .cc-gallery-img{transition:none!important}" +
+      "#ioneChapOverlay .cc-image-btn:active,#ioneChapOverlay .cc-primary:active,#ioneChapOverlay .cc-secondary:active{transform:none!important;box-shadow:none!important}" +
+      "#ioneChapOverlay .cc-actions{position:relative;z-index:2;padding-bottom:max(4px,env(safe-area-inset-bottom))}" +
+      "@media(max-width:600px){#ioneChapOverlay .cc-card{padding:14px!important}#ioneChapOverlay .cc-head{position:sticky;top:0;z-index:20;padding:6px 0 10px;background:linear-gradient(#102b32 78%,rgba(16,43,50,0))}#ioneChapOverlay .cc-field input,#ioneChapOverlay .cc-field select,#ioneChapOverlay .cc-field textarea{min-height:44px;font-size:16px!important}#ioneChapOverlay .cc-field textarea{min-height:88px}}";
     document.head.appendChild(style);
   }
 
@@ -238,7 +249,6 @@
     document.getElementById("ioneChapOverlayKicker").textContent = kicker || "I|ONE • SINGLE-PRODUCT MARKET";
     document.getElementById("ioneChapOverlayBody").innerHTML = body;
     document.getElementById("ioneChapOverlay").style.display = "flex";
-    document.body.classList.add("ione-chap-open");
     var overlay=document.getElementById("ioneChapOverlay");
     var cc=overlay ? overlay.querySelector(".cc-card") : null;
     var isMyChap=title==="MY CHAPCHAP";
@@ -264,7 +274,6 @@
   function closeOverlay() {
     var el = document.getElementById("ioneChapOverlay");
     if (el) el.style.display = "none";
-    document.body.classList.remove("ione-chap-open");
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
     if (galleryTimer) { clearInterval(galleryTimer); galleryTimer = null; }
   }
