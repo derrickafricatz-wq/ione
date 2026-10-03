@@ -2633,7 +2633,8 @@ async function goFullScreen(){
   return false;
 }
 
-function ioneFullscreenEligibleTarget(target){\n  if(window.ioneKeyboardInteractionActive || document.body.classList.contains("ione-keyboard-open") || document.body.classList.contains("ione-paste-active")) return false;
+function ioneFullscreenEligibleTarget(target){
+  if(window.ioneKeyboardInteractionActive || document.body.classList.contains("ione-keyboard-open") || document.body.classList.contains("ione-paste-active")) return false;
   if(target?.closest?.('input,textarea,select,[contenteditable="true"],button[data-no-fullscreen],a')) return false;
   if(document.body.classList.contains("ione-keyboard-open") ||
      document.body.classList.contains("ione-paste-active") ||
