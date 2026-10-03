@@ -1,5 +1,5 @@
 {
-  "version": "1.0.33",
+  "version": "1.0.35",
   "message": "Separate first fullscreen tap from feature activation",
   "force": false
 }
