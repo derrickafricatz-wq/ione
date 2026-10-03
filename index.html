@@ -1976,10 +1976,12 @@ input,textarea,select,[contenteditable="true"]{
   -webkit-appearance:none;
   appearance:none;
   -webkit-tap-highlight-color:transparent;
-  scroll-margin-top:20px;
-  scroll-margin-bottom:120px;
+  scroll-margin-top:8px;
+  scroll-margin-bottom:40px;
   scroll-behavior:auto!important;
-  touch-action:manipulation;
+  touch-action:auto;
+  transform:none!important;
+  will-change:auto!important;
 }
 input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
   outline:none;
@@ -2756,80 +2758,58 @@ if(ioneNotificationBtn){
 /* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY
    One controller for every input on every panel. */
 (function ioneMobileStability(){
-  let settleTimer=0, pasteTimer=0, keyboardGraceTimer=0;
+  let releaseTimer=0, pasteTimer=0;
   const fieldSelector='input,textarea,select,[contenteditable="true"]';
   const isField=el=>!!el && !!el.matches?.(fieldSelector);
   const activeField=()=>isField(document.activeElement)?document.activeElement:null;
 
-  function setInputMode(on){ document.body.classList.toggle("ione-input-transition",!!on); }
-  function setKeyboardMode(on){ document.body.classList.toggle("ione-keyboard-open",!!on); }
-
-  // Field interaction owns the viewport. Fullscreen must yield before the keyboard starts.
-  function enterFieldMode(){
-    clearTimeout(settleTimer);
-    clearTimeout(keyboardGraceTimer);
+  // Editable controls get a quiet native interaction. We only keep fullscreen from
+  // competing with the keyboard; we do not resize, scroll, transform, or animate them.
+  function fieldEngaged(){
     window.ioneKeyboardInteractionActive=true;
-    document.body.classList.add("ione-keyboard-open","ione-input-transition");
-    // Give Android one clean frame before the keyboard animation begins.
-    keyboardGraceTimer=setTimeout(()=>setInputMode(false),180);
+    document.body.classList.add("ione-keyboard-open");
+    clearTimeout(releaseTimer);
   }
 
-  document.addEventListener("touchstart",e=>{
-    if(!isField(e.target)) return;
-    enterFieldMode();
+  document.addEventListener("pointerdown",e=>{
+    if(isField(e.target)) fieldEngaged();
   },{passive:true,capture:true});
 
-  document.addEventListener("pointerdown",e=>{
-    if(!isField(e.target)) return;
-    enterFieldMode();
+  document.addEventListener("touchstart",e=>{
+    if(isField(e.target)) fieldEngaged();
   },{passive:true,capture:true});
 
   document.addEventListener("focusin",e=>{
     if(!isField(e.target)) return;
-    enterFieldMode();
-    setKeyboardMode(true);
+    fieldEngaged();
   },true);
 
   document.addEventListener("focusout",()=>{
-    clearTimeout(settleTimer);
-    clearTimeout(keyboardGraceTimer);
-    // Keep the keyboard guard briefly after focus leaves so Android can finish closing.
-    settleTimer=setTimeout(()=>{
-      if(!activeField() && !document.body.classList.contains("ione-paste-active")){
-        setKeyboardMode(false);
-        setInputMode(false);
+    clearTimeout(releaseTimer);
+    releaseTimer=setTimeout(()=>{
+      if(!activeField()&&!document.body.classList.contains("ione-paste-active")){
+        document.body.classList.remove("ione-keyboard-open","ione-input-transition");
         window.ioneKeyboardInteractionActive=false;
       }
-    },650);
+    },700);
   },true);
 
   document.addEventListener("paste",e=>{
     if(!isField(e.target)) return;
     clearTimeout(pasteTimer);
-    window.ioneKeyboardInteractionActive=true;
-    setKeyboardMode(true);
-    document.body.classList.add("ione-paste-active","ione-input-transition");
-    // Do not immediately repaint the panel after paste; let the native operation settle.
+    fieldEngaged();
+    document.body.classList.add("ione-paste-active");
     pasteTimer=setTimeout(()=>{
-      document.body.classList.remove("ione-paste-active","ione-input-transition");
+      document.body.classList.remove("ione-paste-active");
       if(!activeField()){
-        setKeyboardMode(false);
+        document.body.classList.remove("ione-keyboard-open","ione-input-transition");
         window.ioneKeyboardInteractionActive=false;
       }
-    },900);
+    },1000);
   },true);
 
-  if(window.visualViewport){
-    window.visualViewport.addEventListener("resize",()=>{
-      if(activeField()){
-        setKeyboardMode(true);
-        window.ioneKeyboardInteractionActive=true;
-      }
-    },{passive:true});
-  }
-
   window.addEventListener("pagehide",()=>{
-    clearTimeout(settleTimer); clearTimeout(pasteTimer); clearTimeout(keyboardGraceTimer);
+    clearTimeout(releaseTimer); clearTimeout(pasteTimer);
     document.body.classList.remove("ione-input-transition","ione-keyboard-open","ione-paste-active");
     window.ioneKeyboardInteractionActive=false;
   },{passive:true});
