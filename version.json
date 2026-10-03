@@ -1,5 +1,5 @@
 {
-  "version": "1.0.23",
-  "message": "Stable first-open and native keyboard interaction",
+  "version": "1.0.24",
+  "message": "Separate first fullscreen tap from feature activation",
   "force": false
 }
