@@ -2092,25 +2092,7 @@ body.ione-non-home #ioneTopActions{display:none!important}
 </head>
 
 <body>
-<script>
-/* FIRST-OPEN STABILITY: hold the rendered home completely still until the user's first deliberate tap. */
-document.documentElement.classList.add("ione-first-paint");
-(function(){
-  let released=false;
-  function release(){
-    if(released)return;
-    released=true;
-    document.documentElement.classList.remove("ione-first-paint");
-    document.body.classList.add("ione-user-interacted");
-  }
-  document.addEventListener("pointerdown",release,{capture:true,passive:true,once:true});
-  const reveal=()=>{const s=document.getElementById("startupDeka");if(s){s.style.opacity="0";s.style.visibility="hidden";s.setAttribute("aria-hidden","true");}};
-  let done=false;
-  const revealOnce=()=>{if(done)return;done=true;requestAnimationFrame(()=>requestAnimationFrame(reveal));};
-  if(document.fonts?.ready) document.fonts.ready.then(revealOnce).catch(revealOnce);
-  setTimeout(revealOnce,900);
-})();
-</script>
+
 
 <button id="installBtn" style="
   position:fixed;
@@ -2690,13 +2672,28 @@ function ioneFullscreenEligibleTarget(target){
   }
   return true;
 }
-// Normal feature touches can restore kiosk mode. Field/keyboard touches never can.
+// FIRST INTERACTION CONTRACT:
+// The first deliberate non-field touch only enters fullscreen. It NEVER activates
+// the underlying feature. Every later touch behaves normally. This prevents the
+// homepage tap from accidentally opening Authority/password/another panel.
+let ioneFirstUserTouchHandled=false;
+function ioneConsumeFirstHomeTouch(e){
+  if(ioneFirstUserTouchHandled || ioneIsFullscreen()) return false;
+  if(!ioneFullscreenEligibleTarget(e.target)) return false;
+  ioneFirstUserTouchHandled=true;
+  try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
+  const startup=document.getElementById("startupDeka");
+  if(startup){startup.style.opacity="0";startup.style.visibility="hidden";startup.setAttribute("aria-hidden","true");}
+  goFullScreen().catch(()=>{});
+  return true;
+}
+document.body.addEventListener("pointerdown",e=>{
+  if(ioneConsumeFirstHomeTouch(e)) return;
+},true);
 document.body.addEventListener("click",e=>{
+  if(ioneConsumeFirstHomeTouch(e)) return;
   if(ioneFullscreenEligibleTarget(e.target)&&!ioneIsFullscreen()) goFullScreen().catch(()=>{});
 },true);
-document.body.addEventListener("touchend",e=>{
-  if(ioneFullscreenEligibleTarget(e.target)&&!ioneIsFullscreen()) goFullScreen().catch(()=>{});
-},{passive:true,capture:true});
 function ioneFullscreenStateChanged(){
   if(!ioneIsFullscreen()){
     ioneFullscreenRestorePending=ioneFullscreenLocked;
