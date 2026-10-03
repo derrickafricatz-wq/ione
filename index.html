@@ -1925,88 +1925,63 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 @media(max-width:650px){.authority-price-grid{grid-template-columns:1fr}.authority-live-row{align-items:flex-start;flex-direction:column}.authority-live-row strong{text-align:left}}
 </style>
 <style id="ione-mobile-stability">
-/* I|ONE MOBILE STABILITY • one consistent input surface across every panel */
+/* I|ONE QUIET INPUT SYSTEM — native keyboard owns the viewport. */
 html,body{
   min-height:100%;
   background:#071417!important;
-  overscroll-behavior:none;
   -webkit-text-size-adjust:100%;
   -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
   scroll-behavior:auto!important;
 }
 body{isolation:isolate}
+
+/* While Android is opening/using the keyboard, the page does not animate,
+   scroll, transform, blur, or request fullscreen. */
 body.ione-keyboard-open,
 body.ione-paste-active,
 body.ione-input-transition{
   background:#071417!important;
+  scroll-behavior:auto!important;
 }
-
-/* During input/keyboard work, freeze visual effects rather than letting Android
-   repeatedly promote/demote full-screen layers. */
-body.ione-input-transition *,
 body.ione-keyboard-open *,
-body.ione-paste-active *{
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
+body.ione-paste-active *,
+body.ione-input-transition *{
   animation:none!important;
-}
-body.ione-input-transition [style*="backdrop-filter"],
-body.ione-keyboard-open [style*="backdrop-filter"],
-body.ione-paste-active [style*="backdrop-filter"]{
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
-body.ione-input-transition [style*="transition"],
-body.ione-keyboard-open [style*="transition"],
-body.ione-paste-active [style*="transition"]{
   transition:none!important;
 }
-
-/* Do not make an active panel transparent. Its own surface remains standing
-   independently while the keyboard changes the visual viewport. */
-body.ione-input-transition #ioneHomeShell,
-body.ione-input-transition #smartPanel,
-body.ione-keyboard-open #ioneHomeShell,
-body.ione-keyboard-open #smartPanel{
-  background-color:initial;
+body.ione-keyboard-open *,
+body.ione-paste-active *,
+body.ione-input-transition *{
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+body.ione-keyboard-open,
+body.ione-paste-active,
+body.ione-input-transition{
+  overflow-anchor:none;
 }
 
-/* Every editable control gets the same stable interaction rules. */
+/* Fields are native/stationary. Never reposition them for the keyboard. */
 input,textarea,select,[contenteditable="true"]{
   -webkit-appearance:none;
   appearance:none;
   -webkit-tap-highlight-color:transparent;
-  scroll-margin-top:20px;
-  scroll-margin-bottom:120px;
+  transform:none!important;
+  translate:none!important;
+  scale:none!important;
+  rotate:none!important;
+  will-change:auto!important;
+  scroll-margin:0!important;
   scroll-behavior:auto!important;
-  touch-action:manipulation;
+  touch-action:auto!important;
 }
 input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
   outline:none;
-  scroll-margin-top:20px;
-  scroll-margin-bottom:120px;
-}
-/* Give fields a quiet, consistent focus state without moving their layout. */
-input:focus-visible,textarea:focus-visible,select:focus-visible,[contenteditable="true"]:focus-visible{
-  outline:2px solid rgba(0,255,255,.48);
-  outline-offset:1px;
 }
 
-/* Native text selection/paste must never inherit a panel transition. */
-body.ione-paste-active,
-body.ione-paste-active *{
-  transition:none!important;
-}
-
-/* Keep full-screen shells from using expensive effects while an input is active. */
-body.ione-input-transition .afl-service-overlay,
-body.ione-input-transition .afl-call-overlay,
-body.ione-input-transition .afl-delete-overlay,
-body.ione-input-transition .heavens-payment-overlay,
-body.ione-input-transition #ioneSubscriptionGate,
-body.ione-input-transition #authorityPasswordOverlay,
-body.ione-input-transition .ione-coming-soon-overlay,
-body.ione-input-transition .ministry-access-overlay,
+/* Prevent expensive backdrop compositing specifically on active full-screen
+   panels while text entry is active; their own solid/translucent surface remains. */
 body.ione-keyboard-open .afl-service-overlay,
 body.ione-keyboard-open .afl-call-overlay,
 body.ione-keyboard-open .afl-delete-overlay,
@@ -2014,9 +1989,18 @@ body.ione-keyboard-open .heavens-payment-overlay,
 body.ione-keyboard-open #ioneSubscriptionGate,
 body.ione-keyboard-open #authorityPasswordOverlay,
 body.ione-keyboard-open .ione-coming-soon-overlay,
-body.ione-keyboard-open .ministry-access-overlay{
+body.ione-keyboard-open .ministry-access-overlay,
+body.ione-paste-active .afl-service-overlay,
+body.ione-paste-active .afl-call-overlay,
+body.ione-paste-active .afl-delete-overlay,
+body.ione-paste-active .heavens-payment-overlay,
+body.ione-paste-active #ioneSubscriptionGate,
+body.ione-paste-active #authorityPasswordOverlay,
+body.ione-paste-active .ione-coming-soon-overlay,
+body.ione-paste-active .ministry-access-overlay{
   -webkit-backdrop-filter:none!important;
   backdrop-filter:none!important;
+  animation:none!important;
   transition:none!important;
 }
 </style><style id="ione-home-redesign">
@@ -2649,7 +2633,7 @@ async function goFullScreen(){
   return false;
 }
 
-function ioneFullscreenEligibleTarget(target){
+function ioneFullscreenEligibleTarget(target){\n  if(window.ioneKeyboardInteractionActive || document.body.classList.contains("ione-keyboard-open") || document.body.classList.contains("ione-paste-active")) return false;
   if(target?.closest?.('input,textarea,select,[contenteditable="true"],button[data-no-fullscreen],a')) return false;
   if(document.body.classList.contains("ione-keyboard-open") ||
      document.body.classList.contains("ione-paste-active") ||
