@@ -1,0 +1,95 @@
+/* I|ONE GIFT + PRIVATE I1 SUPPORT • isolated module */
+(function(){
+  const FN = "ione-gift-support";
+  const PHONE = "+255 742 097 868";
+  const APP = "https://derrickafricatz-wq.github.io/ione/";
+  const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const api=async(body)=>{
+    const session=await ensureHeavensAnonymousSession();
+    const token=session?.access_token;
+    const r=await fetch(SUPABASE_URL+"/functions/v1/"+FN,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token,"apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify(body)});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||j.success===false)throw new Error(j.error||"I|ONE service request failed.");
+    return j;
+  };
+  function svgGift(){return '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M12 31h56v38H12z" fill="none" stroke="currentColor" stroke-width="5" rx="4"/><path d="M8 22h64v14H8z" fill="none" stroke="currentColor" stroke-width="5" rx="4"/><path d="M40 22v47M40 22c-2-12-12-18-18-12-7 7 6 15 18 12Zm0 0c2-12 12-18 18-12 7 7-6 15-18 12Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg>'}
+  function svgChat(){return '<svg viewBox="0 0 80 80" aria-hidden="true"><path d="M10 12h60v43H36L20 68V55H10z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M24 30h32M24 41h21" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg>'}
+  function style(){
+    if(document.getElementById("ioneGiftSupportStyle"))return;
+    const s=document.createElement("style");s.id="ioneGiftSupportStyle";s.textContent=`
+      #smartPanel .smart-item.ione-special{position:relative;overflow:hidden}
+      #smartPanel .smart-item.ione-special .ione-service-art{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:linear-gradient(145deg,#061014,#18343b);box-shadow:0 6px 0 rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.28);color:#fff}
+      #smartPanel .smart-item.ione-special .ione-service-art svg{width:39px;height:39px}
+      #smartPanel .smart-item.ione-gift{background:linear-gradient(145deg,#ffd15a,#b34d15)!important}
+      #smartPanel .smart-item.ione-support{background:linear-gradient(145deg,#55e8ff,#08639a)!important}
+      .ione-feature-overlay{position:fixed;inset:0;z-index:100800;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:14px;box-sizing:border-box}
+      .ione-feature-card{width:min(680px,100%);max-height:94vh;overflow:auto;border:1px solid rgba(0,255,255,.45);border-radius:24px;background:linear-gradient(145deg,#0d1c21,#03090b);color:#fff;box-shadow:0 24px 70px rgba(0,0,0,.65);padding:18px;box-sizing:border-box}
+      .ione-feature-head{display:flex;align-items:center;gap:12px}.ione-feature-head h2{margin:0;color:#00ffff;font:900 25px/1.1 'Russo One',Arial}.ione-feature-head button{margin-left:auto}
+      .ione-feature-close{min-width:82px;height:42px;border-radius:12px;border:1px solid #3b565d;background:#101719;color:#fff;font-weight:900}
+      .ione-gift-number{margin:20px 0;padding:18px;text-align:center;border-radius:18px;border:1px solid rgba(255,255,255,.2);background:rgba(0,255,255,.06)}
+      .ione-gift-code{font:900 30px/1.1 monospace;color:#fff;letter-spacing:2px}.ione-gift-limit{margin-top:8px;color:#9eb2b8;font:700 11px/1.4 Arial}
+      .ione-feature-field{width:100%;height:50px;box-sizing:border-box;margin:7px 0 11px;padding:0 13px;border-radius:12px;border:1px solid #31545a;background:#050b0d;color:#fff;font-size:16px;outline:none}
+      .ione-feature-btn{width:100%;min-height:52px;border:1px solid #00ffff;border-radius:13px;background:linear-gradient(145deg,#18ffff,#008f8f);color:#001014;font-weight:900;box-shadow:0 6px 0 #005858}
+      .ione-feature-btn:disabled{opacity:.55}.ione-feature-status{min-height:22px;margin:10px 0;text-align:center;color:#b9c7cc;font:700 12px/1.45 Arial}
+      .ione-support-chat{display:flex;flex-direction:column;gap:8px;min-height:260px;max-height:52vh;overflow:auto;padding:8px;background:#020708;border-radius:15px}
+      .ione-msg{max-width:82%;padding:10px 12px;border-radius:14px;font:600 13px/1.45 Arial}.ione-msg.client{align-self:flex-end;background:#005e68}.ione-msg.authority{align-self:flex-start;background:#1b2d32}.ione-msg small{display:block;opacity:.55;font-size:9px;margin-top:4px}
+      .ione-authority-live{display:grid;gap:10px}.ione-authority-row{border:1px solid #27444a;border-radius:14px;padding:12px;background:#071215}.ione-authority-row strong{color:#00ffff}.ione-authority-row button{margin-top:9px}
+      .ione-referral-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ione-referral-paid{color:#64ffb0;font-weight:900}.ione-referral-pending{color:#ffd15a;font-weight:900}
+      @media(max-width:420px){.ione-feature-card{padding:13px}.ione-feature-head h2{font-size:21px}.ione-gift-code{font-size:25px}}
+    `;document.head.appendChild(s);
+  }
+  function addButtons(){
+    const grid=document.querySelector("#smartPanel .smart-grid");if(!grid||document.getElementById("openIoneGift"))return;
+    const gift=document.createElement("button");gift.className="smart-item ione-special ione-gift";gift.id="openIoneGift";gift.type="button";gift.innerHTML='<span class="ione-service-art">'+svgGift()+'</span><strong>GIFT</strong><small>INVITE A BRAND • EARN $1</small>';
+    const support=document.createElement("button");support.className="smart-item ione-special ione-support";support.id="openIoneSupport";support.type="button";support.innerHTML='<span class="ione-service-art">'+svgChat()+'</span><strong>I1 SUPPORT</strong><small>PRIVATE LIVE SUPPORT</small>';
+    grid.append(gift,support);gift.onclick=openGift;support.onclick=openSupport;
+  }
+  function overlay(id,title,body){let o=document.getElementById(id);if(o)o.remove();o=document.createElement("div");o.id=id;o.className="ione-feature-overlay";o.innerHTML='<div class="ione-feature-card"><div class="ione-feature-head"><h2>'+title+'</h2><button class="ione-feature-close" type="button">CLOSE</button></div>'+body+'</div>';document.body.appendChild(o);o.querySelector(".ione-feature-close").onclick=()=>o.remove();o.style.display="flex";return o}
+  async function openGift(){
+    ioneSetHomeControls(false);
+    const o=overlay("ioneGiftOverlay","GIFT • BRAND INVITE",'<p style="color:#b9c7cc;font:13px/1.5 Arial">Invite a company or brand to join I|ONE Marketing. One referral number is used once only. A maximum of 10 referral numbers are shared each day.</p><label>YOUR NAME</label><input id="ioneGiftName" class="ione-feature-field" maxlength="120" placeholder="Your name"><label>YOUR PHONE</label><input id="ioneGiftPhone" class="ione-feature-field" maxlength="30" inputmode="tel" placeholder="07XXXXXXXX"><div id="ioneGiftNumber" class="ione-gift-number"><div class="ione-gift-code">LOADING…</div><div class="ione-gift-limit">ONE-TIME REFERRAL NUMBER</div></div><button id="ioneGiftShare" class="ione-feature-btn" type="button">SHARE REFERRAL</button><div id="ioneGiftStatus" class="ione-feature-status"></div>');
+    const name=document.getElementById("ioneGiftName"),phone=document.getElementById("ioneGiftPhone"),code=document.querySelector("#ioneGiftNumber .ione-gift-code"),status=document.getElementById("ioneGiftStatus"),share=document.getElementById("ioneGiftShare");
+    try{
+      const old=JSON.parse(localStorage.getItem("ioneGiftIdentity")||"{}");if(old.name)name.value=old.name;if(old.phone)phone.value=old.phone;
+      const r=await api({action:"prepare_referral",name:name.value,phone:phone.value});code.textContent=r.token.token;
+      share.onclick=async()=>{share.disabled=true;status.textContent="PREPARING YOUR PRIVATE REFERRAL…";try{localStorage.setItem("ioneGiftIdentity",JSON.stringify({name:name.value.trim(),phone:phone.value.trim()}));const x=await api({action:"share_referral",token_id:r.token.id,base_url:APP});if(navigator.share){try{await navigator.share({title:"Join I|ONE Marketing",text:"Join I|ONE Marketing through my private referral link.",url:x.url})}catch(_){}}else{await navigator.clipboard?.writeText(x.url);status.textContent="LINK COPIED. SHARE IT WITH THE BRAND.";return}status.textContent="REFERRAL SHARED. THIS NUMBER IS NOW USED.";code.textContent="USED";setTimeout(()=>{o.remove();openGift()},900)}catch(e){share.disabled=false;status.textContent=e.message}}
+    }catch(e){status.textContent=e.message;share.disabled=true}
+  }
+  async function openSupport(){
+    ioneSetHomeControls(false);
+    const o=overlay("ioneSupportOverlay","I1 SUPPORT",'<p style="color:#b9c7cc;font:13px/1.5 Arial">Private live support between you and I1 Authority. Your conversation is not shared with other I|ONE users.</p><input id="ioneSupportName" class="ione-feature-field" maxlength="120" placeholder="YOUR NAME"><input id="ioneSupportPhone" class="ione-feature-field" maxlength="30" inputmode="tel" placeholder="YOUR PHONE"><button id="ioneSupportStart" class="ione-feature-btn" type="button">START PRIVATE CHAT</button><div id="ioneSupportStatus" class="ione-feature-status"></div>');
+    const n=document.getElementById("ioneSupportName"),p=document.getElementById("ioneSupportPhone"),st=document.getElementById("ioneSupportStatus");
+    const old=JSON.parse(localStorage.getItem("ioneSupportIdentity")||"{}");if(old.name)n.value=old.name;if(old.phone)p.value=old.phone;
+    document.getElementById("ioneSupportStart").onclick=async()=>{try{localStorage.setItem("ioneSupportIdentity",JSON.stringify({name:n.value.trim(),phone:p.value.trim()}));const r=await api({action:"client_open",name:n.value,phone:p.value});o.remove();showClientChat(r.conversation.id)}catch(e){st.textContent=e.message}};
+  }
+  async function showClientChat(cid){
+    const o=overlay("ioneClientChatOverlay","I1 SUPPORT",'<div id="ioneClientChat" class="ione-support-chat"></div><div style="display:grid;grid-template-columns:1fr 88px;gap:8px;margin-top:10px"><input id="ioneClientMsg" class="ione-feature-field" style="margin:0" maxlength="1200" placeholder="TYPE YOUR INQUIRY…"><button id="ioneClientSend" class="ione-feature-btn" type="button">SEND</button></div><div id="ioneClientStatus" class="ione-feature-status">PRIVATE • LIVE WITH I1 AUTHORITY</div>');
+    const box=document.getElementById("ioneClientChat"),input=document.getElementById("ioneClientMsg"),send=document.getElementById("ioneClientSend");
+    async function load(){try{const r=await api({action:"client_open",name:JSON.parse(localStorage.getItem("ioneSupportIdentity")||"{}").name||"Client",phone:JSON.parse(localStorage.getItem("ioneSupportIdentity")||"{}").phone||""});const m=await api({action:"authority_messages",conversation_id:cid,password:""}).catch(()=>null);if(m)render(m.messages)}catch(_){}}
+    function render(ms){box.innerHTML=(ms||[]).map(m=>'<div class="ione-msg '+esc(m.sender_role)+'">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleString()+'</small></div>').join("");box.scrollTop=box.scrollHeight}
+    const refresh=async()=>{const token=(await ensureHeavensAnonymousSession())?.access_token;const r=await fetch(SUPABASE_URL+"/functions/v1/"+FN,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token,"apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify({action:"client_messages",conversation_id:cid})});const j=await r.json().catch(()=>({}));if(j.success)render(j.messages)};
+    // client_messages is added below by the backend-compatible fallback using direct authenticated endpoint
+    await refresh().catch(()=>{});
+    send.onclick=async()=>{if(!input.value.trim())return;send.disabled=true;try{await api({action:"client_send",conversation_id:cid,body:input.value});input.value="";await refresh()}catch(e){document.getElementById("ioneClientStatus").textContent=e.message}finally{send.disabled=false}};
+    input.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send.click()}};
+    setInterval(()=>{if(document.getElementById("ioneClientChatOverlay"))refresh().catch(()=>{})},2500);
+  }
+  function authorityPassword(){return String(document.getElementById("authorityPasswordInput")?.value||"")}
+  async function bindAuthority(){
+    const panel=document.getElementById("authorityPressPanel");if(!panel||panel.dataset.giftSupportBound)return;panel.dataset.giftSupportBound="1";
+    const box=document.createElement("div");box.className="authority-panel-section";box.id="ioneGiftAuthoritySection";box.innerHTML='<div class="authority-section-kicker">I|ONE REFERRAL NETWORK</div><h3>GIFT • BRAND REFERRALS</h3><p class="authority-section-note">Only a genuinely published brand qualifies the $1 referral. Payout is manual through PUSH PAY.</p><div id="ioneGiftReferralList" class="ione-authority-live">Loading…</div>';
+    const support=document.createElement("div");support.className="authority-panel-section";support.id="ioneSupportAuthoritySection";support.innerHTML='<div class="authority-section-kicker">I1 LIVE</div><h3>PRIVATE SUPPORT INBOX</h3><p class="authority-section-note">Each client has a separate private conversation. New client messages and replies use targeted push notifications.</p><div id="ioneSupportAuthorityList" class="ione-authority-live">Loading…</div>';
+    panel.querySelector(".authority-panel-inner")?.append(box,support);
+    const refresh=async()=>{const pass=authorityPassword();if(!pass)return;try{const r=await api({action:"authority_list",password:pass});renderAuthorityRefs(r.referrals||[],pass);renderAuthorityChats(r.conversations||[],pass);await registerAuthorityPush(pass)}catch(e){document.getElementById("ioneGiftReferralList").textContent=e.message}};
+    async function registerAuthorityPush(pass){try{if(!("Notification"in window)||!("serviceWorker"in navigator)||!("PushManager"in window))return;const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub){const cfg=await fetch(SUPABASE_URL+"/functions/v1/ione-push",{method:"POST",headers:{"Content-Type":"application/json","apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify({action:"config"})}).then(x=>x.json());if(!cfg.publicKey)return;sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob(cfg.publicKey.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0))})}await api({action:"authority_register_device",password:pass,subscription:sub.toJSON()})}catch(e){console.warn("I1 authority push:",e)}}
+    function renderAuthorityRefs(rows,pass){const list=document.getElementById("ioneGiftReferralList");list.innerHTML=rows.length?rows.map(r=>'<div class="ione-authority-row"><strong>'+esc(r.referrer_name||"—")+'</strong><div>📱 '+esc(r.referrer_phone||"—")+'<br>REFERRAL: '+esc(r.token)+'<br>BRAND: '+esc(r.brand_name||"Awaiting published brand")+'<br>STATUS: '+esc(String(r.status||"").toUpperCase())+'<br>REWARD: $1 • TZS '+Number(r.reward_tzs||2640).toLocaleString()+"</div>"+(r.status==="qualified"?'<button class="ione-feature-btn" data-ref-pay="'+esc(r.id)+'">PUSH PAY</button>':r.status==="paid"?'<div class="ione-referral-paid">PAID • '+esc(r.payout_reference||"")+"</div>":'<div class="ione-referral-pending">WAITING FOR BRAND TO QUALIFY</div>')+"</div>").join(""):"No referrals yet.";
+      list.querySelectorAll("[data-ref-pay]").forEach(b=>b.onclick=async()=>{const r=rows.find(x=>String(x.id)===b.dataset.refPay);const network=prompt("Enter recipient network: MPESA, AIRTEL_MONEY, MIXX_BY_YAS, HALOPESA, EZYPESA or TTCLPESA");if(!network)return;try{b.disabled=true;const x=await api({action:"push_pay",password:pass,referral_id:r.id,phone:r.referrer_phone,network});b.textContent="PAID ✓";alert("Payout submitted. BLMPay reference: "+x.reference);await refresh()}catch(e){b.disabled=false;alert(e.message)}})
+    }
+    function renderAuthorityChats(rows,pass){const list=document.getElementById("ioneSupportAuthorityList");list.innerHTML=rows.length?rows.map(c=>'<div class="ione-authority-row"><strong>'+esc(c.client_name)+' • '+esc(c.client_phone)+'</strong><div>'+((c.unread_authority||0)>0?"🔴 NEW • ":"")+new Date(c.last_message_at||c.updated_at||c.created_at).toLocaleString()+'</div><button class="ione-feature-btn" data-support-open="'+esc(c.id)+'">OPEN PRIVATE CHAT</button></div>').join(""):"No client support messages yet.";list.querySelectorAll("[data-support-open]").forEach(b=>b.onclick=()=>openAuthorityChat(b.dataset.supportOpen,pass))}
+    async function openAuthorityChat(cid,pass){const r=await api({action:"authority_messages",password:pass,conversation_id:cid});const o=overlay("ioneAuthorityChatOverlay","I1 LIVE • PRIVATE",'<div class="ione-support-chat" id="ioneAuthorityChatBox"></div><div style="display:grid;grid-template-columns:1fr 88px;gap:8px;margin-top:10px"><input id="ioneAuthorityMsg" class="ione-feature-field" style="margin:0" maxlength="1200" placeholder="TYPE ANSWER…"><button id="ioneAuthoritySend" class="ione-feature-btn">SEND</button></div><div id="ioneAuthorityStatus" class="ione-feature-status">CLIENT-ONLY PRIVATE CONVERSATION</div>');const box=document.getElementById("ioneAuthorityChatBox"),input=document.getElementById("ioneAuthorityMsg");const render=ms=>{box.innerHTML=(ms||[]).map(m=>'<div class="ione-msg '+esc(m.sender_role)+'">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleString()+'</small></div>').join("");box.scrollTop=box.scrollHeight};render(r.messages);await api({action:"authority_read",password:pass,conversation_id:cid});document.getElementById("ioneAuthoritySend").onclick=async()=>{if(!input.value.trim())return;try{await api({action:"authority_send",password:pass,conversation_id:cid,body:input.value});input.value="";const x=await api({action:"authority_messages",password:pass,conversation_id:cid});render(x.messages)}catch(e){document.getElementById("ioneAuthorityStatus").textContent=e.message}}}
+    refresh();setInterval(()=>{if(panel.getAttribute("aria-hidden")==="false")refresh()},5000);
+  }
+  window.ioneGiftQualify=async function(){try{const s=await ensureHeavensAnonymousSession();const ref=new URLSearchParams(location.search).get("ref");if(ref){await api({action:"qualify_referral",referral_id:ref}).catch(()=>{})}}catch(_){}};
+  function boot(){style();addButtons();document.getElementById("authorityPressUnlock")?.addEventListener("click",()=>setTimeout(bindAuthority,500));document.getElementById("authorityPasswordUnlock")?.addEventListener("click",()=>setTimeout(bindAuthority,700));new MutationObserver(()=>{addButtons();if(document.getElementById("authorityPressPanel")?.getAttribute("aria-hidden")==="false")bindAuthority()}).observe(document.body,{subtree:true,childList:true});}
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
