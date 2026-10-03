@@ -1,5 +1,5 @@
 {
-  "version": "1.0.22",
-  "message": "Unify stable input behavior across every I|ONE panel",
+  "version": "1.0.23",
+  "message": "Stable first-open and native keyboard interaction",
   "force": false
 }
