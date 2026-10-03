@@ -1,6 +1,7 @@
 /* I|ONE GIFT + PRIVATE I1 SUPPORT • isolated module */
 (function(){
   const FN = "ione-gift-support";
+  const MSG_FN = "ione-client-messages";
   const PHONE = "+255 742 097 868";
   const APP = "https://derrickafricatz-wq.github.io/ione/";
   const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -65,10 +66,15 @@
   async function showClientChat(cid){
     const o=overlay("ioneClientChatOverlay","I1 SUPPORT",'<div id="ioneClientChat" class="ione-support-chat"></div><div style="display:grid;grid-template-columns:1fr 88px;gap:8px;margin-top:10px"><input id="ioneClientMsg" class="ione-feature-field" style="margin:0" maxlength="1200" placeholder="TYPE YOUR INQUIRY…"><button id="ioneClientSend" class="ione-feature-btn" type="button">SEND</button></div><a id="ioneClientCall" class="ione-feature-btn" href="tel:+255742097868" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:9px;box-sizing:border-box">I1 CALL</a><div id="ioneClientStatus" class="ione-feature-status">PRIVATE • LIVE WITH I1 AUTHORITY</div>');
     const box=document.getElementById("ioneClientChat"),input=document.getElementById("ioneClientMsg"),send=document.getElementById("ioneClientSend");const call=document.getElementById("ioneClientCall");if(call)call.addEventListener("click",()=>{window.location.href="tel:+255742097868"});
-    async function load(){try{const r=await api({action:"client_open",name:JSON.parse(localStorage.getItem("ioneSupportIdentity")||"{}").name||"Client",phone:JSON.parse(localStorage.getItem("ioneSupportIdentity")||"{}").phone||""});const m=await api({action:"client_messages",conversation_id:cid}).catch(()=>null);if(m)render(m.messages)}catch(_){}}
+    async function clientMessages(){
+      const token=(await ensureHeavensAnonymousSession())?.access_token;
+      const r=await fetch(SUPABASE_URL+"/functions/v1/"+MSG_FN,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token,"apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify({action:"messages",conversation_id:cid})});
+      const j=await r.json().catch(()=>({}));
+      if(!r.ok||j.success===false)throw new Error(j.error||"Unable to load private messages.");
+      return j;
+    }
     function render(ms){box.innerHTML=(ms||[]).map(m=>'<div class="ione-msg '+esc(m.sender_role)+'">'+esc(m.body)+'<small>'+new Date(m.created_at).toLocaleString()+'</small></div>').join("");box.scrollTop=box.scrollHeight}
-    const refresh=async()=>{const token=(await ensureHeavensAnonymousSession())?.access_token;const r=await fetch(SUPABASE_URL+"/functions/v1/"+FN,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token,"apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify({action:"client_messages",conversation_id:cid})});const j=await r.json().catch(()=>({}));if(j.success)render(j.messages)};
-    // client_messages is added below by the backend-compatible fallback using direct authenticated endpoint
+    const refresh=async()=>{const j=await clientMessages();render(j.messages)};
     await refresh().catch(()=>{});
     send.onclick=async()=>{if(!input.value.trim())return;send.disabled=true;try{await api({action:"client_send",conversation_id:cid,body:input.value});input.value="";await refresh()}catch(e){document.getElementById("ioneClientStatus").textContent=e.message}finally{send.disabled=false}};
     input.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send.click()}};
