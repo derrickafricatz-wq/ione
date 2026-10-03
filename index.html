@@ -1941,37 +1941,11 @@ body.ione-input-transition{
   background:#071417!important;
 }
 
-/* During input/keyboard work, freeze visual effects rather than letting Android
-   repeatedly promote/demote full-screen layers. */
-body.ione-input-transition *,
-body.ione-keyboard-open *,
-body.ione-paste-active *{
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-  animation:none!important;
-}
-body.ione-input-transition [style*="backdrop-filter"],
-body.ione-keyboard-open [style*="backdrop-filter"],
-body.ione-paste-active [style*="backdrop-filter"]{
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
-}
-body.ione-input-transition [style*="transition"],
-body.ione-keyboard-open [style*="transition"],
-body.ione-paste-active [style*="transition"]{
-  transition:none!important;
-}
+/* Keep the page composited normally while typing. Only the small field/overlay
+   surfaces below are quieted; never freeze every descendant of the app. */
 
-/* Do not make an active panel transparent. Its own surface remains standing
-   independently while the keyboard changes the visual viewport. */
-body.ione-input-transition #ioneHomeShell,
-body.ione-input-transition #smartPanel,
-body.ione-keyboard-open #ioneHomeShell,
-body.ione-keyboard-open #smartPanel{
-  background-color:initial;
-}
-
-/* Every editable control gets the same stable interaction rules. */
+/* Every editable control gets stable native interaction rules without changing
+   transforms, layout, or the page's normal animation system. */
 input,textarea,select,[contenteditable="true"]{
   -webkit-appearance:none;
   appearance:none;
@@ -1983,20 +1957,15 @@ input,textarea,select,[contenteditable="true"]{
 }
 input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
   outline:none;
-  scroll-margin-top:20px;
-  scroll-margin-bottom:120px;
 }
-/* Give fields a quiet, consistent focus state without moving their layout. */
+/* Keep keyboard focus visible without causing layout movement. */
 input:focus-visible,textarea:focus-visible,select:focus-visible,[contenteditable="true"]:focus-visible{
   outline:2px solid rgba(0,255,255,.48);
   outline-offset:1px;
 }
 
-/* Native text selection/paste must never inherit a panel transition. */
-body.ione-paste-active,
-body.ione-paste-active *{
-  transition:none!important;
-}
+/* Only the known full-screen glass overlays lose backdrop blur while an input
+   is active. App panels and their children keep their own rendering. */
 
 /* Keep full-screen shells from using expensive effects while an input is active. */
 body.ione-input-transition .afl-service-overlay,
