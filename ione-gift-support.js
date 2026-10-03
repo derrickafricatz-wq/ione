@@ -39,7 +39,7 @@
     `;document.head.appendChild(s);
   }
   function addButtons(){
-    const grid=document.querySelector("#smartPanel .smart-grid");if(!grid||document.getElementById("openIoneGift"))return;
+    const grid=document.querySelector("#smartPanel .smart-grid");if(!grid)return;const existingGift=document.getElementById("openIoneGift"),existingSupport=document.getElementById("openIoneSupport");if(existingGift&&existingSupport){existingGift.onclick=openGift;existingSupport.onclick=openSupport;return;}
     const gift=document.createElement("button");gift.className="smart-item ione-special ione-gift";gift.id="openIoneGift";gift.type="button";gift.innerHTML='<span class="ione-service-art">'+svgGift()+'</span><strong>GIFT</strong><small>INVITE A BRAND • EARN $1</small>';
     const support=document.createElement("button");support.className="smart-item ione-special ione-support";support.id="openIoneSupport";support.type="button";support.innerHTML='<span class="ione-service-art">'+svgChat()+'</span><strong>I1 SUPPORT</strong><small>PRIVATE LIVE SUPPORT</small>';
     grid.append(gift,support);gift.onclick=openGift;support.onclick=openSupport;
