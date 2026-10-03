@@ -909,8 +909,7 @@ html, body {
   z-index:30;
   border-radius:28px;
   background:rgba(2,10,13,.28);
-  backdrop-filter:blur(7px);
-  -webkit-backdrop-filter:blur(7px);
+
 }
 
 #smartPanel.show{
@@ -979,7 +978,7 @@ html, body {
   padding:20px;
   box-sizing:border-box;
   background:rgba(0,0,0,.90);
-  backdrop-filter:blur(10px);
+
 }
 .authority-password-card{
   width:min(420px,100%);
@@ -1984,8 +1983,7 @@ body.ione-keyboard-open #ioneSubscriptionGate,
 body.ione-keyboard-open #authorityPasswordOverlay,
 body.ione-keyboard-open .ione-coming-soon-overlay,
 body.ione-keyboard-open .ministry-access-overlay{
-  -webkit-backdrop-filter:none!important;
-  backdrop-filter:none!important;
+
   transition:none!important;
 }
 </style><style id="ione-home-redesign">
@@ -3079,22 +3077,6 @@ if(savedTranscriptHTML){
 }
 setupTranscriptMedia(transcriptText);
 
-
-  transcriptText.addEventListener("keyup", () => {
-  const selection = window.getSelection();
-
-  if (!selection.rangeCount) return;
-
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-
-  if (rect.bottom > window.innerHeight - 180) {
-    window.scrollBy({
-      top: rect.bottom - (window.innerHeight - 180),
-      behavior: "smooth"
-    });
-  }
-});
 
 let recognition = null;
 let isListening = false;
