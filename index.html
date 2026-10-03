@@ -2630,59 +2630,52 @@ function getMedia(id){
 /* ================= FULLSCREEN KIOSK — STABLE SESSION ================= */
 let ioneFullscreenLocked = false;
 let ioneFullscreenRestorePending = false;
+let ioneFullscreenLastRequest = 0;
+
+function ioneIsFullscreen(){
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+}
 
 async function goFullScreen(){
   const el=document.documentElement;
+  const now=Date.now();
+  if(ioneIsFullscreen() || now-ioneFullscreenLastRequest<900) return true;
+  ioneFullscreenLastRequest=now;
   try{
-    if(el.requestFullscreen){
-      await el.requestFullscreen();
-      ioneFullscreenLocked=true;
-      ioneFullscreenRestorePending=false;
-      return true;
-    }
-    if(el.webkitRequestFullscreen){
-      el.webkitRequestFullscreen();
-      ioneFullscreenLocked=true;
-      ioneFullscreenRestorePending=false;
-      return true;
-    }
-    if(el.msRequestFullscreen){
-      el.msRequestFullscreen();
-      ioneFullscreenLocked=true;
-      ioneFullscreenRestorePending=false;
-      return true;
-    }
+    if(el.requestFullscreen){ await el.requestFullscreen(); ioneFullscreenLocked=true; return true; }
+    if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); ioneFullscreenLocked=true; return true; }
+    if(el.msRequestFullscreen){ el.msRequestFullscreen(); ioneFullscreenLocked=true; return true; }
   }catch(_){}
   return false;
 }
 
-/* Initial user gesture may enter fullscreen once. */
-document.body.addEventListener("click",function firstFullscreenGesture(){
-  if(!ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
-    goFullScreen().catch(()=>{});
+function ioneFullscreenEligibleTarget(target){
+  if(target?.closest?.('input,textarea,select,[contenteditable="true"],button[data-no-fullscreen],a')) return false;
+  if(document.body.classList.contains("ione-keyboard-open") ||
+     document.body.classList.contains("ione-paste-active") ||
+     window.ioneKeyboardInteractionActive) return false;
+  const startup=document.getElementById("startupDeka");
+  if(startup){
+    const cs=getComputedStyle(startup);
+    if(cs.visibility!=="hidden" && Number(cs.opacity)>0) return false;
   }
-},{once:true});
+  return true;
+}
 
-/*
-  IMPORTANT:
-  Do not automatically re-enter fullscreen after Android leaves it.
-  The OS/browser may leave fullscreen while opening the keyboard, selecting text,
-  pasting, or changing a feature overlay. Re-requesting fullscreen on the next
-  click can create a black compositor flash.
-*/
+// Restore kiosk fullscreen from real feature interactions, but never from a field.
+// This keeps uploads/services/panels fullscreen without fighting the keyboard.
+document.body.addEventListener("click",e=>{
+  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
+},true);
+document.body.addEventListener("touchend",e=>{
+  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
+},{passive:true,capture:true});
+
 function ioneFullscreenStateChanged(){
-  if(ioneFullscreenLocked && !document.fullscreenElement && !document.webkitFullscreenElement){
-    ioneFullscreenRestorePending=false;
-  }
+  ioneFullscreenRestorePending=!ioneIsFullscreen() && ioneFullscreenLocked;
 }
 document.addEventListener("fullscreenchange",ioneFullscreenStateChanged);
 document.addEventListener("webkitfullscreenchange",ioneFullscreenStateChanged);
-
-/* Never request fullscreen from field, keyboard, paste, or selection interactions. */
-document.addEventListener("click",function(e){
-  if(window.ioneKeyboardInteractionActive || document.body.classList.contains("ione-paste-active")) return;
-  /* Deliberately no automatic fullscreen restoration here. */
-},true);
 
 const guideLanguages={
  sw:{title:"MWONGOZO WA KISWAHILI",steps:[
@@ -2759,72 +2752,26 @@ if(ioneNotificationBtn){
 /* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY
    One controller for every input on every panel. */
 (function ioneMobileStability(){
-  let keyboardTimer=0;
   let settleTimer=0;
   let pasteTimer=0;
-  let lastHeight=0;
-  let lastWidth=0;
-
   const fieldSelector='input,textarea,select,[contenteditable="true"]';
   const isField=el=>!!el && !!el.matches?.(fieldSelector);
   const activeField=()=>isField(document.activeElement)?document.activeElement:null;
 
-  function setInputMode(on){
-    document.body.classList.toggle("ione-input-transition",!!on);
-  }
-  function setKeyboardMode(on){
-    document.body.classList.toggle("ione-keyboard-open",!!on);
-  }
+  function setInputMode(on){ document.body.classList.toggle("ione-input-transition",!!on); }
+  function setKeyboardMode(on){ document.body.classList.toggle("ione-keyboard-open",!!on); }
 
-  /* Only move a field when it is genuinely hidden behind the keyboard.
-     Never call scrollIntoView just because focus changed. */
-  function revealIfObscured(field){
-    if(!field || !document.body.contains(field)) return;
-    clearTimeout(keyboardTimer);
-    keyboardTimer=setTimeout(()=>{
-      if(activeField()!==field) return;
-      const vv=window.visualViewport;
-      const rect=field.getBoundingClientRect();
-      const top=(vv?.offsetTop||0)+18;
-      const bottom=(vv?.offsetTop||0)+(vv?.height||window.innerHeight)-18;
-      if(rect.top<top || rect.bottom>bottom){
-        try{
-          field.scrollIntoView({block:"nearest",inline:"nearest",behavior:"auto"});
-        }catch(_){}
-      }
-    },360);
-  }
-
-  function syncViewport(){
-    const vv=window.visualViewport;
-    const h=Math.round(vv?.height||window.innerHeight||0);
-    const w=Math.round(vv?.width||window.innerWidth||0);
-    const f=activeField();
-    const heightDrop=lastHeight>0 && h<lastHeight-80;
-    const widthChanged=lastWidth>0 && Math.abs(w-lastWidth)>2;
-
-    if(f){
-      setInputMode(true);
-      if(heightDrop && !widthChanged) setKeyboardMode(true);
-    }else if(!document.body.classList.contains("ione-paste-active")){
-      setKeyboardMode(false);
-      setInputMode(false);
-    }
-
-    lastHeight=h;
-    lastWidth=w;
-  }
-
+  // Android handles keyboard viewport movement itself. Never scroll/reposition the
+  // focused field while that animation is running; doing so causes the shake/stretch.
   document.addEventListener("focusin",e=>{
     if(!isField(e.target)) return;
+    clearTimeout(settleTimer);
     setInputMode(true);
     setKeyboardMode(true);
     window.ioneKeyboardInteractionActive=true;
-    revealIfObscured(e.target);
   },true);
 
   document.addEventListener("focusout",()=>{
-    clearTimeout(keyboardTimer);
     clearTimeout(settleTimer);
     settleTimer=setTimeout(()=>{
       if(!activeField() && !document.body.classList.contains("ione-paste-active")){
@@ -2832,7 +2779,7 @@ if(ioneNotificationBtn){
         setInputMode(false);
         window.ioneKeyboardInteractionActive=false;
       }
-    },420);
+    },500);
   },true);
 
   document.addEventListener("paste",e=>{
@@ -2844,10 +2791,8 @@ if(ioneNotificationBtn){
     clearTimeout(pasteTimer);
     pasteTimer=setTimeout(()=>{
       document.body.classList.remove("ione-paste-active");
-      if(activeField()){
-        setInputMode(false);
-        setKeyboardMode(true);
-      }else{
+      if(activeField()) setInputMode(false);
+      else {
         setInputMode(false);
         setKeyboardMode(false);
         window.ioneKeyboardInteractionActive=false;
@@ -2862,23 +2807,18 @@ if(ioneNotificationBtn){
     }
   },{passive:true,capture:true});
 
-  /* Keep focus inside the current field during viewport movement. */
+  // Observe viewport changes only to keep the stable input state. No scrollIntoView,
+  // transforms, height writes, or layout repositioning are performed.
   if(window.visualViewport){
-    lastHeight=Math.round(window.visualViewport.height||0);
-    lastWidth=Math.round(window.visualViewport.width||0);
-    window.visualViewport.addEventListener("resize",syncViewport,{passive:true});
-    window.visualViewport.addEventListener("scroll",()=>{
+    window.visualViewport.addEventListener("resize",()=>{
       if(activeField()){
         setInputMode(true);
         setKeyboardMode(true);
       }
     },{passive:true});
   }
-  window.addEventListener("resize",syncViewport,{passive:true});
 
-  /* Leaving a panel/page always clears the temporary input state. */
   window.addEventListener("pagehide",()=>{
-    clearTimeout(keyboardTimer);
     clearTimeout(settleTimer);
     clearTimeout(pasteTimer);
     document.body.classList.remove("ione-input-transition","ione-keyboard-open","ione-paste-active");
@@ -2888,56 +2828,9 @@ if(ioneNotificationBtn){
   window.addEventListener("pageshow",()=>{
     document.body.classList.remove("ione-input-transition","ione-keyboard-open","ione-paste-active");
     window.ioneKeyboardInteractionActive=false;
-    lastHeight=Math.round(window.visualViewport?.height||window.innerHeight||0);
-    lastWidth=Math.round(window.visualViewport?.width||window.innerWidth||0);
   },{passive:true});
 })();
- 
-/* ================= VIDEO ================= */
-const video = document.getElementById("brandVideo");
-video.muted = true;
-video.volume = 0;
 
-  
- /* =========================
-   SMART DEVICE ORIENTATION
-========================= */
-
-function updateAppOrientation() {
-
-  const isLandscape =
-    window.matchMedia("(orientation: landscape)").matches;
-
-  document.body.classList.toggle(
-    "landscape-mode",
-    isLandscape
-  );
-
-  document.body.classList.toggle(
-    "portrait-mode",
-    !isLandscape
-  );
-
-  console.log(
-    isLandscape
-      ? "LANDSCAPE MODE"
-      : "PORTRAIT MODE"
-  );
-}
-
-/* Do not react to keyboard/viewport resize here.
-   Android can fire resize while the virtual keyboard is opening/closing.
-   Re-running orientation layout during that transition causes visible
-   compositor flashes. Orientation changes are handled below. */
-
-window.addEventListener(
-  "orientationchange",
-  () => {
-    setTimeout(updateAppOrientation, 300);
-  }
-);
-
-updateAppOrientation();
 
 /* ================= VIDEO ZOOM ================= */
 
