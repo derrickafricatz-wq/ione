@@ -733,8 +733,8 @@ html, body {
   pointer-events:none;
   opacity:1;
   overflow:hidden;
-  transition:none!important;
-  animation:none!important;
+  transition:opacity .22s ease;
+  animation: startupDekaFailOpen 1.35s ease forwards;
 }
 
 /* Safety net: even if another script fails during startup, the app UI is revealed. */
@@ -1972,20 +1972,14 @@ body.ione-keyboard-open #smartPanel{
 }
 
 /* Every editable control gets the same stable interaction rules. */
-button,a,input,textarea,select,[contenteditable="true"]{
-  -webkit-tap-highlight-color:transparent;
-  touch-action:manipulation;
-}
 input,textarea,select,[contenteditable="true"]{
   -webkit-appearance:none;
   appearance:none;
   -webkit-tap-highlight-color:transparent;
-  scroll-margin-top:8px;
-  scroll-margin-bottom:40px;
+  scroll-margin-top:20px;
+  scroll-margin-bottom:120px;
   scroll-behavior:auto!important;
-  touch-action:auto;
-  transform:none!important;
-  will-change:auto!important;
+  touch-action:manipulation;
 }
 input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus{
   outline:none;
@@ -2086,7 +2080,6 @@ body.ione-non-home #ioneTopActions{display:none!important}
 </head>
 
 <body>
-
 
 <button id="installBtn" style="
   position:fixed;
@@ -2635,70 +2628,51 @@ function getMedia(id){
 
 <script>
 /* ================= FULLSCREEN KIOSK — STABLE SESSION ================= */
-let ioneFullscreenLocked=false;
-let ioneFullscreenRestorePending=false;
-let ioneFullscreenLastRequest=0;
-let ioneFullscreenCooldownUntil=0;
+let ioneFullscreenLocked = false;
+let ioneFullscreenRestorePending = false;
+let ioneFullscreenLastRequest = 0;
 
 function ioneIsFullscreen(){
-  return !!(document.fullscreenElement||document.webkitFullscreenElement||document.msFullscreenElement);
+  return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
 }
+
 async function goFullScreen(){
-  const el=document.documentElement, now=Date.now();
-  if(ioneIsFullscreen()||now<ioneFullscreenCooldownUntil||now-ioneFullscreenLastRequest<1200) return true;
+  const el=document.documentElement;
+  const now=Date.now();
+  if(ioneIsFullscreen() || now-ioneFullscreenLastRequest<900) return true;
   ioneFullscreenLastRequest=now;
   try{
-    if(el.requestFullscreen){await el.requestFullscreen();ioneFullscreenLocked=true;return true;}
-    if(el.webkitRequestFullscreen){el.webkitRequestFullscreen();ioneFullscreenLocked=true;return true;}
-    if(el.msRequestFullscreen){el.msRequestFullscreen();ioneFullscreenLocked=true;return true;}
+    if(el.requestFullscreen){ await el.requestFullscreen(); ioneFullscreenLocked=true; return true; }
+    if(el.webkitRequestFullscreen){ el.webkitRequestFullscreen(); ioneFullscreenLocked=true; return true; }
+    if(el.msRequestFullscreen){ el.msRequestFullscreen(); ioneFullscreenLocked=true; return true; }
   }catch(_){}
   return false;
 }
+
 function ioneFullscreenEligibleTarget(target){
   if(target?.closest?.('input,textarea,select,[contenteditable="true"],button[data-no-fullscreen],a')) return false;
-  if(document.body.classList.contains("ione-keyboard-open")||
-     document.body.classList.contains("ione-paste-active")||
+  if(document.body.classList.contains("ione-keyboard-open") ||
+     document.body.classList.contains("ione-paste-active") ||
      window.ioneKeyboardInteractionActive) return false;
   const startup=document.getElementById("startupDeka");
   if(startup){
     const cs=getComputedStyle(startup);
-    if(cs.visibility!=="hidden"&&Number(cs.opacity)>0) return false;
+    if(cs.visibility!=="hidden" && Number(cs.opacity)>0) return false;
   }
   return true;
 }
-// FIRST INTERACTION CONTRACT:
-// The first deliberate non-field touch only enters fullscreen. It NEVER activates
-// the underlying feature. Every later touch behaves normally. This prevents the
-// homepage tap from accidentally opening Authority/password/another panel.
-let ioneFirstUserTouchHandled=false;
-function ioneConsumeFirstHomeTouch(e){
-  if(ioneFirstUserTouchHandled || ioneIsFullscreen()) return false;
-  if(!ioneFullscreenEligibleTarget(e.target)) return false;
-  ioneFirstUserTouchHandled=true;
-  try{ e.preventDefault(); e.stopImmediatePropagation(); }catch(_){}
-  const startup=document.getElementById("startupDeka");
-  if(startup){startup.style.opacity="0";startup.style.visibility="hidden";startup.setAttribute("aria-hidden","true");}
-  goFullScreen().catch(()=>{});
-  return true;
-}
-document.body.addEventListener("pointerdown",e=>{
-  if(ioneConsumeFirstHomeTouch(e)) return;
-},true);
+
+// Restore kiosk fullscreen from real feature interactions, but never from a field.
+// This keeps uploads/services/panels fullscreen without fighting the keyboard.
 document.body.addEventListener("click",e=>{
-  if(ioneConsumeFirstHomeTouch(e)) return;
-  if(ioneFullscreenEligibleTarget(e.target)&&!ioneIsFullscreen()) goFullScreen().catch(()=>{});
+  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
 },true);
+document.body.addEventListener("touchend",e=>{
+  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
+},{passive:true,capture:true});
+
 function ioneFullscreenStateChanged(){
-  if(!ioneIsFullscreen()){
-    ioneFullscreenRestorePending=ioneFullscreenLocked;
-    // Once Android leaves fullscreen for the keyboard, do not immediately request it back.
-    if(window.ioneKeyboardInteractionActive||document.body.classList.contains("ione-keyboard-open")||
-       document.body.classList.contains("ione-paste-active")){
-      ioneFullscreenCooldownUntil=Date.now()+1400;
-    }
-  }else{
-    ioneFullscreenRestorePending=false;
-  }
+  ioneFullscreenRestorePending=!ioneIsFullscreen() && ioneFullscreenLocked;
 }
 document.addEventListener("fullscreenchange",ioneFullscreenStateChanged);
 document.addEventListener("webkitfullscreenchange",ioneFullscreenStateChanged);
@@ -2776,61 +2750,77 @@ if(ioneNotificationBtn){
 }
 
 /* I|ONE MOBILE KEYBOARD / VIEWPORT STABILITY
-   Native keyboard owns the viewport. I|ONE never moves, scrolls, transforms,
-   resizes, or re-enters fullscreen while an editable field is active. */
+   One controller for every input on every panel. */
 (function ioneMobileStability(){
-  let releaseTimer=0, pasteTimer=0;
+  let settleTimer=0;
+  let pasteTimer=0;
   const fieldSelector='input,textarea,select,[contenteditable="true"]';
   const isField=el=>!!el && !!el.matches?.(fieldSelector);
   const activeField=()=>isField(document.activeElement)?document.activeElement:null;
 
-  // Editable controls get a quiet native interaction. We only keep fullscreen from
-  // competing with the keyboard; we do not resize, scroll, transform, or animate them.
-  function fieldEngaged(){
-    window.ioneKeyboardInteractionActive=true;
-    document.body.classList.add("ione-keyboard-open");
-    clearTimeout(releaseTimer);
-  }
+  function setInputMode(on){ document.body.classList.toggle("ione-input-transition",!!on); }
+  function setKeyboardMode(on){ document.body.classList.toggle("ione-keyboard-open",!!on); }
 
-  document.addEventListener("pointerdown",e=>{
-    if(isField(e.target)) fieldEngaged();
-  },{passive:true,capture:true});
-
-  document.addEventListener("touchstart",e=>{
-    if(isField(e.target)) fieldEngaged();
-  },{passive:true,capture:true});
-
+  // Android handles keyboard viewport movement itself. Never scroll/reposition the
+  // focused field while that animation is running; doing so causes the shake/stretch.
   document.addEventListener("focusin",e=>{
     if(!isField(e.target)) return;
-    fieldEngaged();
+    clearTimeout(settleTimer);
+    setInputMode(true);
+    setKeyboardMode(true);
+    window.ioneKeyboardInteractionActive=true;
   },true);
 
   document.addEventListener("focusout",()=>{
-    clearTimeout(releaseTimer);
-    releaseTimer=setTimeout(()=>{
-      if(!activeField()&&!document.body.classList.contains("ione-paste-active")){
-        document.body.classList.remove("ione-keyboard-open","ione-input-transition");
+    clearTimeout(settleTimer);
+    settleTimer=setTimeout(()=>{
+      if(!activeField() && !document.body.classList.contains("ione-paste-active")){
+        setKeyboardMode(false);
+        setInputMode(false);
+        window.ioneKeyboardInteractionActive=false;
+      }
+    },500);
+  },true);
+
+  document.addEventListener("paste",e=>{
+    if(!isField(e.target)) return;
+    window.ioneKeyboardInteractionActive=true;
+    setInputMode(true);
+    setKeyboardMode(true);
+    document.body.classList.add("ione-paste-active");
+    clearTimeout(pasteTimer);
+    pasteTimer=setTimeout(()=>{
+      document.body.classList.remove("ione-paste-active");
+      if(activeField()) setInputMode(false);
+      else {
+        setInputMode(false);
+        setKeyboardMode(false);
         window.ioneKeyboardInteractionActive=false;
       }
     },700);
   },true);
 
-  document.addEventListener("paste",e=>{
-    if(!isField(e.target)) return;
-    clearTimeout(pasteTimer);
-    fieldEngaged();
-    document.body.classList.add("ione-paste-active");
-    pasteTimer=setTimeout(()=>{
-      document.body.classList.remove("ione-paste-active");
-      if(!activeField()){
-        document.body.classList.remove("ione-keyboard-open","ione-input-transition");
-        window.ioneKeyboardInteractionActive=false;
+  document.addEventListener("touchstart",e=>{
+    if(isField(e.target)){
+      setInputMode(true);
+      window.ioneKeyboardInteractionActive=true;
+    }
+  },{passive:true,capture:true});
+
+  // Observe viewport changes only to keep the stable input state. No scrollIntoView,
+  // transforms, height writes, or layout repositioning are performed.
+  if(window.visualViewport){
+    window.visualViewport.addEventListener("resize",()=>{
+      if(activeField()){
+        setInputMode(true);
+        setKeyboardMode(true);
       }
-    },1000);
-  },true);
+    },{passive:true});
+  }
 
   window.addEventListener("pagehide",()=>{
-    clearTimeout(releaseTimer); clearTimeout(pasteTimer);
+    clearTimeout(settleTimer);
+    clearTimeout(pasteTimer);
     document.body.classList.remove("ione-input-transition","ione-keyboard-open","ione-paste-active");
     window.ioneKeyboardInteractionActive=false;
   },{passive:true});
@@ -7263,12 +7253,7 @@ bookstoreBtn.innerText = "HEAVEN'S BOOKS";
 bookstoreBtn.style.background = "#00ffff";
 bookstoreBtn.style.color = "#001015";
 bookstoreBtn.style.fontWeight = "900";
-bookstoreBtn.onclick = (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  openHeavensBookstore();
-};
-bookstoreBtn.addEventListener("touchend",e=>{e.preventDefault();e.stopPropagation();},{passive:false});
+bookstoreBtn.onclick = () => openHeavensBookstore();
 
 // ADD HIDE, BOOKSTORE AND EXIT
 topBar.appendChild(toggle);
