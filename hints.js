@@ -117,8 +117,11 @@ const lessonHints = [
 
   async function syncExistingPush(){
     try{
-      if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
-      if(Notification.permission !== "granted") return;
+      if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return false;
+      if(Notification.permission !== "granted") return false;
+
+      // Startup rule: restore the real push subscription automatically when
+      // notification permission has already been granted for I|ONE.
       await getPushConfig();
       const registration = await navigator.serviceWorker.ready;
       let subscription = await registration.pushManager.getSubscription();
@@ -130,13 +133,14 @@ const lessonHints = [
       }
       await savePushSubscription(subscription);
       localStorage.setItem("ionePushEnabled","1");
+      await updateNotificationBell();
+      return true;
     }catch(e){
-      console.warn("I|ONE push sync:",e);
-    }finally{
+      console.warn("I|ONE push startup sync:",e);
       try{ await updateNotificationBell(); }catch(_){}
+      return false;
     }
   }
-
   async function disablePush(){
     if(!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     const registration = await navigator.serviceWorker.ready;
@@ -295,12 +299,15 @@ const lessonHints = [
         await new Promise(resolve=>setTimeout(resolve,750));
       }
       if(sb()){
+        // Start ACTIVE automatically on every launch when browser permission
+        // is already granted. The top button remains the user's manual on/off control.
         await syncExistingPush();
         setTimeout(syncExistingPush,1800);
         setTimeout(syncExistingPush,5000);
+      }else{
+        setTimeout(updateNotificationBell,250);
+        setTimeout(updateNotificationBell,1400);
       }
-      setTimeout(updateNotificationBell,250);
-      setTimeout(updateNotificationBell,1400);
       setTimeout(handlePushDestination,500);
     },0);
   }
