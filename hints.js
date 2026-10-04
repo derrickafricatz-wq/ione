@@ -150,9 +150,9 @@ const lessonHints = [
 
   async function updateNotificationBell(){
     const button=document.getElementById("ioneNotificationBtn");
-    if(!button || !("Notification" in window)) return;
+    if(!button) return;
     let on=false;
-    if(Notification.permission==="granted" && "serviceWorker" in navigator && "PushManager" in window){
+    if("serviceWorker" in navigator && "PushManager" in window && ("Notification" in window ? Notification.permission==="granted" : true)){
       try{
         const registration=await navigator.serviceWorker.ready;
         on=!!(await registration.pushManager.getSubscription());
