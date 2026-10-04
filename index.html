@@ -514,10 +514,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish Top Trending.");
       ioneTopTrendingCache=String(r.data.top_trending||value).trim();
       if(status)status.textContent="PUBLISHED • LIVE";
-      if(typeof window.ioneSendAuthorityPush==="function"){
-        window.ioneSendAuthorityPush({password:secret,title:"NEW TOP TRENDING",body:ioneTopTrendingCache,url:"./?ionePushDestination=market",tag:"ione-top-trending"}).catch(e=>console.warn("I|ONE trending push:",e));
-      }
-    }catch(e){if(status)status.textContent=e?.message||"Could not publish Top Trending.";}
+}catch(e){if(status)status.textContent=e?.message||"Could not publish Top Trending.";}
     finally{if(button)button.disabled=false;}
   }
 
@@ -534,10 +531,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish New Books.");
       ioneNewBooksCache=String(r.data.new_books||value).trim();
       if(status)status.textContent="PUBLISHED • LIVE";
-      if(typeof window.ioneSendAuthorityPush==="function"){
-        window.ioneSendAuthorityPush({password:secret,title:"NEW BOOKS",body:ioneNewBooksCache,url:"./?ionePushDestination=books",tag:"ione-new-books"}).catch(e=>console.warn("I|ONE new books push:",e));
-      }
-    }catch(e){if(status)status.textContent=e?.message||"Could not publish New Books.";}
+}catch(e){if(status)status.textContent=e?.message||"Could not publish New Books.";}
     finally{if(button)button.disabled=false;}
   }
 
@@ -558,10 +552,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       ioneImportantNoticeCache=String(r.data.important_notice||ioneImportantNoticeCache).trim();
       const saved=document.getElementById(inputId);if(saved)saved.value=field==="ione_update"?ioneUpdateCache:ioneImportantNoticeCache;
       if(status)status.textContent="PUBLISHED • LIVE";
-      if(typeof window.ioneSendAuthorityPush==="function"){
-        window.ioneSendAuthorityPush({password:secret,title:title==="I|ONE UPDATE"?"I|ONE UPDATE":"IMPORTANT NOTICE",body:value,url:"./?ionePushDestination="+destination,tag}).catch(e=>console.warn("I|ONE "+title+" push:",e));
-      }
-    }catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
+}catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
     finally{if(button)button.disabled=false;}
   }
 
