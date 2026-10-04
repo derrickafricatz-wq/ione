@@ -2761,7 +2761,15 @@ settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="
     setTimeout(ioneSyncHomeOnlyControls,0);
   },true);
   if(window.MutationObserver){
-    const mo=new MutationObserver(function(){ioneSyncHomeOnlyControls();});
+    let homeControlCheckTimer=0;
+    const scheduleHomeControlCheck=function(){
+      if(homeControlCheckTimer)return;
+      homeControlCheckTimer=setTimeout(function(){
+        homeControlCheckTimer=0;
+        ioneSyncHomeOnlyControls();
+      },120);
+    };
+    const mo=new MutationObserver(scheduleHomeControlCheck);
     mo.observe(document.body,{subtree:true,attributes:true,attributeFilter:["style","class","aria-hidden"]});
   }
   window.ioneShowHomeControls=function(){ioneSetHomeControls(true);};
