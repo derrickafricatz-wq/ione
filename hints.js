@@ -135,6 +135,8 @@ const lessonHints = [
     }
   }
 
+  window.ioneSyncPushNow = syncExistingPush;
+
   async function disablePush(){
     if(!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     const registration = await navigator.serviceWorker.ready;
@@ -152,10 +154,11 @@ const lessonHints = [
     const button=document.getElementById("ioneNotificationBtn");
     if(!button || !("Notification" in window)) return;
     let on=false;
+    try{ on=localStorage.getItem("ionePushEnabled")==="1"; }catch(_){}
     if(Notification.permission==="granted" && "serviceWorker" in navigator && "PushManager" in window){
       try{
         const registration=await navigator.serviceWorker.ready;
-        on=!!(await registration.pushManager.getSubscription());
+        on=!!(await registration.pushManager.getSubscription()) || on;
       }catch(_){}
     }
     button.dataset.state=on?"on":"off";
