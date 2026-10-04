@@ -152,6 +152,7 @@ const lessonHints = [
     const button=document.getElementById("ioneNotificationBtn");
     if(!button) return;
     let on=false;
+    try{ on=localStorage.getItem("ionePushEnabled")==="1"; }catch(_){}
     if("serviceWorker" in navigator && "PushManager" in window && ("Notification" in window ? Notification.permission==="granted" : true)){
       try{
         const registration=await navigator.serviceWorker.ready;
@@ -189,6 +190,7 @@ const lessonHints = [
   }
 
   window.ioneTogglePushNotifications=togglePushFromBell;
+  window.ioneUpdateNotificationBell=updateNotificationBell;
 
   document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") syncExistingPush(); });
   window.addEventListener("focus",()=>syncExistingPush());
@@ -292,10 +294,11 @@ const lessonHints = [
       }
       if(sb()){
         await syncExistingPush();
-        setTimeout(syncExistingPush,2500);
-        setTimeout(syncExistingPush,7000);
+        setTimeout(syncExistingPush,1800);
+        setTimeout(syncExistingPush,5000);
       }
-      setTimeout(updateNotificationBell,900);
+      setTimeout(updateNotificationBell,250);
+      setTimeout(updateNotificationBell,1400);
       setTimeout(handlePushDestination,500);
     },0);
   }
