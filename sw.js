@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v110";
+const CACHE_NAME = "ione-app-v111";
 
 const APP_FILES = [
   "./",
@@ -53,48 +53,52 @@ self.addEventListener("fetch", (event) => {
   // Always fetch the app shell and service worker from the network first.
   // This prevents a broken/stale HTML or SW from trapping the app in an old cache.
   const url = new URL(event.request.url);
-  if (event.request.mode === "navigate" || url.pathname.endsWith("/sw.js")) {
+  if (event.request.mode === "navigate") {
+    // Return the cached shell immediately when available, while refreshing it
+    // in the background. This prevents a black/blank cold-start while keeping
+    // the app shell current after the network responds.
     event.respondWith(
-      fetch(event.request, { cache: "no-store" })
-        .then((response) => {
-          if (event.request.mode === "navigate" && response && response.ok) {
+      caches.match("./index.html").then((cached) => {
+        const refresh = fetch(event.request, { cache: "no-store" }).then((response) => {
+          if (response && response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", clone));
           }
           return response;
-        })
-        .catch(() => caches.match("./index.html"))
+        }).catch(() => null);
+        if (cached) {
+          event.waitUntil(refresh);
+          return cached;
+        }
+        return refresh.then((response) => response || caches.match("./index.html"));
+      })
     );
+    return;
+  }
+
+  if (url.pathname.endsWith("/sw.js")) {
+    event.respondWith(fetch(event.request, {cache:"no-store"}));
+    return;
+  }
+
+  // Only cache small same-origin application assets. Never grow the app cache
+  // with remote fonts, large media, videos, or arbitrary API responses.
+  const sameOrigin = url.origin === self.location.origin;
+  const cacheableDestination = ["script","style","manifest","worker","document"].includes(event.request.destination);
+  if (!sameOrigin || !cacheableDestination) {
+    event.respondWith(fetch(event.request).catch(() => Response.error()));
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
-
-      return fetch(event.request)
-        .then((networkResponse) => {
-          if (
-            !networkResponse ||
-            networkResponse.status !== 200 ||
-            networkResponse.type !== "basic"
-          ) {
-            return networkResponse;
-          }
-
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
-
-          return networkResponse;
-        })
-        .catch(() => {
-          if (event.request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
-          return Response.error();
-        });
+      return fetch(event.request).then((networkResponse) => {
+        if (!networkResponse || networkResponse.status !== 200) return networkResponse;
+        const clone = networkResponse.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return networkResponse;
+      }).catch(() => Response.error());
     })
   );
 });
