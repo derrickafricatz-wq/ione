@@ -2033,7 +2033,9 @@ body, #ioneHomeShell, #smartPanel{overscroll-behavior:none}
 #ioneNotificationBtn[data-state="off"]{background:linear-gradient(145deg,#18272b,#071114);color:#9eeff2}
 button:active,[role="button"]:active{-webkit-tap-highlight-color:transparent;box-shadow:none!important}
 button,[role="button"]{-webkit-tap-highlight-color:transparent}
-body.ione-non-home #ioneTopActions{display:none!important}
+body.ione-non-home #ioneTopActions,
+body.ione-non-home #ionePushEnableButton{display:none!important}
+#ionePushEnableButton{z-index:200!important}
 #settingsBtn{min-width:82px;padding:8px 13px;font-size:13px}
 @media(max-width:370px){#ioneTopActions{right:8px;gap:6px}#ioneNotificationBtn{min-width:82px}#settingsBtn{padding:8px 11px;font-size:12px}}
 #ioneHomeShell{position:fixed;inset:0;z-index:8;box-sizing:border-box;padding:72px 14px 88px;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
@@ -2770,7 +2772,26 @@ settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="
       },120);
     };
     const mo=new MutationObserver(scheduleHomeControlCheck);
-    mo.observe(document.body,{subtree:true,attributes:true,attributeFilter:["style","class","aria-hidden"]});
+    mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["style","class","aria-hidden"]});
+    // A feature can create its chat shell after the original click. Keep the
+    // home controls hidden even when that shell is dynamically mounted.
+    const enforceFeatureMode=function(){
+      const selectors=[
+        '#authorityPasswordOverlay[aria-hidden="false"]',
+        '#authorityPressPanel[aria-hidden="false"]',
+        '[id*="support" i][aria-hidden="false"]',
+        '[class*="support" i][aria-hidden="false"]',
+        '[id*="chat" i][aria-hidden="false"]',
+        '[class*="chat" i][aria-hidden="false"]'
+      ];
+      if(selectors.some(function(s){try{return !!document.querySelector(s)}catch(_){return false;}})) ioneSetHomeControls(false);
+    };
+    document.addEventListener("click",function(e){
+      const feature=e.target.closest && e.target.closest('[id*="support" i],[class*="support" i],[id*="authority" i],[class*="authority" i]');
+      if(feature && !e.target.closest("#ioneTopActions")) ioneSetHomeControls(false);
+      setTimeout(enforceFeatureMode,0);
+    },true);
+    setTimeout(enforceFeatureMode,250);
   }
   window.ioneShowHomeControls=function(){ioneSetHomeControls(true);};
   window.ioneHideHomeControls=function(){ioneSetHomeControls(false);};
