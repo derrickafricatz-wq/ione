@@ -2739,18 +2739,31 @@ function ioneSetHomeControls(isHome){
 settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="flex";showGuideHome();};
 /* I|ONE HOME-ONLY CONTROLS • feature navigation must hide GUIDE + PUSH */
 (function(){
-  const featureButtons=["openAfrilink","openTranscript","openHealth","openAuthority","openBusBooking"];
+  const featureButtons=["openAfrilink","openTranscript","openHealth","openAuthority","openBusBooking","openFlightBooking","openIoneGift","openIoneSupport"];
   featureButtons.forEach(function(id){
     const el=document.getElementById(id);
     if(!el)return;
     el.addEventListener("click",function(){ioneSetHomeControls(false);},true);
   });
+  function ioneSyncHomeOnlyControls(){
+    const supportOpen=Array.from(document.querySelectorAll('[id*="Support"],[id*="support"],[class*="support"],[class*="Support"]')).some(function(el){
+      if(el.id==="openIoneSupport") return false;
+      const cs=getComputedStyle(el);
+      return cs.display!=="none" && cs.visibility!=="hidden" && cs.opacity!=="0" && (cs.position==="fixed" || cs.position==="absolute");
+    });
+    if(supportOpen) ioneSetHomeControls(false);
+  }
   document.addEventListener("click",function(e){
     const smart=e.target.closest && e.target.closest("#ioneHomeShell .smart-item");
     if(smart) ioneSetHomeControls(false);
     const homeAction=e.target.closest && e.target.closest("[data-ione-home]");
     if(homeAction) ioneSetHomeControls(true);
+    setTimeout(ioneSyncHomeOnlyControls,0);
   },true);
+  if(window.MutationObserver){
+    const mo=new MutationObserver(function(){ioneSyncHomeOnlyControls();});
+    mo.observe(document.body,{subtree:true,attributes:true,attributeFilter:["style","class","aria-hidden"]});
+  }
   window.ioneShowHomeControls=function(){ioneSetHomeControls(true);};
   window.ioneHideHomeControls=function(){ioneSetHomeControls(false);};
 })();
