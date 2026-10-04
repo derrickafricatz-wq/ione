@@ -476,30 +476,13 @@
       // Sync an existing granted push subscription before the first seller publish.
       try { if (typeof window.ioneEnsurePushSubscription === "function") await window.ioneEnsurePushSubscription(); } catch (_) {}
       try {
-        var pushBase = (typeof SUPABASE_URL !== "undefined" ? SUPABASE_URL : (window.SUPABASE_URL || ""));
-        var pushFn = String(pushBase || "").replace(/\/$/, "") + "/functions/v1/ione-push";
-        var pushHeaders = { "Content-Type": "application/json" };
-        try {
-          var authSession = await sb.auth.getSession();
-          if (authSession && authSession.data && authSession.data.session && authSession.data.session.access_token) {
-            pushHeaders.Authorization = "Bearer " + authSession.data.session.access_token;
-          }
-        } catch (_) {}
-        var pushResponse = null;
-        var pushText = "";
-        var pushBody = JSON.stringify({ action:"product_send", product_id:createdProductId });
-        for (var pushAttempt=0; pushAttempt<2; pushAttempt++) {
-          pushResponse = await fetch(pushFn, {
-            method: "POST",
-            headers: pushHeaders,
-            body: pushBody
-          });
-          pushText = await pushResponse.text();
-          if (pushResponse.ok) break;
-          if (pushAttempt===0) await new Promise(function(resolve){setTimeout(resolve,180);});
-        }
-        if (!pushResponse || !pushResponse.ok) {
-          console.warn("Product push notification failed:", pushResponse && pushResponse.status, pushText);
+        var pushResult = await sb.functions.invoke("ione-push", {
+          body: { action:"product_send", product_id:createdProductId }
+        });
+        if (pushResult.error || !pushResult.data?.success) {
+          console.warn("Product push notification failed:", pushResult.error?.message || pushResult.data?.error || "unknown error");
+        } else {
+          console.info("Product push notification:", pushResult.data);
         }
       } catch (pushErr) {
         console.warn("Product push notification:", pushErr);
