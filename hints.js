@@ -90,9 +90,11 @@ const lessonHints = [
 
     const permission = await Notification.requestPermission();
     if(permission !== "granted"){
-      throw new Error(permission === "denied"
-        ? "Notifications are blocked in this browser. Allow them in browser site settings."
-        : "Notification permission was not granted.");
+      try{ await updateNotificationBell(); }catch(_){}
+      if(permission === "denied"){
+        throw new Error("Notifications are blocked for I|ONE in this browser. Open the browser site settings for I|ONE, set Notifications to Allow, then press ACCESS DENIED again.");
+      }
+      throw new Error("Notification permission was not granted.");
     }
 
     await getPushConfig();
@@ -169,7 +171,7 @@ const lessonHints = [
 
   async function togglePushFromBell(){
     const button=document.getElementById("ioneNotificationBtn");
-    if(button) button.disabled=true;
+    if(button) { button.disabled=true; button.setAttribute("aria-busy","true"); }
     try{
       if("Notification" in window && Notification.permission==="granted"){
         const registration=await navigator.serviceWorker.ready;
@@ -185,7 +187,7 @@ const lessonHints = [
       alert(e?.message || "Could not change I|ONE notification settings.");
       await updateNotificationBell();
     }finally{
-      if(button) button.disabled=false;
+      if(button) { button.disabled=false; button.removeAttribute("aria-busy"); }
     }
   }
 
