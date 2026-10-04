@@ -1,5 +1,5 @@
 {
-  "version": "1.0.42",
-  "message": "Separate first fullscreen tap from feature activation",
+  "version": "1.0.43",
+  "message": "Push delivery and smooth app shell update",
   "force": false
 }
