@@ -2737,6 +2737,23 @@ function ioneSetHomeControls(isHome){
   if(ioneTopActions) ioneTopActions.setAttribute("aria-hidden",isHome?"false":"true");
 }
 settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="flex";showGuideHome();};
+/* I|ONE HOME-ONLY CONTROLS • feature navigation must hide GUIDE + PUSH */
+(function(){
+  const featureButtons=["openAfrilink","openTranscript","openHealth","openAuthority","openBusBooking"];
+  featureButtons.forEach(function(id){
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.addEventListener("click",function(){ioneSetHomeControls(false);},true);
+  });
+  document.addEventListener("click",function(e){
+    const smart=e.target.closest && e.target.closest("#ioneHomeShell .smart-item");
+    if(smart) ioneSetHomeControls(false);
+    const homeAction=e.target.closest && e.target.closest("[data-ione-home]");
+    if(homeAction) ioneSetHomeControls(true);
+  },true);
+  window.ioneShowHomeControls=function(){ioneSetHomeControls(true);};
+  window.ioneHideHomeControls=function(){ioneSetHomeControls(false);};
+})();
 
 const ioneNotificationBtn=document.getElementById("ioneNotificationBtn");
 if(ioneNotificationBtn){
