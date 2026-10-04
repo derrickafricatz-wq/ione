@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v109";
+const CACHE_NAME = "ione-app-v110";
 
 const APP_FILES = [
   "./",
@@ -114,6 +114,7 @@ self.addEventListener("push", (event) => {
     body: String(data.body || "New information is available on I|ONE."),
     icon: new URL(data.icon || "./icon-192.png", self.registration.scope).href,
     badge: new URL(data.badge || "./icon-192.png", self.registration.scope).href,
+    ...(data.image ? { image: String(data.image) } : {}),
     tag: String(data.tag || "ione-notification"),
     renotify: true,
     data: { url: String(data.url || "./") }
