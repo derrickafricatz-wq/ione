@@ -206,6 +206,10 @@ window.ioneEnsureBookPdfLibraries = async function(){
     list.querySelectorAll("[data-live-payout]").forEach(btn=>btn.addEventListener("click",()=>sendChapChapPayout(btn.getAttribute("data-live-payout"))));
     if(status)status.textContent="CONNECTED • READY";
   }
+  /* Keep the Authority renderer available to the legacy/cached Authority click handlers too. */
+  window.renderChapChapAuthority=renderChapChapAuthority;
+  window.ioneRenderChapChapAuthority=renderChapChapAuthority;
+
   function clearPayoutQuote(button){
     if(!button)return;
     const old=button.closest(".authority-chapchap-order")?.querySelector(".authority-payout-quote");
