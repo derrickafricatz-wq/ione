@@ -49,8 +49,10 @@
         return '<div class="authority-chapchap-order"><strong>'+esc(r.receipt_number||"OFFICIAL RECEIPT")+'</strong><div class="cc-mini">PRODUCT: '+esc(r.product_title||o.product?.title||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</div>'+receiptButton(r)+'</div>';
       });
     }else if(filter==="agreements"){
-      rows=orders.filter(function(o){return o.has_agreement;}).map(function(o){
-        return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT • RECORDED</strong><div class="cc-mini">PRODUCT: '+esc(o.product?.title||"—")+'<br>SELLER: '+esc(o.product?.seller_name||o.seller_id||"—")+'<br>PHONE: '+esc(o.product?.seller_phone||"—")+'<br>ORDER: '+esc(o.id)+'<br>STATUS: '+esc(String(o.status||"").toUpperCase())+'</div></div>';
+      var agreements=data.agreements||[];
+      rows=agreements.map(function(a){
+        var product=(data.orders||[]).find(function(o){return String(o.product_id)===String(a.product_id);})?.product||null;
+        return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT • RECORDED</strong><div class="cc-mini">PRODUCT: '+esc(product?.title||"PRODUCT ID "+a.product_id||"—")+'<br>SELLER: '+esc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+esc(a.seller_phone||"—")+'<br>TERMS VERSION: '+esc(a.terms_version||"—")+'<br>ACCEPTED: '+esc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div></div>';
       });
     }else if(filter==="payouts"){
       rows=orders.filter(function(o){return !!o.payout_record || String(o.payout_status||"")!=="";}).map(function(o){
