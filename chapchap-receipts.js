@@ -75,7 +75,7 @@
       var agreements=data.agreements||[];
       rows=agreements.map(function(a){
         var product=(data.orders||[]).find(function(o){return String(o.product_id)===String(a.product_id);})?.product||null;
-        return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT • RECORDED</strong><div class="cc-mini">PRODUCT: '+esc(product?.title||"PRODUCT ID "+a.product_id||"—")+'<br>SELLER: '+esc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+esc(a.seller_phone||"—")+'<br>TERMS VERSION: '+esc(a.terms_version||"—")+'<br>ACCEPTED: '+esc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary cc-authority-download-agreement" data-agreement="\''+esc(JSON.stringify({agreement:a,product_title:product?.title||"PRODUCT ID "+a.product_id}))+'\'>DOWNLOAD</button></div>';
+        return '<div class="authority-chapchap-order cc-agreement-card"><strong>SELLER AGREEMENT • RECORDED</strong><div class="cc-mini">PRODUCT: '+esc(product?.title||"PRODUCT ID "+a.product_id||"—")+'<br>SELLER: '+esc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+esc(a.seller_phone||"—")+'<br>TERMS VERSION: '+esc(a.terms_version||"—")+'<br>ACCEPTED: '+esc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary cc-authority-download-agreement" data-agreement-id="'+esc(a.id||"")+'">DOWNLOAD</button></div>';
       });
     }else if(filter==="payouts"){
       rows=orders.filter(function(o){return !!o.payout_record || String(o.payout_status||"")!=="";}).map(function(o){
@@ -91,7 +91,7 @@
     setTimeout(function(){authorityWriting=false;},0);
     list.querySelectorAll(".cc-authority-view-receipt").forEach(function(b){b.addEventListener("click",function(){openAuthorityReceipt(JSON.parse(b.dataset.receipt));});});
     list.querySelectorAll(".cc-authority-download-receipt").forEach(function(b){b.addEventListener("click",function(){downloadReceipt(JSON.parse(b.dataset.receipt));});});
-    list.querySelectorAll(".cc-authority-download-agreement").forEach(function(b){b.addEventListener("click",function(){var x=JSON.parse(b.dataset.agreement);downloadAgreement(x.agreement,x.product_title);});});
+    list.querySelectorAll(".cc-authority-download-agreement").forEach(function(b){b.addEventListener("click",function(){var id=String(b.getAttribute("data-agreement-id")||"");var a=(data.agreements||[]).find(function(x){return String(x.id)===id;});if(!a)return;var product=(data.orders||[]).find(function(o){return String(o.product_id)===String(a.product_id);})?.product||null;downloadAgreement(a,product?.title||"PRODUCT ID "+a.product_id);});});
   }
 
   function openAuthorityReceipt(r){
@@ -102,19 +102,24 @@
     panel.querySelector("#ccAuthorityBack")?.addEventListener("click",function(){refreshAuthority();});
   }
 
-  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:68px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapPanel .authority-chapchap-head h3{margin:2px 0!important;font-size:14px!important;line-height:1.15!important;max-width:calc(100% - 4px)!important}#authorityChapChapClose{position:absolute!important;top:8px!important;right:8px!important;z-index:21!important;min-height:30px!important;height:30px!important;min-width:52px!important;width:52px!important;padding:0 7px!important;border-radius:9px!important;font:900 8px Arial,sans-serif!important;touch-action:manipulation!important}#ioneChapBar{display:flex!important;align-items:center!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;white-space:nowrap!important}#ioneChapBar::-webkit-scrollbar{display:none!important}#ioneChapBar #ioneChapStatus{flex:0 0 auto!important;margin-left:auto!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
+  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:68px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapPanel .authority-chapchap-head h3{margin:2px 0!important;font-size:14px!important;line-height:1.15!important;max-width:calc(100% - 4px)!important}#authorityChapChapClose{position:absolute!important;top:8px!important;right:8px!important;z-index:21!important;min-height:30px!important;height:30px!important;min-width:52px!important;width:52px!important;padding:0 7px!important;border-radius:9px!important;font:900 8px Arial,sans-serif!important;touch-action:manipulation!important}#ioneChapBar{display:flex!important;align-items:center!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;white-space:nowrap!important}#ioneChapBar::-webkit-scrollbar{display:none!important}#ioneChapBar #ioneChapStatus{flex:0 0 auto!important;margin-left:auto!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important;width:100%!important;box-sizing:border-box!important;display:grid!important;gap:10px!important;padding:0 1px 18px!important}#authorityChapChapOrders .authority-chapchap-order{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow:hidden!important;padding:12px!important;border-radius:14px!important}#authorityChapChapOrders .authority-chapchap-order .cc-mini{overflow-wrap:anywhere!important;word-break:break-word!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:44px!important;width:100%!important;box-sizing:border-box!important}#authorityChapChapOrders .cc-authority-download-agreement{margin-top:10px!important}";document.head.appendChild(st)}
   var authorityFilter="orders",authorityBusy=false,authorityWriting=false;
-  function hookAgreementFilter(){
+  function hookAuthorityFilters(){
     document.addEventListener("click",function(e){
-      var card=e.target.closest && e.target.closest('[data-cc-filter="agreements"]');
-      if(card) setTimeout(async function(){
+      var card=e.target.closest && e.target.closest("[data-cc-filter]");
+      if(!card || !document.getElementById("authorityChapChapPanel"))return;
+      var filter=card.getAttribute("data-cc-filter")||"orders";
+      if(["orders","agreements","receipts","payouts"].indexOf(filter)<0)return;
+      setTimeout(async function(){
         try{
-          authorityFilter="agreements";
+          authorityFilter=filter;
+          var filters=document.getElementById("authorityChapChapFilters");
+          if(filters)filters.querySelectorAll("[data-cc-filter]").forEach(function(el){el.classList.toggle("is-selected",el===card);});
           var data=await getAuthority();
-          renderAuthority("agreements",data);
+          renderAuthority(filter,data);
         }catch(err){
           var s=document.getElementById("authorityChapChapLoadStatus");
-          if(s)s.textContent=err&&err.message?err.message:"Could not load seller agreements.";
+          if(s)s.textContent=err&&err.message?err.message:"Could not load ChapChap records.";
         }
       },60);
     },true);
@@ -360,7 +365,7 @@
   window.ioneChapChapOpenStandaloneReceipt=function(r){openStandaloneReceipt(r);};
   window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
   window.ioneChapChapDownloadAgreement=function(a,productTitle){downloadAgreement(a,productTitle);};
-  hookAgreementFilter();
+  hookAuthorityFilters();
   var mo=new MutationObserver(function(){
     if(authorityWriting)return;
     enhanceAuthority();
