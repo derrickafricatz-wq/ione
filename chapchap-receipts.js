@@ -155,7 +155,7 @@
       var card=e.target.closest && e.target.closest("[data-cc-filter]");
       if(!card || !document.getElementById("authorityChapChapPanel"))return;
       var filter=card.getAttribute("data-cc-filter")||"orders";
-      if(["orders","agreements","receipts","payouts"].indexOf(filter)<0)return;
+      if(["agreements","receipts"].indexOf(filter)<0)return;
       setTimeout(async function(){
         try{
           authorityFilter=filter;
