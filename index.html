@@ -2660,7 +2660,8 @@ document.body.addEventListener("click",e=>{
   if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
 },true);
 document.body.addEventListener("touchend",e=>{
-  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
+  // A touch is already followed by click on Android. Do not request fullscreen
+  // from both events; the duplicate compositor transition can produce a black frame.
 },{passive:true,capture:true});
 
 function ioneFullscreenStateChanged(){
