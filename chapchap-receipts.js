@@ -80,6 +80,21 @@
 
   function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:68px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapPanel .authority-chapchap-head h3{margin:2px 0!important;font-size:14px!important;line-height:1.15!important;max-width:calc(100% - 4px)!important}#authorityChapChapClose{position:absolute!important;top:8px!important;right:8px!important;z-index:21!important;min-height:30px!important;height:30px!important;min-width:52px!important;width:52px!important;padding:0 7px!important;border-radius:9px!important;font:900 8px Arial,sans-serif!important;touch-action:manipulation!important}#ioneChapBar{display:flex!important;align-items:center!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;white-space:nowrap!important}#ioneChapBar::-webkit-scrollbar{display:none!important}#ioneChapBar #ioneChapStatus{flex:0 0 auto!important;margin-left:auto!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
   var authorityFilter="orders",authorityBusy=false,authorityWriting=false;
+  function hookAgreementFilter(){
+    document.addEventListener("click",function(e){
+      var card=e.target.closest && e.target.closest('[data-cc-filter="agreements"]');
+      if(card) setTimeout(async function(){
+        try{
+          authorityFilter="agreements";
+          var data=await getAuthority();
+          renderAuthority("agreements",data);
+        }catch(err){
+          var s=document.getElementById("authorityChapChapLoadStatus");
+          if(s)s.textContent=err&&err.message?err.message:"Could not load seller agreements.";
+        }
+      },60);
+    },true);
+  }
   async function refreshAuthority(){
     if(authorityBusy)return;
     authorityBusy=true;
