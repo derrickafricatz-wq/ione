@@ -39,27 +39,73 @@
       '<button type="button" class="cc-secondary cc-authority-download-receipt" data-receipt=\''+esc(JSON.stringify(r))+'\'>DOWNLOAD</button></div>';
   }
 
-  function downloadAgreement(a,productTitle){
+  async function downloadAgreement(a,productTitle){
     try{
       var title=productTitle||("PRODUCT ID "+(a&&a.product_id||"agreement"));
-      if(window.jspdf&&window.jspdf.jsPDF){
-        var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
-        var y=22;
-        function line(label,value){
-          doc.setFont("helvetica","bold");doc.text(label,20,y);
-          doc.setFont("helvetica","normal");doc.text(String(value==null||value===""?"—":value),62,y);y+=8;
-        }
-        doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text("I|ONE CHAPCHAP — SELLER AGREEMENT",20,y);y+=14;
-        doc.setFontSize(10);
-        line("Agreement ID:",a.id);line("Product:",title);line("Product ID:",a.product_id);line("Seller:",a.seller_name||a.seller_id);line("Seller ID:",a.seller_id);line("Phone:",a.seller_phone);line("Email:",a.seller_email);line("Address:",a.seller_address);line("Location:",a.seller_location);line("Terms version:",a.terms_version);line("Accepted:",a.accepted_at?new Date(a.accepted_at).toLocaleString():"—");line("Recorded:",a.created_at?new Date(a.created_at).toLocaleString():"—");
-        y+=5;doc.line(20,y,190,y);y+=9;doc.setFont("helvetica","bold");doc.text("I|ONE CHAPCHAP",20,y);
-        var safe=String(title||"agreement").replace(/[^a-z0-9_-]/gi,"-").slice(0,55);
-        doc.save("IONE-ChapChap-Agreement-"+safe+".pdf");
-      }else{
-        var blob=new Blob([JSON.stringify(a,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a");
-        link.href=url;link.download="IONE-ChapChap-Agreement.json";document.body.appendChild(link);link.click();link.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);
+
+      // ChapChap agreements must always download as PDF. Load jsPDF only if the
+      // lazy book/PDF loader has not already provided it. Never fall back to JSON.
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        await new Promise(function(resolve,reject){
+          var src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          var existing=document.querySelector('script[data-ione-chapchap-pdf-src="1"]');
+          if(existing){
+            if(window.jspdf && window.jspdf.jsPDF)return resolve();
+            existing.addEventListener("load",function(){resolve();},{once:true});
+            existing.addEventListener("error",reject,{once:true});
+            return;
+          }
+          var s=document.createElement("script");
+          s.src=src;
+          s.async=true;
+          s.dataset.ioneChapchapPdfSrc="1";
+          s.onload=function(){
+            if(window.jspdf && window.jspdf.jsPDF)resolve();
+            else reject(new Error("PDF library did not initialize."));
+          };
+          s.onerror=reject;
+          document.head.appendChild(s);
+        });
       }
-    }catch(e){alert("The agreement could not be downloaded on this device.");}
+
+      if(!window.jspdf || !window.jspdf.jsPDF)throw new Error("PDF library unavailable.");
+
+      var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
+      var y=22;
+      function line(label,value){
+        doc.setFont("helvetica","bold");doc.text(label,20,y);
+        doc.setFont("helvetica","normal");
+        doc.text(String(value==null||value===""?"—":value),62,y);
+        y+=8;
+      }
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(16);
+      doc.text("I|ONE CHAPCHAP — SELLER AGREEMENT",20,y);
+      y+=14;
+      doc.setFontSize(10);
+      line("Agreement ID:",a&&a.id);
+      line("Product:",title);
+      line("Product ID:",a&&a.product_id);
+      line("Seller:",a&&(a.seller_name||a.seller_id));
+      line("Seller ID:",a&&a.seller_id);
+      line("Phone:",a&&a.seller_phone);
+      line("Email:",a&&a.seller_email);
+      line("Address:",a&&a.seller_address);
+      line("Location:",a&&a.seller_location);
+      line("Terms version:",a&&a.terms_version);
+      line("Accepted:",a&&a.accepted_at?new Date(a.accepted_at).toLocaleString():"—");
+      line("Recorded:",a&&a.created_at?new Date(a.created_at).toLocaleString():"—");
+      y+=5;
+      doc.line(20,y,190,y);
+      y+=9;
+      doc.setFont("helvetica","bold");
+      doc.text("I|ONE CHAPCHAP",20,y);
+
+      var safe=String(title||"agreement").replace(/[^a-z0-9_-]/gi,"-").slice(0,55);
+      doc.save("IONE-ChapChap-Agreement-"+safe+".pdf");
+    }catch(e){
+      alert("The agreement could not be downloaded as a PDF on this device.");
+    }
   }
 
   function renderAuthority(filter,data){
