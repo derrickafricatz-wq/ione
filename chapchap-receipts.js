@@ -359,6 +359,7 @@
   window.ioneChapChapOpenReceipt=function(r){openAuthorityReceipt(r);};
   window.ioneChapChapOpenStandaloneReceipt=function(r){openStandaloneReceipt(r);};
   window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
+  window.ioneChapChapDownloadAgreement=function(a,productTitle){downloadAgreement(a,productTitle);};
   hookAgreementFilter();
   var mo=new MutationObserver(function(){
     if(authorityWriting)return;
