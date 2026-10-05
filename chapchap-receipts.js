@@ -335,6 +335,7 @@
   window.ioneChapChapOpenReceipt=function(r){openAuthorityReceipt(r);};
   window.ioneChapChapOpenStandaloneReceipt=function(r){openStandaloneReceipt(r);};
   window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
+  hookAgreementFilter();
   var mo=new MutationObserver(function(){
     if(authorityWriting)return;
     enhanceAuthority();
