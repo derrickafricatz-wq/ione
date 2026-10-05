@@ -195,7 +195,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
     if(chapChapAuthorityFilter==="orders"){
       list.innerHTML=rows.map(o=>{const p=o.product||{};return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>CLIENT: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+'</div></div>';}).join("");
     }else if(chapChapAuthorityFilter==="agreements"){
-      list.innerHTML=rows.map(a=>{const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};return '<div class="authority-chapchap-order" style="box-sizing:border-box;width:100%;overflow:hidden"><strong>SELLER AGREEMENT</strong><div class="cc-mini">PRODUCT: '+authorityEsc(product.title||("PRODUCT ID "+a.product_id))+'<br>SELLER: '+authorityEsc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'<br>ACCEPTED: '+authorityEsc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary" data-agreement-download="'+authorityEsc(a.id||"")+'" style="width:100%;min-height:42px;margin-top:9px">DOWNLOAD</button></div>';}).join("");
+      list.innerHTML=rows.map(a=>{const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};return '<div class="authority-chapchap-order cc-agreement-card" style="box-sizing:border-box;width:100%;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:8px;padding:12px"><strong>SELLER AGREEMENT</strong><div class="cc-mini" style="margin-top:0;overflow-wrap:anywhere;word-break:break-word;line-height:1.5">PRODUCT: '+authorityEsc(product.title||("PRODUCT ID "+a.product_id))+'<br>SELLER: '+authorityEsc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'<br>ACCEPTED: '+authorityEsc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary cc-authority-download-agreement" data-agreement-download="'+authorityEsc(a.id||"")+'" style="display:block;width:100%;min-height:44px;flex:0 0 auto;margin:0;box-sizing:border-box">DOWNLOAD</button></div>';}).join("");
     }else if(chapChapAuthorityFilter==="receipts"){
       list.innerHTML=rows.map(o=>{const r=o.receipt||{};return '<div class="authority-chapchap-order"><strong>OFFICIAL RECEIPT • '+authorityEsc(r.receipt_number||"—")+'</strong><div class="cc-mini">PRODUCT: '+authorityEsc(r.product_title||"—")+'<br>CLIENT: '+authorityEsc(r.buyer_full_name||o.buyer_full_name||"—")+'<br>PHONE: '+authorityEsc(r.buyer_contact||o.buyer_phone||"—")+'<br>EMAIL: '+authorityEsc(r.buyer_email||o.buyer_email||"—")+'<br>ADDRESS: '+authorityEsc(r.buyer_address||o.buyer_address||"—")+'<br>PRODUCT PRICE: TZS '+Number(r.amount_tzs||o.amount_tzs||0).toLocaleString("en-US")+'<br>CHAPCHAP FEE (1%): TZS '+Number(r.chapchap_fee_tzs||o.commission_tzs||0).toLocaleString("en-US")+'<br>BLMPAY MOBILE FEE (3%): TZS '+Number(r.blmpay_payment_fee_tzs||o.blmpay_payment_fee_tzs||0).toLocaleString("en-US")+'<br>SELLER BALANCE: TZS '+Number(r.seller_available_tzs||o.seller_available_tzs||o.seller_net_tzs||0).toLocaleString("en-US")+'<br>BLMPAY: '+authorityEsc(r.blmpay_reference||"—")+'</div><div style="display:flex;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-authority-receipt="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-authority-download="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">DOWNLOAD</button></div></div>';}).join("");
     }else{
@@ -588,10 +588,19 @@ window.ioneEnsureBookPdfLibraries = async function(){
       filters.addEventListener("click",function(e){
         const card=e.target.closest("[data-cc-filter]");
         if(!card)return;
+        e.preventDefault();
+        e.stopPropagation();
         chapChapAuthorityFilter=card.getAttribute("data-cc-filter")||"orders";
         filters.querySelectorAll("[data-cc-filter]").forEach(el=>el.classList.toggle("is-selected",el===card));
-        if(chapChapAuthorityCache){ renderChapChapAuthority(chapChapAuthorityCache); } else { loadChapChapAuthority(true); }
-        setTimeout(()=>document.getElementById("authorityChapChapOrders")?.scrollIntoView({behavior:"smooth",block:"nearest"}),50);
+        if(chapChapAuthorityCache){
+          renderChapChapAuthority(chapChapAuthorityCache);
+        }else{
+          loadChapChapAuthority(true);
+        }
+        setTimeout(()=>{
+          const list=document.getElementById("authorityChapChapOrders");
+          if(list)list.scrollIntoView({behavior:"smooth",block:"nearest"});
+        },60);
       });
     }
 
