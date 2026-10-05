@@ -183,43 +183,29 @@ window.ioneEnsureBookPdfLibraries = async function(){
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
   function renderChapChapAuthority(data){
-    const status=document.getElementById("authorityChapChapLoadStatus"),list=document.getElementById("authorityChapChapOrders"),orders=data?.orders||[],counts=data?.counts||{};
-    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([counts.orders,counts.agreements,counts.receipts,counts.payouts][i]??0);});
+    const status=document.getElementById("authorityChapChapLoadStatus"),list=document.getElementById("authorityChapChapOrders"),orders=data?.orders||[],agreements=data?.agreements||[],counts=data?.counts||{};
+    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([counts.orders,agreements.length,counts.receipts,counts.payouts][i]??0);});
     if(!list)return;
     let rows=[];
     if(chapChapAuthorityFilter==="orders") rows=orders;
-    else if(chapChapAuthorityFilter==="agreements") rows=orders.filter(o=>o.has_agreement);
+    else if(chapChapAuthorityFilter==="agreements") rows=agreements;
     else if(chapChapAuthorityFilter==="receipts") rows=orders.filter(o=>o.has_receipt);
     else rows=orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && ["paid","received"].includes(String(o.status||"").toLowerCase())));
     if(!rows.length){list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';if(status)status.textContent="CONNECTED • READY";return;}
     if(chapChapAuthorityFilter==="orders"){
       list.innerHTML=rows.map(o=>{const p=o.product||{};return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>CLIENT: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+'</div></div>';}).join("");
     }else if(chapChapAuthorityFilter==="agreements"){
-      list.innerHTML=rows.map(o=>{const a=o.agreement_record||{};return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT</strong><div class="cc-mini">SELLER: '+authorityEsc(a.seller_name||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'</div></div>';}).join("");
+      list.innerHTML=rows.map(a=>{const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};return '<div class="authority-chapchap-order" style="box-sizing:border-box;width:100%;overflow:hidden"><strong>SELLER AGREEMENT</strong><div class="cc-mini">PRODUCT: '+authorityEsc(product.title||("PRODUCT ID "+a.product_id))+'<br>SELLER: '+authorityEsc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'<br>ACCEPTED: '+authorityEsc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary" data-agreement-download="'+authorityEsc(a.id||"")+'" style="width:100%;min-height:42px;margin-top:9px">DOWNLOAD</button></div>';}).join("");
     }else if(chapChapAuthorityFilter==="receipts"){
       list.innerHTML=rows.map(o=>{const r=o.receipt||{};return '<div class="authority-chapchap-order"><strong>OFFICIAL RECEIPT • '+authorityEsc(r.receipt_number||"—")+'</strong><div class="cc-mini">PRODUCT: '+authorityEsc(r.product_title||"—")+'<br>CLIENT: '+authorityEsc(r.buyer_full_name||o.buyer_full_name||"—")+'<br>PHONE: '+authorityEsc(r.buyer_contact||o.buyer_phone||"—")+'<br>EMAIL: '+authorityEsc(r.buyer_email||o.buyer_email||"—")+'<br>ADDRESS: '+authorityEsc(r.buyer_address||o.buyer_address||"—")+'<br>PRODUCT PRICE: TZS '+Number(r.amount_tzs||o.amount_tzs||0).toLocaleString("en-US")+'<br>CHAPCHAP FEE (1%): TZS '+Number(r.chapchap_fee_tzs||o.commission_tzs||0).toLocaleString("en-US")+'<br>BLMPAY MOBILE FEE (3%): TZS '+Number(r.blmpay_payment_fee_tzs||o.blmpay_payment_fee_tzs||0).toLocaleString("en-US")+'<br>SELLER BALANCE: TZS '+Number(r.seller_available_tzs||o.seller_available_tzs||o.seller_net_tzs||0).toLocaleString("en-US")+'<br>BLMPAY: '+authorityEsc(r.blmpay_reference||"—")+'</div><div style="display:flex;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-authority-receipt="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-authority-download="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">DOWNLOAD</button></div></div>';}).join("");
     }else{
       list.innerHTML=rows.map(o=>{const p=o.product||{},a=o.agreement_record||{},r=o.payout_record||null;if(r){return '<div class="authority-chapchap-order"><strong>PAYOUT • '+authorityEsc(r.seller_name||a.seller_name||p.seller_name||"SELLER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>STATUS: '+authorityEsc(String(r.status||o.payout_status||"RECORDED").toUpperCase())+'<br>AMOUNT PAID: TZS '+Number(r.amount_tzs||o.payout_amount_tzs||o.seller_net_tzs||0).toLocaleString("en-US")+'<br>SELLER NUMBER: '+authorityEsc(r.recipient_phone||"—")+'<br>NETWORK: '+authorityEsc(r.recipient_network||"—")+'<br>BLMPAY REFERENCE: '+authorityEsc(r.blmpay_reference||o.payout_reference||"—")+'<br>BUYER CONFIRMED PRODUCT RECEIVED</div></div>';}return '<div class="authority-chapchap-order"><strong>PAYOUT • '+authorityEsc(a.seller_name||p.seller_name||"SELLER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>SELLER NET: TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+'<br>BUYER CONFIRMED PRODUCT RECEIVED</div><div class="authority-payout-grid" style="margin-top:9px"><input type="hidden" id="payoutSellerId_'+authorityEsc(o.id)+'" value="'+authorityEsc(o.seller_id||"")+'"><input id="payoutName_'+authorityEsc(o.id)+'" placeholder="Seller name" value="'+authorityEsc(a.seller_name||p.seller_name||"")+'"><input id="payoutPhone_'+authorityEsc(o.id)+'" inputmode="tel" placeholder="Seller number" value="'+authorityEsc(a.seller_phone||p.seller_phone||"")+'"><select id="payoutNetwork_'+authorityEsc(o.id)+'"><option value="">NETWORK</option><option>MPESA</option><option>AIRTEL_MONEY</option><option>MIXX_BY_YAS</option><option>HALOPESA</option><option>EZYPESA</option><option>TTCLPESA</option></select><input id="payoutAmount_'+authorityEsc(o.id)+'" inputmode="numeric" placeholder="Seller balance TZS" value="'+Number(o.seller_available_tzs||o.seller_net_tzs||0)+'" readonly><button type="button" data-live-payout="'+authorityEsc(o.id)+'">CALCULATE FEE &amp; SEND</button></div></div>';}).join("");
     }
     list.querySelectorAll("[data-authority-receipt],[data-authority-download]").forEach(btn=>btn.addEventListener("click",()=>{const o=orders.find(x=>String(x.id)===String(btn.getAttribute("data-authority-receipt")||btn.getAttribute("data-authority-download")));const r=o?.receipt;if(!r)return;if(btn.hasAttribute("data-authority-download"))window.ioneChapChapDownloadReceipt?.(r);else window.ioneChapChapOpenReceipt?.(r);}));
+    list.querySelectorAll("[data-agreement-download]").forEach(btn=>btn.addEventListener("click",()=>{const a=agreements.find(x=>String(x.id)===String(btn.getAttribute("data-agreement-download")));if(!a)return;const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};window.ioneChapChapDownloadAgreement?.(a,product.title||("PRODUCT ID "+a.product_id));}));
     list.querySelectorAll("[data-live-payout]").forEach(btn=>btn.addEventListener("click",()=>sendChapChapPayout(btn.getAttribute("data-live-payout"))));
     if(status)status.textContent="CONNECTED • READY";
   }
-
-  async function loadChapChapAuthority(force=false){
-    const status=document.getElementById("authorityChapChapLoadStatus");
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
-    if(!force&&chapChapAuthorityCache){renderChapChapAuthority(chapChapAuthorityCache);return;}
-    if(status)status.textContent="Loading marketplace data…";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load ChapChap management data.");
-      chapChapAuthorityCache=r.data;
-      renderChapChapAuthority(r.data);
-    }catch(e){if(status)status.textContent=e?.message||"Could not load ChapChap management data.";}
-  }
-
   function clearPayoutQuote(button){
     if(!button)return;
     const old=button.closest(".authority-chapchap-order")?.querySelector(".authority-payout-quote");
