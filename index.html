@@ -582,6 +582,28 @@ window.ioneEnsureBookPdfLibraries = async function(){
     document.getElementById("authorityNewBooks").value=ioneNewBooksCache;
   }
 
+  async function loadChapChapAuthority(forceReload){
+    if(chapChapAuthorityLoadPromise)return chapChapAuthorityLoadPromise;
+    chapChapAuthorityLoadPromise=(async()=>{
+      if(!forceReload && chapChapAuthorityCache){renderChapChapAuthority(chapChapAuthorityCache);return chapChapAuthorityCache;}
+      const password=String(document.getElementById("authorityPasswordInput")?.value||"").trim();
+      const loadStatus=document.getElementById("authorityChapChapLoadStatus");
+      if(!password){if(loadStatus)loadStatus.textContent="Unlock Authority Press first.";return null;}
+      if(loadStatus)loadStatus.textContent="Loading marketplace data…";
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
+        if(result.error||!result.data?.success){
+          let detail=result.data?.error||result.error?.message||"Could not load Authority Press data.";
+          try{const ctx=result.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;}}catch(_){ }
+          throw new Error(detail);
+        }
+        chapChapAuthorityCache=result.data;renderChapChapAuthority(chapChapAuthorityCache);return chapChapAuthorityCache;
+      }catch(error){chapChapAuthorityCache=null;if(loadStatus)loadStatus.textContent=error?.message||"Could not load Authority Press data.";return null;}
+    })();
+    try{return await chapChapAuthorityLoadPromise;}finally{chapChapAuthorityLoadPromise=null;}
+  }
+  window.ioneLoadChapChapAuthority=loadChapChapAuthority;
+
   function bind(){
     const filters=document.getElementById("authorityChapChapFilters");
     if(filters && !filters.dataset.bound){
@@ -8601,94 +8623,18 @@ function ioneRunBackgroundMediaPreload(){ return; }
 })();
 </script>
 <script>
-/* ================= AUTHORITY PRESS • CHAPCHAP MODULE ================= */
+/* ================= AUTHORITY PRESS • CHAPCHAP OPEN/CLOSE CONTROLS ================= */
 (function(){
   function bindChapChapAuthority(){
-    const open=document.getElementById("authorityChapChapOpen");
-    const close=document.getElementById("authorityChapChapClose");
-    const panel=document.getElementById("authorityChapChapPanel");
-    const status=document.getElementById("authorityChapChapStatus");
-    const loadStatus=document.getElementById("authorityChapChapLoadStatus");
+    const open=document.getElementById("authorityChapChapOpen"),close=document.getElementById("authorityChapChapClose"),panel=document.getElementById("authorityChapChapPanel"),status=document.getElementById("authorityChapChapStatus");
     if(!open||!close||!panel)return;
     if(!open.dataset.chapChapCoreBound){
-    open.dataset.chapChapCoreBound="1";
-    async function loadChapChapAuthority(forceReload){
-      if(chapChapAuthorityLoadPromise)return chapChapAuthorityLoadPromise;
-      chapChapAuthorityLoadPromise=(async()=>{
-      if(!forceReload && chapChapAuthorityCache){
-        renderChapChapAuthority(chapChapAuthorityCache);
-        return chapChapAuthorityCache;
-      }
-      const password=String(document.getElementById("authorityPasswordInput")?.value||"").trim();
-      if(!password){
-        if(loadStatus)loadStatus.textContent="Unlock Authority Press first.";
-        return null;
-      }
-      if(loadStatus)loadStatus.textContent="Loading marketplace data…";
-      try{
-        const result=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password:password}});
-        if(result.error || !result.data?.success){
-          let detail=result.data?.error||result.error?.message||"Could not load Authority Press data.";
-          try{
-            const ctx=result.error?.context;
-            if(ctx&&typeof ctx.json==="function"){
-              const body=await ctx.json();
-              detail=body?.error||body?.message||detail;
-            }
-          }catch(_){}
-          throw new Error(detail);
-        }
-        chapChapAuthorityCache=result.data;
-        renderChapChapAuthority(chapChapAuthorityCache);
-        return chapChapAuthorityCache;
-      }catch(error){
-        chapChapAuthorityCache=null;
-        if(loadStatus)loadStatus.textContent=error?.message||"Could not load Authority Press data.";
-        return null;
-      }
-      })();
-      try{return await chapChapAuthorityLoadPromise;}finally{chapChapAuthorityLoadPromise=null;}
+      open.dataset.chapChapCoreBound="1";
+      open.onclick=function(){panel.classList.add("is-open");panel.setAttribute("aria-hidden","false");if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";if(typeof window.ioneLoadChapChapAuthority==="function")window.ioneLoadChapChapAuthority(true);};
+      close.onclick=function(){panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");if(status)status.textContent="READY";};
     }
-    open.onclick=async function(){
-      panel.classList.add("is-open");
-      panel.setAttribute("aria-hidden","false");
-      if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
-      // Loading is handled by the delegated opener to avoid duplicate concurrent loads.
-    };
-    close.onclick=function(){
-      panel.classList.remove("is-open");
-      panel.setAttribute("aria-hidden","true");
-      if(status)status.textContent="READY";
-    };
-    }
-    window.ioneLoadChapChapAuthority=loadChapChapAuthority;
   }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});
-  else bindChapChapAuthority();
-
-  /* Stable delegated controls: reopening must work every time Authority Press is opened. */
-  if(!document.documentElement.dataset.chapChapDelegated){
-    document.documentElement.dataset.chapChapDelegated="1";
-    document.addEventListener("click",function(event){
-      const openButton=event.target.closest && event.target.closest("#authorityChapChapOpen");
-      const closeButton=event.target.closest && event.target.closest("#authorityChapChapClose");
-      const panel=document.getElementById("authorityChapChapPanel");
-      const status=document.getElementById("authorityChapChapStatus");
-      if(openButton && panel){
-        panel.classList.add("is-open");
-        panel.setAttribute("aria-hidden","false");
-        if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
-        bindChapChapAuthority();
-        window.ioneLoadChapChapAuthority(true);
-        return;
-      }
-      if(closeButton && panel){
-        panel.classList.remove("is-open");
-        panel.setAttribute("aria-hidden","true");
-        if(status)status.textContent="READY";
-      }
-    });
-  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});else bindChapChapAuthority();
 })();
 </script>
 <script src="ione-gift-support.js?v=10" defer></script>
