@@ -8661,8 +8661,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
       if(status)status.textContent="READY";
     };
     }
+    window.ioneLoadChapChapAuthority=loadChapChapAuthority;
   }
-  window.ioneLoadChapChapAuthority=loadChapChapAuthority;
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});
   else bindChapChapAuthority();
 
