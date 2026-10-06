@@ -182,9 +182,10 @@ window.ioneEnsureBookPdfLibraries = async function(){
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
+  let chapChapAuthorityLoadPromise=null;
   function renderChapChapAuthority(data){
     const status=document.getElementById("authorityChapChapLoadStatus"),list=document.getElementById("authorityChapChapOrders"),orders=data?.orders||[],agreements=data?.agreements||[],counts=data?.counts||{};
-    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([counts.orders,agreements.length,counts.receipts,counts.payouts][i]??0);});
+    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([orders.length,agreements.length,orders.filter(o=>o.has_receipt).length,orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && ["paid","received"].includes(String(o.status||"").toLowerCase()))).length][i]??0);});
     if(!list)return;
     let rows=[];
     if(chapChapAuthorityFilter==="orders") rows=orders;
@@ -595,7 +596,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
         if(chapChapAuthorityCache){
           renderChapChapAuthority(chapChapAuthorityCache);
         }else{
-          loadChapChapAuthority(true);
+          window.ioneLoadChapChapAuthority(true);
         }
         setTimeout(()=>{
           const list=document.getElementById("authorityChapChapOrders");
@@ -8612,6 +8613,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(!open.dataset.chapChapCoreBound){
     open.dataset.chapChapCoreBound="1";
     async function loadChapChapAuthority(forceReload){
+      if(chapChapAuthorityLoadPromise)return chapChapAuthorityLoadPromise;
+      chapChapAuthorityLoadPromise=(async()=>{
       if(!forceReload && chapChapAuthorityCache){
         renderChapChapAuthority(chapChapAuthorityCache);
         return chapChapAuthorityCache;
@@ -8643,12 +8646,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
         if(loadStatus)loadStatus.textContent=error?.message||"Could not load Authority Press data.";
         return null;
       }
+      })();
+      try{return await chapChapAuthorityLoadPromise;}finally{chapChapAuthorityLoadPromise=null;}
     }
     open.onclick=async function(){
       panel.classList.add("is-open");
       panel.setAttribute("aria-hidden","false");
       if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
-      await loadChapChapAuthority(true);
+      // Loading is handled by the delegated opener to avoid duplicate concurrent loads.
     };
     close.onclick=function(){
       panel.classList.remove("is-open");
@@ -8657,6 +8662,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     };
     }
   }
+  window.ioneLoadChapChapAuthority=loadChapChapAuthority;
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});
   else bindChapChapAuthority();
 
