@@ -5,8 +5,32 @@
   function esc(v){ return String(v==null?"":v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];}); }
   function money(v){ return "TZS "+Number(v||0).toLocaleString("en-US"); }
 
-  function downloadReceipt(r){
+  async function downloadReceipt(r){
     try{
+      // Receipts must always be delivered as PDF. If jsPDF is not already
+      // loaded, load it here instead of falling back to a JSON download.
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        await new Promise(function(resolve,reject){
+          var src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          var existing=document.querySelector('script[data-ione-chapchap-pdf-src="1"]');
+          if(existing){
+            if(window.jspdf && window.jspdf.jsPDF)return resolve();
+            existing.addEventListener("load",function(){resolve();},{once:true});
+            existing.addEventListener("error",reject,{once:true});
+            return;
+          }
+          var s=document.createElement("script");
+          s.src=src;
+          s.async=true;
+          s.dataset.ioneChapchapPdfSrc="1";
+          s.onload=function(){
+            if(window.jspdf && window.jspdf.jsPDF)resolve();
+            else reject(new Error("PDF library did not initialize."));
+          };
+          s.onerror=reject;
+          document.head.appendChild(s);
+        });
+      }
       if(window.jspdf && window.jspdf.jsPDF){
         var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
         var y=22;
@@ -18,10 +42,9 @@
         var safe=String(r.receipt_number||"receipt").replace(/[^a-z0-9_-]/gi,"-");
         doc.save("IONE-ChapChap-"+safe+".pdf");
       }else{
-        var blob=new Blob([JSON.stringify(r,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
-        a.href=url;a.download="IONE-ChapChap-"+String(r.receipt_number||"receipt").replace(/[^a-z0-9_-]/gi,"-")+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);
+        throw new Error("PDF library unavailable.");
       }
-    }catch(e){alert("The receipt could not be downloaded on this device.");}
+    }catch(e){alert("The receipt could not be downloaded as a PDF on this device.");}
   }
 
   async function getAuthority(){
