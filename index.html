@@ -8679,7 +8679,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
         panel.setAttribute("aria-hidden","false");
         if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
         bindChapChapAuthority();
-        loadChapChapAuthority(true);
+        window.ioneLoadChapChapAuthority(true);
         return;
       }
       if(closeButton && panel){
