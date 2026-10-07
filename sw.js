@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v112";
+const CACHE_NAME = "ione-app-v113";
 
 const APP_FILES = [
   "./",
@@ -58,20 +58,13 @@ self.addEventListener("fetch", (event) => {
     // in the background. This prevents a black/blank cold-start while keeping
     // the app shell current after the network responds.
     event.respondWith(
-      caches.match("./index.html").then((cached) => {
-        const refresh = fetch(event.request, { cache: "no-store" }).then((response) => {
-          if (response && response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", clone));
-          }
-          return response;
-        }).catch(() => null);
-        if (cached) {
-          event.waitUntil(refresh);
-          return cached;
+      fetch(event.request, { cache: "no-store" }).then((response) => {
+        if (response && response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", clone));
         }
-        return refresh.then((response) => response || caches.match("./index.html"));
-      })
+        return response;
+      }).catch(() => caches.match("./index.html"))
     );
     return;
   }
