@@ -182,43 +182,34 @@ window.ioneEnsureBookPdfLibraries = async function(){
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
+  let chapChapAuthorityLoadPromise=null;
   function renderChapChapAuthority(data){
-    const status=document.getElementById("authorityChapChapLoadStatus"),list=document.getElementById("authorityChapChapOrders"),orders=data?.orders||[],counts=data?.counts||{};
-    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([counts.orders,counts.agreements,counts.receipts,counts.payouts][i]??0);});
+    const status=document.getElementById("authorityChapChapLoadStatus"),list=document.getElementById("authorityChapChapOrders"),orders=data?.orders||[],agreements=data?.agreements||[],counts=data?.counts||{};
+    ["Orders","Agreements","Receipts","Payouts"].forEach((x,i)=>{const el=document.getElementById(["chapChapOrdersCount","chapChapAgreementsCount","chapChapReceiptsCount","chapChapPayoutsCount"][i]);if(el)el.textContent=String([orders.length,agreements.length,orders.filter(o=>o.has_receipt).length,orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && ["paid","received"].includes(String(o.status||"").toLowerCase()))).length][i]??0);});
     if(!list)return;
     let rows=[];
     if(chapChapAuthorityFilter==="orders") rows=orders;
-    else if(chapChapAuthorityFilter==="agreements") rows=orders.filter(o=>o.has_agreement);
+    else if(chapChapAuthorityFilter==="agreements") rows=agreements;
     else if(chapChapAuthorityFilter==="receipts") rows=orders.filter(o=>o.has_receipt);
     else rows=orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && ["paid","received"].includes(String(o.status||"").toLowerCase())));
     if(!rows.length){list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';if(status)status.textContent="CONNECTED • READY";return;}
     if(chapChapAuthorityFilter==="orders"){
       list.innerHTML=rows.map(o=>{const p=o.product||{};return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>CLIENT: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+'</div></div>';}).join("");
     }else if(chapChapAuthorityFilter==="agreements"){
-      list.innerHTML=rows.map(o=>{const a=o.agreement_record||{};return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT</strong><div class="cc-mini">SELLER: '+authorityEsc(a.seller_name||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'</div></div>';}).join("");
+      list.innerHTML=rows.map(a=>{const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};return '<div class="authority-chapchap-order cc-agreement-card" style="box-sizing:border-box;width:100%;min-width:0;overflow:hidden;display:flex;flex-direction:column;gap:8px;padding:12px"><strong>SELLER AGREEMENT</strong><div class="cc-mini" style="margin-top:0;overflow-wrap:anywhere;word-break:break-word;line-height:1.5">PRODUCT: '+authorityEsc(product.title||("PRODUCT ID "+a.product_id))+'<br>SELLER: '+authorityEsc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+authorityEsc(a.seller_phone||"—")+'<br>EMAIL: '+authorityEsc(a.seller_email||"—")+'<br>ADDRESS: '+authorityEsc(a.seller_address||"—")+'<br>TERMS: '+authorityEsc(a.terms_version||"—")+'<br>ACCEPTED: '+authorityEsc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary cc-authority-download-agreement" data-agreement-download="'+authorityEsc(a.id||"")+'" style="display:block;width:100%;min-height:44px;flex:0 0 auto;margin:0;box-sizing:border-box">DOWNLOAD</button></div>';}).join("");
     }else if(chapChapAuthorityFilter==="receipts"){
       list.innerHTML=rows.map(o=>{const r=o.receipt||{};return '<div class="authority-chapchap-order"><strong>OFFICIAL RECEIPT • '+authorityEsc(r.receipt_number||"—")+'</strong><div class="cc-mini">PRODUCT: '+authorityEsc(r.product_title||"—")+'<br>CLIENT: '+authorityEsc(r.buyer_full_name||o.buyer_full_name||"—")+'<br>PHONE: '+authorityEsc(r.buyer_contact||o.buyer_phone||"—")+'<br>EMAIL: '+authorityEsc(r.buyer_email||o.buyer_email||"—")+'<br>ADDRESS: '+authorityEsc(r.buyer_address||o.buyer_address||"—")+'<br>PRODUCT PRICE: TZS '+Number(r.amount_tzs||o.amount_tzs||0).toLocaleString("en-US")+'<br>CHAPCHAP FEE (1%): TZS '+Number(r.chapchap_fee_tzs||o.commission_tzs||0).toLocaleString("en-US")+'<br>BLMPAY MOBILE FEE (3%): TZS '+Number(r.blmpay_payment_fee_tzs||o.blmpay_payment_fee_tzs||0).toLocaleString("en-US")+'<br>SELLER BALANCE: TZS '+Number(r.seller_available_tzs||o.seller_available_tzs||o.seller_net_tzs||0).toLocaleString("en-US")+'<br>BLMPAY: '+authorityEsc(r.blmpay_reference||"—")+'</div><div style="display:flex;gap:7px;margin-top:8px"><button type="button" class="cc-primary" data-authority-receipt="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">VIEW RECEIPT</button><button type="button" class="cc-secondary" data-authority-download="'+authorityEsc(o.id)+'" style="flex:1;min-height:38px">DOWNLOAD</button></div></div>';}).join("");
     }else{
       list.innerHTML=rows.map(o=>{const p=o.product||{},a=o.agreement_record||{},r=o.payout_record||null;if(r){return '<div class="authority-chapchap-order"><strong>PAYOUT • '+authorityEsc(r.seller_name||a.seller_name||p.seller_name||"SELLER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>STATUS: '+authorityEsc(String(r.status||o.payout_status||"RECORDED").toUpperCase())+'<br>AMOUNT PAID: TZS '+Number(r.amount_tzs||o.payout_amount_tzs||o.seller_net_tzs||0).toLocaleString("en-US")+'<br>SELLER NUMBER: '+authorityEsc(r.recipient_phone||"—")+'<br>NETWORK: '+authorityEsc(r.recipient_network||"—")+'<br>BLMPAY REFERENCE: '+authorityEsc(r.blmpay_reference||o.payout_reference||"—")+'<br>BUYER CONFIRMED PRODUCT RECEIVED</div></div>';}return '<div class="authority-chapchap-order"><strong>PAYOUT • '+authorityEsc(a.seller_name||p.seller_name||"SELLER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>SELLER NET: TZS '+Number(o.seller_net_tzs||0).toLocaleString("en-US")+'<br>BUYER CONFIRMED PRODUCT RECEIVED</div><div class="authority-payout-grid" style="margin-top:9px"><input type="hidden" id="payoutSellerId_'+authorityEsc(o.id)+'" value="'+authorityEsc(o.seller_id||"")+'"><input id="payoutName_'+authorityEsc(o.id)+'" placeholder="Seller name" value="'+authorityEsc(a.seller_name||p.seller_name||"")+'"><input id="payoutPhone_'+authorityEsc(o.id)+'" inputmode="tel" placeholder="Seller number" value="'+authorityEsc(a.seller_phone||p.seller_phone||"")+'"><select id="payoutNetwork_'+authorityEsc(o.id)+'"><option value="">NETWORK</option><option>MPESA</option><option>AIRTEL_MONEY</option><option>MIXX_BY_YAS</option><option>HALOPESA</option><option>EZYPESA</option><option>TTCLPESA</option></select><input id="payoutAmount_'+authorityEsc(o.id)+'" inputmode="numeric" placeholder="Seller balance TZS" value="'+Number(o.seller_available_tzs||o.seller_net_tzs||0)+'" readonly><button type="button" data-live-payout="'+authorityEsc(o.id)+'">CALCULATE FEE &amp; SEND</button></div></div>';}).join("");
     }
     list.querySelectorAll("[data-authority-receipt],[data-authority-download]").forEach(btn=>btn.addEventListener("click",()=>{const o=orders.find(x=>String(x.id)===String(btn.getAttribute("data-authority-receipt")||btn.getAttribute("data-authority-download")));const r=o?.receipt;if(!r)return;if(btn.hasAttribute("data-authority-download"))window.ioneChapChapDownloadReceipt?.(r);else window.ioneChapChapOpenReceipt?.(r);}));
+    list.querySelectorAll("[data-agreement-download]").forEach(btn=>btn.addEventListener("click",()=>{const a=agreements.find(x=>String(x.id)===String(btn.getAttribute("data-agreement-download")));if(!a)return;const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};window.ioneChapChapDownloadAgreement?.(a,product.title||("PRODUCT ID "+a.product_id));}));
     list.querySelectorAll("[data-live-payout]").forEach(btn=>btn.addEventListener("click",()=>sendChapChapPayout(btn.getAttribute("data-live-payout"))));
     if(status)status.textContent="CONNECTED • READY";
   }
-
-  async function loadChapChapAuthority(force=false){
-    const status=document.getElementById("authorityChapChapLoadStatus");
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    if(!password){if(status)status.textContent="Unlock Authority Press first.";return;}
-    if(!force&&chapChapAuthorityCache){renderChapChapAuthority(chapChapAuthorityCache);return;}
-    if(status)status.textContent="Loading marketplace data…";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load ChapChap management data.");
-      chapChapAuthorityCache=r.data;
-      renderChapChapAuthority(r.data);
-    }catch(e){if(status)status.textContent=e?.message||"Could not load ChapChap management data.";}
-  }
+  /* Keep the Authority renderer available to the legacy/cached Authority click handlers too. */
+  window.renderChapChapAuthority=renderChapChapAuthority;
+  window.ioneRenderChapChapAuthority=renderChapChapAuthority;
 
   function clearPayoutQuote(button){
     if(!button)return;
@@ -514,10 +505,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish Top Trending.");
       ioneTopTrendingCache=String(r.data.top_trending||value).trim();
       if(status)status.textContent="PUBLISHED • LIVE";
-      if(typeof window.ioneSendAuthorityPush==="function"){
-        window.ioneSendAuthorityPush({password:secret,title:"NEW TOP TRENDING",body:ioneTopTrendingCache,url:"./?ionePushDestination=market",tag:"ione-top-trending"}).catch(e=>console.warn("I|ONE trending push:",e));
-      }
-    }catch(e){if(status)status.textContent=e?.message||"Could not publish Top Trending.";}
+}catch(e){if(status)status.textContent=e?.message||"Could not publish Top Trending.";}
     finally{if(button)button.disabled=false;}
   }
 
@@ -534,10 +522,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish New Books.");
       ioneNewBooksCache=String(r.data.new_books||value).trim();
       if(status)status.textContent="PUBLISHED • LIVE";
-      if(typeof window.ioneSendAuthorityPush==="function"){
-        window.ioneSendAuthorityPush({password:secret,title:"NEW BOOKS",body:ioneNewBooksCache,url:"./?ionePushDestination=books",tag:"ione-new-books"}).catch(e=>console.warn("I|ONE new books push:",e));
-      }
-    }catch(e){if(status)status.textContent=e?.message||"Could not publish New Books.";}
+}catch(e){if(status)status.textContent=e?.message||"Could not publish New Books.";}
     finally{if(button)button.disabled=false;}
   }
 
@@ -558,10 +543,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       ioneImportantNoticeCache=String(r.data.important_notice||ioneImportantNoticeCache).trim();
       const saved=document.getElementById(inputId);if(saved)saved.value=field==="ione_update"?ioneUpdateCache:ioneImportantNoticeCache;
       if(status)status.textContent="PUBLISHED • LIVE";
-      if(typeof window.ioneSendAuthorityPush==="function"){
-        window.ioneSendAuthorityPush({password:secret,title:title==="I|ONE UPDATE"?"I|ONE UPDATE":"IMPORTANT NOTICE",body:value,url:"./?ionePushDestination="+destination,tag}).catch(e=>console.warn("I|ONE "+title+" push:",e));
-      }
-    }catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
+}catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
     finally{if(button)button.disabled=false;}
   }
 
@@ -600,6 +582,28 @@ window.ioneEnsureBookPdfLibraries = async function(){
     document.getElementById("authorityNewBooks").value=ioneNewBooksCache;
   }
 
+  async function loadChapChapAuthority(forceReload){
+    if(chapChapAuthorityLoadPromise)return chapChapAuthorityLoadPromise;
+    chapChapAuthorityLoadPromise=(async()=>{
+      if(!forceReload && chapChapAuthorityCache){renderChapChapAuthority(chapChapAuthorityCache);return chapChapAuthorityCache;}
+      const password=String(document.getElementById("authorityPasswordInput")?.value||"").trim();
+      const loadStatus=document.getElementById("authorityChapChapLoadStatus");
+      if(!password){if(loadStatus)loadStatus.textContent="Unlock Authority Press first.";return null;}
+      if(loadStatus)loadStatus.textContent="Loading marketplace data…";
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-chapchap-authority",{body:{action:"list",password}});
+        if(result.error||!result.data?.success){
+          let detail=result.data?.error||result.error?.message||"Could not load Authority Press data.";
+          try{const ctx=result.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;}}catch(_){ }
+          throw new Error(detail);
+        }
+        chapChapAuthorityCache=result.data;renderChapChapAuthority(chapChapAuthorityCache);return chapChapAuthorityCache;
+      }catch(error){chapChapAuthorityCache=null;if(loadStatus)loadStatus.textContent=error?.message||"Could not load Authority Press data.";return null;}
+    })();
+    try{return await chapChapAuthorityLoadPromise;}finally{chapChapAuthorityLoadPromise=null;}
+  }
+  window.ioneLoadChapChapAuthority=loadChapChapAuthority;
+
   function bind(){
     const filters=document.getElementById("authorityChapChapFilters");
     if(filters && !filters.dataset.bound){
@@ -607,10 +611,19 @@ window.ioneEnsureBookPdfLibraries = async function(){
       filters.addEventListener("click",function(e){
         const card=e.target.closest("[data-cc-filter]");
         if(!card)return;
+        e.preventDefault();
+        e.stopPropagation();
         chapChapAuthorityFilter=card.getAttribute("data-cc-filter")||"orders";
         filters.querySelectorAll("[data-cc-filter]").forEach(el=>el.classList.toggle("is-selected",el===card));
-        if(chapChapAuthorityCache){ renderChapChapAuthority(chapChapAuthorityCache); } else { loadChapChapAuthority(); }
-        setTimeout(()=>document.getElementById("authorityChapChapOrders")?.scrollIntoView({behavior:"smooth",block:"nearest"}),50);
+        if(chapChapAuthorityCache){
+          renderChapChapAuthority(chapChapAuthorityCache);
+        }else{
+          window.ioneLoadChapChapAuthority(true);
+        }
+        setTimeout(()=>{
+          const list=document.getElementById("authorityChapChapOrders");
+          if(list)list.scrollIntoView({behavior:"smooth",block:"nearest"});
+        },60);
       });
     }
 
@@ -2033,7 +2046,9 @@ body, #ioneHomeShell, #smartPanel{overscroll-behavior:none}
 #ioneNotificationBtn[data-state="off"]{background:linear-gradient(145deg,#18272b,#071114);color:#9eeff2}
 button:active,[role="button"]:active{-webkit-tap-highlight-color:transparent;box-shadow:none!important}
 button,[role="button"]{-webkit-tap-highlight-color:transparent}
-body.ione-non-home #ioneTopActions{display:none!important}
+body.ione-non-home #ioneTopActions,
+body.ione-non-home #ionePushEnableButton{display:none!important}
+#ionePushEnableButton{z-index:200!important}
 #settingsBtn{min-width:82px;padding:8px 13px;font-size:13px}
 @media(max-width:370px){#ioneTopActions{right:8px;gap:6px}#ioneNotificationBtn{min-width:82px}#settingsBtn{padding:8px 11px;font-size:12px}}
 #ioneHomeShell{position:fixed;inset:0;z-index:8;box-sizing:border-box;padding:72px 14px 88px;overflow:auto;display:flex;flex-direction:column;align-items:center;gap:14px}
@@ -2668,7 +2683,8 @@ document.body.addEventListener("click",e=>{
   if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
 },true);
 document.body.addEventListener("touchend",e=>{
-  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
+  // A touch is already followed by click on Android. Do not request fullscreen
+  // from both events; the duplicate compositor transition can produce a black frame.
 },{passive:true,capture:true});
 
 function ioneFullscreenStateChanged(){
@@ -2770,7 +2786,26 @@ settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="
       },120);
     };
     const mo=new MutationObserver(scheduleHomeControlCheck);
-    mo.observe(document.body,{subtree:true,attributes:true,attributeFilter:["style","class","aria-hidden"]});
+    mo.observe(document.body,{subtree:true,childList:true,attributes:true,attributeFilter:["style","class","aria-hidden"]});
+    // A feature can create its chat shell after the original click. Keep the
+    // home controls hidden even when that shell is dynamically mounted.
+    const enforceFeatureMode=function(){
+      const selectors=[
+        '#authorityPasswordOverlay[aria-hidden="false"]',
+        '#authorityPressPanel[aria-hidden="false"]',
+        '[id*="support" i][aria-hidden="false"]',
+        '[class*="support" i][aria-hidden="false"]',
+        '[id*="chat" i][aria-hidden="false"]',
+        '[class*="chat" i][aria-hidden="false"]'
+      ];
+      if(selectors.some(function(s){try{return !!document.querySelector(s)}catch(_){return false;}})) ioneSetHomeControls(false);
+    };
+    document.addEventListener("click",function(e){
+      const feature=e.target.closest && e.target.closest('[id*="support" i],[class*="support" i],[id*="authority" i],[class*="authority" i]');
+      if(feature && !e.target.closest("#ioneTopActions")) ioneSetHomeControls(false);
+      setTimeout(enforceFeatureMode,0);
+    },true);
+    setTimeout(enforceFeatureMode,250);
   }
   window.ioneShowHomeControls=function(){ioneSetHomeControls(true);};
   window.ioneHideHomeControls=function(){ioneSetHomeControls(false);};
@@ -8588,77 +8623,18 @@ function ioneRunBackgroundMediaPreload(){ return; }
 })();
 </script>
 <script>
-/* ================= AUTHORITY PRESS • CHAPCHAP MODULE ================= */
+/* ================= AUTHORITY PRESS • CHAPCHAP OPEN/CLOSE CONTROLS ================= */
 (function(){
   function bindChapChapAuthority(){
-    const open=document.getElementById("authorityChapChapOpen");
-    const close=document.getElementById("authorityChapChapClose");
-    const panel=document.getElementById("authorityChapChapPanel");
-    const status=document.getElementById("authorityChapChapStatus");
-    const loadStatus=document.getElementById("authorityChapChapLoadStatus");
+    const open=document.getElementById("authorityChapChapOpen"),close=document.getElementById("authorityChapChapClose"),panel=document.getElementById("authorityChapChapPanel"),status=document.getElementById("authorityChapChapStatus");
     if(!open||!close||!panel)return;
     if(!open.dataset.chapChapCoreBound){
-    open.dataset.chapChapCoreBound="1";
-    async function loadCounts(){
-      if(loadStatus)loadStatus.textContent="Loading marketplace data…";
-      const targets=[
-        ["ione_chapchap_orders","chapChapOrdersCount"],
-        ["ione_chapchap_seller_agreements","chapChapAgreementsCount"],
-        ["ione_chapchap_receipts","chapChapReceiptsCount"],
-        ["ione_chapchap_payouts","chapChapPayoutsCount"]
-      ];
-      let success=0;
-      for(const [table,id] of targets){
-        const el=document.getElementById(id);
-        try{
-          const result=await heavensSupabase.from(table).select("id",{count:"exact",head:true});
-          if(result.error)throw result.error;
-          if(el)el.textContent=String(result.count ?? 0);
-          success++;
-        }catch(error){
-          if(el)el.textContent="—";
-        }
-      }
-      if(loadStatus)loadStatus.textContent=success===targets.length?"CONNECTED • LIVE COUNTS":"CONNECTED • SOME DATA IS RESTRICTED";
-    }
-    open.onclick=async function(){
-      panel.classList.add("is-open");
-      panel.setAttribute("aria-hidden","false");
-      if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
-      await loadCounts();
-    };
-    close.onclick=function(){
-      panel.classList.remove("is-open");
-      panel.setAttribute("aria-hidden","true");
-      if(status)status.textContent="READY";
-    };
+      open.dataset.chapChapCoreBound="1";
+      open.onclick=function(){panel.classList.add("is-open");panel.setAttribute("aria-hidden","false");if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";if(typeof window.ioneLoadChapChapAuthority==="function")window.ioneLoadChapChapAuthority(true);};
+      close.onclick=function(){panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");if(status)status.textContent="READY";};
     }
   }
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});
-  else bindChapChapAuthority();
-
-  /* Stable delegated controls: reopening must work every time Authority Press is opened. */
-  if(!document.documentElement.dataset.chapChapDelegated){
-    document.documentElement.dataset.chapChapDelegated="1";
-    document.addEventListener("click",function(event){
-      const openButton=event.target.closest && event.target.closest("#authorityChapChapOpen");
-      const closeButton=event.target.closest && event.target.closest("#authorityChapChapClose");
-      const panel=document.getElementById("authorityChapChapPanel");
-      const status=document.getElementById("authorityChapChapStatus");
-      if(openButton && panel){
-        panel.classList.add("is-open");
-        panel.setAttribute("aria-hidden","false");
-        if(status)status.textContent="CHAPCHAP CONTROL CENTER OPEN";
-        bindChapChapAuthority();
-        return;
-      }
-      if(closeButton && panel){
-        panel.classList.remove("is-open");
-        panel.setAttribute("aria-hidden","true");
-        if(status)status.textContent="READY";
-      }
-    });
-  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});else bindChapChapAuthority();
 })();
 </script>
 <script src="ione-gift-support.js?v=10" defer></script>

@@ -5,8 +5,32 @@
   function esc(v){ return String(v==null?"":v).replace(/[&<>"']/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];}); }
   function money(v){ return "TZS "+Number(v||0).toLocaleString("en-US"); }
 
-  function downloadReceipt(r){
+  async function downloadReceipt(r){
     try{
+      // Receipts must always be delivered as PDF. If jsPDF is not already
+      // loaded, load it here instead of falling back to a JSON download.
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        await new Promise(function(resolve,reject){
+          var src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          var existing=document.querySelector('script[data-ione-chapchap-pdf-src="1"]');
+          if(existing){
+            if(window.jspdf && window.jspdf.jsPDF)return resolve();
+            existing.addEventListener("load",function(){resolve();},{once:true});
+            existing.addEventListener("error",reject,{once:true});
+            return;
+          }
+          var s=document.createElement("script");
+          s.src=src;
+          s.async=true;
+          s.dataset.ioneChapchapPdfSrc="1";
+          s.onload=function(){
+            if(window.jspdf && window.jspdf.jsPDF)resolve();
+            else reject(new Error("PDF library did not initialize."));
+          };
+          s.onerror=reject;
+          document.head.appendChild(s);
+        });
+      }
       if(window.jspdf && window.jspdf.jsPDF){
         var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
         var y=22;
@@ -18,10 +42,9 @@
         var safe=String(r.receipt_number||"receipt").replace(/[^a-z0-9_-]/gi,"-");
         doc.save("IONE-ChapChap-"+safe+".pdf");
       }else{
-        var blob=new Blob([JSON.stringify(r,null,2)],{type:"application/json"}),url=URL.createObjectURL(blob),a=document.createElement("a");
-        a.href=url;a.download="IONE-ChapChap-"+String(r.receipt_number||"receipt").replace(/[^a-z0-9_-]/gi,"-")+".json";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},1000);
+        throw new Error("PDF library unavailable.");
       }
-    }catch(e){alert("The receipt could not be downloaded on this device.");}
+    }catch(e){alert("The receipt could not be downloaded as a PDF on this device.");}
   }
 
   async function getAuthority(){
@@ -39,6 +62,75 @@
       '<button type="button" class="cc-secondary cc-authority-download-receipt" data-receipt=\''+esc(JSON.stringify(r))+'\'>DOWNLOAD</button></div>';
   }
 
+  async function downloadAgreement(a,productTitle){
+    try{
+      var title=productTitle||("PRODUCT ID "+(a&&a.product_id||"agreement"));
+
+      // ChapChap agreements must always download as PDF. Load jsPDF only if the
+      // lazy book/PDF loader has not already provided it. Never fall back to JSON.
+      if(!window.jspdf || !window.jspdf.jsPDF){
+        await new Promise(function(resolve,reject){
+          var src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+          var existing=document.querySelector('script[data-ione-chapchap-pdf-src="1"]');
+          if(existing){
+            if(window.jspdf && window.jspdf.jsPDF)return resolve();
+            existing.addEventListener("load",function(){resolve();},{once:true});
+            existing.addEventListener("error",reject,{once:true});
+            return;
+          }
+          var s=document.createElement("script");
+          s.src=src;
+          s.async=true;
+          s.dataset.ioneChapchapPdfSrc="1";
+          s.onload=function(){
+            if(window.jspdf && window.jspdf.jsPDF)resolve();
+            else reject(new Error("PDF library did not initialize."));
+          };
+          s.onerror=reject;
+          document.head.appendChild(s);
+        });
+      }
+
+      if(!window.jspdf || !window.jspdf.jsPDF)throw new Error("PDF library unavailable.");
+
+      var doc=new window.jspdf.jsPDF({unit:"mm",format:"a4"});
+      var y=22;
+      function line(label,value){
+        doc.setFont("helvetica","bold");doc.text(label,20,y);
+        doc.setFont("helvetica","normal");
+        doc.text(String(value==null||value===""?"—":value),62,y);
+        y+=8;
+      }
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(16);
+      doc.text("I|ONE CHAPCHAP — SELLER AGREEMENT",20,y);
+      y+=14;
+      doc.setFontSize(10);
+      line("Agreement ID:",a&&a.id);
+      line("Product:",title);
+      line("Product ID:",a&&a.product_id);
+      line("Seller:",a&&(a.seller_name||a.seller_id));
+      line("Seller ID:",a&&a.seller_id);
+      line("Phone:",a&&a.seller_phone);
+      line("Email:",a&&a.seller_email);
+      line("Address:",a&&a.seller_address);
+      line("Location:",a&&a.seller_location);
+      line("Terms version:",a&&a.terms_version);
+      line("Accepted:",a&&a.accepted_at?new Date(a.accepted_at).toLocaleString():"—");
+      line("Recorded:",a&&a.created_at?new Date(a.created_at).toLocaleString():"—");
+      y+=5;
+      doc.line(20,y,190,y);
+      y+=9;
+      doc.setFont("helvetica","bold");
+      doc.text("I|ONE CHAPCHAP",20,y);
+
+      var safe=String(title||"agreement").replace(/[^a-z0-9_-]/gi,"-").slice(0,55);
+      doc.save("IONE-ChapChap-Agreement-"+safe+".pdf");
+    }catch(e){
+      alert("The agreement could not be downloaded as a PDF on this device.");
+    }
+  }
+
   function renderAuthority(filter,data){
     var list=document.getElementById("authorityChapChapOrders"); if(!list)return;
     var orders=data.orders||[];
@@ -49,8 +141,10 @@
         return '<div class="authority-chapchap-order"><strong>'+esc(r.receipt_number||"OFFICIAL RECEIPT")+'</strong><div class="cc-mini">PRODUCT: '+esc(r.product_title||o.product?.title||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</div>'+receiptButton(r)+'</div>';
       });
     }else if(filter==="agreements"){
-      rows=orders.filter(function(o){return o.has_agreement;}).map(function(o){
-        return '<div class="authority-chapchap-order"><strong>SELLER AGREEMENT • RECORDED</strong><div class="cc-mini">PRODUCT: '+esc(o.product?.title||"—")+'<br>SELLER: '+esc(o.product?.seller_name||o.seller_id||"—")+'<br>PHONE: '+esc(o.product?.seller_phone||"—")+'<br>ORDER: '+esc(o.id)+'<br>STATUS: '+esc(String(o.status||"").toUpperCase())+'</div></div>';
+      var agreements=data.agreements||[];
+      rows=agreements.map(function(a){
+        var product=(data.orders||[]).find(function(o){return String(o.product_id)===String(a.product_id);})?.product||null;
+        return '<div class="authority-chapchap-order cc-agreement-card"><strong>SELLER AGREEMENT • RECORDED</strong><div class="cc-mini">PRODUCT: '+esc(product?.title||"PRODUCT ID "+a.product_id||"—")+'<br>SELLER: '+esc(a.seller_name||a.seller_id||"—")+'<br>PHONE: '+esc(a.seller_phone||"—")+'<br>TERMS VERSION: '+esc(a.terms_version||"—")+'<br>ACCEPTED: '+esc(a.accepted_at?new Date(a.accepted_at).toLocaleString():"—")+'</div><button type="button" class="cc-secondary cc-authority-download-agreement" data-agreement-id="'+esc(a.id||"")+'">DOWNLOAD</button></div>';
       });
     }else if(filter==="payouts"){
       rows=orders.filter(function(o){return !!o.payout_record || String(o.payout_status||"")!=="";}).map(function(o){
@@ -66,6 +160,7 @@
     setTimeout(function(){authorityWriting=false;},0);
     list.querySelectorAll(".cc-authority-view-receipt").forEach(function(b){b.addEventListener("click",function(){openAuthorityReceipt(JSON.parse(b.dataset.receipt));});});
     list.querySelectorAll(".cc-authority-download-receipt").forEach(function(b){b.addEventListener("click",function(){downloadReceipt(JSON.parse(b.dataset.receipt));});});
+    list.querySelectorAll(".cc-authority-download-agreement").forEach(function(b){b.addEventListener("click",function(){var id=String(b.getAttribute("data-agreement-id")||"");var a=(data.agreements||[]).find(function(x){return String(x.id)===id;});if(!a)return;var product=(data.orders||[]).find(function(o){return String(o.product_id)===String(a.product_id);})?.product||null;downloadAgreement(a,product?.title||"PRODUCT ID "+a.product_id);});});
   }
 
   function openAuthorityReceipt(r){
@@ -73,11 +168,28 @@
     panel.innerHTML=officialReceiptHTML(r,"ccAuthorityBack");
     panel.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openAuthorityReceipt(r);});
     panel.querySelector(".cc-authority-download-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();downloadReceipt(r);});
-    panel.querySelector("#ccAuthorityBack")?.addEventListener("click",function(){refreshAuthority();});
+    panel.querySelector("#ccAuthorityBack")?.addEventListener("click",async function(){
+      try{
+        var data=await getAuthority();
+        if(typeof window.renderChapChapAuthority==="function"){
+          window.renderChapChapAuthority(data);
+        }else{
+          refreshAuthority();
+        }
+      }catch(e){
+        var st=document.getElementById("authorityChapChapLoadStatus");
+        if(st)st.textContent=e&&e.message?e.message:"Could not reload ChapChap records.";
+      }
+    });
   }
 
-  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:68px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapPanel .authority-chapchap-head h3{margin:2px 0!important;font-size:14px!important;line-height:1.15!important;max-width:calc(100% - 4px)!important}#authorityChapChapClose{position:absolute!important;top:8px!important;right:8px!important;z-index:21!important;min-height:30px!important;height:30px!important;min-width:52px!important;width:52px!important;padding:0 7px!important;border-radius:9px!important;font:900 8px Arial,sans-serif!important;touch-action:manipulation!important}#ioneChapBar{display:flex!important;align-items:center!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;white-space:nowrap!important}#ioneChapBar::-webkit-scrollbar{display:none!important}#ioneChapBar #ioneChapStatus{flex:0 0 auto!important;margin-left:auto!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:42px!important}";document.head.appendChild(st)}
+  function polishAuthorityPanel(){var p=document.getElementById("authorityChapChapPanel");if(!p||p.dataset.polished)return;p.dataset.polished="1";var st=document.createElement("style");st.textContent="#authorityChapChapPanel{position:relative!important;overflow:hidden!important}#authorityChapChapPanel .authority-chapchap-head{position:sticky!important;top:0!important;z-index:20!important;background:#071012!important;padding:10px!important;padding-right:68px!important;border-bottom:1px solid rgba(0,255,255,.18)!important}#authorityChapChapPanel .authority-chapchap-head h3{margin:2px 0!important;font-size:14px!important;line-height:1.15!important;max-width:calc(100% - 4px)!important}#authorityChapChapClose{position:absolute!important;top:8px!important;right:8px!important;z-index:21!important;min-height:30px!important;height:30px!important;min-width:52px!important;width:52px!important;padding:0 7px!important;border-radius:9px!important;font:900 8px Arial,sans-serif!important;touch-action:manipulation!important}#ioneChapBar{display:flex!important;align-items:center!important;gap:6px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:none!important;white-space:nowrap!important}#ioneChapBar::-webkit-scrollbar{display:none!important}#ioneChapBar #ioneChapStatus{flex:0 0 auto!important;margin-left:auto!important}#authorityChapChapFilters{gap:8px!important}#authorityChapChapFilters .authority-chapchap-card{min-height:72px!important;border-radius:14px!important;transition:background .12s ease,border-color .12s ease,transform .08s ease!important;transform:none!important;box-shadow:none!important;touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important}#authorityChapChapFilters .authority-chapchap-card:active{transform:scale(.985)!important}#authorityChapChapFilters .authority-chapchap-card.is-selected{border-color:#00ffff!important;background:rgba(0,255,255,.09)!important}#authorityChapChapOrders{scroll-margin-top:60px!important;width:100%!important;box-sizing:border-box!important;display:grid!important;gap:10px!important;padding:0 1px 18px!important}#authorityChapChapOrders .authority-chapchap-order{width:100%!important;max-width:100%!important;min-width:0!important;box-sizing:border-box!important;overflow:hidden!important;padding:12px!important;border-radius:14px!important}#authorityChapChapOrders .authority-chapchap-order .cc-mini{overflow-wrap:anywhere!important;word-break:break-word!important}#authorityChapChapOrders button{touch-action:manipulation!important;-webkit-tap-highlight-color:transparent!important;min-height:44px!important;width:100%!important;box-sizing:border-box!important}#authorityChapChapOrders .cc-authority-download-agreement{margin-top:10px!important}";document.head.appendChild(st)}
   var authorityFilter="orders",authorityBusy=false,authorityWriting=false;
+  /* The main Authority Press panel in index.html owns the four filter cards.
+     Do not install the legacy capture-phase filter here; it could replace the
+     current renderer immediately after a tap and make Orders/Receipts/Agreements
+     appear unresponsive. */ 
+  function hookAuthorityFilters(){ return; }
   async function refreshAuthority(){
     if(authorityBusy)return;
     authorityBusy=true;
@@ -318,6 +430,8 @@
   window.ioneChapChapOpenReceipt=function(r){openAuthorityReceipt(r);};
   window.ioneChapChapOpenStandaloneReceipt=function(r){openStandaloneReceipt(r);};
   window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
+  window.ioneChapChapDownloadAgreement=function(a,productTitle){downloadAgreement(a,productTitle);};
+  hookAuthorityFilters();
   var mo=new MutationObserver(function(){
     if(authorityWriting)return;
     enhanceAuthority();

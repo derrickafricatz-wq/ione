@@ -1225,7 +1225,7 @@
   window.ioneChapChapOpen = openSell;
 })();
 /* ChapChap receipt module loader */
-(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=11";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
+(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=15";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
 
 
 /* I|ONE AUTHORITY • LIVE SUBSCRIPTION PRICE SAVE
@@ -1521,3 +1521,31 @@
   else bootPayoutUI();
 })();
 
+
+/* I|ONE ANDROID STABILITY GUARD
+   Keep the existing app shell and features intact.
+   Fullscreen is entered once from the first valid trusted gesture and is never
+   re-requested automatically after Android/WebView leaves fullscreen. Repeated
+   fullscreen compositor transitions are a known source of black frames.
+*/
+(function ioneAndroidStabilityGuard(){
+  function install(){
+    try{
+      if(typeof window.goFullScreen==="function" && !window.__ioneStableFullscreenGuard){
+        const original=window.goFullScreen;
+        let used=false;
+        window.goFullScreen=async function(){
+          if(used || (typeof window.ioneIsFullscreen==="function" && window.ioneIsFullscreen())) return true;
+          const result=await original.apply(this,arguments);
+          if(result) used=true;
+          return result;
+        };
+        window.__ioneStableFullscreenGuard=true;
+      }
+    }catch(e){
+      console.warn("I|ONE fullscreen stability guard:",e);
+    }
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",install,{once:true});
+  else install();
+})();
