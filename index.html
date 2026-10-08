@@ -3843,6 +3843,23 @@ function ioneSubscriptionGate(mode="publish",existing=null){
 
       <div id="ioneSubStatus"></div>
 
+      <button id="ioneSubRecover" type="button" style="width:100%;margin:10px 0 4px;padding:12px 14px;border-radius:12px;border:1px solid rgba(0,180,255,.55);background:rgba(0,180,255,.08);color:#fff;font-weight:800;letter-spacing:.4px;">
+        ALREADY PAID? RECOVER SUBSCRIPTION
+      </button>
+
+      <div id="ioneSubRecoveryBox" style="display:none;margin:8px 0 12px;padding:12px;border-radius:12px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.12);">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;opacity:.9;">
+          USE THE SAME DETAILS FROM YOUR BLMPAY PAYMENT
+        </div>
+        <input id="ioneRecoveryPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX"
+          style="width:100%;box-sizing:border-box;margin-bottom:8px;">
+        <input id="ioneRecoveryReference" type="text" autocomplete="off" placeholder="BLMPay reference e.g. BP..."
+          style="width:100%;box-sizing:border-box;">
+        <button id="ioneRecoveryConfirm" type="button" style="width:100%;margin-top:9px;padding:11px 14px;border:0;border-radius:10px;font-weight:800;">
+          VERIFY & OPEN POST
+        </button>
+      </div>
+
       <div class="ione-sub-actions">
         <button id="ioneSubPay" type="button">PAY WITH BLMPAY</button>
         <button id="ioneSubCancel" type="button">CANCEL</button>
@@ -3873,7 +3890,91 @@ function ioneSubscriptionGate(mode="publish",existing=null){
   gate.querySelector("#ioneSubCancel").onclick=ioneCloseSubscriptionGate;
   gate.querySelector("#ioneSubPay").onclick=()=>ioneStartUploadSubscriptionPayment(mode,existing);
 
+  gate.querySelector("#ioneSubRecover").onclick=()=>{
+    const box=document.getElementById("ioneSubRecoveryBox");
+    if(box)box.style.display=box.style.display==="none"?"block":"none";
+  };
+
+  gate.querySelector("#ioneRecoveryConfirm").onclick=()=>ioneRecoverUploadSubscription(mode,existing);
+
   return gate;
+}
+
+async function ioneRecoverUploadSubscription(mode="publish",existing=null){
+  const status=document.getElementById("ioneSubStatus");
+  const phone=String(document.getElementById("ioneRecoveryPhone")?.value||"").trim();
+  const reference=String(document.getElementById("ioneRecoveryReference")?.value||"").trim();
+  const confirm=document.getElementById("ioneRecoveryConfirm");
+
+  if(!phone){
+    status.textContent="Enter the mobile-money number used for the subscription payment.";
+    return;
+  }
+
+  if(!reference){
+    status.textContent="Enter the BLMPay payment reference from that payment.";
+    return;
+  }
+
+  if(confirm)confirm.disabled=true;
+  status.textContent="Verifying your existing subscription…";
+
+  try{
+    const session=await ensureHeavensAnonymousSession();
+    const uid=session?.user?.id;
+    if(!uid)throw new Error("Could not create your secure I|ONE session.");
+
+    const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
+      body:{
+        action:"recover_subscription",
+        user_id:uid,
+        phone_number:phone,
+        blmpay_reference:reference
+      }
+    });
+
+    if(error)throw error;
+    if(!data?.success||!data?.active||!data?.subscription?.expires_at){
+      throw new Error(data?.error||"The subscription could not be recovered.");
+    }
+
+    ioneUploadSubscription=data.subscription;
+    if(data.customer_id){
+      try{
+        localStorage.setItem("ione_upload_customer_id",String(data.customer_id));
+        localStorage.setItem("ione_upload_phone",phone);
+      }catch(_){}
+    }
+
+    ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
+    status.innerHTML="SUBSCRIPTION RECOVERED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>";
+
+    setTimeout(async()=>{
+      ioneCloseSubscriptionGate();
+
+      if(existing?.id){
+        try{
+          const iso=new Date(data.subscription.expires_at).toISOString();
+          await heavensSupabase.from("afrilink_billboards")
+            .update({end_date:iso.slice(0,10),end_at:iso})
+            .eq("id",existing.id)
+            .eq("owner_id",uid);
+        }catch(syncError){
+          console.warn("I|ONE recovered subscription billboard sync:",syncError);
+        }
+      }
+
+      if(mode==="renew"&&existing){
+        await aflLoadFeed();
+      }else{
+        aflOpenEditor("publish");
+      }
+    },700);
+  }catch(error){
+    console.error("I|ONE subscription recovery:",error);
+    status.textContent=error?.message||"Could not recover the active subscription.";
+    if(confirm)confirm.disabled=false;
+  }
 }
 
 async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
