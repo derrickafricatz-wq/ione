@@ -1249,7 +1249,7 @@
   window.ioneChapChapOpen = openSell;
 })();
 /* ChapChap receipt module loader */
-(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=15";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
+(function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=16";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
 
 
 /* I|ONE AUTHORITY • LIVE SUBSCRIPTION PRICE SAVE
