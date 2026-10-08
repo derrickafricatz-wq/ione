@@ -4180,9 +4180,54 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
         }
         ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
 
+        const paymentReference=String(data.subscription?.blmpay_reference||data.subscription?.blmpay_reference_id||"").trim();
+
         status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>";
 
-        setTimeout(async()=>{
+        if(paymentReference){
+          const referenceCard=document.createElement("div");
+          referenceCard.style.cssText="margin:12px 0 4px;padding:12px;border-radius:12px;background:rgba(0,180,255,.08);border:1px solid rgba(0,180,255,.28);text-align:center;";
+          referenceCard.innerHTML="<div style='font-size:11px;font-weight:800;letter-spacing:.7px;opacity:.8;'>BLMPAY REFERENCE</div><div style='font-size:18px;font-weight:900;letter-spacing:.5px;margin:5px 0 9px;word-break:break-all;'>"+aflEscape(paymentReference)+"</div>";
+          
+          const copyButton=document.createElement("button");
+          copyButton.type="button";
+          copyButton.textContent="COPY REFERENCE";
+          copyButton.style.cssText="width:100%;padding:10px 12px;border:0;border-radius:10px;font-weight:900;";
+          copyButton.onclick=async()=>{
+            try{
+              await navigator.clipboard.writeText(paymentReference);
+              copyButton.textContent="COPIED ✓";
+              setTimeout(()=>{copyButton.textContent="COPY REFERENCE";},1600);
+            }catch(_){
+              copyButton.textContent="REFERENCE SAVED";
+            }
+          };
+          referenceCard.appendChild(copyButton);
+
+          const continueButton=document.createElement("button");
+          continueButton.type="button";
+          continueButton.textContent="CONTINUE TO POST";
+          continueButton.style.cssText="width:100%;margin-top:8px;padding:10px 12px;border:0;border-radius:10px;background:#00b4ff;color:#001018;font-weight:900;";
+          referenceCard.appendChild(continueButton);
+          status.appendChild(referenceCard);
+
+          let continued=false;
+          const continueToPost=async()=>{
+            if(continued)return;
+            continued=true;
+            clearTimeout(autoContinue);
+            await finishSubscriptionPayment();
+          };
+          continueButton.onclick=continueToPost;
+        }
+
+        let autoContinue;
+        let continued=false;
+        const finishSubscriptionPayment=async()=>{
+          if(continued)return;
+          continued=true;
+          clearTimeout(autoContinue);
+
           ioneCloseSubscriptionGate();
 
           /*
@@ -4209,7 +4254,15 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
           }else{
             aflOpenEditor("publish");
           }
-        },900);
+        };
+
+        if(paymentReference){
+          const continueButton=status.querySelector("button:last-child");
+          if(continueButton)continueButton.onclick=finishSubscriptionPayment;
+          autoContinue=setTimeout(finishSubscriptionPayment,10000);
+        }else{
+          autoContinue=setTimeout(finishSubscriptionPayment,900);
+        }
 
         return;
       }
