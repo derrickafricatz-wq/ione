@@ -7653,24 +7653,7 @@ printBtn.onclick = () => {
     // Footer
     html += "<hr><p>Heaven On Earth</p>";
 
-    html += "<script>
-/* I|ONE • first-open visual staging only */
-(function(){
-  function startGentleBoot(){
-    try{
-      document.body.classList.add("ione-gentle-boot");
-      window.setTimeout(function(){
-        document.body.classList.remove("ione-gentle-boot");
-      },3200);
-    }catch(e){}
-  }
-  if(document.readyState==="loading"){
-    document.addEventListener("DOMContentLoaded",startGentleBoot,{once:true});
-  }else{
-    startGentleBoot();
-  }
-})();
-</script>
+    html += "
 </body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
@@ -8891,6 +8874,24 @@ function ioneRunBackgroundMediaPreload(){ return; }
 })();
 </script>
 <script src="ione-gift-support.js?v=10" defer></script>
+<script>
+/* I|ONE • first-open visual staging only */
+(function(){
+  function startGentleBoot(){
+    try{
+      document.body.classList.add("ione-gentle-boot");
+      window.setTimeout(function(){
+        document.body.classList.remove("ione-gentle-boot");
+      },3200);
+    }catch(e){}
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",startGentleBoot,{once:true});
+  }else{
+    startGentleBoot();
+  }
+})();
+</script>
 </body>
 </html>
 <script>
