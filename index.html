@@ -3756,6 +3756,25 @@ function ioneSubscriptionFormatExpiry(value){
   });
 }
 
+function ioneSubscriptionRememberCustomer(customerId,phone){
+  try{
+    if(customerId)localStorage.setItem("ione_upload_customer_id",String(customerId));
+    if(phone)localStorage.setItem("ione_upload_phone",String(phone));
+  }catch(_){}
+  try{
+    if(customerId)document.cookie="ione_upload_customer_id="+encodeURIComponent(String(customerId))+"; Max-Age=31536000; Path=/; SameSite=Lax";
+    if(phone)document.cookie="ione_upload_phone="+encodeURIComponent(String(phone))+"; Max-Age=31536000; Path=/; SameSite=Lax";
+  }catch(_){}
+}
+
+function ioneSubscriptionReadCookie(name){
+  try{
+    const prefix=String(name||"")+"=";
+    const found=document.cookie.split(";").map(x=>x.trim()).find(x=>x.indexOf(prefix)===0);
+    return found?decodeURIComponent(found.slice(prefix.length)):"";
+  }catch(_){return "";}
+}
+
 function ioneSubscriptionPlans(){
   return [
     IONE_UPLOAD_PLANS.twoWeeks,
@@ -3784,6 +3803,7 @@ async function ioneGetUploadSubscription(){
   try{
     customerId=String(localStorage.getItem("ione_upload_customer_id")||"").trim();
   }catch(_){}
+  if(!customerId)customerId=ioneSubscriptionReadCookie("ione_upload_customer_id");
 
   const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
     body:{
@@ -3799,7 +3819,7 @@ async function ioneGetUploadSubscription(){
   ioneUploadSubscription=data.subscription||null;
 
   if(data.subscription?.customer_id){
-    try{localStorage.setItem("ione_upload_customer_id",String(data.subscription.customer_id));}catch(_){}
+    ioneSubscriptionRememberCustomer(data.subscription.customer_id,data.subscription?.phone_number||"");
   }
 
   return data;
@@ -3940,10 +3960,7 @@ async function ioneRecoverUploadSubscription(mode="publish",existing=null){
 
     ioneUploadSubscription=data.subscription;
     if(data.customer_id){
-      try{
-        localStorage.setItem("ione_upload_customer_id",String(data.customer_id));
-        localStorage.setItem("ione_upload_phone",phone);
-      }catch(_){}
+      ioneSubscriptionRememberCustomer(data.customer_id,phone);
     }
 
     ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
@@ -4050,10 +4067,7 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     }
 
     if(prepared.data?.customer_id){
-      try{
-        localStorage.setItem("ione_upload_customer_id",String(prepared.data.customer_id));
-        localStorage.setItem("ione_upload_phone",phone);
-      }catch(_){}
+      ioneSubscriptionRememberCustomer(prepared.data.customer_id,phone);
     }
 
     if(!prepared.data?.success){
@@ -4162,7 +4176,7 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
       if(data?.success&&data.active&&data.subscription?.expires_at){
         ioneUploadSubscription=data.subscription;
         if(data.subscription?.customer_id){
-          try{localStorage.setItem("ione_upload_customer_id",String(data.subscription.customer_id));}catch(_){}
+          ioneSubscriptionRememberCustomer(data.subscription.customer_id,data.subscription?.phone_number||"");
         }
         ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
 
