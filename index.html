@@ -92,13 +92,14 @@ window.ioneEnsureBookPdfLibraries = async function(){
 
   let ioneAuthorityLoadedPrices={"2weeks":null,"1month":null,"3months":null};
 
+  async function loadAuthoritySubscriptions(){const panel=document.getElementById("authorityPressPanel");if(!panel)return;let host=document.getElementById("authoritySubscriptionRecords");if(!host){host=document.createElement("div");host.id="authoritySubscriptionRecords";host.className="authority-panel-section";host.innerHTML='<div class="authority-section-kicker">I|ONE PAYMENTS</div><h3>SUBSCRIPTION PAYMENT RECORDS</h3><p class="authority-section-note">Search customer payment records by phone and retrieve the internal BLMPay reference when support needs to help a customer.</p><input id="authoritySubscriptionSearch" type="search" placeholder="SEARCH PHONE / NAME / BLMPay REFERENCE" style="width:100%;box-sizing:border-box;min-height:46px;border:1px solid #294349;border-radius:11px;background:#05090a;color:#fff;padding:10px 12px"><div class="authority-live-row"><span>RECORDS</span><strong id="authoritySubscriptionStatus">LOADING…</strong></div><div id="authoritySubscriptionList" class="ione-authority-sub-list"></div>';panel.querySelector(".authority-panel-inner")?.appendChild(host)}const password=String(document.getElementById("authorityPasswordInput")?.value||"").trim();if(!password)return;const status=document.getElementById("authoritySubscriptionStatus"),list=document.getElementById("authoritySubscriptionList"),search=document.getElementById("authoritySubscriptionSearch");try{const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"list_subscriptions",password}});if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load subscription records.");const records=r.data.records||[];window.__ioneAuthoritySubscriptions=records;const render=()=>{const q=String(search?.value||"").trim().toLowerCase();const rows=records.filter(x=>!q||[x.customer_name,x.customer_phone,x.phone_number,x.blmpay_reference,x.plan_name,x.status].some(v=>String(v||"").toLowerCase().includes(q)));list.innerHTML=rows.length?rows.map(x=>'<div class="ione-authority-sub-card"><strong>'+authorityEsc(x.customer_name||"I|ONE CUSTOMER")+' • '+authorityEsc(String(x.plan_name||"").toUpperCase())+'</strong><div>PHONE: '+authorityEsc(x.customer_phone||x.phone_number||"—")+'<br>AMOUNT: TZS '+Number(x.amount||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(x.status||"").toUpperCase())+'<br>ACTIVE UNTIL: '+authorityEsc(x.expires_at?ioneSubscriptionFormatExpiry(x.expires_at):"—")+'<br>BLMPAY REFERENCE: <b>'+authorityEsc(x.blmpay_reference||"NOT RECORDED")+'</b></div></div>').join(""):'<div class="ione-authority-sub-card"><strong>NO MATCHING RECORDS</strong><div>Try the customer phone number or payment reference.</div></div>';if(status)status.textContent=rows.length+" RECORD(S)"};if(search&&!search.dataset.bound){search.dataset.bound="1";search.addEventListener("input",render)}render()}catch(e){if(status)status.textContent=e?.message||"Could not load subscription records."}}
   async function openAuthorityPanel(){
     const panel=document.getElementById("authorityPressPanel");
     if(!panel)return;
     panel.style.display="block";
     panel.setAttribute("aria-hidden","false");
     const status=document.getElementById("authorityPriceStatus");
-    if(status)status.textContent="Loading…";
+    if(status)status.textContent="Loading…";setTimeout(()=>loadAuthoritySubscriptions(),0);
     try{
       const r=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"get"}});
       if(r.error || !r.data?.success)throw new Error(r.data?.error || r.error?.message || "Could not load prices.");
@@ -3745,6 +3746,9 @@ const IONE_UPLOAD_CURRENCY = "TZS";
 let ioneUploadSubscription = null;
 let ioneSubscriptionChecking = false;
 
+function ioneSubscriptionRememberCustomer(customerId,phone){try{if(customerId)localStorage.setItem("ione_upload_customer_id",String(customerId));if(phone)localStorage.setItem("ione_upload_phone",String(phone));}catch(_){}try{if(customerId)document.cookie="ione_upload_customer_id="+encodeURIComponent(String(customerId))+"; Max-Age=31536000; Path=/; SameSite=Lax";if(phone)document.cookie="ione_upload_phone="+encodeURIComponent(String(phone))+"; Max-Age=31536000; Path=/; SameSite=Lax";}catch(_){}}
+function ioneSubscriptionReadCookie(name){try{const hit=document.cookie.split(";").map(x=>x.trim()).find(x=>x.indexOf(name+"=")===0);return hit?decodeURIComponent(hit.slice(name.length+1)):"";}catch(_){return "";}}
+
 function ioneSubscriptionFormatExpiry(value){
   if(!value)return "";
   const d=new Date(value);
@@ -3782,7 +3786,7 @@ async function ioneGetUploadSubscription(){
 
   let customerId="";
   try{
-    customerId=String(localStorage.getItem("ione_upload_customer_id")||"").trim();
+    customerId=String(localStorage.getItem("ione_upload_customer_id")||"").trim();if(!customerId)customerId=ioneSubscriptionReadCookie("ione_upload_customer_id");
   }catch(_){}
 
   const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
@@ -3799,7 +3803,7 @@ async function ioneGetUploadSubscription(){
   ioneUploadSubscription=data.subscription||null;
 
   if(data.subscription?.customer_id){
-    try{localStorage.setItem("ione_upload_customer_id",String(data.subscription.customer_id));}catch(_){}
+    ioneSubscriptionRememberCustomer(data.subscription.customer_id,data.subscription.phone_number||"");
   }
 
   return data;
@@ -3856,7 +3860,7 @@ function ioneSubscriptionGate(mode="publish",existing=null){
         <input id="ioneRecoveryReference" type="text" autocomplete="off" placeholder="BLMPay reference e.g. BP..."
           style="width:100%;box-sizing:border-box;">
         <button id="ioneRecoveryConfirm" type="button" style="width:100%;margin-top:9px;padding:11px 14px;border:0;border-radius:10px;font-weight:800;">
-          VERIFY & OPEN POST
+          VERIFY & SAVE SUBSCRIPTION
         </button>
       </div>
 
@@ -4166,10 +4170,9 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
         }
         ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
 
-        status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>";
-
-        setTimeout(async()=>{
-          ioneCloseSubscriptionGate();
+        if(data.subscription?.customer_id)ioneSubscriptionRememberCustomer(data.subscription.customer_id,data.subscription.phone_number||"");const paymentReference=String(data.payment_reference||data.subscription?.blmpay_reference||"").trim();if(paymentReference){try{localStorage.setItem("ione_last_upload_payment_reference",paymentReference);}catch(_){}}
+        status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>"+(paymentReference?"<div class="ione-payment-reference-card"><span>BLMPay REFERENCE</span><strong>"+aflEscape(paymentReference)+"</strong><button type="button" id="ioneCopyPaymentReference">COPY REFERENCE</button><small>SAVED AUTOMATICALLY TO MY SUBSCRIPTION</small></div>":"");if(paymentReference){const copy=document.getElementById("ioneCopyPaymentReference");if(copy)copy.onclick=async()=>{try{await navigator.clipboard.writeText(paymentReference);copy.textContent="COPIED ✓";setTimeout(()=>copy.textContent="COPY REFERENCE",1600);}catch(_){copy.textContent="SELECT & COPY";}};}
+        setTimeout(async()=>{ioneCloseSubscriptionGate();
 
           /*
            * Subscription payment is the renewal itself.
@@ -7528,7 +7531,9 @@ printBtn.onclick = () => {
     const printWindow = window.open("", "", "width=800,height=600");
     let html = "<html><head><title>Print Lesson</title>";
     html += "<style>body{font-family: Arial, Helvetica, sans-serif; color:black;} img{max-width:100%; display:block; margin:10px 0;}\n</style>";
-    html += "</head><body>";
+    html += "
+<style id="ione-subscription-global-polish">.ione-payment-reference-card{margin:12px 0 4px;padding:12px;border:1px solid rgba(0,255,255,.35);border-radius:14px;background:linear-gradient(145deg,rgba(0,255,255,.08),rgba(0,0,0,.28));display:grid;gap:8px;text-align:left}.ione-payment-reference-card span{font:900 10px/1 Arial,sans-serif;letter-spacing:1.4px;color:#7fdfe5}.ione-payment-reference-card strong{font:900 16px/1.2 monospace;color:#fff;overflow-wrap:anywhere;word-break:break-word}.ione-payment-reference-card button{min-height:42px;border:1px solid #00ffff;border-radius:10px;background:#071517;color:#00ffff;font-weight:900}.ione-payment-reference-card small{font-size:9px;color:#91a7ab;text-align:center;letter-spacing:.5px}.ione-authority-sub-list{display:grid;gap:9px;margin-top:12px}.ione-authority-sub-card{box-sizing:border-box;width:100%;min-width:0;overflow:hidden;padding:12px;border:1px solid #294349;border-radius:14px;background:#071012}.ione-authority-sub-card strong{display:block;color:#00ffff;font-size:12px;letter-spacing:.7px;margin-bottom:7px}.ione-authority-sub-card div{font:700 11px/1.55 Arial,sans-serif;color:#c8d4d6;overflow-wrap:anywhere;word-break:break-word}@media(max-width:650px){#aflEditorOverlay{padding:10px 8px 24px;box-sizing:border-box}#aflEditorOverlay .afl-editor{box-sizing:border-box;width:100%;max-width:100%;padding:14px;border-radius:18px}#aflEditorOverlay .afl-form-grid{grid-template-columns:1fr}#aflEditorOverlay .afl-field input,#aflEditorOverlay .afl-field textarea,#aflEditorOverlay .afl-field select{box-sizing:border-box;max-width:100%;min-width:0}#aflEditorOverlay .afl-editor-actions{grid-template-columns:1fr}}</style>
+</head><body>";
 
     markedElements.forEach(el=>{
         html += el.outerHTML;
