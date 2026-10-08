@@ -6,7 +6,7 @@
 
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00ffff">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-visual">
 
 <!-- Safe font connection hints: improve first-load font connection without changing the app's fonts. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2033,7 +2033,7 @@ body.ione-keyboard-open .ministry-access-overlay{
   transition:none!important;
 }
 </style><style id="ione-home-redesign">
-html,body{background:#071417!important}
+html,body{\n  min-height:100%;\n  width:100%;\n  max-width:100%;\n  overflow-x:hidden!important;\n  background:#071417!important;\n}\nbody{\n  box-sizing:border-box;\n  overscroll-behavior:none;\n  -webkit-text-size-adjust:100%;\n}\n#ioneTopActions{\n  top:max(10px, env(safe-area-inset-top, 0px));\n  right:max(12px, env(safe-area-inset-right, 0px));\n}\n#ioneHomeShell{\n  padding-top:calc(72px + env(safe-area-inset-top, 0px));\n  padding-right:calc(14px + env(safe-area-inset-right, 0px));\n  padding-left:calc(14px + env(safe-area-inset-left, 0px));\n  padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px));\n}\nhtml,body{background:#071417!important}
 #brandVideo{display:none!important;background:#071417!important}
 body, #ioneHomeShell, #smartPanel{overscroll-behavior:none}
 #ioneTopActions{position:fixed;top:10px;right:12px;z-index:200;display:flex;align-items:center;gap:8px}
@@ -2677,17 +2677,7 @@ function ioneFullscreenEligibleTarget(target){
   return true;
 }
 
-// Restore kiosk fullscreen from real feature interactions, but never from a field.
-// This keeps uploads/services/panels fullscreen without fighting the keyboard.
-document.body.addEventListener("click",e=>{
-  if(ioneFullscreenEligibleTarget(e.target) && !ioneIsFullscreen()) goFullScreen().catch(()=>{});
-},true);
-document.body.addEventListener("touchend",e=>{
-  // A touch is already followed by click on Android. Do not request fullscreen
-  // from both events; the duplicate compositor transition can produce a black frame.
-},{passive:true,capture:true});
-
-function ioneFullscreenStateChanged(){
+// Do not force browser fullscreen on direct Chrome visits.\n// The installed PWA display mode is controlled by manifest.json.\n// Keeping Chrome's normal viewport prevents fullscreen compositor jumps,\n// black flashes, and top-edge clipping when panels or keyboards open.\nfunction ioneFullscreenStateChanged(){
   ioneFullscreenRestorePending=!ioneIsFullscreen() && ioneFullscreenLocked;
 }
 document.addEventListener("fullscreenchange",ioneFullscreenStateChanged);
