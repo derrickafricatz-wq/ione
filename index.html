@@ -9039,10 +9039,29 @@ function ioneRunBackgroundMediaPreload(){ return; }
     });
   }
 
-  function fileToDataUrl(file){
+  function supportedImageMime(file){
+    const type=String(file?.type||"").toLowerCase().split(";")[0].trim();
+    const extension=String(file?.name||"").split(".").pop().toLowerCase();
+    const byExtension={
+      jpg:"image/jpeg",
+      jpeg:"image/jpeg",
+      png:"image/png",
+      webp:"image/webp",
+      gif:"image/gif"
+    };
+    if(type==="image/jpg")return "image/jpeg";
+    if(["image/jpeg","image/png","image/webp","image/gif"].includes(type))return type;
+    if(!type||type==="application/octet-stream")return byExtension[extension]||"";
+    return "";
+  }
+
+  function fileToDataUrl(file,mime){
     return new Promise(function(resolve,reject){
       const reader=new FileReader();
-      reader.onload=()=>resolve(String(reader.result||""));
+      reader.onload=()=>{
+        const result=String(reader.result||"");
+        resolve(result.replace(/^data:[^;,]*(;base64,)/i,"data:"+mime+"$1"));
+      };
       reader.onerror=()=>reject(new Error("Could not read the selected image."));
       reader.readAsDataURL(file);
     });
@@ -9050,8 +9069,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
   async function addImage(file){
     if(!file)return;
-    if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)){
-      status("Use JPG, PNG, WEBP or GIF images.",true);return;
+    const mime=supportedImageMime(file);
+    if(!mime){
+      status("Choose a JPG, PNG, WEBP or GIF image file.",true);return;
     }
     if(file.size>10*1024*1024){
       status("That image is larger than 10 MB.",true);return;
@@ -9060,10 +9080,10 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(btn)btn.disabled=true;
     status("UPLOADING IMAGE…");
     try{
-      const dataUrl=await fileToDataUrl(file);
+      const dataUrl=await fileToDataUrl(file,mime);
       const data=await invoke("upload",{image:dataUrl});
       if(!data.url)throw new Error("The upload did not return an image URL.");
-      blocks.push({type:"image",url:data.url,alt:file.name.replace(/\.[^.]+$/,"")});
+      blocks.push({type:"image",url:data.url,alt:String(file.name||"Image").replace(/\\.[^.]+$/,"")});
       renderBlocks();
       status("IMAGE ADDED • POSITION "+blocks.length);
     }catch(e){status(e?.message||"Could not upload image.",true);}
