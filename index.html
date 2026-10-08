@@ -792,9 +792,10 @@ window.ioneEnsureBookPdfLibraries = async function(){
       box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>WORD OF THE DAY</h3><p class="authority-section-note">Publish the public Word of the Day and choose the visual writing style shown on the home screen.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><label class="authority-word-style-label" for="authorityWordOfDayStyle">WORD STYLE</label><select id="authorityWordOfDayStyle" class="authority-word-style"><option value="modern">MODERN • I|ONE</option><option value="zigzag">ZIGZAG HANDWRITING</option><option value="street">STREET STYLE</option><option value="elegant">ELEGANT</option><option value="handwritten">HANDWRITTEN</option><option value="classic">CLASSIC</option><option value="luxury">LUXURY DISPLAY</option><option value="futuristic">FUTURISTIC • ORBITRON</option><option value="tech">TECH • AUDIOWIDE</option><option value="impact">IMPACT • BEBAS</option><option value="retro">RETRO • LOBSTER</option><option value="marker">MARKER • PERMANENT</option><option value="arcade">ARCADE • PRESS START</option><option value="royal">ROYAL • RIGHTEOUS</option><option value="signature">SIGNATURE • SATISFY</option><option value="typewriter">TYPEWRITER • SPECIAL ELITE</option></select><div id="authorityWordStylePreview" class="authority-word-style-preview">WORD OF THE DAY</div><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
       host.parentNode.insertBefore(box,host.nextSibling);
     }
-    ensureWordOfDayEditor();
-    ensureAuthorityPublicationEditors();
-    ensureAuthorityDocumentaryEditor();
+    /* Keep every Authority publication module independent: one failure must never stop the others. */
+    try{ ensureWordOfDayEditor(); }catch(error){ console.warn("I|ONE Authority Word of the Day:",error); }
+    try{ ensureAuthorityPublicationEditors(); }catch(error){ console.warn("I|ONE Authority publication editors:",error); }
+    try{ ensureAuthorityDocumentaryEditor(); }catch(error){ console.warn("I|ONE Authority documentary editor:",error); }
     const saveWord=document.getElementById("authoritySaveWordOfDay");
     const stylePicker=document.getElementById("authorityWordOfDayStyle");
     const stylePreview=document.getElementById("authorityWordStylePreview");
@@ -809,7 +810,12 @@ window.ioneEnsureBookPdfLibraries = async function(){
       unlock.dataset.livePanelBound="1";
       unlock.addEventListener("click",()=>setTimeout(()=>{
         const panel=document.getElementById("authorityPressPanel");
-        if(panel && panel.getAttribute("aria-hidden")==="false")openAuthorityPanel();
+        if(panel && panel.getAttribute("aria-hidden")==="false"){
+          try{ ensureWordOfDayEditor(); }catch(error){ console.warn("I|ONE Authority Word of the Day retry:",error); }
+          try{ ensureAuthorityPublicationEditors(); }catch(error){ console.warn("I|ONE Authority publication editors retry:",error); }
+          try{ ensureAuthorityDocumentaryEditor(); }catch(error){ console.warn("I|ONE Authority documentary editor retry:",error); }
+          openAuthorityPanel();
+        }
       },20));
     }
 
