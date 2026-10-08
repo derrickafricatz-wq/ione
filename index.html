@@ -4211,14 +4211,6 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
           referenceCard.appendChild(continueButton);
           status.appendChild(referenceCard);
 
-          let continued=false;
-          const continueToPost=async()=>{
-            if(continued)return;
-            continued=true;
-            clearTimeout(autoContinue);
-            await finishSubscriptionPayment();
-          };
-          continueButton.onclick=continueToPost;
         }
 
         let autoContinue;
