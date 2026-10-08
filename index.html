@@ -2677,7 +2677,11 @@ function ioneFullscreenEligibleTarget(target){
   return true;
 }
 
-// Do not force browser fullscreen on direct Chrome visits.\n// The installed PWA display mode is controlled by manifest.json.\n// Keeping Chrome's normal viewport prevents fullscreen compositor jumps,\n// black flashes, and top-edge clipping when panels or keyboards open.\nfunction ioneFullscreenStateChanged(){
+// Do not force browser fullscreen on direct Chrome visits.
+// The installed PWA display mode is controlled by manifest.json.
+// Keeping Chrome's normal viewport prevents fullscreen compositor jumps,
+// black flashes, and top-edge clipping when panels or keyboards open.
+function ioneFullscreenStateChanged(){
   ioneFullscreenRestorePending=!ioneIsFullscreen() && ioneFullscreenLocked;
 }
 document.addEventListener("fullscreenchange",ioneFullscreenStateChanged);
