@@ -1780,8 +1780,8 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 
 /* ---------- I|ONE OPEN SERVICE / PRIVATE INQUIRIES ---------- */
 .afl-owner-only-top{background:#101719;color:#00ffff;border-color:#00ffff}
-.afl-service-overlay{position:fixed;inset:0;z-index:100800;display:none;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.84);backdrop-filter:blur(12px);overflow:auto;padding:14px 10px 30px;font-family:Arial,Helvetica,sans-serif}
-.afl-service-card{width:min(760px,100%);background:linear-gradient(145deg,#10191c,#050809);border:1px solid #00ffff;border-radius:22px;padding:16px;box-shadow:0 25px 70px rgba(0,0,0,.8)}
+.afl-service-overlay{position:fixed;inset:0;z-index:100800;display:none;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.84);backdrop-filter:blur(12px);overflow:auto;box-sizing:border-box;padding:10px 10px calc(10px + env(safe-area-inset-bottom));font-family:Arial,Helvetica,sans-serif}
+.afl-service-card{width:min(760px,100%);max-height:calc(100dvh - 20px);box-sizing:border-box;overflow:auto;background:linear-gradient(145deg,#10191c,#050809);border:1px solid #00ffff;border-radius:22px;padding:16px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 25px 70px rgba(0,0,0,.8)}
 .afl-service-head{display:flex;align-items:center;gap:10px;border-bottom:1px solid #24383d;padding-bottom:11px}.afl-service-head>div{flex:1;min-width:0}
 .afl-service-kicker{font-size:9px;font-weight:900;letter-spacing:2px;color:#00ffff}.afl-service-head h2{margin:4px 0 0;color:#fff;font:900 22px/1.1 'Russo One',sans-serif}
 .afl-service-intro{margin:12px 0;color:#9eb0b5;font-size:12px;line-height:1.45}.afl-service-form{display:grid;gap:10px}.afl-service-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.afl-service-field label{display:block;color:#00ffff;font-size:9px;font-weight:900;letter-spacing:1.2px;margin-bottom:5px}.afl-service-field input,.afl-service-field textarea,.afl-service-field select{width:100%;box-sizing:border-box;border:1px solid #294349;border-radius:11px;background:#05090a;color:#fff;padding:11px;font:600 14px/1.35 Arial,sans-serif}.afl-service-field textarea{min-height:82px;resize:vertical}.afl-service-actions{margin-top:12px}.afl-service-actions button{width:100%;min-height:50px;border-radius:12px;font-weight:900;cursor:pointer}
@@ -9737,7 +9737,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       .afl-rbb-page-top{height:54px;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-bottom:1px solid rgba(0,255,255,.16);background:linear-gradient(145deg,#101b1e,#05090a);position:relative;z-index:80}
       .afl-rbb-page-title{font:1000 10px/1 'Russo One',Arial,sans-serif;color:#00ffff;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:62%}
       .afl-rbb-close{min-height:38px;padding:0 13px;border-radius:12px;border:1px solid #ff7b7b;background:linear-gradient(145deg,#3a1518,#100708);color:#ffb0b0;font:1000 8px Arial;letter-spacing:.8px;box-shadow:inset 0 1px rgba(255,255,255,.14),0 6px 16px rgba(0,0,0,.4)}
-      .afl-rbb-page-area{position:absolute;top:54px;left:0;right:0;bottom:66px;overflow:auto;padding:8px;background:linear-gradient(145deg,#101a1d,#05090a)}
+      .afl-rbb-page-area{position:absolute;top:54px;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));overflow:auto;padding:8px 8px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(145deg,#101a1d,#05090a)}
       .afl-rbb-loading{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#8da4a9;font:900 9px Arial;letter-spacing:1px;text-align:center}
       .afl-rbb-loader-ring{width:44px;height:44px;border-radius:50%;border:3px solid rgba(0,255,255,.14);border-top-color:#00ffff;animation:aflRbbSpin .7s linear infinite}
       .afl-rbb-page{min-height:100%;padding:10px 8px 16px;background:linear-gradient(145deg,#f4f0e7,#d8d0c0);border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.14),0 12px 30px rgba(0,0,0,.35);color:#182326;transform-origin:left center;backface-visibility:hidden}
@@ -9751,7 +9751,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       .afl-rbb-page .afl-owner-reply{position:sticky!important;bottom:0;background:linear-gradient(180deg,rgba(233,227,213,0),#e9e3d5 24%)!important;padding-top:12px!important}
       .afl-rbb-client-name{font:1000 17px/1.15 'Russo One',Arial,sans-serif;color:#17353a;letter-spacing:1px;margin-bottom:10px;padding-bottom:9px;border-bottom:2px solid rgba(0,128,128,.18)}
       .afl-rbb-client-name span{display:block;color:#008b8b;font-size:8px;letter-spacing:2px;margin-bottom:4px}
-      .afl-rbb-nav{display:none;position:absolute;left:0;right:0;bottom:0;z-index:90;grid-template-columns:1fr auto 1fr;gap:7px;padding:8px 9px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,#05090a 25% 100%);backdrop-filter:blur(8px)}
+      .afl-rbb-nav{display:none;position:absolute;left:0;right:0;bottom:0;z-index:90;box-sizing:border-box;grid-template-columns:1fr auto 1fr;gap:7px;padding:8px 9px calc(8px + env(safe-area-inset-bottom));background:linear-gradient(180deg,transparent,#05090a 25% 100%);backdrop-filter:blur(8px)}
       .afl-rbb-nav button{min-height:46px;border-radius:13px;border:1px solid rgba(0,255,255,.52);background:linear-gradient(145deg,#14363b,#061012);color:#00ffff;font:1000 8px Arial;letter-spacing:.7px;box-shadow:inset 0 1px rgba(255,255,255,.15),0 7px 18px rgba(0,0,0,.45)}
       .afl-rbb-nav button:active{transform:translateY(2px)}
       .afl-rbb-nav .afl-rbb-count{min-width:74px;color:#fff;border-color:#294349;font-size:8px}
