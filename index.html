@@ -8118,7 +8118,7 @@ function loadIonePublicDocumentaries(store){
         }
         img.onerror=()=>{card.remove();if(!row.children.length)shelf.style.display="none";};
         card.append(img,copy);
-        card.addEventListener("click",()=>openIonePublicDocumentary(d.id));
+        card.addEventListener("click",()=>openIonePublicDocumentary(d));
         row.appendChild(card);
       });
       shelf.style.display=row.children.length?"block":"none";
@@ -8129,7 +8129,7 @@ function loadIonePublicDocumentaries(store){
   });
 }
 
-async function openIonePublicDocumentary(id){
+function openIonePublicDocumentary(d){
   const existing=document.getElementById("ioneDocReaderLive");
   if(existing)existing.remove();
   const reader=document.createElement("section");
@@ -8142,9 +8142,7 @@ async function openIonePublicDocumentary(id){
   document.body.appendChild(reader);
   reader.querySelector(".ione-doc-reader-back").onclick=()=>reader.remove();
   try{
-    const result=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"get",id}});
-    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not load this documentary.");
-    const d=result.data.documentary;
+    if(!d||!Array.isArray(d.content))throw new Error("This documentary could not be opened. Refresh I1 LIB and try again.");
     reader.querySelector(".ione-doc-reader-head-name").textContent=String(d.title||"Documentary");
     const scroll=reader.querySelector(".ione-doc-reader-scroll");
     scroll.replaceChildren();
