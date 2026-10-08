@@ -9230,9 +9230,13 @@ function ioneRunBackgroundMediaPreload(){ return; }
     });
   }
 
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",watchUnlock,{once:true});
-  else watchUnlock();
-  window.addEventListener("load",watchUnlock,{once:false});
+  function bootDocumentaryEditor(){
+    watchUnlock();
+    setTimeout(function(){mount();},0);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bootDocumentaryEditor,{once:true});
+  else bootDocumentaryEditor();
+  window.addEventListener("load",bootDocumentaryEditor,{once:false});
 })();
 </script>
 
