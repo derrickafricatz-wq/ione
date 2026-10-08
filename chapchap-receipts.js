@@ -393,18 +393,8 @@
     if(!box){
       box=document.createElement("div");
       box.id="ioneChapReceiptQuick";
-      var myChapOverlay=document.getElementById("ioneChapOverlay");
-      var myChapCard=myChapOverlay?.querySelector(".cc-card.cc-mychap");
-      box.style.cssText=(myChapCard
-        ?"position:absolute;inset:0;z-index:103004;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto;box-sizing:border-box"
-        :"position:fixed;inset:0;z-index:103004;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto");
-      (myChapCard||document.body).appendChild(box);
-    }
-    var activeMyChapCard=document.getElementById("ioneChapOverlay")?.querySelector(".cc-card.cc-mychap");
-    if(activeMyChapCard && box.parentNode!==activeMyChapCard){
-      box.style.position="absolute";
-      box.style.inset="0";
-      activeMyChapCard.appendChild(box);
+      box.style.cssText="position:fixed;inset:0;z-index:103004;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto";
+      document.body.appendChild(box);
     }
     box.innerHTML='<div style="width:min(520px,100%);max-height:calc(100% - 28px);overflow:auto;padding:0;box-sizing:border-box">'+officialReceiptHTML(r,"ccStandaloneBack")+'</div>';
     box.style.zIndex="103004";
@@ -439,6 +429,7 @@
 
   window.ioneChapChapOpenReceipt=function(r){openAuthorityReceipt(r);};
   window.ioneChapChapOpenStandaloneReceipt=function(r){openStandaloneReceipt(r);};
+  window.ioneChapChapOpenSellerReceipt=function(orderId){return viewSellerReceipt(orderId,false);};
   window.ioneChapChapDownloadReceipt=function(r){downloadReceipt(r);};
   window.ioneChapChapDownloadAgreement=function(a,productTitle){downloadAgreement(a,productTitle);};
   hookAuthorityFilters();
