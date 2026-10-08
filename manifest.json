@@ -5,13 +5,14 @@
   "start_url": "./index.html",
   "scope": "./",
 
-  "display": "fullscreen",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "any",
 
   "background_color": "#000000",
   "theme_color": "#00ffff",
 
-    "icons": [
+  "icons": [
     {
       "src": "icon-192.png",
       "sizes": "192x192",
