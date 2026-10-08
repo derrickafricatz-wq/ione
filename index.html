@@ -2088,6 +2088,62 @@ body.ione-non-home #ionePushEnableButton{display:none!important}
 @media(max-height:700px){.smart-item{min-height:122px!important;padding:13px 9px!important}.smart-grid{gap:9px}#wordOfDayPanel{min-height:88px;padding:14px 16px}.ione-banner-frame{height:48px}}
 
 </style>
+<style id="ioneGentleStartupAndMyChapStyle">
+/* I|ONE • gentle first-open sequence — visual only, no feature logic changes */
+@keyframes ioneHomeFirstIn{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes ioneBannerGentleIn{
+  from{opacity:0;transform:translateY(16px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@keyframes ioneTopGentleIn{
+  from{opacity:0;transform:translateY(-10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+body.ione-gentle-boot #ioneHomeShell{
+  animation:ioneHomeFirstIn .55s ease-out both;
+}
+body.ione-gentle-boot #scrollBanner{
+  opacity:0;
+  animation:ioneBannerGentleIn .8s ease-out 1.05s both;
+}
+body.ione-gentle-boot #ioneTopActions{
+  opacity:0;
+  animation:ioneTopGentleIn .7s ease-out 1.65s both;
+}
+@media (prefers-reduced-motion:reduce){
+  body.ione-gentle-boot #ioneHomeShell,
+  body.ione-gentle-boot #scrollBanner,
+  body.ione-gentle-boot #ioneTopActions{
+    animation:none!important;
+    opacity:1!important;
+    transform:none!important;
+  }
+}
+
+/* I|ONE • My ChapChap: compact, truly centered, internally scrollable */
+#ioneChapOverlay .cc-card.cc-mychap{
+  width:min(430px,calc(100vw - 28px))!important;
+  max-width:430px!important;
+  height:auto!important;
+  max-height:min(72dvh,620px)!important;
+  margin:0 auto!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  border-radius:20px!important;
+}
+#ioneChapOverlay .cc-card.cc-mychap #ioneChapOverlayBody{
+  min-height:0!important;
+  max-height:calc(min(72dvh,620px) - 92px)!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  box-sizing:border-box!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:thin;
+}
+</style>
 </head>
 
 <body>
@@ -7597,7 +7653,25 @@ printBtn.onclick = () => {
     // Footer
     html += "<hr><p>Heaven On Earth</p>";
 
-    html += "</body></html>";
+    html += "<script>
+/* I|ONE • first-open visual staging only */
+(function(){
+  function startGentleBoot(){
+    try{
+      document.body.classList.add("ione-gentle-boot");
+      window.setTimeout(function(){
+        document.body.classList.remove("ione-gentle-boot");
+      },3200);
+    }catch(e){}
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",startGentleBoot,{once:true});
+  }else{
+    startGentleBoot();
+  }
+})();
+</script>
+</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
