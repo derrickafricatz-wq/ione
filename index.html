@@ -8134,10 +8134,10 @@ function openIonePublicDocumentary(d){
     try{
       const w=window.open("","","width=900,height=700");if(!w){alert("Allow pop-ups to print this documentary.");return;}
       const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-      w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(d?.title||"Documentary")+'</title><style>body{font-family:Georgia,serif;color:#111;max-width:850px;margin:30px auto;padding:0 22px;line-height:1.75}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;max-width:100%;height:auto;margin:20px auto;page-break-inside:avoid}figure{margin:18px 0}figcaption{font:12px Arial,sans-serif;color:#555;text-align:center}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
+      w.onload=()=>w.print();w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(d?.title||"Documentary")+'</title><style>body{font-family:Georgia,serif;color:#111;max-width:850px;margin:30px auto;padding:0 22px;line-height:1.75}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;max-width:100%;height:auto;margin:20px auto;page-break-inside:avoid}figure{margin:18px 0}figcaption{font:12px Arial,sans-serif;color:#555;text-align:center}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
       if(String(d?.short_description||"").trim())w.document.write("<p>"+esc(d.short_description)+"</p>");
       (Array.isArray(d?.content)?d.content:[]).forEach(x=>{if(x?.type==="image"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");const alt=esc(x.alt||"");w.document.write('<figure><img src="'+url+'" alt="'+alt+'">'+(alt?'<figcaption>'+alt+'</figcaption>':'')+'</figure>');}else if(x?.type==="text")w.document.write("<p>"+esc(x.text||"")+"</p>");});
-      w.document.write("</body></html>");w.document.close();w.focus();w.onload=()=>w.print();
+      w.document.write("</body></html>");w.document.close();w.focus();
     }catch(error){console.warn("Documentary print failed:",error);alert("Could not open the print view. Please try again.");}
   };
   try{
