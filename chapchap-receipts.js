@@ -400,7 +400,13 @@
         :"position:fixed;inset:0;z-index:103004;display:flex;align-items:center;justify-content:center;padding:14px;background:#050809;font-family:Arial,sans-serif;color:#fff;overflow:auto");
       (myChapCard||document.body).appendChild(box);
     }
-    box.innerHTML='<div style="width:min(520px,100%);max-height:calc(100vh - 28px);overflow:auto;padding:0;box-sizing:border-box">'+officialReceiptHTML(r,"ccStandaloneBack")+'</div>';
+    var activeMyChapCard=document.getElementById("ioneChapOverlay")?.querySelector(".cc-card.cc-mychap");
+    if(activeMyChapCard && box.parentNode!==activeMyChapCard){
+      box.style.position="absolute";
+      box.style.inset="0";
+      activeMyChapCard.appendChild(box);
+    }
+    box.innerHTML='<div style="width:min(520px,100%);max-height:calc(100% - 28px);overflow:auto;padding:0;box-sizing:border-box">'+officialReceiptHTML(r,"ccStandaloneBack")+'</div>';
     box.style.zIndex="103004";
     box.style.display="flex";
     box.querySelector(".cc-authority-view-receipt")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();openStandaloneReceipt(r);});
