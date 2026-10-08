@@ -328,7 +328,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
   function renderIoneBanners(banners){
     const text=document.getElementById("scrollText");
     if(!text)return;
-    const clean=(Array.isArray(banners)?banners:[]).map(x=>String(x||"").trim()).filter(Boolean).slice(0,3);
+    const clean=(Array.isArray(banners)?banners:[]).map(x=>String(x||"").trim()).filter(Boolean).map(x=>/^powered\s+by\s+deka$/i.test(x)?"intoione.space":x).slice(0,3);
     ioneBannersCache=clean;
     text.classList.remove("ione-banner-ready");
     text.innerHTML="";
