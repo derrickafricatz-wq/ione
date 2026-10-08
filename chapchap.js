@@ -792,6 +792,30 @@
           setTimeout(function(){ showReceipt(orderId, attempt + 1); }, 2000);
           return;
         }
+
+        /*
+         * Self-healing receipt recovery.
+         * If payment is already confirmed but the receipt row is not yet
+         * visible, ask the authoritative reconciliation function to rebuild
+         * the paid-order finalization. This is safe because the backend is
+         * idempotent and the receipt is unique per order.
+         */
+        if (attempt === 5) {
+          if (status) status.textContent = "PAYMENT CONFIRMED • SECURING YOUR OFFICIAL RECEIPT…";
+          try {
+            var repair = await sb.functions.invoke("ione-chapchap-payment", {
+              body: { action: "reconcile", order_id: orderId }
+            });
+            if (!repair.error && repair.data?.success) {
+              await loadProducts();
+              setTimeout(function(){ showReceipt(orderId, 6); }, 600);
+              return;
+            }
+          } catch (repairError) {
+            console.warn("ChapChap receipt recovery:", repairError);
+          }
+        }
+
         if (status) status.innerHTML = "PAYMENT CONFIRMED. Your official receipt is still being prepared." +
           '<br><button id="ioneCcReceiptRetry" class="cc-secondary" type="button" style="margin-top:8px;width:100%">CHECK RECEIPT AGAIN</button>';
         var retryReceipt=document.getElementById("ioneCcReceiptRetry");

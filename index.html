@@ -3779,12 +3779,29 @@ function ioneSetSubscriptionExpiryDisplay(value){
 async function ioneGetUploadSubscription(){
   const session=await ensureHeavensAnonymousSession();
   if(!session?.user?.id)throw new Error("Could not create your secure I|ONE session.");
+
+  let customerId="";
+  try{
+    customerId=String(localStorage.getItem("ione_upload_customer_id")||"").trim();
+  }catch(_){}
+
   const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
-    body:{action:"status",user_id:session.user.id}
+    body:{
+      action:"status",
+      user_id:session.user.id,
+      customer_id:customerId||undefined
+    }
   });
+
   if(error)throw error;
   if(!data?.success)throw new Error(data?.error||"Could not check I|ONE subscription.");
+
   ioneUploadSubscription=data.subscription||null;
+
+  if(data.subscription?.customer_id){
+    try{localStorage.setItem("ione_upload_customer_id",String(data.subscription.customer_id));}catch(_){}
+  }
+
   return data;
 }
 
@@ -3931,6 +3948,13 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
       throw new Error(message);
     }
 
+    if(prepared.data?.customer_id){
+      try{
+        localStorage.setItem("ione_upload_customer_id",String(prepared.data.customer_id));
+        localStorage.setItem("ione_upload_phone",phone);
+      }catch(_){}
+    }
+
     if(!prepared.data?.success){
       const d=prepared.data||{};
       throw new Error(
@@ -4009,7 +4033,7 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
     status.textContent=
       "Payment request sent. Check your phone and approve the payment.";
 
-    await ioneWaitForUploadSubscription(uid,mode,existing);
+    await ioneWaitForUploadSubscription(mode,existing);
 
   }catch(error){
     console.error("I|ONE subscription payment:",error);
@@ -4022,20 +4046,23 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
   }
 }
 
-async function ioneWaitForUploadSubscription(uid,mode="publish",existing=null){
+async function ioneWaitForUploadSubscription(mode="publish",existing=null){
   const status=document.getElementById("ioneSubStatus");
+  const session=await ensureHeavensAnonymousSession();
+  const uid=session?.user?.id||"";
   const pay=document.getElementById("ioneSubPay");
 
   for(let attempt=0;attempt<40;attempt++){
     await new Promise(resolve=>setTimeout(resolve,3000));
 
     try{
-      const {data,error}=await heavensSupabase.functions.invoke("ione-upload-payment",{
-        body:{action:"status",user_id:uid}
-      });
+      const data=await ioneGetUploadSubscription();
 
-      if(!error&&data?.success&&data.active&&data.subscription?.expires_at){
+      if(data?.success&&data.active&&data.subscription?.expires_at){
         ioneUploadSubscription=data.subscription;
+        if(data.subscription?.customer_id){
+          try{localStorage.setItem("ione_upload_customer_id",String(data.subscription.customer_id));}catch(_){}
+        }
         ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
 
         status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>";
