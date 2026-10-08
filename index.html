@@ -120,10 +120,19 @@ window.ioneEnsureBookPdfLibraries = async function(){
     const button=document.getElementById("authoritySavePrices");
     const password=String(document.getElementById("authorityPasswordInput")?.value||"");
     const oldValues={...ioneAuthorityLoadedPrices};
+    const rawValues={
+      "2weeks":String(document.getElementById("authorityPrice2weeks")?.value??"").trim(),
+      "1month":String(document.getElementById("authorityPrice1month")?.value??"").trim(),
+      "3months":String(document.getElementById("authorityPrice3months")?.value??"").trim()
+    };
+    if(Object.values(rawValues).some(v=>v==="")){
+      if(status)status.textContent="Enter a price for all three plans before publishing.";
+      return;
+    }
     const values={
-      "2weeks":Number(document.getElementById("authorityPrice2weeks")?.value),
-      "1month":Number(document.getElementById("authorityPrice1month")?.value),
-      "3months":Number(document.getElementById("authorityPrice3months")?.value)
+      "2weeks":Number(rawValues["2weeks"]),
+      "1month":Number(rawValues["1month"]),
+      "3months":Number(rawValues["3months"])
     };
     if(!password){if(status)status.textContent="Authority session is missing. Close and unlock Authority Press again.";return;}
     if(Object.values(values).some(v=>!Number.isFinite(v)||!Number.isInteger(v)||v<0)){
@@ -158,18 +167,6 @@ window.ioneEnsureBookPdfLibraries = async function(){
       window.ioneRemotePlansReady=true;
       updateOpenGate();
       if(status)status.textContent="SAVED • LIVE PRICES UPDATED";
-      const changedPlans=Object.keys(values).filter(id=>Number(oldValues[id])!==Number(values[id]));
-      if(changedPlans.length && typeof window.ioneSendAuthorityPush==="function"){
-        const labels={"2weeks":"2 WEEKS","1month":"1 MONTH","3months":"3 MONTHS"};
-        const details=changedPlans.map(id=>labels[id]+": TZS "+Number(oldValues[id]||0).toLocaleString("en-US")+" → TZS "+Number(values[id]).toLocaleString("en-US")).join(" • ");
-        window.ioneSendAuthorityPush({
-          password,
-          title:"SUBSCRIPTION UPDATED",
-          body:details+" • Tap to view plans and make payment.",
-          url:"./?ionePushDestination=subscription",
-          tag:"ione-subscription-updated"
-        }).catch(e=>console.warn("I|ONE subscription push:",e));
-      }
       const liveStatus=document.getElementById("authorityPriceStatus");
       if(liveStatus)liveStatus.textContent="CONNECTED • LIVE";
     }catch(e){
