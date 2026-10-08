@@ -2146,7 +2146,7 @@ body.ione-gentle-boot #ioneTopActions{
 </style>
 </head>
 
-<body>
+<body class="ione-gentle-boot">
 
 <button id="installBtn" style="
   position:fixed;
@@ -3024,7 +3024,8 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=90")
+  navigator.serviceWorker.register("sw.js?v=114", { updateViaCache: "none" })
+    .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
 }
@@ -8878,7 +8879,6 @@ function ioneRunBackgroundMediaPreload(){ return; }
 (function(){
   function startGentleBoot(){
     try{
-      document.body.classList.add("ione-gentle-boot");
       window.setTimeout(function(){
         document.body.classList.remove("ione-gentle-boot");
       },3200);
