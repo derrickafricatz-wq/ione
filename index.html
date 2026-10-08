@@ -4171,8 +4171,8 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
         ioneSetSubscriptionExpiryDisplay(data.subscription.expires_at);
 
         if(data.subscription?.customer_id)ioneSubscriptionRememberCustomer(data.subscription.customer_id,data.subscription.phone_number||"");const paymentReference=String(data.payment_reference||data.subscription?.blmpay_reference||"").trim();if(paymentReference){try{localStorage.setItem("ione_last_upload_payment_reference",paymentReference);}catch(_){}}
-        status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>"+(paymentReference?"<div class="ione-payment-reference-card"><span>BLMPay REFERENCE</span><strong>"+aflEscape(paymentReference)+"</strong><button type="button" id="ioneCopyPaymentReference">COPY REFERENCE</button><small>SAVED AUTOMATICALLY TO MY SUBSCRIPTION</small></div>":"");if(paymentReference){const copy=document.getElementById("ioneCopyPaymentReference");if(copy)copy.onclick=async()=>{try{await navigator.clipboard.writeText(paymentReference);copy.textContent="COPIED ✓";setTimeout(()=>copy.textContent="COPY REFERENCE",1600);}catch(_){copy.textContent="SELECT & COPY";}};}
-        setTimeout(async()=>{ioneCloseSubscriptionGate();
+        status.innerHTML="PAYMENT CONFIRMED.<br>ACTIVE UNTIL <strong>"+aflEscape(ioneSubscriptionFormatExpiry(data.subscription.expires_at))+"</strong>"+(paymentReference?"<div class="ione-payment-reference-card"><span>BLMPay REFERENCE</span><strong>"+aflEscape(paymentReference)+"</strong><button type="button" id="ioneCopyPaymentReference">COPY REFERENCE</button><button type="button" id="ioneContinueAfterPayment">CONTINUE TO POST</button><small>SAVED AUTOMATICALLY TO MY SUBSCRIPTION</small></div>":"");if(paymentReference){const copy=document.getElementById("ioneCopyPaymentReference");if(copy)copy.onclick=async()=>{try{await navigator.clipboard.writeText(paymentReference);copy.textContent="COPIED ✓";setTimeout(()=>copy.textContent="COPY REFERENCE",1600);}catch(_){copy.textContent="SELECT & COPY";}};}
+        const continueAfterPayment=async()=>{ioneCloseSubscriptionGate();
 
           /*
            * Subscription payment is the renewal itself.
@@ -4198,7 +4198,10 @@ async function ioneWaitForUploadSubscription(mode="publish",existing=null){
           }else{
             aflOpenEditor("publish");
           }
-        },900);
+        };
+        const continueButton=document.getElementById("ioneContinueAfterPayment");
+        if(continueButton)continueButton.onclick=continueAfterPayment;
+        setTimeout(()=>{if(document.getElementById("ioneSubscriptionGate"))continueAfterPayment();},10000);
 
         return;
       }
