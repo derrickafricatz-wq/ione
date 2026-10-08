@@ -565,147 +565,6 @@ window.ioneEnsureBookPdfLibraries = async function(){
     return saveAuthorityExtraPublication("important_notice","IMPORTANT NOTICE","authorityImportantNotice","authorityImportantNoticeStatus","authoritySaveImportantNotice","home","ione-important-notice",600);
   }
 
-
-  let ioneDocumentaryEditorBound=false;
-  let ioneDocumentaryEditingId="";
-  let ioneDocumentaryBlocks=[];
-
-  function documentaryEditorStatus(message,ok=false){
-    const el=document.getElementById("authorityDocumentaryStatus");
-    if(el){el.textContent=message;el.className="authority-documentary-status"+(ok?" is-ok":"");}
-  }
-
-  function renderAuthorityDocumentaryBlocks(){
-    const host=document.getElementById("authorityDocumentaryBlocks");
-    if(!host)return;
-    host.innerHTML="";
-    ioneDocumentaryBlocks.forEach((block,index)=>{
-      const row=document.createElement("div");
-      row.className="authority-documentary-block";
-      if(block.type==="image"){
-        row.innerHTML='<div class="authority-documentary-block-preview"><img src="'+String(block.url).replace(/"/g,"&quot;")+'" alt=""></div><div class="authority-documentary-block-meta"><strong>IMAGE '+(index+1)+'</strong><input class="authority-documentary-alt" maxlength="200" placeholder="Image description (optional)" value="'+String(block.alt||"").replace(/"/g,"&quot;")+'"><button type="button" class="authority-documentary-remove">REMOVE</button></div>';
-        row.querySelector(".authority-documentary-alt").oninput=e=>{block.alt=e.target.value;};
-      }else{
-        row.innerHTML='<div class="authority-documentary-block-meta"><strong>TEXT '+(index+1)+'</strong><textarea class="authority-documentary-text" maxlength="12000" rows="5" placeholder="Write this part of the documentary…"></textarea><button type="button" class="authority-documentary-remove">REMOVE</button></div>';
-        row.querySelector(".authority-documentary-text").value=block.text||"";
-        row.querySelector(".authority-documentary-text").oninput=e=>{block.text=e.target.value;};
-      }
-      row.querySelector(".authority-documentary-remove").onclick=()=>{ioneDocumentaryBlocks.splice(index,1);renderAuthorityDocumentaryBlocks();};
-      host.appendChild(row);
-    });
-  }
-
-  function resetAuthorityDocumentaryEditor(){
-    ioneDocumentaryEditingId="";
-    ioneDocumentaryBlocks=[];
-    ["authorityDocumentaryTitle","authorityDocumentaryDescription","authorityDocumentaryOrder"].forEach(id=>{const e=document.getElementById(id);if(e)e.value=id==="authorityDocumentaryOrder"?"0":"";});
-    const publish=document.getElementById("authorityDocumentaryPublished");if(publish)publish.checked=false;
-    renderAuthorityDocumentaryBlocks();
-    documentaryEditorStatus("READY");
-  }
-
-  async function authorityDocumentaryUpload(file){
-    if(!file)return;
-    if(!/^image\\/(jpeg|png|webp|gif)$/i.test(file.type)){documentaryEditorStatus("Use JPG, PNG, WEBP or GIF.");return;}
-    if(file.size>10*1024*1024){documentaryEditorStatus("Image must be 10 MB or smaller.");return;}
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    if(!password){documentaryEditorStatus("Unlock Authority Press again.");return;}
-    documentaryEditorStatus("UPLOADING IMAGE…");
-    const reader=new FileReader();
-    reader.onload=async()=>{
-      try{
-        const r=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"upload",password,data_url:String(reader.result),mime_type:file.type}});
-        if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Image upload failed.");
-        ioneDocumentaryBlocks.push({type:"image",url:r.data.url,alt:""});
-        renderAuthorityDocumentaryBlocks();
-        documentaryEditorStatus("IMAGE ADDED • POSITION "+ioneDocumentaryBlocks.length,true);
-      }catch(e){documentaryEditorStatus(e?.message||"Image upload failed.");}
-    };
-    reader.onerror=()=>documentaryEditorStatus("Could not read the image.");
-    reader.readAsDataURL(file);
-  }
-
-  async function loadAuthorityDocumentary(id){
-    try{
-      documentaryEditorStatus("LOADING DOCUMENTARY…");
-      const r=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"get",id}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load documentary.");
-      const d=r.data.documentary;
-      ioneDocumentaryEditingId=d.id;
-      document.getElementById("authorityDocumentaryTitle").value=d.title||"";
-      document.getElementById("authorityDocumentaryDescription").value=d.short_description||"";
-      document.getElementById("authorityDocumentaryOrder").value=Number(d.sort_order||0);
-      document.getElementById("authorityDocumentaryPublished").checked=!!d.published;
-      ioneDocumentaryBlocks=Array.isArray(d.content)?d.content.map(x=>x.type==="image"?{type:"image",url:x.url,alt:x.alt||""}:{type:"text",text:x.text||""}):[];
-      renderAuthorityDocumentaryBlocks();
-      documentaryEditorStatus("LOADED • EDITING");
-    }catch(e){documentaryEditorStatus(e?.message||"Could not load documentary.");}
-  }
-
-  async function saveAuthorityDocumentary(){
-    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
-    const title=String(document.getElementById("authorityDocumentaryTitle")?.value||"").trim();
-    const description=String(document.getElementById("authorityDocumentaryDescription")?.value||"").trim();
-    const sortOrder=Number(document.getElementById("authorityDocumentaryOrder")?.value||0);
-    const published=!!document.getElementById("authorityDocumentaryPublished")?.checked;
-    if(!password){documentaryEditorStatus("Authority session is missing.");return;}
-    if(!title){documentaryEditorStatus("Enter a documentary title.");return;}
-    if(published && (!ioneDocumentaryBlocks.length || ioneDocumentaryBlocks[0]?.type!=="image")){documentaryEditorStatus("The first block must be the starting image before publishing.");return;}
-    const button=document.getElementById("authorityDocumentaryPublish");
-    if(button)button.disabled=true;
-    documentaryEditorStatus(published?"PUBLISHING DOCUMENTARY…":"SAVING DRAFT…");
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"save",password,id:ioneDocumentaryEditingId||undefined,title,short_description:description,content:ioneDocumentaryBlocks,sort_order:Number.isFinite(sortOrder)?Math.max(0,Math.floor(sortOrder)):0,published}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not save documentary.");
-      ioneDocumentaryEditingId=r.data.documentary.id;
-      documentaryEditorStatus(published?"PUBLISHED • LIVE":"DRAFT SAVED",true);
-      await loadAuthorityDocumentaryList();
-    }catch(e){documentaryEditorStatus(e?.message||"Could not save documentary.");}
-    finally{if(button)button.disabled=false;}
-  }
-
-  async function loadAuthorityDocumentaryList(){
-    const host=document.getElementById("authorityDocumentaryList");if(!host)return;
-    host.innerHTML="<div class=\"authority-documentary-list-empty\">LOADING…</div>";
-    try{
-      const r=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"list"}});
-      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load documentaries.");
-      const docs=r.data.documentaries||[];
-      host.innerHTML="";
-      if(!docs.length){host.innerHTML="<div class=\"authority-documentary-list-empty\">NO PUBLISHED DOCUMENTARIES YET</div>";return;}
-      docs.forEach(d=>{
-        const card=document.createElement("div");card.className="authority-documentary-list-card";
-        card.innerHTML='<img src="'+String(d.cover_image_url||"").replace(/"/g,"&quot;")+'" alt=""><div><strong>'+String(d.title).replace(/</g,"&lt;")+'</strong><small>'+String(d.short_description||"").replace(/</g,"&lt;")+'</small></div><button type="button">EDIT</button>';
-        card.querySelector("button").onclick=()=>loadAuthorityDocumentary(d.id);
-        host.appendChild(card);
-      });
-    }catch(e){host.innerHTML='<div class="authority-documentary-list-empty">'+String(e?.message||"Could not load documentaries.").replace(/</g,"&lt;")+"</div>";}
-  }
-
-  function ensureAuthorityDocumentaryEditor(){
-    const panel=document.getElementById("authorityPressPanel"),inner=panel?.querySelector(".authority-panel-inner");
-    if(!inner||document.getElementById("authorityDocumentaryEditor")||ioneDocumentaryEditorBound)return;
-    ioneDocumentaryEditorBound=true;
-    const box=document.createElement("section");
-    box.id="authorityDocumentaryEditor";
-    box.className="authority-panel-section authority-documentary-section";
-    box.innerHTML='<div class="authority-section-kicker">I|ONE LIBRARY</div><h3>DOCUMENTARY</h3><p class="authority-section-note">Build a documentary as a real sequence: starting image, text, image, text and more. The first image becomes the documentary heading image.</p>'+
-      '<input id="authorityDocumentaryTitle" maxlength="120" placeholder="DOCUMENTARY TITLE">'+
-      '<textarea id="authorityDocumentaryDescription" maxlength="500" rows="3" placeholder="Short description shown on the documentary heading…"></textarea>'+
-      '<div class="authority-documentary-tools"><label class="authority-documentary-upload">ADD IMAGE<input id="authorityDocumentaryImage" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden></label><button type="button" id="authorityDocumentaryAddText">ADD TEXT</button><button type="button" id="authorityDocumentaryNew">NEW</button></div>'+
-      '<div id="authorityDocumentaryBlocks" class="authority-documentary-blocks"></div>'+
-      '<div class="authority-documentary-publish-row"><label>ORDER <input id="authorityDocumentaryOrder" type="number" min="0" step="1" value="0"></label><label class="authority-documentary-check"><input id="authorityDocumentaryPublished" type="checkbox"> PUBLISH LIVE</label></div>'+
-      '<div id="authorityDocumentaryStatus" class="authority-documentary-status">READY</div><button type="button" id="authorityDocumentaryPublish" class="authority-save-button">SAVE / PUBLISH DOCUMENTARY</button>'+
-      '<div class="authority-documentary-list-title">PUBLISHED DOCUMENTARIES</div><div id="authorityDocumentaryList" class="authority-documentary-list"></div>';
-    inner.appendChild(box);
-    document.getElementById("authorityDocumentaryImage").onchange=e=>authorityDocumentaryUpload(e.target.files?.[0]);
-    document.getElementById("authorityDocumentaryAddText").onclick=()=>{ioneDocumentaryBlocks.push({type:"text",text:""});renderAuthorityDocumentaryBlocks();};
-    document.getElementById("authorityDocumentaryNew").onclick=resetAuthorityDocumentaryEditor;
-    document.getElementById("authorityDocumentaryPublish").onclick=saveAuthorityDocumentary;
-    resetAuthorityDocumentaryEditor();
-    loadAuthorityDocumentaryList();
-  }
-
   function ensureAuthorityPublicationEditors(){
     const panel=document.getElementById("authorityPressPanel");
     if(!panel || document.getElementById("authorityTopTrending")) return;
@@ -792,10 +651,8 @@ window.ioneEnsureBookPdfLibraries = async function(){
       box.innerHTML='<div class="authority-section-kicker">I|ONE DAILY MESSAGE</div><h3>WORD OF THE DAY</h3><p class="authority-section-note">Publish the public Word of the Day and choose the visual writing style shown on the home screen.</p><textarea id="authorityWordOfDay" maxlength="300" rows="3" placeholder="Write today’s motivational word or message…"></textarea><label class="authority-word-style-label" for="authorityWordOfDayStyle">WORD STYLE</label><select id="authorityWordOfDayStyle" class="authority-word-style"><option value="modern">MODERN • I|ONE</option><option value="zigzag">ZIGZAG HANDWRITING</option><option value="street">STREET STYLE</option><option value="elegant">ELEGANT</option><option value="handwritten">HANDWRITTEN</option><option value="classic">CLASSIC</option><option value="luxury">LUXURY DISPLAY</option><option value="futuristic">FUTURISTIC • ORBITRON</option><option value="tech">TECH • AUDIOWIDE</option><option value="impact">IMPACT • BEBAS</option><option value="retro">RETRO • LOBSTER</option><option value="marker">MARKER • PERMANENT</option><option value="arcade">ARCADE • PRESS START</option><option value="royal">ROYAL • RIGHTEOUS</option><option value="signature">SIGNATURE • SATISFY</option><option value="typewriter">TYPEWRITER • SPECIAL ELITE</option></select><div id="authorityWordStylePreview" class="authority-word-style-preview">WORD OF THE DAY</div><div class="authority-live-row"><span>WORD STATUS</span><strong id="authorityWordSaveStatus">READY</strong></div><button type="button" id="authoritySaveWordOfDay" class="authority-save-button">SAVE WORD OF THE DAY</button>';
       host.parentNode.insertBefore(box,host.nextSibling);
     }
-    /* Keep every Authority publication module independent: one failure must never stop the others. */
-    try{ ensureWordOfDayEditor(); }catch(error){ console.warn("I|ONE Authority Word of the Day:",error); }
-    try{ ensureAuthorityPublicationEditors(); }catch(error){ console.warn("I|ONE Authority publication editors:",error); }
-    try{ ensureAuthorityDocumentaryEditor(); }catch(error){ console.warn("I|ONE Authority documentary editor:",error); }
+    ensureWordOfDayEditor();
+    ensureAuthorityPublicationEditors();
     const saveWord=document.getElementById("authoritySaveWordOfDay");
     const stylePicker=document.getElementById("authorityWordOfDayStyle");
     const stylePreview=document.getElementById("authorityWordStylePreview");
@@ -810,12 +667,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       unlock.dataset.livePanelBound="1";
       unlock.addEventListener("click",()=>setTimeout(()=>{
         const panel=document.getElementById("authorityPressPanel");
-        if(panel && panel.getAttribute("aria-hidden")==="false"){
-          try{ ensureWordOfDayEditor(); }catch(error){ console.warn("I|ONE Authority Word of the Day retry:",error); }
-          try{ ensureAuthorityPublicationEditors(); }catch(error){ console.warn("I|ONE Authority publication editors retry:",error); }
-          try{ ensureAuthorityDocumentaryEditor(); }catch(error){ console.warn("I|ONE Authority documentary editor retry:",error); }
-          openAuthorityPanel();
-        }
+        if(panel && panel.getAttribute("aria-hidden")==="false")openAuthorityPanel();
       },20));
     }
 
@@ -835,36 +687,6 @@ window.ioneEnsureBookPdfLibraries = async function(){
 </script>
 
 <style>
-/* I|ONE AUTHORITY • DOCUMENTARY EDITOR */
-.authority-documentary-section{position:relative;overflow:hidden;border:1px solid rgba(0,255,255,.22)!important;background:linear-gradient(145deg,rgba(10,28,33,.98),rgba(3,8,10,.99))!important;box-shadow:0 16px 42px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.04);}
-.authority-documentary-section>input,.authority-documentary-section>textarea{width:100%;box-sizing:border-box;margin:8px 0;border:1px solid #29484e;border-radius:13px;background:#050b0d;color:#fff;padding:13px;font:700 13px/1.45 Arial,sans-serif;outline:none;}
-.authority-documentary-section>input{height:48px;}
-.authority-documentary-section>input:focus,.authority-documentary-section>textarea:focus{border-color:#00ffff;box-shadow:0 0 0 2px rgba(0,255,255,.08);}
-.authority-documentary-tools{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px;}
-.authority-documentary-tools button,.authority-documentary-upload{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 14px;border:1px solid #00bfc4;border-radius:11px;background:#07171a;color:#fff;font:900 11px Arial,sans-serif;cursor:pointer;}
-.authority-documentary-upload{background:linear-gradient(135deg,#083b40,#071114);}
-.authority-documentary-blocks{display:grid;gap:10px;}
-.authority-documentary-block{border:1px solid #234249;border-radius:15px;background:#061013;padding:10px;}
-.authority-documentary-block-preview{border-radius:11px;overflow:hidden;background:#000;aspect-ratio:16/7;margin-bottom:9px;}
-.authority-documentary-block-preview img{width:100%;height:100%;object-fit:cover;display:block;}
-.authority-documentary-block-meta{display:grid;gap:8px;}
-.authority-documentary-block-meta strong{font:900 11px Arial;color:#00ffff;letter-spacing:1px;}
-.authority-documentary-block-meta input,.authority-documentary-text{width:100%;box-sizing:border-box;border:1px solid #29484e;border-radius:10px;background:#04090a;color:#fff;padding:10px;font:700 12px/1.45 Arial,sans-serif;}
-.authority-documentary-remove{justify-self:end;border:1px solid #63383d;border-radius:9px;background:#180b0d;color:#ff9da5;padding:8px 11px;font:900 10px Arial;cursor:pointer;}
-.authority-documentary-publish-row{display:flex;flex-wrap:wrap;gap:15px;align-items:center;margin:14px 0;font:900 11px Arial;color:#b7c9cd;}
-.authority-documentary-publish-row input[type=number]{width:80px;margin-left:5px;border:1px solid #29484e;border-radius:8px;background:#050b0d;color:#fff;padding:8px;}
-.authority-documentary-check{display:flex;align-items:center;gap:7px;}
-.authority-documentary-status{min-height:18px;margin:9px 0;color:#aabdc1;font:900 11px Arial;letter-spacing:.4px;}
-.authority-documentary-status.is-ok{color:#72ffd9;}
-.authority-documentary-list-title{margin:24px 0 9px;color:#00ffff;font:900 11px Arial;letter-spacing:1.2px;}
-.authority-documentary-list{display:grid;gap:8px;}
-.authority-documentary-list-card{display:grid;grid-template-columns:58px 1fr auto;gap:10px;align-items:center;border:1px solid #234249;border-radius:12px;padding:7px;background:#071114;}
-.authority-documentary-list-card img{width:58px;height:48px;border-radius:8px;object-fit:cover;background:#000;}
-.authority-documentary-list-card strong{display:block;color:#fff;font:900 12px Arial;}
-.authority-documentary-list-card small{display:block;margin-top:3px;color:#8fa5aa;font:11px/1.3 Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.authority-documentary-list-card button{border:1px solid #00aeb3;border-radius:8px;background:#061619;color:#00ffff;padding:8px 10px;font:900 10px Arial;}
-.authority-documentary-list-empty{padding:15px;border:1px dashed #29484e;border-radius:11px;color:#82969b;text-align:center;font:900 10px Arial;}
-
 /* I|ONE AUTHORITY • REAL PUSH PUBLICATIONS */
 .authority-publication-section{
   position:relative;
