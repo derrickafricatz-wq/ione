@@ -4048,6 +4048,8 @@ async function ioneStartUploadSubscriptionPayment(mode="publish",existing=null){
 
 async function ioneWaitForUploadSubscription(mode="publish",existing=null){
   const status=document.getElementById("ioneSubStatus");
+  const session=await ensureHeavensAnonymousSession();
+  const uid=session?.user?.id||"";
   const pay=document.getElementById("ioneSubPay");
 
   for(let attempt=0;attempt<40;attempt++){
