@@ -1709,10 +1709,11 @@ body.ione-heaven-open #scrollBanner{display:none!important}
   background:rgba(0,0,0,.82);backdrop-filter:blur(12px);overflow:auto;padding:18px 12px 30px;
 }
 .afl-editor{
-  width:min(720px,100%);background:linear-gradient(145deg,#10191c,#050809);
+  box-sizing:border-box;width:min(720px,100%);max-width:100%;background:linear-gradient(145deg,#10191c,#050809);
   border:1px solid #00ffff;border-radius:22px;padding:18px;box-shadow:0 25px 70px rgba(0,0,0,.75);
 }
 .afl-editor h2{margin:0;color:#00ffff;text-align:center;font:900 25px/1.1 'Russo One',sans-serif}
+ .afl-editor *{box-sizing:border-box;min-width:0}
 .afl-editor-sub{text-align:center;color:#8fa3a8;font-size:12px;line-height:1.4;margin:8px 0 16px}
 .afl-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .afl-field{min-width:0}
