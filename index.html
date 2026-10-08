@@ -9081,7 +9081,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     status("UPLOADING IMAGE…");
     try{
       const dataUrl=await fileToDataUrl(file,mime);
-      const data=await invoke("upload",{image:dataUrl});
+      const data=await invoke("upload",{data_url:dataUrl,mime_type:mime});
       if(!data.url)throw new Error("The upload did not return an image URL.");
       blocks.push({type:"image",url:data.url,alt:String(file.name||"Image").replace(/\.[^.]+$/,"")});
       renderBlocks();
