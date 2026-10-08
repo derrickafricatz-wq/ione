@@ -8919,6 +8919,323 @@ function ioneRunBackgroundMediaPreload(){ return; }
   }
 })();
 </script>
+
+<style id="ioneDocumentaryEditorV1">
+  .ione-doc-editor{margin-top:18px;padding:16px;border:1px solid rgba(0,255,255,.18);border-radius:18px;background:linear-gradient(145deg,rgba(9,24,28,.98),rgba(2,7,9,.98));box-shadow:0 12px 28px rgba(0,0,0,.22)}
+  .ione-doc-editor h3{margin:0 0 6px;color:#fff;letter-spacing:.4px}
+  .ione-doc-note{margin:0 0 14px;color:#9db4b9;font:600 12px/1.5 Arial,sans-serif}
+  .ione-doc-grid{display:grid;gap:10px}
+  .ione-doc-editor input[type="text"],.ione-doc-editor textarea,.ione-doc-editor input[type="number"]{width:100%;box-sizing:border-box;border:1px solid #31545a;border-radius:12px;background:#050b0d;color:#fff;padding:12px;font:700 13px/1.45 Arial,sans-serif;outline:none}
+  .ione-doc-editor textarea{min-height:80px;resize:vertical}
+  .ione-doc-editor input:focus,.ione-doc-editor textarea:focus{border-color:#00ffff;box-shadow:0 0 0 2px rgba(0,255,255,.07)}
+  .ione-doc-row{display:flex;gap:8px;flex-wrap:wrap}
+  .ione-doc-btn{border:1px solid rgba(0,255,255,.35);border-radius:11px;padding:10px 13px;background:#071418;color:#fff;font:800 11px Arial,sans-serif;letter-spacing:.3px;cursor:pointer}
+  .ione-doc-btn.primary{background:linear-gradient(135deg,#00ffff,#008cff 58%,#684dff);color:#001014;border-color:#8fffff}
+  .ione-doc-btn.danger{border-color:rgba(255,70,70,.35);color:#ffb0b0}
+  .ione-doc-btn:disabled{opacity:.5;cursor:wait}
+  .ione-doc-status{min-height:18px;margin-top:8px;color:#8ffcff;font:700 11px/1.4 Arial,sans-serif}
+  .ione-doc-blocks{display:grid;gap:10px;margin-top:12px}
+  .ione-doc-block{position:relative;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px;background:rgba(255,255,255,.025)}
+  .ione-doc-block-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .ione-doc-block-label{color:#8ffcff;font:800 10px Arial,sans-serif;letter-spacing:.7px}
+  .ione-doc-mini{padding:7px 9px;border-radius:9px;font-size:10px}
+  .ione-doc-preview{display:block;width:100%;max-height:260px;object-fit:cover;border-radius:10px;background:#000}
+  .ione-doc-image-alt{margin-top:8px}
+  .ione-doc-list{display:grid;gap:9px;margin-top:14px}
+  .ione-doc-item{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;padding:9px;border:1px solid rgba(255,255,255,.08);border-radius:13px;background:rgba(255,255,255,.025)}
+  .ione-doc-item img{width:72px;height:58px;object-fit:cover;border-radius:9px;background:#000}
+  .ione-doc-item strong{display:block;color:#fff;font:800 12px/1.3 Arial,sans-serif}
+  .ione-doc-item small{display:block;color:#91a7ac;font:600 10px/1.35 Arial,sans-serif;margin-top:3px}
+  .ione-doc-empty{color:#81969b;font:600 11px Arial,sans-serif;padding:8px 0}
+  .ione-doc-check{display:flex;align-items:center;gap:8px;color:#d9e6e8;font:700 11px Arial,sans-serif}
+  @media(max-width:520px){.ione-doc-item{grid-template-columns:58px 1fr}.ione-doc-item img{width:58px;height:52px}.ione-doc-item .ione-doc-row{grid-column:1/-1}}
+</style>
+
+<script id="ioneDocumentaryEditorV1">
+(function(){
+  "use strict";
+  if(window.__ioneDocumentaryEditorV1)return;
+  window.__ioneDocumentaryEditorV1=true;
+
+  let editingId=null;
+  let blocks=[];
+
+  function esc(v){
+    return String(v==null?"":v).replace(/[&<>"']/g,function(ch){
+      return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch];
+    });
+  }
+
+  function password(){
+    return String(document.getElementById("authorityPasswordInput")?.value||"").trim();
+  }
+
+  async function invoke(action, extra){
+    const body=Object.assign({action,password:password()},extra||{});
+    const result=await heavensSupabase.functions.invoke("ione-documentaries",{body});
+    if(result.error||!result.data?.success){
+      let detail=result.data?.error||result.error?.message||"Documentary request failed.";
+      try{
+        const ctx=result.error?.context;
+        if(ctx&&typeof ctx.json==="function"){
+          const b=await ctx.json();
+          detail=b?.error||b?.message||detail;
+        }
+      }catch(_){}
+      throw new Error(detail);
+    }
+    return result.data;
+  }
+
+  function status(message, bad){
+    const el=document.getElementById("ioneDocStatus");
+    if(el){el.textContent=message||"";el.style.color=bad?"#ff9f9f":"#8ffcff";}
+  }
+
+  function reset(){
+    editingId=null;
+    blocks=[];
+    const title=document.getElementById("ioneDocTitle");
+    const desc=document.getElementById("ioneDocDescription");
+    const order=document.getElementById("ioneDocOrder");
+    const pub=document.getElementById("ioneDocPublished");
+    if(title)title.value="";
+    if(desc)desc.value="";
+    if(order)order.value="0";
+    if(pub)pub.checked=false;
+    renderBlocks();
+    status("NEW DOCUMENTARY • FIRST BLOCK MUST BE AN IMAGE");
+  }
+
+  function renderBlocks(){
+    const host=document.getElementById("ioneDocBlocks");
+    if(!host)return;
+    if(!blocks.length){
+      host.innerHTML='<div class="ione-doc-empty">No content yet. Add the first image, then add text and images in the exact order you want users to read.</div>';
+      return;
+    }
+    host.innerHTML=blocks.map(function(b,i){
+      if(b.type==="image"){
+        return '<div class="ione-doc-block">'+
+          '<div class="ione-doc-block-head"><span class="ione-doc-block-label">IMAGE '+(i+1)+'</span><button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-remove="'+i+'">REMOVE</button></div>'+
+          '<img class="ione-doc-preview" src="'+esc(b.url)+'" alt="'+esc(b.alt||"")+'">'+
+          '<input class="ione-doc-image-alt" data-doc-alt="'+i+'" type="text" maxlength="180" value="'+esc(b.alt||"")+'" placeholder="Image description (optional)">'+
+        '</div>';
+      }
+      return '<div class="ione-doc-block">'+
+        '<div class="ione-doc-block-head"><span class="ione-doc-block-label">TEXT '+(i+1)+'</span><button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-remove="'+i+'">REMOVE</button></div>'+
+        '<textarea data-doc-text="'+i+'" maxlength="6000" placeholder="Write the documentary text for this point...">'+esc(b.text||"")+'</textarea>'+
+      '</div>';
+    }).join("");
+
+    host.querySelectorAll("[data-doc-remove]").forEach(function(btn){
+      btn.onclick=function(){blocks.splice(Number(btn.dataset.docRemove),1);renderBlocks();};
+    });
+    host.querySelectorAll("[data-doc-text]").forEach(function(el){
+      el.oninput=function(){blocks[Number(el.dataset.docText)].text=el.value;};
+    });
+    host.querySelectorAll("[data-doc-alt]").forEach(function(el){
+      el.oninput=function(){blocks[Number(el.dataset.docAlt)].alt=el.value;};
+    });
+  }
+
+  function fileToDataUrl(file){
+    return new Promise(function(resolve,reject){
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||""));
+      reader.onerror=()=>reject(new Error("Could not read the selected image."));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addImage(file){
+    if(!file)return;
+    if(!/^image\/(jpeg|png|webp|gif)$/i.test(file.type)){
+      status("Use JPG, PNG, WEBP or GIF images.",true);return;
+    }
+    if(file.size>10*1024*1024){
+      status("That image is larger than 10 MB.",true);return;
+    }
+    const btn=document.getElementById("ioneDocAddImage");
+    if(btn)btn.disabled=true;
+    status("UPLOADING IMAGE…");
+    try{
+      const dataUrl=await fileToDataUrl(file);
+      const data=await invoke("upload",{image:dataUrl});
+      if(!data.url)throw new Error("The upload did not return an image URL.");
+      blocks.push({type:"image",url:data.url,alt:file.name.replace(/\.[^.]+$/,"")});
+      renderBlocks();
+      status("IMAGE ADDED • POSITION "+blocks.length);
+    }catch(e){status(e?.message||"Could not upload image.",true);}
+    finally{if(btn)btn.disabled=false;}
+  }
+
+  function validate(){
+    const title=String(document.getElementById("ioneDocTitle")?.value||"").trim();
+    if(!title){status("Enter a documentary title.",true);return null;}
+    if(!blocks.length||blocks[0]?.type!=="image"){
+      status("The FIRST BLOCK must be the documentary cover image.",true);return null;
+    }
+    if(blocks.some(b=>b.type==="text"&&!String(b.text||"").trim())){
+      status("Every text block must contain text.",true);return null;
+    }
+    return {
+      title,
+      short_description:String(document.getElementById("ioneDocDescription")?.value||"").trim(),
+      cover_image_url:blocks[0].url,
+      content:blocks.map(b=>b.type==="image"
+        ? {type:"image",url:b.url,alt:String(b.alt||"")}
+        : {type:"text",text:String(b.text||"")}),
+      sort_order:Number(document.getElementById("ioneDocOrder")?.value||0)||0,
+      published:!!document.getElementById("ioneDocPublished")?.checked
+    };
+  }
+
+  async function save(){
+    const payload=validate();
+    if(!payload)return;
+    const btn=document.getElementById("ioneDocSave");
+    if(btn)btn.disabled=true;
+    status(editingId?"UPDATING DOCUMENTARY…":"SAVING DOCUMENTARY…");
+    try{
+      const data=await invoke("save",Object.assign({id:editingId||undefined},payload));
+      editingId=data.documentary?.id||editingId;
+      status(payload.published?"PUBLISHED • LIVE":"SAVED • UNPUBLISHED");
+      await loadList();
+    }catch(e){status(e?.message||"Could not save documentary.",true);}
+    finally{if(btn)btn.disabled=false;}
+  }
+
+  async function loadOne(id){
+    status("LOADING DOCUMENTARY…");
+    try{
+      const data=await invoke("get",{id});
+      const d=data.documentary;
+      editingId=d.id;
+      document.getElementById("ioneDocTitle").value=d.title||"";
+      document.getElementById("ioneDocDescription").value=d.short_description||"";
+      document.getElementById("ioneDocOrder").value=Number(d.sort_order||0);
+      document.getElementById("ioneDocPublished").checked=!!d.published;
+      blocks=Array.isArray(d.content)?d.content.map(function(b){
+        return b.type==="image"
+          ? {type:"image",url:b.url,alt:b.alt||""}
+          : {type:"text",text:b.text||""};
+      }):[];
+      renderBlocks();
+      status("EDITING • "+(d.title||"DOCUMENTARY"));
+    }catch(e){status(e?.message||"Could not load documentary.",true);}
+  }
+
+  async function removeOne(id){
+    if(!confirm("Delete this documentary? This cannot be undone."))return;
+    status("DELETING DOCUMENTARY…");
+    try{
+      await invoke("delete",{id});
+      if(editingId===id)reset();
+      await loadList();
+      status("DOCUMENTARY DELETED");
+    }catch(e){status(e?.message||"Could not delete documentary.",true);}
+  }
+
+  async function loadList(){
+    const host=document.getElementById("ioneDocList");
+    if(!host)return;
+    host.innerHTML='<div class="ione-doc-empty">Loading documentaries…</div>';
+    try{
+      const data=await invoke("list");
+      const rows=data.documentaries||[];
+      if(!rows.length){
+        host.innerHTML='<div class="ione-doc-empty">No documentaries yet.</div>';
+        return;
+      }
+      host.innerHTML=rows.map(function(d){
+        const first=Array.isArray(d.content)?d.content.find(x=>x?.type==="image"):null;
+        const img=first?.url||d.cover_image_url||"";
+        return '<div class="ione-doc-item">'+
+          (img?'<img src="'+esc(img)+'" alt="">':'<div></div>')+
+          '<div><strong>'+esc(d.title)+'</strong><small>'+esc(d.published?"PUBLISHED":"UNPUBLISHED")+' • '+(Array.isArray(d.content)?d.content.length:0)+' blocks</small></div>'+
+          '<div class="ione-doc-row">'+
+            '<button type="button" class="ione-doc-btn ione-doc-mini" data-doc-edit="'+esc(d.id)+'">EDIT</button>'+
+            '<button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-delete="'+esc(d.id)+'">DELETE</button>'+
+          '</div>'+
+        '</div>';
+      }).join("");
+      host.querySelectorAll("[data-doc-edit]").forEach(function(b){b.onclick=()=>loadOne(b.dataset.docEdit);});
+      host.querySelectorAll("[data-doc-delete]").forEach(function(b){b.onclick=()=>removeOne(b.dataset.docDelete);});
+    }catch(e){host.innerHTML='<div class="ione-doc-empty">'+esc(e?.message||"Could not load documentaries.")+'</div>';}
+  }
+
+  function mount(){
+    if(document.getElementById("ioneDocumentaryEditorV1Mount"))return;
+    const inner=document.querySelector("#authorityPressPanel .authority-panel-inner");
+    if(!inner)return;
+    const anchor=document.getElementById("authorityChapChapPanel");
+    const box=document.createElement("div");
+    box.id="ioneDocumentaryEditorV1Mount";
+    box.className="ione-doc-editor";
+    box.innerHTML=
+      '<h3>DOCUMENTARY</h3>'+
+      '<p class="ione-doc-note">Create a documentary as an exact sequence of text and large images. The first image automatically becomes the documentary cover.</p>'+
+      '<div class="ione-doc-grid">'+
+        '<input id="ioneDocTitle" type="text" maxlength="180" placeholder="DOCUMENTARY TITLE">'+
+        '<textarea id="ioneDocDescription" maxlength="600" placeholder="SHORT DESCRIPTION FOR THE I1 LIBRARY CARD"></textarea>'+
+        '<input id="ioneDocOrder" type="number" min="0" step="1" value="0" placeholder="SORT ORDER">'+
+        '<label class="ione-doc-check"><input id="ioneDocPublished" type="checkbox"> PUBLISH THIS DOCUMENTARY</label>'+
+      '</div>'+
+      '<div class="ione-doc-row" style="margin-top:10px">'+
+        '<button type="button" id="ioneDocAddText" class="ione-doc-btn">+ ADD TEXT</button>'+
+        '<button type="button" id="ioneDocAddImage" class="ione-doc-btn">+ ADD IMAGE</button>'+
+        '<input id="ioneDocImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'+
+        '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
+        '<button type="button" id="ioneDocSave" class="ione-doc-btn primary">SAVE DOCUMENTARY</button>'+
+      '</div>'+
+      '<div id="ioneDocStatus" class="ione-doc-status">READY</div>'+
+      '<div id="ioneDocBlocks" class="ione-doc-blocks"></div>'+
+      '<div class="ione-doc-row" style="margin-top:10px">'+
+        '<strong style="width:100%;color:#fff;font:800 11px Arial,sans-serif;letter-spacing:.5px">SAVED DOCUMENTARIES</strong>'+
+      '</div>'+
+      '<div id="ioneDocList" class="ione-doc-list"></div>';
+
+    if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);
+    else inner.appendChild(box);
+
+    document.getElementById("ioneDocAddText").onclick=function(){
+      blocks.push({type:"text",text:""});
+      renderBlocks();
+      status("TEXT BLOCK ADDED • POSITION "+blocks.length);
+    };
+    document.getElementById("ioneDocAddImage").onclick=function(){
+      document.getElementById("ioneDocImageFile").click();
+    };
+    document.getElementById("ioneDocImageFile").onchange=function(){
+      const file=this.files?.[0];
+      this.value="";
+      addImage(file);
+    };
+    document.getElementById("ioneDocNew").onclick=reset;
+    document.getElementById("ioneDocSave").onclick=save;
+    renderBlocks();
+    loadList();
+  }
+
+  function watchUnlock(){
+    const unlock=document.getElementById("authorityPasswordUnlock");
+    if(!unlock||unlock.dataset.docEditorV1)return;
+    unlock.dataset.docEditorV1="1";
+    unlock.addEventListener("click",function(){
+      setTimeout(function(){
+        const panel=document.getElementById("authorityPressPanel");
+        if(panel&&panel.getAttribute("aria-hidden")==="false")mount();
+      },120);
+    });
+  }
+
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",watchUnlock,{once:true});
+  else watchUnlock();
+  window.addEventListener("load",watchUnlock,{once:false});
+})();
+</script>
+
 </body>
 </html>
 <script>
