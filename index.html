@@ -8210,10 +8210,10 @@ function openIonePublicDocumentary(d){
     if(audioFadeTimer){clearInterval(audioFadeTimer);audioFadeTimer=0;}
     if(soundtrack){
       const fadingTrack=soundtrack;soundtrack=null;
-      const initialVolume=Number(fadingTrack.volume)||0;
+      const initialVolume=Number(fadingTrack.volume)||0.32;
       const started=performance.now();
       audioCloseTimer=setInterval(()=>{
-        const progress=Math.min(1,(performance.now()-started)/650);
+        const progress=Math.min(1,(performance.now()-started)/1250);
         fadingTrack.volume=Math.max(0,initialVolume*(1-progress));
         if(progress>=1){clearInterval(audioCloseTimer);audioCloseTimer=0;fadingTrack.pause();fadingTrack.removeAttribute("src");fadingTrack.load();}
       },30);
@@ -8227,14 +8227,32 @@ function openIonePublicDocumentary(d){
   ["wheel","touchstart","pointerdown","keydown"].forEach(type=>scroll.addEventListener(type,()=>{if(playing)stop();},{passive:true}));
   reader.querySelector(".ione-doc-reader-rotate").textContent="ROTATE";
   reader.querySelector(".ione-doc-reader-rotate").onclick=()=>{rotated=!rotated;reader.classList.toggle("is-rotated",rotated);if(rotated){reader.style.width=window.innerHeight+"px";reader.style.height=window.innerWidth+"px";}else{reader.style.width="";reader.style.height="";}};
+  const printSelection=new Set();
+  const printButton=reader.querySelector(".ione-doc-reader-print");
+  printButton.textContent="SELECT TO PRINT";
+  printButton.title="Tap text or images to select them, then press here to print";
+  function markPrintable(element,index){
+    element.dataset.printIndex=String(index);
+    element.classList.add("ione-print-selectable");
+    element.setAttribute("role","button");
+    element.setAttribute("aria-label","Select this content for printing");
+    element.addEventListener("click",event=>{
+      if(event.target.closest("a,button,input,video"))return;
+      const key=String(index);
+      if(printSelection.has(key)){printSelection.delete(key);element.classList.remove("ione-print-selected");element.removeAttribute("data-print-selected");}
+      else{printSelection.add(key);element.classList.add("ione-print-selected");element.setAttribute("data-print-selected","true");}
+      printButton.textContent=printSelection.size?"PRINT SELECTED ("+printSelection.size+")":"SELECT TO PRINT";
+    });
+  }
   reader.querySelector(".ione-doc-reader-print").onclick=()=>{
     try{
+      if(!printSelection.size){alert("First tap the text or images you want to print. A blue mark will show each selection.");return;}
       const w=window.open("","","width=900,height=700");if(!w){alert("Allow pop-ups to print this documentary.");return;}
       const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-      w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(d?.title||"Documentary")+'</title><style>@page{margin:12mm}body{font-family:Georgia,serif;color:#111;max-width:850px;margin:18px auto;padding:0 12px;line-height:1.65}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;width:auto;max-width:100%;height:auto;object-fit:contain;margin:14px auto;page-break-inside:avoid}figure{margin:12px 0;page-break-inside:avoid}figcaption{font:12px Arial,sans-serif;color:#555;text-align:center}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
-      if(String(d?.short_description||"").trim())w.document.write("<p>"+esc(d.short_description)+"</p>");
-      (Array.isArray(d?.content)?d.content:[]).forEach(x=>{if(x?.type==="image"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");const rawAlt=String(x.alt||"").trim();const showCaption=rawAlt&&!/^\d{6,}$/.test(rawAlt)&&!/^image\s*\d*$/i.test(rawAlt)&&!/^\d{8,}\.[a-z0-9]+$/i.test(rawAlt);const alt=esc(showCaption?rawAlt:"");w.document.write('<figure><img src="'+url+'" alt="'+alt+'">'+(showCaption?'<figcaption>'+alt+'</figcaption>':'')+'</figure>');}else if(x?.type==="video"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");w.document.write('<p><video src="'+url+'" muted playsinline style="display:block;width:100%;max-height:75vh;object-fit:cover"></video></p>');}else if(x?.type==="text")w.document.write("<p>"+esc(x.text||"")+"</p>");});
-      w.document.write("</body></html>");w.document.close();w.focus();setTimeout(()=>{try{const images=Array.from(w.document.images);Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;}))).then(()=>setTimeout(()=>{try{w.focus();w.print();}catch(printError){console.warn("Browser print dialog unavailable:",printError);}},250));}catch(printError){console.warn("Documentary print preparation:",printError);w.focus();w.print();}},300);
+      w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(d?.title||"Documentary")+'</title><style>@page{margin:12mm}body{font-family:Georgia,serif;color:#111;max-width:850px;margin:18px auto;padding:0 12px;line-height:1.65}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;width:auto;max-width:100%;height:auto;object-fit:contain;margin:14px auto;page-break-inside:avoid}figure{margin:12px 0;page-break-inside:avoid}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
+      const selected=Array.from(scroll.querySelectorAll(".ione-print-selectable")).filter(el=>printSelection.has(el.dataset.printIndex));
+      selected.forEach(el=>{const clone=el.cloneNode(true);clone.querySelectorAll(".ione-print-check").forEach(mark=>mark.remove());clone.classList.remove("ione-print-selected","ione-print-selectable");clone.removeAttribute("role");clone.removeAttribute("data-print-selected");clone.removeAttribute("data-print-index");clone.querySelectorAll("img").forEach(img=>{img.style.maxWidth="100%";img.style.height="auto";});w.document.body.appendChild(clone);});
+      w.document.write("</body></html>");w.document.close();w.focus();setTimeout(()=>{const images=Array.from(w.document.images);Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;}))).then(()=>setTimeout(()=>w.print(),250));},250);
     }catch(error){console.warn("Documentary print failed:",error);alert("Could not open the print view. Please try again.");}
   };
   try{
@@ -8244,7 +8262,7 @@ function openIonePublicDocumentary(d){
     const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("p");p.textContent=desc;intro.appendChild(p);}scroll.appendChild(intro);
     const audioBlock=d.content.find(x=>x?.type==="audio"&&x.url);
     if(audioBlock){
-      soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0;soundtrack.preload="auto";
+      soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0.001;soundtrack.preload="auto";
       const track=soundtrack;
       audioStartTimer=setTimeout(()=>{
         audioStartTimer=0;if(soundtrack!==track||!reader.isConnected)return;
@@ -8252,8 +8270,8 @@ function openIonePublicDocumentary(d){
           const started=performance.now();
           audioFadeTimer=setInterval(()=>{
             if(soundtrack!==track){clearInterval(audioFadeTimer);audioFadeTimer=0;return;}
-            const progress=Math.min(1,(performance.now()-started)/1700);
-            track.volume=Math.min(.32,.32*progress);
+            const progress=Math.min(1,(performance.now()-started)/2400);
+            track.volume=Math.min(.32,.001+(.319*progress*progress));
             if(progress>=1){clearInterval(audioFadeTimer);audioFadeTimer=0;}
           },35);
         }).catch(()=>{console.warn("Documentary audio could not autoplay; browser policy may have blocked playback.");});
@@ -8262,8 +8280,8 @@ function openIonePublicDocumentary(d){
     d.content.forEach((x,i)=>{
       if(x?.type==="audio")return;
       if(x?.type==="video"&&x.url){const wrap=document.createElement("figure");wrap.className="ione-doc-reader-block ione-doc-reader-video-wrap";const video=document.createElement("video");video.className="ione-doc-reader-video";video.src=String(x.url);video.muted=true;video.defaultMuted=true;video.autoplay=true;video.loop=true;video.playsInline=true;video.preload="auto";video.setAttribute("muted","");video.setAttribute("autoplay","");video.setAttribute("playsinline","");video.removeAttribute("controls");video.addEventListener("contextmenu",e=>e.preventDefault());video.addEventListener("loadedmetadata",()=>{if(video.videoWidth>0&&video.videoHeight>0){video.style.aspectRatio=video.videoWidth+" / "+video.videoHeight;video.style.height="auto";}});wrap.appendChild(video);scroll.appendChild(wrap);video.play().catch(()=>{});}
-      else if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
-      else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
+      else if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";markPrintable(fig,i);const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
+      else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";markPrintable(section,i);const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
     scroll.scrollTop=0;
   }catch(error){scroll.replaceChildren();const msg=document.createElement("div");msg.className="ione-doc-reader-state";msg.textContent=error?.message||"Could not load this documentary.";scroll.appendChild(msg);}
@@ -9269,6 +9287,22 @@ function ioneRunBackgroundMediaPreload(){ return; }
 #topicsPanel>div:first-child button:nth-child(2){background:linear-gradient(145deg,#e4ddff,#a18be9 48%,#5140a7)!important;color:#fff!important;border-color:#f2edff!important;box-shadow:0 8px 0 #302365,0 14px 22px rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.65)!important;}
 #topicsPanel>div:first-child button:active{transform:translateY(4px) scale(.99)!important;}
 @media(prefers-reduced-motion:reduce){.ione-lib-teaser-message{animation:none}}
+
+/* Final library watermark fit and print-selection polish */
+#healthyContainer::before{content:"IONE\\A INTOIONE.SPACE"!important;white-space:pre!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:0 14px!important;overflow:hidden!important;text-align:center!important;overflow-wrap:anywhere!important;word-break:normal!important;font-family:Arial,sans-serif!important;font-size:clamp(24px,7.2vw,64px)!important;line-height:1.5!important;letter-spacing:clamp(0px,.55vw,3px)!important;color:rgba(161,242,245,.065)!important;}
+#topicsList{overflow-x:hidden!important;overflow-y:visible!important;max-width:100%!important;min-width:0!important;padding-bottom:calc(48px + env(safe-area-inset-bottom))!important;}
+#topicsList:before{content:"IONE"!important;left:50%!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:0 12px!important;white-space:nowrap!important;text-align:center!important;letter-spacing:clamp(1px,.8vw,5px)!important;font-size:clamp(48px,13vw,86px)!important;}
+#topicsList:after{content:"INTOIONE.SPACE"!important;left:50%!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important;padding:0 10px!important;white-space:nowrap!important;text-align:center!important;letter-spacing:clamp(0px,.35vw,2px)!important;font-size:clamp(10px,3vw,16px)!important;}
+.ione-lib-label{font-size:clamp(20px,5.5vw,28px)!important;letter-spacing:1.8px!important;text-shadow:0 2px 0 rgba(255,255,255,.45),0 4px 10px rgba(0,45,55,.2)!important;}
+.ione-lib-teaser-message{font-size:clamp(8px,2.25vw,11px)!important;letter-spacing:clamp(.2px,.35vw,1px)!important;text-shadow:0 1px 5px rgba(255,255,255,.4);}
+#topicsPanel>div:first-child button:first-child{position:relative;overflow:hidden;background:linear-gradient(145deg,#d9fff8 0%,#69e5dc 25%,#12bdca 62%,#087ba6 100%)!important;border:1px solid #d2fff9!important;border-radius:21px!important;box-shadow:0 8px 0 #07536b,0 15px 25px rgba(0,0,0,.28),inset 0 2px 0 rgba(255,255,255,.85),inset 0 -3px 8px rgba(0,51,74,.18)!important;transform:translateY(0);transition:transform .18s ease,filter .18s ease;}
+#topicsPanel>div:first-child button:first-child:before{content:"";position:absolute;top:0;left:-130%;width:75%;height:100%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation=none;pointer-events:none;}
+#topicsPanel>div:first-child button:first-child:active{transform:translateY(5px)!important;box-shadow:0 3px 0 #07536b,0 8px 13px rgba(0,0,0,.25),inset 0 2px 5px rgba(0,0,0,.12)!important;}
+.ione-doc-reader-block.ione-print-selectable{position:relative;cursor:pointer;transition:box-shadow .18s ease,border-color .18s ease,background .18s ease;border:2px solid transparent;border-radius:8px;}
+.ione-doc-reader-block.ione-print-selected{border:2px solid #23bfff!important;box-shadow:0 0 0 3px rgba(35,191,255,.18),0 0 18px rgba(35,191,255,.2)!important;background:rgba(20,154,220,.07)!important;}
+.ione-doc-reader-block.ione-print-selected:after{content:"✓ SELECTED";position:absolute;top:9px;right:9px;z-index:4;background:#078fe8;color:#fff;border:1px solid #9ee4ff;border-radius:20px;padding:6px 10px;font:900 10px/1 Arial,sans-serif;letter-spacing:.7px;box-shadow:0 3px 8px rgba(0,0,0,.3);}
+.ione-doc-reader-print{min-width:112px!important;white-space:nowrap!important;}
+@media(prefers-reduced-motion:no-preference){#topicsPanel>div:first-child button:first-child:before{animation:ioneBookButtonShine 5.8s ease-in-out infinite;}@keyframes ioneBookButtonShine{0%,65%,100%{left:-130%}82%{left:150%}}}
 </style>
 
 <script id="ioneDocumentaryEditorV1">
