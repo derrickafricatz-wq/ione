@@ -1,5 +1,5 @@
 {
-  "version": "1.0.64",
-  "message": "Fixed mobile scrolling for the full documentary list",
+  "version": "1.0.65",
+  "message": "Keep library controls fixed, scroll only documentaries, and fill cover images",
   "force": true
 }
