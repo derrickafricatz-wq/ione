@@ -1,5 +1,5 @@
 {
-  "version": "1.0.63",
-  "message": "Calmer I1 LIB and EXIT buttons, readable 10-second messages, lower watermark",
+  "version": "1.0.64",
+  "message": "Fixed mobile scrolling for the full documentary list",
   "force": true
 }
