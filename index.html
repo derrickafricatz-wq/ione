@@ -8159,7 +8159,7 @@ function openIonePublicDocumentary(d){
   function close(){stop();reader.remove();}
   function tick(t){if(!playing||!reader.isConnected)return;if(!last)last=t;const dt=Math.min(40,t-last);last=t;scroll.scrollTop+=speed*dt/1000;if(scroll.scrollTop+scroll.clientHeight>=scroll.scrollHeight-2){stop();return;}frame=requestAnimationFrame(tick);}
   function start(){if(scroll.scrollHeight<=scroll.clientHeight+2){play.textContent="NO SCROLL NEEDED";return;}playing=true;play.textContent="Ⅱ PAUSE SCROLL";last=0;frame=requestAnimationFrame(tick);}
-  reader.querySelector(".ione-doc-reader-back").onclick=close;reader.querySelector(".ione-doc-reader-back-action").onclick=close;play.onclick=()=>playing?stop():start();
+  reader.querySelector(".ione-doc-reader-back").onclick=close;play.onclick=()=>playing?stop():start();
   reader.querySelector(".ione-doc-reader-speed").oninput=e=>{speed=Number(e.target.value)||24;};
   ["wheel","touchstart","pointerdown","keydown"].forEach(type=>scroll.addEventListener(type,()=>{if(playing)stop();},{passive:true}));
   reader.querySelector(".ione-doc-reader-rotate").onclick=()=>{rotated=!rotated;reader.classList.toggle("is-rotated",rotated);if(rotated){reader.style.width=window.innerHeight+"px";reader.style.height=window.innerWidth+"px";}else{reader.style.width="";reader.style.height="";}};
@@ -9115,6 +9115,37 @@ function ioneRunBackgroundMediaPreload(){ return; }
   #ioneDocumentaryEditorV1Mount .ione-doc-list:before{content:"DOCUMENTARY ARCHIVE  /  SAVED STORIES";display:block;padding:13px 2px 4px;border-top:1px solid rgba(122,221,227,.14);color:#9ce8e8;font:900 10px Arial,sans-serif;letter-spacing:1.7px}
   #ioneDocumentaryEditorV1Mount .ione-doc-empty{padding:18px;border:1px dashed rgba(116,226,230,.22);border-radius:14px;background:rgba(3,12,16,.32);color:#b5cbd0;font:500 12px/1.7 Arial,sans-serif}
   @media(max-width:520px){#ioneDocumentaryEditorV1Mount .ione-doc-item{grid-template-columns:58px minmax(0,1fr);gap:10px}#ioneDocumentaryEditorV1Mount .ione-doc-item img{width:58px;height:54px}#ioneDocumentaryEditorV1Mount .ione-doc-item .ione-doc-row{grid-column:1/-1}#ioneDocumentaryEditorV1Mount .ione-doc-btn{flex:1;min-width:calc(50% - 10px)}}
+
+
+  /* I|ONE documentary archive + reader: subtle single-colour watermark */
+  #topicsList{position:relative;isolation:isolate;min-height:260px;overflow:hidden;padding:12px 4px 34px!important}
+  #topicsList:before{content:"I|ONE";position:absolute;z-index:-1;pointer-events:none;left:50%;top:50%;transform:translate(-50%,-50%);color:rgba(139,224,226,.055);font:900 clamp(76px,20vw,190px)/1 Arial,sans-serif;letter-spacing:.06em;white-space:nowrap}
+  #topicsList:after{content:"intoione.space";position:absolute;z-index:-1;pointer-events:none;left:50%;top:calc(50% + clamp(38px,8vw,90px));transform:translate(-50%,-50%);color:rgba(139,224,226,.09);font:700 clamp(12px,3vw,20px)/1 Arial,sans-serif;letter-spacing:.22em;white-space:nowrap}
+  #topicsList .ione-home-doc-card{position:relative;z-index:1;min-height:220px;display:flex;align-items:stretch;gap:0;overflow:hidden;border-radius:22px;background:linear-gradient(115deg,rgba(19,43,49,.97),rgba(8,20,25,.98));border:1px solid rgba(143,231,233,.28);box-shadow:0 15px 32px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.07)}
+  #topicsList .ione-home-doc-cover{flex:0 0 clamp(145px,40vw,240px);width:clamp(145px,40vw,240px);height:auto;min-height:220px;max-height:330px;align-self:stretch;object-fit:contain;object-position:center;background:rgba(2,9,12,.55);padding:4px;box-sizing:border-box}
+  #topicsList .ione-home-doc-copy{min-width:0;flex:1;justify-content:center;padding:clamp(14px,3.6vw,24px);gap:11px}
+  #topicsList .ione-home-doc-kicker{color:#9de4e3;letter-spacing:2.4px;font-size:10px}
+  #topicsList .ione-home-doc-title{color:#fff;font:800 clamp(19px,4.6vw,27px)/1.24 Georgia,serif;overflow-wrap:anywhere}
+  #topicsList .ione-home-doc-desc{color:#d0dfe0;font-size:clamp(13px,2.8vw,15px);line-height:1.65}
+  #topicsList .ione-home-doc-card:focus-visible{outline:2px solid #8de3e1;outline-offset:3px}
+  .ione-doc-reader-live{isolation:isolate;background:#0c1d22!important}
+  .ione-doc-reader-live:before{content:"I|ONE";position:absolute;z-index:-1;pointer-events:none;left:50%;top:48%;transform:translate(-50%,-50%);color:rgba(139,224,226,.045);font:900 clamp(86px,24vw,230px)/1 Arial,sans-serif;letter-spacing:.06em;white-space:nowrap}
+  .ione-doc-reader-live:after{content:"intoione.space";position:absolute;z-index:-1;pointer-events:none;left:50%;top:calc(48% + clamp(42px,9vw,100px));transform:translate(-50%,-50%);color:rgba(139,224,226,.075);font:700 clamp(12px,3vw,20px)/1 Arial,sans-serif;letter-spacing:.22em;white-space:nowrap}
+  .ione-doc-reader-head,.ione-doc-reader-scroll,.ione-doc-reader-toolbar{position:relative;z-index:1}
+  .ione-doc-reader-scroll{background:transparent!important}
+  .ione-doc-reader-intro,.ione-doc-reader-block{background:transparent!important}
+  .ione-doc-reader-image{object-fit:contain!important;background:transparent!important;border-radius:8px}
+  .ione-doc-reader-image-wrap{padding:12px clamp(10px,2.5vw,20px) 16px!important}
+  .ione-doc-reader-text{color:#f0f4f1!important;text-shadow:0 1px 1px rgba(0,0,0,.25)}
+  .ione-doc-reader-intro p{color:#d3e0e1!important}
+  .ione-home-doc-empty{position:relative;z-index:1;min-height:220px!important;border-radius:22px!important;background:rgba(12,31,37,.84)!important}
+  @media(max-width:520px){
+    #topicsList .ione-home-doc-card{min-height:190px;border-radius:18px}
+    #topicsList .ione-home-doc-cover{flex-basis:clamp(112px,35vw,160px);width:clamp(112px,35vw,160px);min-height:190px;max-height:270px;padding:3px}
+    #topicsList .ione-home-doc-copy{padding:13px 12px;gap:8px}
+    #topicsList .ione-home-doc-title{font-size:clamp(17px,4.4vw,21px)}
+    #topicsList .ione-home-doc-desc{-webkit-line-clamp:4;font-size:12px}
+  }
 
 </style>
 
