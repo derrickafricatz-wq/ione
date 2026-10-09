@@ -84,6 +84,48 @@
 @media(max-width:420px){.ione-home-doc-cover{flex-basis:94px;width:94px;min-height:108px}.ione-home-doc-title{font-size:14px}.ione-home-doc-copy{padding:10px}.ione-doc-reader-toolbar{gap:5px}.ione-doc-reader-toolbar button{padding:8px 9px;font-size:9px}.ione-doc-speed input{width:55px}}
 @media(min-width:700px){.ione-public-doc-card{flex-basis:260px}.ione-public-doc-cover{height:145px}.ione-doc-reader-block,.ione-doc-reader-intro{padding-left:30px;padding-right:30px}}
 
+
+/* DOCUMENTARY SHELF SCROLL FIX • keep all published cards reachable on mobile */
+#healthyContainer{
+  position:fixed!important;
+  inset:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  height:100dvh!important;
+  min-height:0!important;
+  overflow:hidden!important;
+}
+#topicsPanel{
+  display:flex!important;
+  flex:1 1 auto!important;
+  flex-direction:column!important;
+  min-height:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+  padding-bottom:calc(18px + env(safe-area-inset-bottom))!important;
+}
+#topicsList{
+  display:flex!important;
+  flex:0 0 auto!important;
+  flex-direction:column!important;
+  min-height:min-content!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  overflow-x:visible!important;
+  overflow-y:visible!important;
+  touch-action:pan-y!important;
+  padding-bottom:calc(48px + env(safe-area-inset-bottom))!important;
+}
+#topicsList .ione-home-doc-card{
+  flex:0 0 auto!important;
+}
+
 </style>
 
 <link rel="manifest" href="manifest.json">
