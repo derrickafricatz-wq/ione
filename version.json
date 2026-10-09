@@ -1,5 +1,5 @@
 {
-  "version": "1.0.65",
-  "message": "Keep library controls fixed, scroll only documentaries, and fill cover images",
+  "version": "1.0.66",
+  "message": "Show full documentary covers and add gentle user-interruptible shelf scrolling",
   "force": true
 }
