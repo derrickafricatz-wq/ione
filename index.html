@@ -9092,6 +9092,30 @@ function ioneRunBackgroundMediaPreload(){ return; }
   .ione-doc-empty{color:#81969b;font:600 11px Arial,sans-serif;padding:8px 0}
   .ione-doc-check{display:flex;align-items:center;gap:8px;color:#d9e6e8;font:700 11px Arial,sans-serif}
   @media(max-width:520px){.ione-doc-item{grid-template-columns:58px 1fr}.ione-doc-item img{width:58px;height:52px}.ione-doc-item .ione-doc-row{grid-column:1/-1}}
+
+  /* World-class documentary archive editor: isolated to this panel only */
+  #ioneDocumentaryEditorV1Mount{position:relative;isolation:isolate;overflow:hidden;padding:clamp(16px,3vw,26px);border:1px solid rgba(105,239,245,.28);border-radius:24px;background:radial-gradient(ellipse at 0% 0%,rgba(0,222,230,.13),transparent 45%),linear-gradient(145deg,#10272e 0%,#09171c 55%,#050d11 100%);box-shadow:0 18px 42px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.07)}
+  #ioneDocumentaryEditorV1Mount:before{content:"";position:absolute;top:0;left:18px;right:18px;height:2px;border-radius:0 0 99px 99px;background:linear-gradient(90deg,transparent,#00e8ed,#d6c28b,transparent);opacity:.85;pointer-events:none}
+  #ioneDocumentaryEditorV1Mount h3{font:900 17px/1.25 Georgia,serif;letter-spacing:2px;color:#f7fbf7;margin:2px 0 8px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-note{max-width:680px;color:#b4c9ce;font:500 13px/1.65 Arial,sans-serif}
+  #ioneDocumentaryEditorV1Mount .ione-doc-grid{gap:12px}
+  #ioneDocumentaryEditorV1Mount input[type="text"],#ioneDocumentaryEditorV1Mount textarea,#ioneDocumentaryEditorV1Mount input[type="number"]{border-color:rgba(135,218,224,.25);border-radius:14px;background:rgba(3,12,16,.8);padding:14px;color:#f5ffff}
+  #ioneDocumentaryEditorV1Mount .ione-doc-check{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid rgba(0,229,220,.23);border-radius:14px;background:linear-gradient(110deg,rgba(0,207,209,.1),rgba(255,255,255,.025));color:#dffbfa;line-height:1.5}
+  #ioneDocumentaryEditorV1Mount .ione-doc-check input{width:19px;height:19px;accent-color:#00d8d8;flex:0 0 auto}
+  #ioneDocumentaryEditorV1Mount .ione-doc-row{gap:9px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-btn{min-height:42px;padding:11px 14px;border-radius:13px;background:linear-gradient(145deg,#1c3840,#102229);border-color:rgba(135,232,239,.3);box-shadow:0 4px 0 rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12);transition:transform .12s ease,filter .12s ease;-webkit-tap-highlight-color:transparent}
+  #ioneDocumentaryEditorV1Mount .ione-doc-btn:active{transform:translateY(2px);filter:brightness(1.12);box-shadow:0 1px 0 rgba(0,0,0,.28)}
+  #ioneDocumentaryEditorV1Mount #ioneDocPublishNow{background:linear-gradient(135deg,#a7fff3 0%,#16d6d4 54%,#1787b8 100%);color:#03282d;border-color:#b4fff6;font-weight:900;box-shadow:0 4px 0 #07596b,0 9px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.72)}
+  #ioneDocumentaryEditorV1Mount #ioneDocPublishNow:active{transform:translateY(3px);box-shadow:0 1px 0 #07596b}
+  #ioneDocumentaryEditorV1Mount #ioneDocList{gap:11px;margin-top:12px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-item{grid-template-columns:78px minmax(0,1fr) auto;gap:12px;padding:11px;border-radius:16px;border-color:rgba(124,223,230,.16);background:linear-gradient(120deg,rgba(21,44,51,.9),rgba(8,19,24,.95));box-shadow:inset 0 1px 0 rgba(255,255,255,.035)}
+  #ioneDocumentaryEditorV1Mount .ione-doc-item img{width:78px;height:66px;border-radius:11px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-item strong{font:800 13px/1.4 Georgia,serif;overflow-wrap:anywhere}
+  #ioneDocumentaryEditorV1Mount .ione-doc-item small{font-size:10px;letter-spacing:.3px;line-height:1.6}
+  #ioneDocumentaryEditorV1Mount .ione-doc-list:before{content:"DOCUMENTARY ARCHIVE  /  SAVED STORIES";display:block;padding:13px 2px 4px;border-top:1px solid rgba(122,221,227,.14);color:#9ce8e8;font:900 10px Arial,sans-serif;letter-spacing:1.7px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-empty{padding:18px;border:1px dashed rgba(116,226,230,.22);border-radius:14px;background:rgba(3,12,16,.32);color:#b5cbd0;font:500 12px/1.7 Arial,sans-serif}
+  @media(max-width:520px){#ioneDocumentaryEditorV1Mount .ione-doc-item{grid-template-columns:58px minmax(0,1fr);gap:10px}#ioneDocumentaryEditorV1Mount .ione-doc-item img{width:58px;height:54px}#ioneDocumentaryEditorV1Mount .ione-doc-item .ione-doc-row{grid-column:1/-1}#ioneDocumentaryEditorV1Mount .ione-doc-btn{flex:1;min-width:calc(50% - 10px)}}
+
 </style>
 
 <script id="ioneDocumentaryEditorV1">
@@ -9254,6 +9278,12 @@ function ioneRunBackgroundMediaPreload(){ return; }
     };
   }
 
+  function publishNow(){
+    const checkbox=document.getElementById("ioneDocPublished");
+    if(checkbox)checkbox.checked=true;
+    save();
+  }
+
   async function save(){
     const payload=validate();
     if(!payload)return;
@@ -9350,7 +9380,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<button type="button" id="ioneDocAddImage" class="ione-doc-btn">+ ADD IMAGE</button>'+
         '<input id="ioneDocImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'+
         '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
-        '<button type="button" id="ioneDocSave" class="ione-doc-btn primary">SAVE DOCUMENTARY</button>'+
+        '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">SAVE &amp; PUBLISH</button>'+
       '</div>'+
       '<div id="ioneDocStatus" class="ione-doc-status">READY</div>'+
       '<div id="ioneDocBlocks" class="ione-doc-blocks"></div>'+
@@ -9377,6 +9407,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     };
     document.getElementById("ioneDocNew").onclick=reset;
     document.getElementById("ioneDocSave").onclick=save;
+    document.getElementById("ioneDocPublishNow").onclick=publishNow;
     renderBlocks();
     loadList();
   }
