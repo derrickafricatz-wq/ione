@@ -11113,68 +11113,89 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
 <script src="./chapchap.js?v=14"></script>
 <script>
-/* I|ONE SAFE DOCUMENTARY AUTO-SCROLL
-   Gentle down-and-up loop. Any user touch/scroll/input cancels it immediately. */
+/* I|ONE DOCUMENTARY AUTO-SCROLL • waits for the library to open and for cards to render */
 (function(){
-  if(window.__ioneSafeDocAutoScroll)return;
-  window.__ioneSafeDocAutoScroll=true;
-  let shelf=null, raf=0, lastTime=0, direction=1, stopped=false, observer=null;
-  const SPEED=7; // very slow: pixels per second
-
-  function cancelFrame(){if(raf){cancelAnimationFrame(raf);raf=0;}lastTime=0;}
-  function stopForUser(){
-    stopped=true;
-    cancelFrame();
+  if(window.__ioneDocAutoScrollV2)return;
+  window.__ioneDocAutoScrollV2=true;
+  let shelf=null, raf=0, last=0, direction=1, userPaused=false, resumeTimer=0;
+  const SPEED=18;
+  function stopByUser(){
+    userPaused=true;
+    if(raf)cancelAnimationFrame(raf);
+    raf=0;last=0;
+    clearTimeout(resumeTimer);
+    /* Resume only after a pause, so a brief tap/gesture never permanently disables it. */
+    resumeTimer=setTimeout(()=>{userPaused=false;sync();},5000);
   }
-  function animate(now){
+  function frame(now){
     raf=0;
-    if(stopped||document.hidden||!shelf||!shelf.isConnected)return;
-    const container=document.getElementById('healthyContainer');
-    if(!container||getComputedStyle(container).display==='none')return;
-    if(lastTime){
-      const elapsed=Math.min(50,now-lastTime)/1000;
-      const max=Math.max(0,shelf.scrollHeight-shelf.clientHeight);
-      if(max>2){
+    if(userPaused||document.hidden||!shelf||!shelf.isConnected)return;
+    const max=Math.max(0,shelf.scrollHeight-shelf.clientHeight);
+    if(max>8){
+      if(last){
+        const elapsed=Math.min(50,now-last)/1000;
         let next=shelf.scrollTop+direction*SPEED*elapsed;
         if(next>=max){next=max;direction=-1;}
         if(next<=0){next=0;direction=1;}
         shelf.scrollTop=next;
       }
     }
-    lastTime=now;
-    raf=requestAnimationFrame(animate);
+    last=now;
+    raf=requestAnimationFrame(frame);
   }
-  function start(){
+  function sync(){
     const container=document.getElementById('healthyContainer');
     const next=document.getElementById('topicsList');
-    if(!container||!next||getComputedStyle(container).display==='none'||document.hidden)return;
-    if(next!==shelf){
-      if(shelf){
-        ['touchstart','pointerdown','wheel','keydown'].forEach(type=>shelf.removeEventListener(type,stopForUser));
-      }
-      shelf=next;
-      stopped=false;
-      direction=1;
-      ['touchstart','pointerdown','wheel','keydown'].forEach(type=>{
-        shelf.addEventListener(type,stopForUser,{passive:true});
-      });
+    if(!container||!next||document.hidden||
+       getComputedStyle(container).display==='none'||
+       container.getClientRects().length===0){
+      if(raf)cancelAnimationFrame(raf);
+      raf=0;last=0;return;
     }
-    if(stopped||raf)return;
-    lastTime=0;
-    raf=requestAnimationFrame(animate);
+    if(shelf!==next){
+      if(shelf){
+        ['touchstart','wheel','pointerdown','keydown'].forEach(t=>shelf.removeEventListener(t,stopByUser));
+      }
+      shelf=next;direction=1;last=0;
+      ['touchstart','wheel','pointerdown','keydown'].forEach(t=>shelf.addEventListener(t,stopByUser,{passive:true}));
+    }
+    if(!userPaused&&!raf)raf=requestAnimationFrame(frame);
   }
-  function check(){
-    const container=document.getElementById('healthyContainer');
-    if(!container||getComputedStyle(container).display==='none'){cancelFrame();return;}
-    start();
+  function install(){
+    sync();
+    const root=document.getElementById('healthyContainer')||document.documentElement;
+    new MutationObserver(sync).observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+    /* Some library-opening code changes visibility without changing observed descendants. */
+    window.setInterval(sync,700);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check,{once:true});
-  else check();
-  observer=new MutationObserver(check);
-  observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
-  document.addEventListener('visibilitychange',function(){
-    if(document.hidden)cancelFrame();
-    else check();
-  });
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});
+  else install();
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(raf)cancelAnimationFrame(raf);raf=0;last=0;}else sync();});
 })();
 </script>
+<style>
+/* DOCUMENTARY COVER PROPORTIONS • no distortion, no black letterbox, larger cover area */
+#topicsList{gap:24px!important;padding:10px 8px calc(42px + env(safe-area-inset-bottom))!important;}
+#topicsList .ione-home-doc-card{min-height:238px!important;align-items:stretch!important;}
+#topicsList .ione-home-doc-cover{
+  width:clamp(150px,42vw,190px)!important;
+  flex:0 0 clamp(150px,42vw,190px)!important;
+  min-width:0!important;
+  min-height:238px!important;
+  max-height:none!important;
+  height:auto!important;
+  object-fit:cover!important;
+  object-position:center!important;
+  padding:0!important;margin:0!important;
+  background:linear-gradient(145deg,#102a30,#071216)!important;
+}
+@media(max-width:520px){
+  #topicsList .ione-home-doc-card{min-height:224px!important;}
+  #topicsList .ione-home-doc-cover{
+    width:clamp(145px,43vw,178px)!important;
+    flex-basis:clamp(145px,43vw,178px)!important;
+    min-height:224px!important;
+  }
+}
+</style>
+
