@@ -1,5 +1,5 @@
 {
-  "version": "1.0.60",
-  "message": "Unified business button palette and fitted watermark and library messages",
+  "version": "1.0.61",
+  "message": "Fixed IONE watermark as separate centered lines",
   "force": true
 }
