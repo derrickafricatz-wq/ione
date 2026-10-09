@@ -1,5 +1,5 @@
 {
-  "version": "1.0.68",
-  "message": "Add safe slow documentary auto-scroll and improve cover spacing",
+  "version": "1.0.69",
+  "message": "Fix documentary auto-scroll and restore natural cover proportions",
   "force": true
 }
