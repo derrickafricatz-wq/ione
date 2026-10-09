@@ -11174,28 +11174,63 @@ function ioneRunBackgroundMediaPreload(){ return; }
 })();
 </script>
 <style>
-/* DOCUMENTARY COVER PROPORTIONS • no distortion, no black letterbox, larger cover area */
-#topicsList{gap:24px!important;padding:10px 8px calc(42px + env(safe-area-inset-bottom))!important;}
-#topicsList .ione-home-doc-card{min-height:238px!important;align-items:stretch!important;}
+/* DOCUMENTARY COVER FINISH • true image proportions + cinematic ambient fill */
+#topicsList{gap:22px!important;padding:10px 8px calc(42px + env(safe-area-inset-bottom))!important;}
+#topicsList .ione-home-doc-card{
+  min-height:224px!important;
+  align-items:stretch!important;
+  background:linear-gradient(125deg,rgba(17,43,49,.98),rgba(5,14,19,.99) 70%,rgba(25,37,51,.98))!important;
+  border:1px solid rgba(142,220,225,.32)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
 #topicsList .ione-home-doc-cover{
-  width:clamp(150px,42vw,190px)!important;
-  flex:0 0 clamp(150px,42vw,190px)!important;
+  width:clamp(132px,37vw,172px)!important;
+  flex:0 0 clamp(132px,37vw,172px)!important;
   min-width:0!important;
-  min-height:238px!important;
+  min-height:224px!important;
   max-height:none!important;
   height:auto!important;
-  object-fit:cover!important;
+  object-fit:contain!important;
   object-position:center!important;
-  padding:0!important;margin:0!important;
-  background:linear-gradient(145deg,#102a30,#071216)!important;
+  padding:7px!important;
+  margin:0!important;
+  box-sizing:border-box!important;
+  /* The original image stays fully visible. Its artwork also fills the transparent
+     surround as a subtle ambient backdrop instead of leaving plain black bars. */
+  background-color:#10252b!important;
+  background-image:linear-gradient(0deg,rgba(4,13,18,.32),rgba(8,26,32,.12)),var(--ione-cover-art,linear-gradient(145deg,#163a42,#111b2c,#23323a))!important;
+  background-size:cover!important;
+  background-position:center!important;
+  background-repeat:no-repeat!important;
 }
 @media(max-width:520px){
-  #topicsList .ione-home-doc-card{min-height:224px!important;}
+  #topicsList .ione-home-doc-card{min-height:214px!important;}
   #topicsList .ione-home-doc-cover{
-    width:clamp(145px,43vw,178px)!important;
-    flex-basis:clamp(145px,43vw,178px)!important;
-    min-height:224px!important;
+    width:clamp(126px,36vw,154px)!important;
+    flex-basis:clamp(126px,36vw,154px)!important;
+    min-height:214px!important;
+    padding:6px!important;
   }
 }
 </style>
 
+
+<script>
+/* Set each cover's own artwork as a background fill; the foreground image remains contain-sized. */
+(function(){
+  function setCinematicCoverFills(){
+    document.querySelectorAll('#topicsList .ione-home-doc-cover').forEach(function(img){
+      const src=img.currentSrc||img.src;
+      if(!src)return;
+      if(img.dataset.ioneAmbientSrc===src)return;
+      img.dataset.ioneAmbientSrc=src;
+      img.style.setProperty('--ione-cover-art','url("'+src.replace(/["\\\n\r]/g,'')+'")');
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setCinematicCoverFills,{once:true});
+  else setCinematicCoverFills();
+  const list=document.getElementById('topicsList');
+  if(list)new MutationObserver(setCinematicCoverFills).observe(list,{childList:true,subtree:true});
+  setInterval(setCinematicCoverFills,1200);
+})();
+</script>
