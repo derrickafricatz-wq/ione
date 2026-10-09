@@ -2264,7 +2264,6 @@ body.ione-gentle-boot #ioneTopActions{
 .ione-home-doc-title{font-size:clamp(19px,5vw,26px)!important;line-height:1.18!important;letter-spacing:.1px;color:#fff!important}
 .ione-home-doc-desc{font-size:clamp(13px,3.4vw,16px)!important;line-height:1.55!important;color:#c3d6d9!important}
 .ione-home-doc-empty{position:relative;z-index:1}
-.ione-doc-reader-caption{display:none!important}
 .ione-doc-reader-live{isolation:isolate!important;background:#0a1c21!important}
 .ione-doc-reader-live:before,.ione-doc-reader-live:after{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;white-space:nowrap;z-index:0;color:rgba(103,221,224,.045)}
 .ione-doc-reader-live:before{content:"I|ONE";top:48%;font:900 clamp(70px,20vw,150px)/1 Arial,sans-serif;letter-spacing:8px}
@@ -3161,7 +3160,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=115", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=116", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
