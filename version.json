@@ -1,5 +1,5 @@
 {
-  "version": "1.0.66",
-  "message": "Show full documentary covers and add gentle user-interruptible shelf scrolling",
+  "version": "1.0.67",
+  "message": "Repair app startup after documentary shelf update",
   "force": true
 }
