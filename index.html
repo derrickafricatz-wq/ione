@@ -7704,7 +7704,7 @@ setInterval(()=>{
   message.textContent=ioneLibMessages[ioneLibMessageIndex];
   void message.offsetWidth;
   message.style.animation="";
-},2600);
+},10000);
 bookstoreBtn.style.background = "linear-gradient(145deg,#6ef5ee,#13b9c9 55%,#1677ae)";
 bookstoreBtn.style.color = "#03282e";
 bookstoreBtn.style.fontWeight = "900";
@@ -9367,6 +9367,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
 /* Final polish: larger centered watermark and stable rotating book-button text */
 #healthyContainer::before{
+  top:calc(53% - .78em)!important;
   font-size:clamp(42px,11vw,88px)!important;
   letter-spacing:clamp(.5px,.6vw,4px)!important;
   text-align:center!important;
@@ -9374,6 +9375,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
   padding:0 8px!important;box-sizing:border-box!important;
 }
 #healthyContainer::after{
+  top:calc(53% + 1.15em)!important;
   font-size:clamp(20px,5.3vw,42px)!important;
   letter-spacing:clamp(.2px,.35vw,2px)!important;
   text-align:center!important;
@@ -9399,6 +9401,35 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @keyframes ioneStableMessageFade{from{opacity:0}to{opacity:1}}
 #topicsPanel>div:first-child button:first-child,
 #topicsPanel>div:first-child button:nth-child(2){overflow:hidden!important;}
+/* Calm premium controls: no flowing glow; clearer rotating motivation text. */
+#topicsPanel>div:first-child button:first-child,
+#topicsPanel>div:first-child button:nth-child(2){
+  animation:none!important;
+  background-size:100% 100%!important;
+}
+#topicsPanel>div:first-child button:first-child::before,
+#topicsPanel>div:first-child button:first-child::after,
+#topicsPanel>div:first-child button:nth-child(2)::before,
+#topicsPanel>div:first-child button:nth-child(2)::after{
+  animation:none!important;
+  opacity:0!important;
+}
+.ione-lib-teaser{
+  height:40px!important;min-height:40px!important;max-height:40px!important;
+  margin-top:8px!important;padding:0 5px!important;
+}
+.ione-lib-teaser-message{
+  color:#00242c!important;
+  font-size:clamp(10px,2.8vw,12px)!important;
+  font-weight:950!important;
+  line-height:15px!important;
+  letter-spacing:.35px!important;
+  max-height:38px!important;
+  text-shadow:0 1px 0 rgba(255,255,255,.32)!important;
+  overflow-wrap:normal!important;
+  word-break:normal!important;
+  animation:ioneStableMessageFade .55s ease both!important;
+}
 </style>
 
 <script id="ioneDocumentaryEditorV1">
