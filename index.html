@@ -7692,7 +7692,7 @@ exitBtn.onclick = () => {
 
 // HEAVEN'S BOOKSTORE BUTTON
 const bookstoreBtn = document.createElement("button");
-bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-hidden="true">BOOKS • STORIES • KNOWLEDGE</span>';
+bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-hidden="true"><span class="ione-lib-teaser-track"><span>OPEN A BOOK • OPEN YOUR WORLD</span><span>DISCOVER KNOWLEDGE</span><span>GROW YOUR MIND</span><span>YOUR NEXT BIG IDEA STARTS HERE</span><span>OPEN A BOOK • OPEN YOUR WORLD</span><span>DISCOVER KNOWLEDGE</span><span>GROW YOUR MIND</span><span>YOUR NEXT BIG IDEA STARTS HERE</span></span></span>';
 bookstoreBtn.style.background = "linear-gradient(145deg,#6ef5ee,#13b9c9 55%,#1677ae)";
 bookstoreBtn.style.color = "#03282e";
 bookstoreBtn.style.fontWeight = "900";
@@ -8187,9 +8187,9 @@ function openIonePublicDocumentary(d){
   const old=document.getElementById("ioneDocReaderLive");if(old)old.remove();
   let frame=0,last=0,playing=false,rotated=false,speed=24;
   const reader=document.createElement("section");reader.id="ioneDocReaderLive";reader.className="ione-doc-reader-live";reader.setAttribute("role","dialog");reader.setAttribute("aria-modal","true");reader.setAttribute("aria-label","Documentary reader");
-  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-sound" aria-label="Pause or play instrumental">♪ SOUND</button><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
+  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
   document.body.appendChild(reader);
-  const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play"),soundBtn=reader.querySelector(".ione-doc-reader-sound");
+  const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play");
   let soundtrack=null;
   function stop(){playing=false;if(frame)cancelAnimationFrame(frame);frame=0;last=0;if(play)play.textContent="▶ PLAY SCROLL";}
   function close(){stop();if(soundtrack){soundtrack.pause();soundtrack.src="";soundtrack=null;}reader.remove();}
@@ -8198,6 +8198,7 @@ function openIonePublicDocumentary(d){
   reader.querySelector(".ione-doc-reader-back").onclick=close;play.onclick=()=>playing?stop():start();
   reader.querySelector(".ione-doc-reader-speed").oninput=e=>{speed=Number(e.target.value)||24;};
   ["wheel","touchstart","pointerdown","keydown"].forEach(type=>scroll.addEventListener(type,()=>{if(playing)stop();},{passive:true}));
+  reader.querySelector(".ione-doc-reader-rotate").textContent="ROTATE";
   reader.querySelector(".ione-doc-reader-rotate").onclick=()=>{rotated=!rotated;reader.classList.toggle("is-rotated",rotated);if(rotated){reader.style.width=window.innerHeight+"px";reader.style.height=window.innerWidth+"px";}else{reader.style.width="";reader.style.height="";}};
   reader.querySelector(".ione-doc-reader-print").onclick=()=>{
     try{
@@ -8205,7 +8206,7 @@ function openIonePublicDocumentary(d){
       const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
       w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(d?.title||"Documentary")+'</title><style>body{font-family:Georgia,serif;color:#111;max-width:850px;margin:30px auto;padding:0 22px;line-height:1.75}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;max-width:100%;height:auto;margin:20px auto;page-break-inside:avoid}figure{margin:18px 0}figcaption{font:12px Arial,sans-serif;color:#555;text-align:center}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
       if(String(d?.short_description||"").trim())w.document.write("<p>"+esc(d.short_description)+"</p>");
-      (Array.isArray(d?.content)?d.content:[]).forEach(x=>{if(x?.type==="image"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");const alt=esc(x.alt||"");w.document.write('<figure><img src="'+url+'" alt="'+alt+'">'+(alt?'<figcaption>'+alt+'</figcaption>':'')+'</figure>');}else if(x?.type==="text")w.document.write("<p>"+esc(x.text||"")+"</p>");});
+      (Array.isArray(d?.content)?d.content:[]).forEach(x=>{if(x?.type==="image"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");const alt=esc(x.alt||"");w.document.write('<figure><img src="'+url+'" alt="'+alt+'">'+(alt?'<figcaption>'+alt+'</figcaption>':'')+'</figure>');}else if(x?.type==="video"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");w.document.write('<p><video src="'+url+'" muted playsinline style="display:block;width:100%;max-height:75vh;object-fit:cover"></video></p>');}else if(x?.type==="text")w.document.write("<p>"+esc(x.text||"")+"</p>");});
       w.document.write("</body></html>");w.document.close();w.focus();setTimeout(()=>{try{const images=Array.from(w.document.images);Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;}))).then(()=>setTimeout(()=>{try{w.focus();w.print();}catch(printError){console.warn("Browser print dialog unavailable:",printError);}},250));}catch(printError){console.warn("Documentary print preparation:",printError);w.focus();w.print();}},300);
     }catch(error){console.warn("Documentary print failed:",error);alert("Could not open the print view. Please try again.");}
   };
@@ -8215,10 +8216,11 @@ function openIonePublicDocumentary(d){
     const intro=document.createElement("div");intro.className="ione-doc-reader-intro";const h=document.createElement("h1");h.textContent=String(d.title||"Documentary");intro.appendChild(h);
     const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("p");p.textContent=desc;intro.appendChild(p);}scroll.appendChild(intro);
     const audioBlock=d.content.find(x=>x?.type==="audio"&&x.url);
-    if(audioBlock){soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0.32;soundBtn.textContent="Ⅱ SOUND";soundtrack.play().then(()=>{soundBtn.textContent="Ⅱ SOUND";}).catch(()=>{soundBtn.textContent="▶ PLAY SOUND";});soundBtn.onclick=()=>{if(!soundtrack)return;if(soundtrack.paused){soundtrack.play().then(()=>soundBtn.textContent="Ⅱ SOUND").catch(()=>soundBtn.textContent="▶ PLAY SOUND");}else{soundtrack.pause();soundBtn.textContent="▶ PLAY SOUND";}};}else{soundBtn.disabled=true;soundBtn.textContent="♪ NO MUSIC";}
+    if(audioBlock){soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0.32;soundtrack.play().catch(()=>{console.warn("Documentary audio could not autoplay; browser policy may have blocked playback.");});}
     d.content.forEach((x,i)=>{
       if(x?.type==="audio")return;
-      if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
+      if(x?.type==="video"&&x.url){const wrap=document.createElement("figure");wrap.className="ione-doc-reader-block ione-doc-reader-video-wrap";const video=document.createElement("video");video.className="ione-doc-reader-video";video.src=String(x.url);video.muted=true;video.defaultMuted=true;video.autoplay=true;video.loop=true;video.playsInline=true;video.setAttribute("muted","");video.setAttribute("autoplay","");video.setAttribute("playsinline","");video.removeAttribute("controls");video.addEventListener("contextmenu",e=>e.preventDefault());wrap.appendChild(video);scroll.appendChild(wrap);video.play().catch(()=>{});}
+      else if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
     scroll.scrollTop=0;
@@ -9186,6 +9188,23 @@ function ioneRunBackgroundMediaPreload(){ return; }
     #topicsList .ione-home-doc-desc{-webkit-line-clamp:4;font-size:12px}
   }
 
+/* I|ONE DOCUMENTARY REFINEMENT • keep list scrollable and media edge-to-edge */
+#topicsList{overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important;}
+#healthyContainer{position:relative;min-height:100dvh;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#topicsPanel,#topicsList{position:relative;z-index:1;}
+.ione-doc-reader-toolbar .ione-doc-reader-rotate{font-size:10px!important;letter-spacing:1px!important;min-width:76px;text-transform:uppercase;}
+.ione-doc-reader-video-wrap{width:100%!important;max-width:none!important;padding:0!important;margin:0!important;overflow:hidden;background:#000;}
+.ione-doc-reader-video{display:block;width:100%;height:clamp(230px,62vh,760px);object-fit:cover;object-position:center;background:#000;border:0;border-radius:0;pointer-events:none;}
+.ione-doc-reader-sound{display:none!important;}
+#topicsPanel>div:first-child button{position:relative;overflow:hidden;transform:translateZ(0);box-shadow:0 8px 0 rgba(0,0,0,.30),0 15px 25px rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.48),inset 0 -3px 0 rgba(0,0,0,.12)!important;transition:transform .16s ease,filter .16s ease,box-shadow .16s ease;}
+#topicsPanel>div:first-child button:active{transform:translateY(4px) scale(.99);filter:brightness(1.08);box-shadow:0 3px 0 rgba(0,0,0,.3),inset 0 2px 5px rgba(0,0,0,.14)!important;}
+.ione-lib-teaser{overflow:hidden!important;max-width:100%;height:14px;line-height:14px;white-space:nowrap;}
+.ione-lib-teaser-track{display:inline-flex;align-items:center;gap:24px;width:max-content;animation:ioneLibWordsLoop 17s linear infinite;}
+.ione-lib-teaser-track span{flex:0 0 auto;}
+@keyframes ioneLibWordsLoop{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.ione-lib-teaser-track{animation:none}}
+.ione-doc-preview{max-width:100%;}
+.ione-doc-block video.ione-doc-preview{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#000;border-radius:10px;}
 </style>
 
 <script id="ioneDocumentaryEditorV1">
@@ -9254,6 +9273,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
     host.innerHTML=blocks.map(function(b,i){
       if(b.type==="audio"){
         return '<div class="ione-doc-block"><div class="ione-doc-block-head"><span class="ione-doc-block-label">INSTRUMENTAL AUDIO</span><button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-remove="' + i + '">REMOVE</button></div><div class="ione-doc-note">' + esc(b.title||"Instrumental soundtrack") + '</div></div>';
+      }
+      if(b.type==="video"){
+        return '<div class="ione-doc-block"><div class="ione-doc-block-head"><span class="ione-doc-block-label">MUTED VIDEO • NO CONTROLS</span><button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-remove="' + i + '">REMOVE</button></div><video class="ione-doc-preview" src="' + esc(b.url) + '" muted playsinline></video></div>';
       }
       if(b.type==="image"){
         return '<div class="ione-doc-block">'+
@@ -9349,6 +9371,25 @@ function ioneRunBackgroundMediaPreload(){ return; }
     finally{if(btn)btn.disabled=false;}
   }
 
+  async function addVideo(file){
+    if(!file)return;
+    const mime=String(file.type||"").toLowerCase().split(";")[0].trim();
+    const ext=String(file.name||"").split(".").pop().toLowerCase();
+    const types={"mp4":"video/mp4","webm":"video/webm","mov":"video/quicktime"};
+    const videoMime=["video/mp4","video/webm","video/quicktime"].includes(mime)?mime:types[ext]||"";
+    if(!videoMime){status("Choose an MP4, WEBM or MOV video.",true);return;}
+    if(file.size>15*1024*1024){status("Video must be 15 MB or smaller.",true);return;}
+    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("UPLOADING MUTED VIDEO…");
+    try{
+      const dataUrl=await fileToDataUrl(file,videoMime);
+      const data=await invoke("upload",{data_url:dataUrl,mime_type:videoMime});
+      if(!data.url)throw new Error("The video upload did not return a URL.");
+      blocks.push({type:"video",url:data.url,title:file.name||"Muted documentary video"});
+      renderBlocks();status("MUTED VIDEO ADDED • POSITION "+blocks.length);
+    }catch(e){status(e?.message||"Could not upload video.",true);}
+    finally{if(btn)btn.disabled=false;}
+  }
+
   function validate(){
     const title=String(document.getElementById("ioneDocTitle")?.value||"").trim();
     if(!title){status("Enter a documentary title.",true);return null;}
@@ -9365,6 +9406,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       content:blocks.map(b=>b.type==="image"
         ? {type:"image",url:b.url,alt:String(b.alt||"")}
         : b.type==="audio" ? {type:"audio",url:String(b.url||""),title:String(b.title||"Instrumental soundtrack")}
+        : b.type==="video" ? {type:"video",url:String(b.url||""),title:String(b.title||"Muted documentary video")}
         : {type:"text",text:String(b.text||"")}),
       sort_order:Number(document.getElementById("ioneDocOrder")?.value||0)||0,
       published:!!document.getElementById("ioneDocPublished")?.checked
@@ -9406,6 +9448,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
         return b.type==="image"
           ? {type:"image",url:b.url,alt:b.alt||""}
           : b.type==="audio" ? {type:"audio",url:b.url||"",title:b.title||"Instrumental soundtrack"}
+          : b.type==="video" ? {type:"video",url:b.url||"",title:b.title||"Muted documentary video"}
           : {type:"text",text:b.text||""};
       }):[];
       renderBlocks();
@@ -9475,6 +9518,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<input id="ioneDocImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'+
         '<button type="button" id="ioneDocAddAudio" class="ione-doc-btn">+ ADD INSTRUMENTAL AUDIO</button>'+
         '<input id="ioneDocAudioFile" type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" hidden>'+
+        '<button type="button" id="ioneDocAddVideo" class="ione-doc-btn">+ UPLOAD MUTED VIDEO</button>'+
+        '<input id="ioneDocVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,video/*" hidden>'+
         '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
         '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">SAVE &amp; PUBLISH</button>'+
       '</div>'+
@@ -9503,6 +9548,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     };
     document.getElementById("ioneDocAddAudio").onclick=function(){document.getElementById("ioneDocAudioFile").click();};
     document.getElementById("ioneDocAudioFile").onchange=function(){const file=this.files?.[0];this.value="";addAudio(file);};
+    document.getElementById("ioneDocAddVideo").onclick=function(){document.getElementById("ioneDocVideoFile").click();};
+    document.getElementById("ioneDocVideoFile").onchange=function(){const file=this.files?.[0];this.value="";addVideo(file);};
     document.getElementById("ioneDocNew").onclick=reset;
     document.getElementById("ioneDocSave").onclick=save;
     document.getElementById("ioneDocPublishNow").onclick=publishNow;
