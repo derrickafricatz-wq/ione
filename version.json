@@ -1,5 +1,5 @@
 {
-  "version": "1.0.69",
-  "message": "Fix documentary auto-scroll and restore natural cover proportions",
+  "version": "1.0.70",
+  "message": "Show full documentary cover artwork with cinematic ambient fill",
   "force": true
 }
