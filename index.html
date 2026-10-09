@@ -2625,7 +2625,7 @@ function getMedia(id){
 <section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div><div class="smart-grid">
 <button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>SERMON TRANSCRIPT</strong><small>AUTHORIZED MINISTRY</small></button>
-<button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>HEAVEN ON EARTH</strong><small>NENO • MAFUNDISHO • IMANI</small></button>
+<button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>DISCOVER & EXPLORE</strong><small>BOOKS • LIBRARY • DOCUMENTARIES</small></button>
 <button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
 <button class="smart-item smart-coming-soon" id="openBusBooking" type="button"><span class="smart-icon">BUS</span><strong>I|ONE BUS</strong><small>BUS BOOKING • COMING SOON</small></button>
 <button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">SW</span><strong>SPACEWAY</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
@@ -2894,7 +2894,7 @@ const guideLanguages={
   "BOOK COVERS: FRONT COVER na BACK COVER zinaweza kuwekwa; back cover huwa ukurasa wa mwisho.",
   "TOOLS: Tumia zana za font, size, rangi, highlight, alignment na styles.",
   "HEAVEN'S BOOKS: Vitabu vilivyochapishwa vinaonekana bookstore; vilivyonunuliwa hufunguka kwenye reader.",
-  "HEAVEN ON EARTH: Hufungua eneo la masomo ya kiroho na mafundisho.",
+  "DISCOVER & EXPLORE: Hufungua vitabu, maktaba na documentary.",
   "ROTATE: Kwenye somo unaweza kubadili portrait na landscape.",
   "GUIDE: Bonyeza GUIDE wakati wowote kuchagua Kiswahili au English tena.",
   "Uko tayari — chunguza Mbingu Duniani na tumia kila kipengele kwa urahisi."
@@ -2915,7 +2915,7 @@ const guideLanguages={
   "BOOK COVERS: Add a FRONT COVER and an optional BACK COVER; the back cover becomes the final page.",
   "TOOLS: Use fonts, sizes, colors, highlights, alignment and text styles.",
   "HEAVEN'S BOOKS: Published books appear in the bookstore; purchased books open in the real reader.",
-  "HEAVEN ON EARTH: Opens the spiritual learning and guidance area.",
+  "DISCOVER & EXPLORE: Opens Books, Library and Documentaries.",
   "ROTATE: Inside lessons, use ROTATE to switch between portrait and landscape.",
   "GUIDE: Press GUIDE anytime to choose Swahili or English again.",
   "You are ready — explore Mbingu Duniani and enjoy every feature."
@@ -8261,16 +8261,17 @@ function openIonePublicDocumentary(d){
     const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("p");p.textContent=desc;intro.appendChild(p);}scroll.appendChild(intro);
     const audioBlock=d.content.find(x=>x?.type==="audio"&&x.url);
     if(audioBlock){
-      soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0.001;soundtrack.preload="auto";
+      soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0;soundtrack.preload="auto";
       const track=soundtrack;
       audioStartTimer=setTimeout(()=>{
         audioStartTimer=0;if(soundtrack!==track||!reader.isConnected)return;
+        try{if(Number.isFinite(track.duration)&&track.duration>0)track.currentTime=Math.min(0.18,track.duration*0.02);}catch(seekError){}
         track.play().then(()=>{
           const started=performance.now();
           audioFadeTimer=setInterval(()=>{
             if(soundtrack!==track){clearInterval(audioFadeTimer);audioFadeTimer=0;return;}
             const progress=Math.min(1,(performance.now()-started)/2400);
-            track.volume=Math.min(.32,.001+(.319*progress*progress));
+            track.volume=Math.min(.32,.32*progress*progress);
             if(progress>=1){clearInterval(audioFadeTimer);audioFadeTimer=0;}
           },35);
         }).catch(()=>{console.warn("Documentary audio could not autoplay; browser policy may have blocked playback.");});
@@ -9302,6 +9303,25 @@ function ioneRunBackgroundMediaPreload(){ return; }
 .ione-doc-reader-block.ione-print-selected:after{content:"✓ SELECTED";position:absolute;top:9px;right:9px;z-index:4;background:#078fe8;color:#fff;border:1px solid #9ee4ff;border-radius:20px;padding:6px 10px;font:900 10px/1 Arial,sans-serif;letter-spacing:.7px;box-shadow:0 3px 8px rgba(0,0,0,.3);}
 .ione-doc-reader-print{min-width:112px!important;white-space:nowrap!important;}
 @media(prefers-reduced-motion:no-preference){#topicsPanel>div:first-child button:first-child:before{animation:ioneBookButtonShine 5.8s ease-in-out infinite;}@keyframes ioneBookButtonShine{0%,65%,100%{left:-130%}82%{left:150%}}}
+
+/* Homepage discovery naming, paired brand watermark and matching glow buttons */
+#openHealth strong{font-size:clamp(13px,3.4vw,17px)!important;letter-spacing:.65px!important;}
+#openHealth small{font-size:clamp(8px,2.2vw,10px)!important;letter-spacing:.65px!important;}
+#healthyContainer::before{content:"IONE\\A INTOIONE.SPACE"!important;white-space:pre!important;display:flex!important;align-items:center!important;justify-content:center!important;width:100%!important;box-sizing:border-box!important;padding:0 10px!important;text-align:center!important;overflow:hidden!important;overflow-wrap:normal!important;word-break:normal!important;font-family:Arial,sans-serif!important;font-weight:900!important;font-size:clamp(22px,6.5vw,54px)!important;line-height:1.65!important;letter-spacing:clamp(0px,.35vw,2px)!important;color:rgba(161,242,245,.065)!important;}
+.ione-lib-label{font-size:clamp(21px,5.4vw,29px)!important;letter-spacing:2px!important;line-height:1.1!important;}
+.ione-lib-teaser{height:22px!important;min-height:22px!important;margin-top:8px!important;}
+.ione-lib-teaser-message{font-size:clamp(9px,2.5vw,12px)!important;line-height:22px!important;letter-spacing:clamp(.35px,.42vw,1.1px)!important;color:#032b36!important;text-shadow:0 1px 0 rgba(255,255,255,.75),0 0 8px rgba(255,255,255,.35)!important;font-weight:900!important;}
+#topicsPanel>div:first-child button:first-child,
+#topicsPanel>div:first-child button:nth-child(2){position:relative!important;overflow:hidden!important;transition:filter .2s ease,transform .2s ease!important;}
+#topicsPanel>div:first-child button:first-child{background:linear-gradient(145deg,#d7fff7 0%,#58e8d8 32%,#17b9cf 68%,#0876a6 100%)!important;color:#042b34!important;border-color:#d5fff9!important;box-shadow:0 8px 0 #07566b,0 14px 25px rgba(0,0,0,.27),inset 0 2px 0 rgba(255,255,255,.85)!important;}
+#topicsPanel>div:first-child button:nth-child(2){background:linear-gradient(145deg,#ffe1a8 0%,#ff9a87 42%,#d64b79 100%)!important;color:#fff!important;border-color:#ffe5cf!important;box-shadow:0 8px 0 #813650,0 14px 25px rgba(0,0,0,.27),inset 0 2px 0 rgba(255,255,255,.7)!important;}
+#topicsPanel>div:first-child button:first-child:before,
+#topicsPanel>div:first-child button:nth-child(2):before{content:"";position:absolute;top:0;left:-135%;width:70%;height:100%;pointer-events:none;background:linear-gradient(105deg,transparent,rgba(255,255,255,.62),transparent);transform:skewX(-20deg);animation:ioneHomeButtonGlow 5.4s ease-in-out infinite;}
+#topicsPanel>div:first-child button:nth-child(2):before{animation-delay:1.1s;}
+#topicsPanel>div:first-child button:first-child:active,
+#topicsPanel>div:first-child button:nth-child(2):active{transform:translateY(5px)!important;filter:brightness(1.06)!important;}
+@keyframes ioneHomeButtonGlow{0%,66%,100%{left:-135%}84%{left:155%}}
+@media(prefers-reduced-motion:reduce){#topicsPanel>div:first-child button:before{animation:none!important}}
 </style>
 
 <script id="ioneDocumentaryEditorV1">
