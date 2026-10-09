@@ -175,6 +175,10 @@
   #topicsList{scroll-behavior:auto!important;}
   @media(prefers-reduced-motion:reduce){#topicsList{scroll-behavior:auto!important;}}
 
+  /* DOCUMENTARY CARDS • clearer breathing room without changing cover proportions */
+  #topicsList{gap:26px!important;padding-top:8px!important;padding-bottom:calc(34px + env(safe-area-inset-bottom))!important;}
+  #topicsList .ione-home-doc-card{margin:0!important;min-height:200px!important;}
+
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -11108,3 +11112,69 @@ function ioneRunBackgroundMediaPreload(){ return; }
 </script>
 
 <script src="./chapchap.js?v=14"></script>
+<script>
+/* I|ONE SAFE DOCUMENTARY AUTO-SCROLL
+   Gentle down-and-up loop. Any user touch/scroll/input cancels it immediately. */
+(function(){
+  if(window.__ioneSafeDocAutoScroll)return;
+  window.__ioneSafeDocAutoScroll=true;
+  let shelf=null, raf=0, lastTime=0, direction=1, stopped=false, observer=null;
+  const SPEED=7; // very slow: pixels per second
+
+  function cancelFrame(){if(raf){cancelAnimationFrame(raf);raf=0;}lastTime=0;}
+  function stopForUser(){
+    stopped=true;
+    cancelFrame();
+  }
+  function animate(now){
+    raf=0;
+    if(stopped||document.hidden||!shelf||!shelf.isConnected)return;
+    const container=document.getElementById('healthyContainer');
+    if(!container||getComputedStyle(container).display==='none')return;
+    if(lastTime){
+      const elapsed=Math.min(50,now-lastTime)/1000;
+      const max=Math.max(0,shelf.scrollHeight-shelf.clientHeight);
+      if(max>2){
+        let next=shelf.scrollTop+direction*SPEED*elapsed;
+        if(next>=max){next=max;direction=-1;}
+        if(next<=0){next=0;direction=1;}
+        shelf.scrollTop=next;
+      }
+    }
+    lastTime=now;
+    raf=requestAnimationFrame(animate);
+  }
+  function start(){
+    const container=document.getElementById('healthyContainer');
+    const next=document.getElementById('topicsList');
+    if(!container||!next||getComputedStyle(container).display==='none'||document.hidden)return;
+    if(next!==shelf){
+      if(shelf){
+        ['touchstart','pointerdown','wheel','keydown'].forEach(type=>shelf.removeEventListener(type,stopForUser));
+      }
+      shelf=next;
+      stopped=false;
+      direction=1;
+      ['touchstart','pointerdown','wheel','keydown'].forEach(type=>{
+        shelf.addEventListener(type,stopForUser,{passive:true});
+      });
+    }
+    if(stopped||raf)return;
+    lastTime=0;
+    raf=requestAnimationFrame(animate);
+  }
+  function check(){
+    const container=document.getElementById('healthyContainer');
+    if(!container||getComputedStyle(container).display==='none'){cancelFrame();return;}
+    start();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',check,{once:true});
+  else check();
+  observer=new MutationObserver(check);
+  observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});
+  document.addEventListener('visibilitychange',function(){
+    if(document.hidden)cancelFrame();
+    else check();
+  });
+})();
+</script>
