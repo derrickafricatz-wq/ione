@@ -2245,6 +2245,42 @@ body.ione-gentle-boot #ioneTopActions{
   scrollbar-width:thin;
 }
 </style>
+<style id="ioneDocumentaryPremiumFinish">
+#topicsPanel>div:first-child{gap:clamp(18px,5vw,30px)!important;padding:10px 8px 26px!important;margin-bottom:22px!important}
+#topicsPanel>div:first-child button{min-height:82px!important;min-width:0!important;flex:1 1 0!important;padding:14px 12px!important;border-radius:20px!important;font-size:16px!important;letter-spacing:1.4px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:8px!important;overflow:hidden!important}
+#topicsPanel>div:first-child button:nth-child(1){background:linear-gradient(135deg,#a4fff8 0%,#24d6d7 42%,#087db7 100%)!important;color:#052c36!important;border-color:#b8fff9!important}
+#topicsPanel>div:first-child button:nth-child(2){background:linear-gradient(135deg,#ffd28b 0%,#ff875d 48%,#bc355f 100%)!important;color:#fff!important;border-color:#ffe0b2!important}
+.ione-lib-label{display:block;font-size:17px;font-weight:950;line-height:1}
+.ione-lib-teaser{display:block;max-width:100%;font:800 8px/1.3 Arial,sans-serif;letter-spacing:1.2px;white-space:nowrap;animation:ioneLibTeaserGlow 3.8s ease-in-out infinite}
+@keyframes ioneLibTeaserGlow{0%,100%{opacity:.58;transform:translateY(0)}50%{opacity:1;transform:translateY(-1px)}}
+#topicsList{position:relative!important;isolation:isolate;gap:20px!important;padding:8px 6px 34px!important;overflow:hidden}
+#topicsList:before,#topicsList:after{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;z-index:-1;white-space:nowrap;user-select:none}
+#topicsList:before{content:"I|ONE";top:44%;font:900 clamp(68px,19vw,132px)/1 Arial,sans-serif;letter-spacing:7px;color:rgba(100,224,228,.045)}
+#topicsList:after{content:"intoione.space";top:calc(44% + 76px);font:700 clamp(13px,4vw,22px)/1 Arial,sans-serif;letter-spacing:5px;color:rgba(100,224,228,.07)}
+#topicsList .ione-home-doc-card{position:relative;z-index:1;width:100%;min-height:210px!important;overflow:hidden;gap:0!important;border:1px solid rgba(125,235,241,.3)!important;border-radius:23px!important;background:linear-gradient(120deg,rgba(17,39,46,.97),rgba(7,20,26,.98))!important;box-shadow:0 14px 30px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.07)!important;text-align:left}
+.ione-home-doc-cover{flex:0 0 clamp(132px,38vw,205px)!important;width:clamp(132px,38vw,205px)!important;height:210px!important;min-height:210px!important;max-height:250px!important;object-fit:contain!important;object-position:center!important;background:rgba(0,0,0,.7)!important;padding:4px;box-sizing:border-box}
+.ione-home-doc-copy{min-width:0;flex:1;align-self:center;gap:10px!important;padding:20px clamp(13px,3.5vw,22px)!important}
+.ione-home-doc-kicker{font-size:10px!important;letter-spacing:2.5px!important;color:#78e9e8!important;font-weight:900!important}
+.ione-home-doc-title{font-size:clamp(19px,5vw,26px)!important;line-height:1.18!important;letter-spacing:.1px;color:#fff!important}
+.ione-home-doc-desc{font-size:clamp(13px,3.4vw,16px)!important;line-height:1.55!important;color:#c3d6d9!important}
+.ione-home-doc-empty{position:relative;z-index:1}
+.ione-doc-reader-caption{display:none!important}
+.ione-doc-reader-live{isolation:isolate!important;background:#0a1c21!important}
+.ione-doc-reader-live:before,.ione-doc-reader-live:after{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;user-select:none;white-space:nowrap;z-index:0;color:rgba(103,221,224,.045)}
+.ione-doc-reader-live:before{content:"I|ONE";top:48%;font:900 clamp(70px,20vw,150px)/1 Arial,sans-serif;letter-spacing:8px}
+.ione-doc-reader-live:after{content:"intoione.space";top:calc(48% + 76px);font:700 clamp(14px,4vw,24px)/1 Arial,sans-serif;letter-spacing:5px;color:rgba(103,221,224,.065)}
+.ione-doc-reader-live>*{position:relative;z-index:1}
+.ione-doc-reader-toolbar .ione-doc-reader-sound{border-color:rgba(120,235,232,.45);color:#aafff7}
+.ione-doc-reader-toolbar .ione-doc-reader-sound:disabled{opacity:.55}
+@media(max-width:420px){
+ #topicsPanel>div:first-child button{min-height:78px!important;padding:12px 7px!important}
+ .ione-lib-teaser{font-size:7px!important;letter-spacing:.8px!important}
+ #topicsList .ione-home-doc-card{min-height:185px!important}
+ .ione-home-doc-cover{flex-basis:clamp(116px,36vw,145px)!important;width:clamp(116px,36vw,145px)!important;height:185px!important;min-height:185px!important}
+ .ione-home-doc-copy{padding:14px 11px!important;gap:8px!important}
+ .ione-home-doc-title{font-size:clamp(17px,4.7vw,21px)!important}
+}
+</style>
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true"><div class="ione-network-mark"><strong>I|ONE</strong><span>intoione.space</span><i></i></div></div>
@@ -7657,7 +7693,7 @@ exitBtn.onclick = () => {
 
 // HEAVEN'S BOOKSTORE BUTTON
 const bookstoreBtn = document.createElement("button");
-bookstoreBtn.innerText = "I1 LIB";
+bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-hidden="true">BOOKS • STORIES • KNOWLEDGE</span>';
 bookstoreBtn.style.background = "linear-gradient(145deg,#6ef5ee,#13b9c9 55%,#1677ae)";
 bookstoreBtn.style.color = "#03282e";
 bookstoreBtn.style.fontWeight = "900";
@@ -8152,11 +8188,12 @@ function openIonePublicDocumentary(d){
   const old=document.getElementById("ioneDocReaderLive");if(old)old.remove();
   let frame=0,last=0,playing=false,rotated=false,speed=24;
   const reader=document.createElement("section");reader.id="ioneDocReaderLive";reader.className="ione-doc-reader-live";reader.setAttribute("role","dialog");reader.setAttribute("aria-modal","true");reader.setAttribute("aria-label","Documentary reader");
-  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
+  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-sound" aria-label="Pause or play instrumental">♪ SOUND</button><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
   document.body.appendChild(reader);
-  const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play");
+  const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play"),soundBtn=reader.querySelector(".ione-doc-reader-sound");
+  let soundtrack=null;
   function stop(){playing=false;if(frame)cancelAnimationFrame(frame);frame=0;last=0;if(play)play.textContent="▶ PLAY SCROLL";}
-  function close(){stop();reader.remove();}
+  function close(){stop();if(soundtrack){soundtrack.pause();soundtrack.src="";soundtrack=null;}reader.remove();}
   function tick(t){if(!playing||!reader.isConnected)return;if(!last)last=t;const dt=Math.min(40,t-last);last=t;scroll.scrollTop+=speed*dt/1000;if(scroll.scrollTop+scroll.clientHeight>=scroll.scrollHeight-2){stop();return;}frame=requestAnimationFrame(tick);}
   function start(){if(scroll.scrollHeight<=scroll.clientHeight+2){play.textContent="NO SCROLL NEEDED";return;}playing=true;play.textContent="Ⅱ PAUSE SCROLL";last=0;frame=requestAnimationFrame(tick);}
   reader.querySelector(".ione-doc-reader-back").onclick=close;play.onclick=()=>playing?stop():start();
@@ -8178,8 +8215,11 @@ function openIonePublicDocumentary(d){
     reader.querySelector(".ione-doc-reader-head-name").textContent=String(d.title||"Documentary");scroll.replaceChildren();
     const intro=document.createElement("div");intro.className="ione-doc-reader-intro";const h=document.createElement("h1");h.textContent=String(d.title||"Documentary");intro.appendChild(h);
     const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("p");p.textContent=desc;intro.appendChild(p);}scroll.appendChild(intro);
+    const audioBlock=d.content.find(x=>x?.type==="audio"&&x.url);
+    if(audioBlock){soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0.32;soundBtn.textContent="Ⅱ SOUND";soundtrack.play().then(()=>{soundBtn.textContent="Ⅱ SOUND";}).catch(()=>{soundBtn.textContent="▶ PLAY SOUND";});soundBtn.onclick=()=>{if(!soundtrack)return;if(soundtrack.paused){soundtrack.play().then(()=>soundBtn.textContent="Ⅱ SOUND").catch(()=>soundBtn.textContent="▶ PLAY SOUND");}else{soundtrack.pause();soundBtn.textContent="▶ PLAY SOUND";}};}else{soundBtn.disabled=true;soundBtn.textContent="♪ NO MUSIC";}
     d.content.forEach((x,i)=>{
-      if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
+      if(x?.type==="audio")return;
+      if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
     scroll.scrollTop=0;
@@ -9213,6 +9253,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
       return;
     }
     host.innerHTML=blocks.map(function(b,i){
+      if(b.type==="audio"){
+        return '<div class="ione-doc-block"><div class="ione-doc-block-head"><span class="ione-doc-block-label">INSTRUMENTAL AUDIO</span><button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-remove="' + i + '">REMOVE</button></div><div class="ione-doc-note">' + esc(b.title||"Instrumental soundtrack") + '</div></div>';
+      }
       if(b.type==="image"){
         return '<div class="ione-doc-block">'+
           '<div class="ione-doc-block-head"><span class="ione-doc-block-label">IMAGE '+(i+1)+'</span><button type="button" class="ione-doc-btn ione-doc-mini danger" data-doc-remove="'+i+'">REMOVE</button></div>'+
@@ -9281,10 +9324,29 @@ function ioneRunBackgroundMediaPreload(){ return; }
       const dataUrl=await fileToDataUrl(file,mime);
       const data=await invoke("upload",{data_url:dataUrl,mime_type:mime});
       if(!data.url)throw new Error("The upload did not return an image URL.");
-      blocks.push({type:"image",url:data.url,alt:String(file.name||"Image").replace(/\.[^.]+$/,"")});
+      blocks.push({type:"image",url:data.url,alt:""});
       renderBlocks();
       status("IMAGE ADDED • POSITION "+blocks.length);
     }catch(e){status(e?.message||"Could not upload image.",true);}
+    finally{if(btn)btn.disabled=false;}
+  }
+
+  async function addAudio(file){
+    if(!file)return;
+    const mime=String(file.type||"").toLowerCase().split(";")[0].trim();
+    const ext=String(file.name||"").split(".").pop().toLowerCase();
+    const allowed=["audio/mpeg","audio/mp3","audio/mp4","audio/aac","audio/ogg","audio/wav","audio/x-wav","audio/webm","audio/x-m4a","audio/3gpp"];
+    if(!allowed.includes(mime)&&!["mp3","m4a","aac","ogg","wav","webm","3gp"].includes(ext)){status("Choose an MP3, M4A, AAC, OGG, WAV or WEBM instrumental file.",true);return;}
+    if(file.size>15*1024*1024){status("Instrumental audio must be 15 MB or smaller.",true);return;}
+    const btn=document.getElementById("ioneDocAddAudio");if(btn)btn.disabled=true;status("UPLOADING INSTRUMENTAL AUDIO…");
+    try{
+      const audioMime=allowed.includes(mime)?mime:({mp3:"audio/mpeg",m4a:"audio/mp4",aac:"audio/aac",ogg:"audio/ogg",wav:"audio/wav",webm:"audio/webm","3gp":"audio/3gpp"}[ext]||mime);
+      const dataUrl=await fileToDataUrl(file,audioMime);
+      const data=await invoke("upload",{data_url:dataUrl,mime_type:audioMime});
+      if(!data.url)throw new Error("The audio upload did not return a URL.");
+      blocks=blocks.filter(b=>b.type!=="audio");blocks.push({type:"audio",url:data.url,title:"Instrumental soundtrack"});
+      renderBlocks();status("INSTRUMENTAL ADDED • PLAYS WHEN DOCUMENTARY OPENS");
+    }catch(e){status(e?.message||"Could not upload instrumental audio.",true);}
     finally{if(btn)btn.disabled=false;}
   }
 
@@ -9303,6 +9365,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       cover_image_url:blocks[0].url,
       content:blocks.map(b=>b.type==="image"
         ? {type:"image",url:b.url,alt:String(b.alt||"")}
+        : b.type==="audio" ? {type:"audio",url:String(b.url||""),title:String(b.title||"Instrumental soundtrack")}
         : {type:"text",text:String(b.text||"")}),
       sort_order:Number(document.getElementById("ioneDocOrder")?.value||0)||0,
       published:!!document.getElementById("ioneDocPublished")?.checked
@@ -9343,6 +9406,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       blocks=Array.isArray(d.content)?d.content.map(function(b){
         return b.type==="image"
           ? {type:"image",url:b.url,alt:b.alt||""}
+          : b.type==="audio" ? {type:"audio",url:b.url||"",title:b.title||"Instrumental soundtrack"}
           : {type:"text",text:b.text||""};
       }):[];
       renderBlocks();
@@ -9410,6 +9474,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<button type="button" id="ioneDocAddText" class="ione-doc-btn">+ ADD TEXT</button>'+
         '<button type="button" id="ioneDocAddImage" class="ione-doc-btn">+ ADD IMAGE</button>'+
         '<input id="ioneDocImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'+
+        '<button type="button" id="ioneDocAddAudio" class="ione-doc-btn">+ ADD INSTRUMENTAL AUDIO</button>'+
+        '<input id="ioneDocAudioFile" type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" hidden>'+
         '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
         '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">SAVE &amp; PUBLISH</button>'+
       '</div>'+
@@ -9436,6 +9502,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
       this.value="";
       addImage(file);
     };
+    document.getElementById("ioneDocAddAudio").onclick=function(){document.getElementById("ioneDocAudioFile").click();};
+    document.getElementById("ioneDocAudioFile").onchange=function(){const file=this.files?.[0];this.value="";addAudio(file);};
     document.getElementById("ioneDocNew").onclick=reset;
     document.getElementById("ioneDocSave").onclick=save;
     document.getElementById("ioneDocPublishNow").onclick=publishNow;
