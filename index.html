@@ -7693,6 +7693,18 @@ exitBtn.onclick = () => {
 // HEAVEN'S BOOKSTORE BUTTON
 const bookstoreBtn = document.createElement("button");
 bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-live="off" aria-hidden="true"><span class="ione-lib-teaser-message">OPEN A BOOK • OPEN YOUR WORLD</span></span>';
+const ioneLibMessages=["OPEN A BOOK • OPEN YOUR WORLD","DISCOVER KNOWLEDGE","GROW YOUR MIND","YOUR NEXT BIG IDEA STARTS HERE","READ MORE • DREAM BIGGER","KNOWLEDGE OPENS DOORS"];
+let ioneLibMessageIndex=0;
+setInterval(()=>{
+  if(!bookstoreBtn.isConnected)return;
+  const message=bookstoreBtn.querySelector(".ione-lib-teaser-message");
+  if(!message)return;
+  ioneLibMessageIndex=(ioneLibMessageIndex+1)%ioneLibMessages.length;
+  message.style.animation="none";
+  message.textContent=ioneLibMessages[ioneLibMessageIndex];
+  void message.offsetWidth;
+  message.style.animation="";
+},2600);
 bookstoreBtn.style.background = "linear-gradient(145deg,#6ef5ee,#13b9c9 55%,#1677ae)";
 bookstoreBtn.style.color = "#03282e";
 bookstoreBtn.style.fontWeight = "900";
