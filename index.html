@@ -126,6 +126,39 @@
   flex:0 0 auto!important;
 }
 
+
+  /* DOCUMENTARY LIBRARY FINAL FIX • fixed controls, list-only scrolling, full-bleed covers */
+  #healthyContainer{
+    position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;
+    min-height:0!important;display:flex!important;flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  #topicsPanel{
+    position:relative!important;display:flex!important;flex:1 1 auto!important;
+    flex-direction:column!important;min-height:0!important;height:auto!important;
+    max-height:none!important;overflow:hidden!important;padding-bottom:0!important;
+  }
+  #topicsPanel>div:first-child{
+    position:relative!important;top:auto!important;flex:0 0 auto!important;
+    z-index:5!important;background:transparent!important;
+  }
+  #topicsList{
+    position:relative!important;display:flex!important;flex:1 1 auto!important;
+    flex-direction:column!important;min-height:0!important;height:auto!important;
+    max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important;
+    overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;
+    touch-action:pan-y!important;scrollbar-width:none;padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;
+  }
+  #topicsList::-webkit-scrollbar{display:none!important}
+  #topicsList::before,#topicsList::after{content:none!important;display:none!important}
+  #topicsList .ione-home-doc-card{flex:0 0 auto!important;}
+  #topicsList .ione-home-doc-cover{
+    object-fit:cover!important;object-position:center center!important;
+    padding:0!important;margin:0!important;align-self:stretch!important;
+    height:auto!important;min-height:100%!important;max-height:none!important;
+    background:transparent!important;border-radius:0!important;display:block!important;
+  }
+
 </style>
 
 <link rel="manifest" href="manifest.json">
