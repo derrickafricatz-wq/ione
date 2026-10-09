@@ -1,5 +1,5 @@
 {
-  "version": "1.0.62",
-  "message": "Larger centered watermark and stable I1 LIB message area",
+  "version": "1.0.63",
+  "message": "Calmer I1 LIB and EXIT buttons, readable 10-second messages, lower watermark",
   "force": true
 }
