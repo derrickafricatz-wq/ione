@@ -1,5 +1,5 @@
 {
-  "version": "1.0.61",
-  "message": "Fixed IONE watermark as separate centered lines",
+  "version": "1.0.62",
+  "message": "Larger centered watermark and stable I1 LIB message area",
   "force": true
 }
