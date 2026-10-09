@@ -1,5 +1,5 @@
 {
-  "version": "1.0.67",
-  "message": "Repair app startup after documentary shelf update",
+  "version": "1.0.68",
+  "message": "Add safe slow documentary auto-scroll and improve cover spacing",
   "force": true
 }
