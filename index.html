@@ -7692,7 +7692,7 @@ exitBtn.onclick = () => {
 
 // HEAVEN'S BOOKSTORE BUTTON
 const bookstoreBtn = document.createElement("button");
-bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-hidden="true"><span class="ione-lib-teaser-track"><span>OPEN A BOOK • OPEN YOUR WORLD</span><span>DISCOVER KNOWLEDGE</span><span>GROW YOUR MIND</span><span>YOUR NEXT BIG IDEA STARTS HERE</span><span>OPEN A BOOK • OPEN YOUR WORLD</span><span>DISCOVER KNOWLEDGE</span><span>GROW YOUR MIND</span><span>YOUR NEXT BIG IDEA STARTS HERE</span></span></span>';
+bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-live="off" aria-hidden="true"><span class="ione-lib-teaser-message">OPEN A BOOK • OPEN YOUR WORLD</span></span>';
 bookstoreBtn.style.background = "linear-gradient(145deg,#6ef5ee,#13b9c9 55%,#1677ae)";
 bookstoreBtn.style.color = "#03282e";
 bookstoreBtn.style.fontWeight = "900";
@@ -8185,14 +8185,29 @@ function loadIoneHomeDocumentaries(list){
 
 function openIonePublicDocumentary(d){
   const old=document.getElementById("ioneDocReaderLive");if(old)old.remove();
-  let frame=0,last=0,playing=false,rotated=false,speed=24;
+  let frame=0,last=0,playing=false,rotated=false,speed=24,audioStartTimer=0,audioFadeTimer=0,audioCloseTimer=0;
   const reader=document.createElement("section");reader.id="ioneDocReaderLive";reader.className="ione-doc-reader-live";reader.setAttribute("role","dialog");reader.setAttribute("aria-modal","true");reader.setAttribute("aria-label","Documentary reader");
   reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
   document.body.appendChild(reader);
   const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play");
   let soundtrack=null;
   function stop(){playing=false;if(frame)cancelAnimationFrame(frame);frame=0;last=0;if(play)play.textContent="▶ PLAY SCROLL";}
-  function close(){stop();if(soundtrack){soundtrack.pause();soundtrack.src="";soundtrack=null;}reader.remove();}
+  function close(){
+    stop();
+    if(audioStartTimer){clearTimeout(audioStartTimer);audioStartTimer=0;}
+    if(audioFadeTimer){clearInterval(audioFadeTimer);audioFadeTimer=0;}
+    if(soundtrack){
+      const fadingTrack=soundtrack;soundtrack=null;
+      const initialVolume=Number(fadingTrack.volume)||0;
+      const started=performance.now();
+      audioCloseTimer=setInterval(()=>{
+        const progress=Math.min(1,(performance.now()-started)/650);
+        fadingTrack.volume=Math.max(0,initialVolume*(1-progress));
+        if(progress>=1){clearInterval(audioCloseTimer);audioCloseTimer=0;fadingTrack.pause();fadingTrack.removeAttribute("src");fadingTrack.load();}
+      },30);
+    }
+    reader.remove();
+  }
   function tick(t){if(!playing||!reader.isConnected)return;if(!last)last=t;const dt=Math.min(40,t-last);last=t;scroll.scrollTop+=speed*dt/1000;if(scroll.scrollTop+scroll.clientHeight>=scroll.scrollHeight-2){stop();return;}frame=requestAnimationFrame(tick);}
   function start(){if(scroll.scrollHeight<=scroll.clientHeight+2){play.textContent="NO SCROLL NEEDED";return;}playing=true;play.textContent="Ⅱ PAUSE SCROLL";last=0;frame=requestAnimationFrame(tick);}
   reader.querySelector(".ione-doc-reader-back").onclick=close;play.onclick=()=>playing?stop():start();
@@ -8204,9 +8219,9 @@ function openIonePublicDocumentary(d){
     try{
       const w=window.open("","","width=900,height=700");if(!w){alert("Allow pop-ups to print this documentary.");return;}
       const esc=v=>String(v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-      w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(d?.title||"Documentary")+'</title><style>body{font-family:Georgia,serif;color:#111;max-width:850px;margin:30px auto;padding:0 22px;line-height:1.75}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;max-width:100%;height:auto;margin:20px auto;page-break-inside:avoid}figure{margin:18px 0}figcaption{font:12px Arial,sans-serif;color:#555;text-align:center}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
+      w.document.open();w.document.write('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(d?.title||"Documentary")+'</title><style>@page{margin:12mm}body{font-family:Georgia,serif;color:#111;max-width:850px;margin:18px auto;padding:0 12px;line-height:1.65}h1{line-height:1.2}p{white-space:pre-wrap;overflow-wrap:anywhere}img{display:block;width:auto;max-width:100%;height:auto;object-fit:contain;margin:14px auto;page-break-inside:avoid}figure{margin:12px 0;page-break-inside:avoid}figcaption{font:12px Arial,sans-serif;color:#555;text-align:center}</style></head><body><h1>'+esc(d?.title||"Documentary")+'</h1>');
       if(String(d?.short_description||"").trim())w.document.write("<p>"+esc(d.short_description)+"</p>");
-      (Array.isArray(d?.content)?d.content:[]).forEach(x=>{if(x?.type==="image"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");const alt=esc(x.alt||"");w.document.write('<figure><img src="'+url+'" alt="'+alt+'">'+(alt?'<figcaption>'+alt+'</figcaption>':'')+'</figure>');}else if(x?.type==="video"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");w.document.write('<p><video src="'+url+'" muted playsinline style="display:block;width:100%;max-height:75vh;object-fit:cover"></video></p>');}else if(x?.type==="text")w.document.write("<p>"+esc(x.text||"")+"</p>");});
+      (Array.isArray(d?.content)?d.content:[]).forEach(x=>{if(x?.type==="image"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");const rawAlt=String(x.alt||"").trim();const showCaption=rawAlt&&!/^\d{6,}$/.test(rawAlt)&&!/^image\s*\d*$/i.test(rawAlt)&&!/^\d{8,}\.[a-z0-9]+$/i.test(rawAlt);const alt=esc(showCaption?rawAlt:"");w.document.write('<figure><img src="'+url+'" alt="'+alt+'">'+(showCaption?'<figcaption>'+alt+'</figcaption>':'')+'</figure>');}else if(x?.type==="video"&&x.url){const url=String(x.url).replace(/&/g,"&amp;").replace(/"/g,"&quot;");w.document.write('<p><video src="'+url+'" muted playsinline style="display:block;width:100%;max-height:75vh;object-fit:cover"></video></p>');}else if(x?.type==="text")w.document.write("<p>"+esc(x.text||"")+"</p>");});
       w.document.write("</body></html>");w.document.close();w.focus();setTimeout(()=>{try{const images=Array.from(w.document.images);Promise.all(images.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;}))).then(()=>setTimeout(()=>{try{w.focus();w.print();}catch(printError){console.warn("Browser print dialog unavailable:",printError);}},250));}catch(printError){console.warn("Documentary print preparation:",printError);w.focus();w.print();}},300);
     }catch(error){console.warn("Documentary print failed:",error);alert("Could not open the print view. Please try again.");}
   };
@@ -8216,10 +8231,25 @@ function openIonePublicDocumentary(d){
     const intro=document.createElement("div");intro.className="ione-doc-reader-intro";const h=document.createElement("h1");h.textContent=String(d.title||"Documentary");intro.appendChild(h);
     const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("p");p.textContent=desc;intro.appendChild(p);}scroll.appendChild(intro);
     const audioBlock=d.content.find(x=>x?.type==="audio"&&x.url);
-    if(audioBlock){soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0.32;soundtrack.play().catch(()=>{console.warn("Documentary audio could not autoplay; browser policy may have blocked playback.");});}
+    if(audioBlock){
+      soundtrack=new Audio(String(audioBlock.url));soundtrack.loop=true;soundtrack.volume=0;soundtrack.preload="auto";
+      const track=soundtrack;
+      audioStartTimer=setTimeout(()=>{
+        audioStartTimer=0;if(soundtrack!==track||!reader.isConnected)return;
+        track.play().then(()=>{
+          const started=performance.now();
+          audioFadeTimer=setInterval(()=>{
+            if(soundtrack!==track){clearInterval(audioFadeTimer);audioFadeTimer=0;return;}
+            const progress=Math.min(1,(performance.now()-started)/1700);
+            track.volume=Math.min(.32,.32*progress);
+            if(progress>=1){clearInterval(audioFadeTimer);audioFadeTimer=0;}
+          },35);
+        }).catch(()=>{console.warn("Documentary audio could not autoplay; browser policy may have blocked playback.");});
+      },1200);
+    }
     d.content.forEach((x,i)=>{
       if(x?.type==="audio")return;
-      if(x?.type==="video"&&x.url){const wrap=document.createElement("figure");wrap.className="ione-doc-reader-block ione-doc-reader-video-wrap";const video=document.createElement("video");video.className="ione-doc-reader-video";video.src=String(x.url);video.muted=true;video.defaultMuted=true;video.autoplay=true;video.loop=true;video.playsInline=true;video.setAttribute("muted","");video.setAttribute("autoplay","");video.setAttribute("playsinline","");video.removeAttribute("controls");video.addEventListener("contextmenu",e=>e.preventDefault());wrap.appendChild(video);scroll.appendChild(wrap);video.play().catch(()=>{});}
+      if(x?.type==="video"&&x.url){const wrap=document.createElement("figure");wrap.className="ione-doc-reader-block ione-doc-reader-video-wrap";const video=document.createElement("video");video.className="ione-doc-reader-video";video.src=String(x.url);video.muted=true;video.defaultMuted=true;video.autoplay=true;video.loop=true;video.playsInline=true;video.preload="auto";video.setAttribute("muted","");video.setAttribute("autoplay","");video.setAttribute("playsinline","");video.removeAttribute("controls");video.addEventListener("contextmenu",e=>e.preventDefault());video.addEventListener("loadedmetadata",()=>{if(video.videoWidth>0&&video.videoHeight>0){video.style.aspectRatio=video.videoWidth+" / "+video.videoHeight;video.style.height="auto";}});wrap.appendChild(video);scroll.appendChild(wrap);video.play().catch(()=>{});}
       else if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
@@ -9205,6 +9235,28 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @media(prefers-reduced-motion:reduce){.ione-lib-teaser-track{animation:none}}
 .ione-doc-preview{max-width:100%;}
 .ione-doc-block video.ione-doc-preview{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#000;border-radius:10px;}
+
+/* I|ONE refined documentary media, print, watermark and controls */
+#healthyContainer{overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;isolation:isolate;}
+#healthyContainer::before{content:"IONE\\A INTOIONE.SPACE";white-space:pre;position:fixed;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;pointer-events:none;z-index:0;color:rgba(161,242,245,.065);font:900 clamp(42px,12vw,104px)/1.45 Arial,sans-serif;letter-spacing:clamp(2px,1vw,8px);text-shadow:0 2px 28px rgba(0,0,0,.12);}
+#topicsPanel,#topicsList{position:relative;z-index:1;}
+#topicsList{overflow:visible!important;max-width:100%;padding-bottom:calc(40px + env(safe-area-inset-bottom));}
+.ione-doc-reader-video-wrap{display:block;width:100%!important;max-width:none!important;padding:0!important;margin:0!important;overflow:hidden;background:transparent!important;line-height:0;}
+.ione-doc-reader-video{display:block;width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto;object-fit:contain!important;object-position:center;background:transparent!important;border:0;border-radius:0;pointer-events:none;}
+.ione-doc-reader-image-wrap{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;}
+.ione-doc-reader-image{display:block;width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important;object-fit:contain!important;border-radius:0;background:transparent!important;}
+.ione-doc-reader-block{width:100%!important;max-width:100%!important;box-sizing:border-box;}
+.ione-doc-reader-print{background:linear-gradient(145deg,#d9fff7,#45d7bd 55%,#0b8f9c)!important;color:#052d32!important;border:1px solid #a8fff0!important;box-shadow:0 5px 0 #07505a,0 9px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.7)!important;}
+.ione-doc-reader-rotate{background:linear-gradient(145deg,#dcd5ff,#9a83e8 55%,#5142a8)!important;color:#fff!important;border:1px solid #ded3ff!important;box-shadow:0 5px 0 #30246f,0 9px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.65)!important;}
+.ione-doc-reader-play{background:linear-gradient(145deg,#7af4ed,#17c5d5 55%,#087da8)!important;color:#03272e!important;border:1px solid #9cfff8!important;box-shadow:0 5px 0 #07516b,0 9px 18px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.65)!important;}
+.ione-lib-label{display:block;font:900 clamp(20px,5vw,30px)/1.1 Arial,sans-serif;letter-spacing:1.7px;text-shadow:0 1px 0 rgba(255,255,255,.45),0 3px 8px rgba(0,49,63,.18);}
+.ione-lib-teaser{display:flex!important;align-items:center;justify-content:center;overflow:hidden!important;max-width:100%;height:17px;line-height:17px;white-space:nowrap;margin-top:8px;}
+.ione-lib-teaser-message{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#06333b;font:900 clamp(8px,2.15vw,11px)/17px Arial,sans-serif;letter-spacing:1px;text-align:center;animation:ioneLibMessageIn .55s ease both;}
+@keyframes ioneLibMessageIn{0%{opacity:0;transform:translateY(7px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+#topicsPanel>div:first-child button:nth-child(1){background:linear-gradient(145deg,#b8fff6,#42d8ce 45%,#1688ad)!important;color:#053039!important;border-color:#d1fffb!important;box-shadow:0 8px 0 #075a69,0 14px 22px rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.75)!important;}
+#topicsPanel>div:first-child button:nth-child(2){background:linear-gradient(145deg,#e4ddff,#a18be9 48%,#5140a7)!important;color:#fff!important;border-color:#f2edff!important;box-shadow:0 8px 0 #302365,0 14px 22px rgba(0,0,0,.24),inset 0 2px 0 rgba(255,255,255,.65)!important;}
+#topicsPanel>div:first-child button:active{transform:translateY(4px) scale(.99)!important;}
+@media(prefers-reduced-motion:reduce){.ione-lib-teaser-message{animation:none}}
 </style>
 
 <script id="ioneDocumentaryEditorV1">
