@@ -9698,13 +9698,20 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const types={"mp4":"video/mp4","webm":"video/webm","mov":"video/quicktime"};
     const videoMime=["video/mp4","video/webm","video/quicktime"].includes(mime)?mime:types[ext]||"";
     if(!videoMime){status("Choose an MP4, WEBM or MOV video.",true);return;}
-    if(file.size>15*1024*1024){status("Video must be 15 MB or smaller.",true);return;}
-    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("UPLOADING MUTED VIDEO…");
+    if(file.size>50*1024*1024){status("Video must be 50 MB or smaller.",true);return;}
+    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("PREPARING VIDEO UPLOAD…");
     try{
-      const dataUrl=await fileToDataUrl(file,videoMime);
-      const data=await invoke("upload",{data_url:dataUrl,mime_type:videoMime});
-      if(!data.url)throw new Error("The video upload did not return a URL.");
-      blocks.push({type:"video",url:data.url,title:file.name||"Muted documentary video"});
+      /* Prepare a short-lived signed upload, then send the binary file directly to Storage.
+         This avoids base64 expansion and sending a large video through the Edge Function. */
+      const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size});
+      if(!prepared.path||!prepared.token)throw new Error("Could not prepare the video upload.");
+      status("UPLOADING VIDEO… KEEP THIS SCREEN OPEN");
+      const uploaded=await heavensSupabase.storage.from("ione-documentary-media")
+        .uploadToSignedUrl(prepared.path,prepared.token,file,{contentType:videoMime,cacheControl:"31536000"});
+      if(uploaded.error)throw uploaded.error;
+      const publicUrl=heavensSupabase.storage.from("ione-documentary-media").getPublicUrl(prepared.path);
+      if(!publicUrl.data?.publicUrl)throw new Error("The video upload did not return a URL.");
+      blocks.push({type:"video",url:publicUrl.data.publicUrl,title:file.name||"Muted documentary video"});
       renderBlocks();status("MUTED VIDEO ADDED • POSITION "+blocks.length);
     }catch(e){status(e?.message||"Could not upload video.",true);}
     finally{if(btn)btn.disabled=false;}
