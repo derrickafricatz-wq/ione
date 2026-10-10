@@ -7755,7 +7755,7 @@ function showHealthyClass(){
   
   const topBar = document.createElement("div");
 topBar.style.display = "flex";
-topBar.style.gap = "clamp(14px, 4vw, 28px)";topBar.style.width="100%";topBar.style.boxSizing="border-box";topBar.style.padding="6px 4px 24px";topBar.style.margin="0 0 20px";topBar.style.borderBottom="1px solid rgba(134,239,255,.15)";topBar.style.justifyContent="center";topBar.style.alignItems="center";
+topBar.style.gap = "clamp(7px, 2vw, 12px)";topBar.style.width="100%";topBar.style.boxSizing="border-box";topBar.style.padding="6px 4px 18px";topBar.style.margin="0 0 20px";topBar.style.borderBottom="1px solid rgba(134,239,255,.15)";topBar.style.justifyContent="center";topBar.style.alignItems="center";
 
 // EXIT BUTTON
 const exitBtn = document.createElement("button");
@@ -7766,6 +7766,11 @@ exitBtn.style.border = "1px solid #ffc18b";
 exitBtn.style.boxShadow = "0 7px 0 rgba(0,0,0,.24),0 12px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.45)";
 
 exitBtn.onclick = () => {
+  // Return the existing $5 button to its persistent editor mount before the home screen is removed.
+  const accessLaunch=document.getElementById("ioneDocAccessLaunch");
+  const accessHomeRow=accessLaunch?.closest("#topicsPanel > div");
+  const accessEditorMount=document.getElementById("ioneDocumentaryEditorV1Mount");
+  if(accessLaunch&&accessHomeRow&&accessEditorMount)accessEditorMount.insertBefore(accessLaunch,accessEditorMount.firstChild.nextSibling);
   document.body.classList.remove("ione-heaven-open");
   document.getElementById("healthyContainer").remove();
   ioneSetHomeControls(true);
@@ -9880,7 +9885,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);
     else inner.appendChild(box);
 
-    // Keep trying until the home row exists, then move the original button without rebuilding its panel.
+    // Keep the same $5 button available across home-screen exits and reopens.
     function moveDocAccessToHomeRow(){
       const accessLaunch=document.getElementById("ioneDocAccessLaunch");
       const homeBookstoreButton=document.querySelector("#topicsPanel .ione-lib-label")?.closest("button");
@@ -9895,23 +9900,25 @@ function ioneRunBackgroundMediaPreload(){ return; }
         accessLaunch.style.setProperty("min-height","0","important");
         accessLaunch.style.setProperty("height","auto","important");
         accessLaunch.style.setProperty("margin","0","important");
-        accessLaunch.style.setProperty("padding","10px 16px","important");
+        accessLaunch.style.setProperty("padding","7px 8px","important");
         accessLaunch.style.setProperty("box-sizing","border-box","important");
         accessLaunch.style.setProperty("align-self","stretch","important");
         accessLaunch.style.setProperty("border-radius","12px","important");
-        accessLaunch.style.setProperty("white-space","nowrap","important");
+        accessLaunch.style.setProperty("white-space","normal","important");
+        accessLaunch.style.setProperty("text-align","center","important");
+        accessLaunch.style.setProperty("gap","3px","important");
+        accessLaunch.style.setProperty("font-size","11px","important");
+        accessLaunch.style.setProperty("line-height","1.15","important");
+        const price=accessLaunch.querySelector(".ione-doc-access-price");
+        if(price)price.style.setProperty("font-size","20px","important");
         homeTopBar.insertBefore(accessLaunch,homeBookstoreButton.nextSibling);
       }
       return true;
     }
-    if(!moveDocAccessToHomeRow()&&!document.documentElement.dataset.ioneDocAccessMoveWatching){
+    moveDocAccessToHomeRow();
+    if(!document.documentElement.dataset.ioneDocAccessMoveWatching){
       document.documentElement.dataset.ioneDocAccessMoveWatching="1";
-      const moveObserver=new MutationObserver(function(){
-        if(moveDocAccessToHomeRow()){
-          moveObserver.disconnect();
-          delete document.documentElement.dataset.ioneDocAccessMoveWatching;
-        }
-      });
+      const moveObserver=new MutationObserver(function(){moveDocAccessToHomeRow();});
       moveObserver.observe(document.documentElement,{childList:true,subtree:true});
     }
 
