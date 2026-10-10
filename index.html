@@ -3257,7 +3257,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=122", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=123", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -4670,7 +4670,7 @@ async function aflPublish(){
     }
     if(activeCount<1)throw new Error("Keep at least one active billboard image.");
     aflEditorStatus.textContent=`BILLBOARD UPDATED ✓ • ${activeCount} ACTIVE IMAGES`;
-    try{if(aflEditorMode==="publish"&&typeof window.ioneGiftQualify==="function")await window.ioneGiftQualify(true);}catch(e){console.warn("I|ONE referral qualification:",e);}
+    if(aflEditorMode==="publish"&&typeof window.ioneGiftQualify==="function"){const referralResult=await window.ioneGiftQualify(true);if(referralResult?.ok===false&&referralResult?.hasReferral){aflEditorStatus.textContent="BILLBOARD PUBLISHED • REFERRAL NOT QUALIFIED: "+referralResult.error;return;}}
     setTimeout(async()=>{aflCloseEditor();await aflLoadFeed();},700);
   }catch(err){console.error("I|ONE publish error:",err);aflEditorStatus.textContent=err?.message||"Could not publish your billboard.";}
   finally{const saveBtn=document.getElementById("aflEditorSave");saveBtn.disabled=false;saveBtn.textContent=aflEditorMode==="renew"?"RENEW SUBSCRIPTION":"PUBLISH BILLBOARD";}
@@ -9287,7 +9287,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});else bindChapChapAuthority();
 })();
 </script>
-<script src="ione-gift-support.js?v=13" defer></script>
+<script src="ione-gift-support.js?v=14" defer></script>
 <script>
 /* I|ONE • branded first-paint shell + first-open visual staging only */
 (function(){
