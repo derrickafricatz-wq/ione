@@ -7807,18 +7807,22 @@ Object.assign(libMarkBtn.style,{flex:"0 0 46px",width:"46px",minWidth:"46px",hei
 
 const bookstoreBtn = document.createElement("button");
 bookstoreBtn.className="ione-lib-content-button";
-bookstoreBtn.innerHTML = '<span style="display:block;font-size:15px;font-weight:900;letter-spacing:1.2px;line-height:1.2">BOOKS</span>';
+bookstoreBtn.innerHTML = '<span style="display:block;font-size:13px;font-weight:800;letter-spacing:1px;line-height:1.2">LIBRARY</span>';
 bookstoreBtn.onclick = () => openHeavensBookstore();
 
-exitBtn.style.flex = "0 0 64px";
-exitBtn.style.width = "64px";
-exitBtn.style.minWidth = "64px";
-exitBtn.style.height = "64px";
-exitBtn.style.minHeight = "64px";
-exitBtn.style.padding = "8px 4px";
+Object.assign(bookstoreBtn.style,{flex:"1 1 0",width:"auto",minWidth:"0",height:"56px",minHeight:"56px",padding:"8px 10px",boxSizing:"border-box",borderRadius:"10px",overflow:"visible",whiteSpace:"nowrap",background:"linear-gradient(135deg,#163b55,#081a2a)",color:"#fff",fontWeight:"800",border:"1px solid #55748a",boxShadow:"none",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"});
+["flex","width","min-width","height","min-height","padding","border-radius","box-shadow"].forEach((p)=>bookstoreBtn.style.setProperty(p,({flex:"1 1 0",width:"auto","min-width":"0",height:"56px","min-height":"56px",padding:"8px 10px","border-radius":"10px","box-shadow":"none"})[p],"important"));
+
+
+exitBtn.style.flex = "0 0 48px";
+exitBtn.style.width = "48px";
+exitBtn.style.minWidth = "48px";
+exitBtn.style.height = "44px";
+exitBtn.style.minHeight = "44px";
+exitBtn.style.padding = "6px 3px";
 exitBtn.style.boxSizing = "border-box";
 exitBtn.style.borderRadius = "12px";
-exitBtn.style.fontSize = "12px";
+exitBtn.style.fontSize = "11px";
 exitBtn.style.boxShadow = "none";
 
 // Keep the header focused on the wide motivation/books control, green access control, and compact EXIT.
@@ -9907,42 +9911,25 @@ function ioneRunBackgroundMediaPreload(){ return; }
       if(accessLaunch.parentNode!==homeTopBar){
         accessLaunch.classList.add("ione-doc-access-topbar");
         accessLaunch.style.setProperty("display","flex","important");
-        accessLaunch.style.setProperty("flex","1 1 auto","important");
+        accessLaunch.style.setProperty("flex","1 1 0","important");
         accessLaunch.style.setProperty("width","auto","important");
         accessLaunch.style.setProperty("min-width","0","important");
-        accessLaunch.style.setProperty("min-height","0","important");
-        accessLaunch.style.setProperty("height","auto","important");
+        accessLaunch.style.setProperty("max-width","none","important");
+        accessLaunch.style.setProperty("height","56px","important");
+        accessLaunch.style.setProperty("min-height","56px","important");
+        accessLaunch.style.setProperty("max-height","56px","important");
         accessLaunch.style.setProperty("margin","0","important");
-        accessLaunch.style.setProperty("padding","7px 8px","important");
-        accessLaunch.style.setProperty("flex","0 0 76px","important");
-        accessLaunch.style.setProperty("width","76px","important");
-        accessLaunch.style.setProperty("max-width","76px","important");
-        accessLaunch.style.setProperty("height","48px","important");
-        accessLaunch.style.setProperty("min-height","48px","important");
-        accessLaunch.style.setProperty("background","linear-gradient(145deg,#19a84b 0%,#07852f 58%,#056522 100%)","important");
+        accessLaunch.style.setProperty("padding","8px 10px","important");
+        accessLaunch.style.setProperty("background","linear-gradient(135deg,#16a34a,#08752c)","important");
         accessLaunch.style.setProperty("color","#ffffff","important");
-        accessLaunch.style.setProperty("border","1px solid #8af5a5","important");
-        accessLaunch.style.setProperty("font-size","10px","important");
-        accessLaunch.style.setProperty("width","78px","important");
-        accessLaunch.style.setProperty("max-width","78px","important");
-        accessLaunch.style.setProperty("height","88px","important");
-        accessLaunch.style.setProperty("min-height","88px","important");
-        accessLaunch.style.setProperty("padding","7px 4px","important");
-        accessLaunch.style.setProperty("background","linear-gradient(145deg,#18a94b 0%,#07852f 58%,#056522 100%)","important");
-        accessLaunch.style.setProperty("color","#ffffff","important");
-        accessLaunch.style.setProperty("border","1px solid #8af5a5","important");
-        accessLaunch.style.setProperty("border-radius","22px","important");
-        accessLaunch.style.setProperty("box-shadow","0 5px 0 #14532d,0 9px 18px rgba(22,163,74,.2),inset 0 1px 0 rgba(255,255,255,.35)","important");
+        accessLaunch.style.setProperty("border","1px solid #70e49a","important");
+        accessLaunch.style.setProperty("font-size","12px","important");
+        accessLaunch.style.setProperty("border-radius","10px","important");
+        accessLaunch.style.setProperty("box-shadow","none","important");
         accessLaunch.style.setProperty("box-sizing","border-box","important");
-        accessLaunch.style.setProperty("align-self","stretch","important");
-        accessLaunch.style.setProperty("border-radius","12px","important");
+        accessLaunch.style.setProperty("align-self","center","important");
         accessLaunch.style.setProperty("white-space","normal","important");
         accessLaunch.style.setProperty("text-align","center","important");
-        accessLaunch.style.setProperty("gap","3px","important");
-        accessLaunch.style.setProperty("font-size","11px","important");
-        accessLaunch.style.setProperty("line-height","1.15","important");
-        const price=accessLaunch.querySelector(".ione-doc-access-price");
-        if(price)price.style.setProperty("font-size","20px","important");
         homeTopBar.insertBefore(accessLaunch,homeBookstoreButton.nextSibling);
       }
       return true;
