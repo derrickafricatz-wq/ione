@@ -7790,13 +7790,12 @@ exitBtn.onclick = () => {
   try{ restoreIoneHomeBanner(); }catch(e){ console.warn("I|ONE home banner restore:",e); }
 };
 
-// I1 LIB corner mark, separate from the wide bookstore/motivation button.
-const libMarkBtn=document.createElement("button");
-libMarkBtn.type="button";
-libMarkBtn.innerHTML='<span class="ione-lib-label">I1<br>LIB</span>';
+// I1 LIB is a decorative corner symbol, not a button.
+const libMarkBtn=document.createElement("div");
 libMarkBtn.setAttribute("aria-label","I1 LIB");
-Object.assign(libMarkBtn.style,{flex:"0 0 58px",width:"58px",minWidth:"58px",height:"88px",minHeight:"88px",padding:"8px 4px",boxSizing:"border-box",borderRadius:"18px",background:"linear-gradient(145deg,#263b50,#081629)",color:"#fff",border:"1px solid #8fa9c5",boxShadow:"0 5px 0 rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.25)",font:"900 16px/1.2 Arial,sans-serif",textAlign:"center"});
-libMarkBtn.onclick=()=>openHeavensBookstore();
+libMarkBtn.setAttribute("role","img");
+libMarkBtn.innerHTML='<span class="ione-lib-label">I1<br>LIB</span>';
+Object.assign(libMarkBtn.style,{flex:"0 0 70px",width:"70px",minWidth:"70px",height:"178px",minHeight:"178px",padding:"8px 4px",boxSizing:"border-box",borderRadius:"24px",background:"linear-gradient(145deg,#293c50,#09162b 75%,#172b43)",color:"#fff",border:"1px solid #91a8c1",boxShadow:"0 5px 0 rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.25)",font:"900 20px/1.2 Arial,sans-serif",textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center"});
 
 const bookstoreBtn = document.createElement("button");
 bookstoreBtn.className="ione-lib-content-button";
@@ -7813,17 +7812,17 @@ setInterval(()=>{
   void message.offsetWidth;
   message.style.animation="";
 },10000);
-Object.assign(bookstoreBtn.style,{flex:"1 1 auto",width:"auto",minWidth:"0",height:"88px",minHeight:"88px",padding:"8px 10px",boxSizing:"border-box",borderRadius:"18px",overflow:"hidden",whiteSpace:"normal",background:"linear-gradient(145deg,#0e2c43,#071725 70%,#142e43)",color:"#fff",fontWeight:"900",border:"1px solid #55748a",boxShadow:"0 5px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.18)",textAlign:"center"});
+Object.assign(bookstoreBtn.style,{flex:"1 1 auto",width:"auto",minWidth:"0",height:"178px",minHeight:"178px",padding:"12px 10px",boxSizing:"border-box",borderRadius:"24px",overflow:"hidden",whiteSpace:"normal",background:"linear-gradient(145deg,#0b2b42,#071725 70%,#142e43)",color:"#fff",fontWeight:"900",border:"1px solid #55748a",boxShadow:"0 5px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.18)",textAlign:"center"});
 bookstoreBtn.onclick = () => openHeavensBookstore();
 
-exitBtn.style.flex = "0 0 58px";
-exitBtn.style.width = "58px";
-exitBtn.style.minWidth = "58px";
-exitBtn.style.height = "88px";
-exitBtn.style.minHeight = "88px";
+exitBtn.style.flex = "0 0 84px";
+exitBtn.style.width = "84px";
+exitBtn.style.minWidth = "84px";
+exitBtn.style.height = "132px";
+exitBtn.style.minHeight = "132px";
 exitBtn.style.padding = "8px 4px";
 exitBtn.style.boxSizing = "border-box";
-exitBtn.style.borderRadius = "18px";
+exitBtn.style.borderRadius = "24px";
 exitBtn.style.fontSize = "13px";
 exitBtn.style.boxShadow = "0 5px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.35)";
 
@@ -9917,7 +9916,15 @@ function ioneRunBackgroundMediaPreload(){ return; }
         accessLaunch.style.setProperty("height","auto","important");
         accessLaunch.style.setProperty("margin","0","important");
         accessLaunch.style.setProperty("padding","7px 8px","important");
-        accessLaunch.style.setProperty("flex","0 0 78px","important");
+        accessLaunch.style.setProperty("flex","0 0 115px","important");
+        accessLaunch.style.setProperty("width","115px","important");
+        accessLaunch.style.setProperty("max-width","115px","important");
+        accessLaunch.style.setProperty("height","132px","important");
+        accessLaunch.style.setProperty("min-height","132px","important");
+        accessLaunch.style.setProperty("background","linear-gradient(145deg,#19a84b 0%,#07852f 58%,#056522 100%)","important");
+        accessLaunch.style.setProperty("color","#ffffff","important");
+        accessLaunch.style.setProperty("border","1px solid #8af5a5","important");
+        accessLaunch.style.setProperty("font-size","12px","important");
         accessLaunch.style.setProperty("width","78px","important");
         accessLaunch.style.setProperty("max-width","78px","important");
         accessLaunch.style.setProperty("height","88px","important");
