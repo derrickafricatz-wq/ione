@@ -1,5 +1,5 @@
 {
-  "version": "1.0.75",
-  "message": "Correct compact home control proportions",
+  "version": "1.0.76",
+  "message": "Flatten home buttons and improve motivation text visibility",
   "force": true
 }
