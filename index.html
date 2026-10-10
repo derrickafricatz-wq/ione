@@ -4670,7 +4670,7 @@ async function aflPublish(){
     }
     if(activeCount<1)throw new Error("Keep at least one active billboard image.");
     aflEditorStatus.textContent=`BILLBOARD UPDATED ✓ • ${activeCount} ACTIVE IMAGES`;
-    try{if(typeof window.ioneGiftQualify==="function")await window.ioneGiftQualify(true);}catch(e){console.warn("I|ONE referral qualification:",e);}
+    try{if(aflEditorMode==="publish"&&typeof window.ioneGiftQualify==="function")await window.ioneGiftQualify(true);}catch(e){console.warn("I|ONE referral qualification:",e);}
     setTimeout(async()=>{aflCloseEditor();await aflLoadFeed();},700);
   }catch(err){console.error("I|ONE publish error:",err);aflEditorStatus.textContent=err?.message||"Could not publish your billboard.";}
   finally{const saveBtn=document.getElementById("aflEditorSave");saveBtn.disabled=false;saveBtn.textContent=aflEditorMode==="renew"?"RENEW SUBSCRIPTION":"PUBLISH BILLBOARD";}
