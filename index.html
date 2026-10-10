@@ -9874,7 +9874,6 @@ function ioneRunBackgroundMediaPreload(){ return; }
     box.className="ione-doc-editor";
     box.innerHTML=
       '<h3>DOCUMENTARY</h3>'+ 
-      '<button type="button" id="ioneDocAccessLaunch" class="ione-doc-access-launch">5$ ACCESS</button>'+
       '<p class="ione-doc-note">Create a documentary as an exact sequence of text and large images. The first image automatically becomes the documentary cover.</p>'+
       '<div class="ione-doc-grid">'+
         '<input id="ioneDocTitle" type="text" maxlength="180" placeholder="DOCUMENTARY TITLE">'+
@@ -9903,36 +9902,30 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);
     else inner.appendChild(box);
 
-    // Keep the same $5 button available across home-screen exits and reopens.
+    // Keep exactly one $5 ACCESS button in the documentary-list header, never in the author editor.
     function moveDocAccessToHomeRow(){
-      const accessLaunch=document.getElementById("ioneDocAccessLaunch");
       const homeBookstoreButton=document.querySelector("#topicsPanel .ione-lib-content-button");
       const homeTopBar=homeBookstoreButton&&homeBookstoreButton.parentNode?homeBookstoreButton.parentNode:null;
-      if(!accessLaunch||!homeTopBar)return false;
-      if(accessLaunch.parentNode!==homeTopBar){
-        accessLaunch.classList.add("ione-doc-access-topbar");
-        accessLaunch.style.setProperty("display","flex","important");
-        accessLaunch.style.setProperty("flex","1 1 0","important");
-        accessLaunch.style.setProperty("width","auto","important");
-        accessLaunch.style.setProperty("min-width","0","important");
-        accessLaunch.style.setProperty("max-width","none","important");
-        accessLaunch.style.setProperty("height","56px","important");
-        accessLaunch.style.setProperty("min-height","56px","important");
-        accessLaunch.style.setProperty("max-height","56px","important");
-        accessLaunch.style.setProperty("margin","0","important");
-        accessLaunch.style.setProperty("padding","8px 8px","important");
-        accessLaunch.style.setProperty("background","linear-gradient(135deg,#16a34a,#08752c)","important");
-        accessLaunch.style.setProperty("color","#ffffff","important");
-        accessLaunch.style.setProperty("border","1px solid #70e49a","important");
-        accessLaunch.style.setProperty("font-size","12px","important");
-        accessLaunch.style.setProperty("border-radius","10px","important");
-        accessLaunch.style.setProperty("box-shadow","none","important");
-        accessLaunch.style.setProperty("box-sizing","border-box","important");
-        accessLaunch.style.setProperty("align-self","center","important");
-        accessLaunch.style.setProperty("white-space","normal","important");
-        accessLaunch.style.setProperty("text-align","center","important");
-        homeTopBar.insertBefore(accessLaunch,homeBookstoreButton.nextSibling);
+      if(!homeTopBar)return false;
+      let accessLaunch=document.getElementById("ioneDocAccessLaunch");
+      if(!accessLaunch){
+        accessLaunch=document.createElement("button");
+        accessLaunch.type="button";
+        accessLaunch.id="ioneDocAccessLaunch";
+        accessLaunch.className="ione-doc-access-launch ione-doc-access-topbar";
+        accessLaunch.textContent="5$ ACCESS";
       }
+      accessLaunch.classList.add("ione-doc-access-topbar");
+      const styles={
+        display:"flex",flex:"1 1 0",width:"auto","min-width":"0","max-width":"none",
+        height:"56px","min-height":"56px","max-height":"56px",margin:"0",padding:"8px 8px",
+        background:"linear-gradient(135deg,#16a34a,#08752c)",color:"#ffffff",
+        border:"1px solid #70e49a","font-size":"12px","border-radius":"10px",
+        "box-shadow":"none","box-sizing":"border-box","align-self":"center",
+        "white-space":"nowrap","text-align":"center","justify-content":"center"
+      };
+      Object.keys(styles).forEach(function(prop){accessLaunch.style.setProperty(prop,styles[prop],"important");});
+      if(accessLaunch.parentNode!==homeTopBar)homeTopBar.insertBefore(accessLaunch,homeBookstoreButton.nextSibling);
       return true;
     }
     moveDocAccessToHomeRow();
@@ -9980,7 +9973,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
         if(support){support.click();}
         else window.alert("Please open I|ONE Support from the app menu.");
       });
-      document.getElementById("ioneDocAccessLaunch").addEventListener("click",function(){access.classList.add("is-open");access.setAttribute("aria-hidden","false");document.getElementById("ioneDocAccessClose").focus();});
+      document.addEventListener("click",function(event){if(event.target&&event.target.closest&&event.target.closest("#ioneDocAccessLaunch")){access.classList.add("is-open");access.setAttribute("aria-hidden","false");document.getElementById("ioneDocAccessClose").focus();}});
     }
     document.getElementById("ioneDocAddText").onclick=function(){
       blocks.push({type:"text",text:""});
