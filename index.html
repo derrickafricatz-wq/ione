@@ -8316,8 +8316,9 @@ function loadIoneHomeDocumentaries(list){
 function openIonePublicDocumentary(d){
   const old=document.getElementById("ioneDocReaderLive");if(old)old.remove();
   let frame=0,last=0,playing=false,rotated=false,speed=24,audioStartTimer=0,audioFadeTimer=0,audioCloseTimer=0;
+  let documentaryPermissions={allow_copy:true,allow_download:true,allow_print:true};
   const reader=document.createElement("section");reader.id="ioneDocReaderLive";reader.className="ione-doc-reader-live";reader.setAttribute("role","dialog");reader.setAttribute("aria-modal","true");reader.setAttribute("aria-label","Documentary reader");
-  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
+  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-download">↓ DOWNLOAD</button><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
   document.body.appendChild(reader);
   const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play");
   let soundtrack=null;
@@ -8350,6 +8351,7 @@ function openIonePublicDocumentary(d){
   printButton.textContent="SELECT TO PRINT";
   printButton.title="Tap text or images to select them, then press here to print";
   function markPrintable(element,index){
+    if(!documentaryPermissions.allow_print)return;
     element.dataset.printIndex=String(index);
     element.classList.add("ione-print-selectable");
     element.setAttribute("role","button");
@@ -8396,6 +8398,20 @@ function openIonePublicDocumentary(d){
       },1200);
     }
     const authoritySettings=d.content.find(x=>x?.type==="ione_authority_settings")||{};
+    documentaryPermissions={allow_copy:authoritySettings.allow_copy!==false,allow_download:authoritySettings.allow_download!==false,allow_print:authoritySettings.allow_print!==false};
+    const downloadButton=reader.querySelector(".ione-doc-reader-download");
+    const printControl=reader.querySelector(".ione-doc-reader-print");
+    if(downloadButton)downloadButton.hidden=!documentaryPermissions.allow_download;
+    if(printControl)printControl.hidden=!documentaryPermissions.allow_print;
+    if(!documentaryPermissions.allow_copy){reader.addEventListener("copy",e=>{e.preventDefault();alert("Copying is disabled for this documentary.");});reader.addEventListener("cut",e=>e.preventDefault());reader.addEventListener("contextmenu",e=>{if(e.target.closest(".ione-doc-reader-scroll"))e.preventDefault();});reader.style.userSelect="none";reader.style.webkitUserSelect="none";}
+    if(downloadButton)downloadButton.onclick=()=>{
+      if(!documentaryPermissions.allow_download)return;
+      const title=String(d.title||"Documentary");
+      const escHtml=v=>String(v).replace(/[&<>\"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+      const parts=(Array.isArray(d.content)?d.content:[]).filter(x=>x&&x.type!=="ione_authority_settings"&&x.type!=="audio").map(x=>x.type==="image"?'<figure><img src="'+escHtml(x.url)+'" alt="'+escHtml(x.alt||"")+'"><figcaption>'+escHtml(x.alt||"")+"</figcaption></figure>":x.type==="video"?'<figure><video controls muted loop src="'+escHtml(x.url)+'"></video><p>'+escHtml(x.title||"")+"</p></figure>":'<p>'+escHtml(x.text||"")+"</p>").join("\\n");
+      const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+escHtml(title)+'</title><style>body{font:17px/1.7 Georgia,serif;max-width:900px;margin:30px auto;padding:0 18px}img,video{display:block;max-width:100%;height:auto;margin:18px auto}figure{margin:20px 0}figcaption{font-size:12px;color:#555;text-align:center}</style></head><body><h1>'+escHtml(title)+'</h1><p>'+escHtml(d.short_description||"")+"</p>"+parts+"</body></html>";
+      const blob=new Blob([html],{type:"text/html;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=title.replace(/[^a-z0-9_-]+/gi,"_")+".html";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    };
     const documentaryVideoSoundAllowed=authoritySettings.video_sound_allowed!==false;
     const documentaryVideos=[];
     let activeDocumentaryVideo=null;
@@ -9347,6 +9363,10 @@ function ioneRunBackgroundMediaPreload(){ return; }
   #ioneDocumentaryEditorV1Mount input[type="text"],#ioneDocumentaryEditorV1Mount textarea,#ioneDocumentaryEditorV1Mount input[type="number"]{border-color:rgba(135,218,224,.25);border-radius:14px;background:rgba(3,12,16,.8);padding:14px;color:#f5ffff}
   #ioneDocumentaryEditorV1Mount .ione-doc-check{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid rgba(0,229,220,.23);border-radius:14px;background:linear-gradient(110deg,rgba(0,207,209,.1),rgba(255,255,255,.025));color:#dffbfa;line-height:1.5}
   #ioneDocumentaryEditorV1Mount .ione-doc-check input{width:19px;height:19px;accent-color:#00d8d8;flex:0 0 auto}
+  #ioneDocumentaryEditorV1Mount .ione-doc-permission-heading{margin-top:4px;padding:11px 12px 0;border-top:1px solid rgba(135,218,224,.17);color:#9ce8e8;font:900 10px Arial,sans-serif;letter-spacing:1.3px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  #ioneDocumentaryEditorV1Mount .ione-doc-permission-grid .ione-doc-check{margin:0;min-height:45px}
+  #ioneDocumentaryEditorV1Mount #ioneDocToggleActive.is-active{background:linear-gradient(145deg,#b7ffd1,#21c86a 55%,#08752c)!important;color:#032512!important;border-color:#8cffb3!important;box-shadow:0 4px 0 #075b2b,0 9px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.7)!important}
   #ioneDocumentaryEditorV1Mount .ione-doc-row{gap:9px}
   #ioneDocumentaryEditorV1Mount .ione-doc-btn{min-height:42px;padding:11px 14px;border-radius:13px;background:linear-gradient(145deg,#1c3840,#102229);border-color:rgba(135,232,239,.3);box-shadow:0 4px 0 rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12);transition:transform .12s ease,filter .12s ease;-webkit-tap-highlight-color:transparent}
   #ioneDocumentaryEditorV1Mount .ione-doc-btn:active{transform:translateY(2px);filter:brightness(1.12);box-shadow:0 1px 0 rgba(0,0,0,.28)}
@@ -9416,7 +9436,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 #topicsPanel,#topicsList{position:relative;z-index:1;}
 #topicsList{overflow:visible!important;max-width:100%;padding-bottom:calc(40px + env(safe-area-inset-bottom));}
 .ione-doc-reader-video-wrap{display:block;width:100%!important;max-width:none!important;padding:0!important;margin:0!important;overflow:hidden;background:transparent!important;line-height:0;}
-.ione-doc-reader-video{display:block;width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto;object-fit:contain!important;object-position:center;background:transparent!important;border:0;border-radius:0;pointer-events:none;}
+.ione-doc-reader-video{display:block;width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:auto;object-fit:contain!important;object-position:center;background:transparent!important;border:0;border-radius:0;pointer-events:auto!important;cursor:pointer;}
 .ione-doc-reader-image-wrap{width:100%!important;max-width:100%!important;margin:0!important;padding:0!important;}
 .ione-doc-reader-image{display:block;width:100%!important;max-width:100%!important;height:auto!important;max-height:none!important;object-fit:contain!important;border-radius:0;background:transparent!important;}
 .ione-doc-reader-block{width:100%!important;max-width:100%!important;box-sizing:border-box;}
@@ -9584,7 +9604,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
   let editingId=null;
   let blocks=[];
-  let docMeta={start_date:"",expiry_date:"",video_sound_allowed:true};
+  let docMeta={start_date:"",expiry_date:"",video_sound_allowed:true,allow_copy:true,allow_download:true,allow_print:true,active:false};
 
   function esc(v){
     return String(v==null?"":v).replace(/[&<>"']/g,function(ch){
@@ -9625,11 +9645,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const desc=document.getElementById("ioneDocDescription");
     const order=document.getElementById("ioneDocOrder");
     const pub=document.getElementById("ioneDocPublished");
-    docMeta={start_date:"",expiry_date:"",video_sound_allowed:true};
+    docMeta={start_date:"",expiry_date:"",video_sound_allowed:true,allow_copy:true,allow_download:true,allow_print:true,active:false};
     const startDate=document.getElementById("ioneDocStartDate");
     const expiryDate=document.getElementById("ioneDocExpiryDate");
     const soundAllowed=document.getElementById("ioneDocSoundAllowed");
+    const copyAllowed=document.getElementById("ioneDocAllowCopy"),downloadAllowed=document.getElementById("ioneDocAllowDownload"),printAllowed=document.getElementById("ioneDocAllowPrint"),activeToggle=document.getElementById("ioneDocToggleActive");
     if(startDate)startDate.value="";if(expiryDate)expiryDate.value="";if(soundAllowed)soundAllowed.checked=true;
+    if(copyAllowed)copyAllowed.checked=true;if(downloadAllowed)downloadAllowed.checked=true;if(printAllowed)printAllowed.checked=true;
+    if(activeToggle){activeToggle.setAttribute("aria-pressed","false");activeToggle.textContent="INACTIVE • TAP TO ACTIVATE";activeToggle.classList.remove("is-active");}
     if(title)title.value="";
     if(desc)desc.value="";
     if(order)order.value="0";
@@ -9792,13 +9815,11 @@ function ioneRunBackgroundMediaPreload(){ return; }
         : {type:"text",text:String(b.text||"")}),
       sort_order:Number(document.getElementById("ioneDocOrder")?.value||0)||0,
       published:!!document.getElementById("ioneDocPublished")?.checked,
-      content:blocks.map(b=>b.type==="image"?{type:"image",url:String(b.url||""),alt:String(b.alt||"")}:b.type==="audio"?{type:"audio",url:String(b.url||""),title:String(b.title||"Instrumental soundtrack")}:b.type==="video"?{type:"video",url:String(b.url||""),title:String(b.title||"Muted documentary video")}:{type:"text",text:String(b.text||"")}).concat([{type:"ione_authority_settings",start_date:String(document.getElementById("ioneDocStartDate")?.value||""),expiry_date:String(document.getElementById("ioneDocExpiryDate")?.value||""),video_sound_allowed:!!document.getElementById("ioneDocSoundAllowed")?.checked}])
+      content:blocks.map(b=>b.type==="image"?{type:"image",url:String(b.url||""),alt:String(b.alt||"")}:b.type==="audio"?{type:"audio",url:String(b.url||""),title:String(b.title||"Instrumental soundtrack")}:b.type==="video"?{type:"video",url:String(b.url||""),title:String(b.title||"Muted documentary video")}:{type:"text",text:String(b.text||"")}).concat([{type:"ione_authority_settings",start_date:String(document.getElementById("ioneDocStartDate")?.value||""),expiry_date:String(document.getElementById("ioneDocExpiryDate")?.value||""),video_sound_allowed:!!document.getElementById("ioneDocSoundAllowed")?.checked,allow_copy:!!document.getElementById("ioneDocAllowCopy")?.checked,allow_download:!!document.getElementById("ioneDocAllowDownload")?.checked,allow_print:!!document.getElementById("ioneDocAllowPrint")?.checked}])
     };
   }
 
   function publishNow(){
-    const checkbox=document.getElementById("ioneDocPublished");
-    if(checkbox)checkbox.checked=true;
     save();
   }
 
@@ -9811,7 +9832,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     try{
       const data=await invoke("save",Object.assign({id:editingId||undefined},payload));
       editingId=data.documentary?.id||editingId;
-      status(payload.published?"PUBLISHED • LIVE":"SAVED • UNPUBLISHED");
+      status(payload.published?"PUBLISHED • ACTIVE":"SAVED • INACTIVE");
       await loadList();
     }catch(e){status(e?.message||"Could not save documentary.",true);}
     finally{if(btn)btn.disabled=false;}
@@ -9828,10 +9849,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
       document.getElementById("ioneDocOrder").value=Number(d.sort_order||0);
       document.getElementById("ioneDocPublished").checked=!!d.published;
       const settings=Array.isArray(d.content)?d.content.find(b=>b?.type==="ione_authority_settings"):null;
-      docMeta={start_date:String(settings?.start_date||""),expiry_date:String(settings?.expiry_date||""),video_sound_allowed:settings?.video_sound_allowed!==false};
+      docMeta={start_date:String(settings?.start_date||""),expiry_date:String(settings?.expiry_date||""),video_sound_allowed:settings?.video_sound_allowed!==false,allow_copy:settings?.allow_copy!==false,allow_download:settings?.allow_download!==false,allow_print:settings?.allow_print!==false,active:!!d.published};
       const startDate=document.getElementById("ioneDocStartDate");if(startDate)startDate.value=docMeta.start_date;
       const expiryDate=document.getElementById("ioneDocExpiryDate");if(expiryDate)expiryDate.value=docMeta.expiry_date;
       const soundAllowed=document.getElementById("ioneDocSoundAllowed");if(soundAllowed)soundAllowed.checked=docMeta.video_sound_allowed;
+      const copyAllowed=document.getElementById("ioneDocAllowCopy");if(copyAllowed)copyAllowed.checked=docMeta.allow_copy!==false;
+      const downloadAllowed=document.getElementById("ioneDocAllowDownload");if(downloadAllowed)downloadAllowed.checked=docMeta.allow_download!==false;
+      const printAllowed=document.getElementById("ioneDocAllowPrint");if(printAllowed)printAllowed.checked=docMeta.allow_print!==false;
+      const activeToggle=document.getElementById("ioneDocToggleActive");if(activeToggle){activeToggle.textContent=d.published?"ACTIVE • TAP TO DEACTIVATE":"INACTIVE • TAP TO ACTIVATE";activeToggle.setAttribute("aria-pressed",String(!!d.published));activeToggle.classList.toggle("is-active",!!d.published);}
       blocks=Array.isArray(d.content)?d.content.filter(b=>b?.type!=="ione_authority_settings").map(function(b){
         return b.type==="image"
           ? {type:"image",url:b.url,alt:b.alt||""}
@@ -9899,12 +9924,18 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<textarea id="ioneDocDescription" maxlength="600" placeholder="SHORT DESCRIPTION FOR THE DOCUMENTARY CARD"></textarea>'+
         '<input id="ioneDocOrder" type="number" min="0" step="1" value="0" placeholder="SORT ORDER">'+
         '<div class="ione-doc-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:2px">'+
-          '<label class="ione-doc-note">START DATE (YOUR RECORD)<input id="ioneDocStartDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
-          '<label class="ione-doc-note">EXPIRY DATE (PAYMENT REMINDER)<input id="ioneDocExpiryDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
+          '<label class="ione-doc-note">PUBLISHED / START DATE (REMINDER ONLY)<input id="ioneDocStartDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
+          '<label class="ione-doc-note">EXPIRY DATE (PAYMENT REMINDER ONLY)<input id="ioneDocExpiryDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
         '</div>'+
+        '<div class="ione-doc-permission-heading">PUBLICATION &amp; ACCESS PERMISSIONS</div>'+
         '<label class="ione-doc-check"><input id="ioneDocSoundAllowed" type="checkbox" checked> ALLOW VIDEO SOUND WHEN READER TAPS A VIDEO</label>'+
+        '<div class="ione-doc-permission-grid">'+
+          '<label class="ione-doc-check"><input id="ioneDocAllowCopy" type="checkbox" checked> ALLOW COPYING</label>'+
+          '<label class="ione-doc-check"><input id="ioneDocAllowDownload" type="checkbox" checked> ALLOW DOWNLOADING</label>'+
+          '<label class="ione-doc-check"><input id="ioneDocAllowPrint" type="checkbox" checked> ALLOW PRINTING</label>'+
+        '</div>'+
         '<input id="ioneDocPublished" type="checkbox" hidden>'+
-        '<button type="button" id="ioneDocToggleActive" class="ione-doc-btn primary" style="width:100%;min-height:44px">ACTIVATE DOCUMENTARY</button>'+
+        '<button type="button" id="ioneDocToggleActive" class="ione-doc-btn" aria-pressed="false" style="width:100%;min-height:46px;background:linear-gradient(145deg,#26343a,#10191d);color:#ffb4b4;border-color:#a14d4d">INACTIVE • TAP TO ACTIVATE</button>'+
       '</div>'+
       '<div class="ione-doc-row" style="margin-top:10px">'+
         '<button type="button" id="ioneDocAddText" class="ione-doc-btn">+ ADD TEXT</button>'+
@@ -9915,7 +9946,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<button type="button" id="ioneDocAddVideo" class="ione-doc-btn">+ UPLOAD MUTED VIDEO</button>'+
         '<input id="ioneDocVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,video/*" hidden>'+
         '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
-        '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">SAVE &amp; PUBLISH</button>'+
+        '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">PUBLISH CHANGES</button>'+
       '</div>'+
       '<div id="ioneDocStatus" class="ione-doc-status">READY</div>'+
       '<div id="ioneDocBlocks" class="ione-doc-blocks"></div>'+
@@ -10018,6 +10049,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     document.getElementById("ioneDocAddVideo").onclick=function(){document.getElementById("ioneDocVideoFile").click();};
     document.getElementById("ioneDocVideoFile").onchange=function(){const file=this.files?.[0];this.value="";addVideo(file);};
     document.getElementById("ioneDocNew").onclick=reset;
+    document.getElementById("ioneDocToggleActive").onclick=function(){const pub=document.getElementById("ioneDocPublished"),btn=this;if(!pub)return;pub.checked=!pub.checked;const active=pub.checked;btn.textContent=active?"ACTIVE • TAP TO DEACTIVATE":"INACTIVE • TAP TO ACTIVATE";btn.setAttribute("aria-pressed",String(active));btn.classList.toggle("is-active",active);status(active?"ACTIVE SELECTED • PRESS PUBLISH CHANGES TO APPLY":"INACTIVE SELECTED • PRESS PUBLISH CHANGES TO REMOVE FROM PUBLIC LIST");};
     document.getElementById("ioneDocSave").onclick=save;
     document.getElementById("ioneDocPublishNow").onclick=publishNow;
     renderBlocks();
