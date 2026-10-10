@@ -3257,7 +3257,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=116", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=117", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -9102,7 +9102,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @media(max-height:700px){#smartPanel{padding-bottom:28px!important}}
 #openFlightBooking .smart-icon{font-size:21px!important;letter-spacing:1px!important}
 
-/* I|ONE 1.0.90 — cleaner Word of the Day + unified business services */
+/* I|ONE 1.0.91 — documentary editor permissions and activation */
 .word-day-kicker{
   position:relative!important;
   width:max-content!important;
