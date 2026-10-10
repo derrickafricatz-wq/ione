@@ -1,5 +1,5 @@
 {
-  "version": "1.0.74",
-  "message": "Match reference home control sizing and order",
+  "version": "1.0.75",
+  "message": "Correct compact home control proportions",
   "force": true
 }
