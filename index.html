@@ -9584,6 +9584,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
   let editingId=null;
   let blocks=[];
+  let docMeta={start_date:"",expiry_date:"",video_sound_allowed:true};
 
   function esc(v){
     return String(v==null?"":v).replace(/[&<>"']/g,function(ch){
@@ -9624,6 +9625,11 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const desc=document.getElementById("ioneDocDescription");
     const order=document.getElementById("ioneDocOrder");
     const pub=document.getElementById("ioneDocPublished");
+    docMeta={start_date:"",expiry_date:"",video_sound_allowed:true};
+    const startDate=document.getElementById("ioneDocStartDate");
+    const expiryDate=document.getElementById("ioneDocExpiryDate");
+    const soundAllowed=document.getElementById("ioneDocSoundAllowed");
+    if(startDate)startDate.value="";if(expiryDate)expiryDate.value="";if(soundAllowed)soundAllowed.checked=true;
     if(title)title.value="";
     if(desc)desc.value="";
     if(order)order.value="0";
@@ -9785,7 +9791,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
         : b.type==="video" ? {type:"video",url:String(b.url||""),title:String(b.title||"Muted documentary video")}
         : {type:"text",text:String(b.text||"")}),
       sort_order:Number(document.getElementById("ioneDocOrder")?.value||0)||0,
-      published:!!document.getElementById("ioneDocPublished")?.checked
+      published:!!document.getElementById("ioneDocPublished")?.checked,
+      content:blocks.map(b=>b.type==="image"?{type:"image",url:String(b.url||""),alt:String(b.alt||"")}:b.type==="audio"?{type:"audio",url:String(b.url||""),title:String(b.title||"Instrumental soundtrack")}:b.type==="video"?{type:"video",url:String(b.url||""),title:String(b.title||"Muted documentary video")}:{type:"text",text:String(b.text||"")}).concat([{type:"ione_authority_settings",start_date:String(document.getElementById("ioneDocStartDate")?.value||""),expiry_date:String(document.getElementById("ioneDocExpiryDate")?.value||""),video_sound_allowed:!!document.getElementById("ioneDocSoundAllowed")?.checked}])
     };
   }
 
@@ -9820,7 +9827,12 @@ function ioneRunBackgroundMediaPreload(){ return; }
       document.getElementById("ioneDocDescription").value=d.short_description||"";
       document.getElementById("ioneDocOrder").value=Number(d.sort_order||0);
       document.getElementById("ioneDocPublished").checked=!!d.published;
-      blocks=Array.isArray(d.content)?d.content.map(function(b){
+      const settings=Array.isArray(d.content)?d.content.find(b=>b?.type==="ione_authority_settings"):null;
+      docMeta={start_date:String(settings?.start_date||""),expiry_date:String(settings?.expiry_date||""),video_sound_allowed:settings?.video_sound_allowed!==false};
+      const startDate=document.getElementById("ioneDocStartDate");if(startDate)startDate.value=docMeta.start_date;
+      const expiryDate=document.getElementById("ioneDocExpiryDate");if(expiryDate)expiryDate.value=docMeta.expiry_date;
+      const soundAllowed=document.getElementById("ioneDocSoundAllowed");if(soundAllowed)soundAllowed.checked=docMeta.video_sound_allowed;
+      blocks=Array.isArray(d.content)?d.content.filter(b=>b?.type!=="ione_authority_settings").map(function(b){
         return b.type==="image"
           ? {type:"image",url:b.url,alt:b.alt||""}
           : b.type==="audio" ? {type:"audio",url:b.url||"",title:b.title||"Instrumental soundtrack"}
@@ -9886,6 +9898,11 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<input id="ioneDocTitle" type="text" maxlength="180" placeholder="DOCUMENTARY TITLE">'+
         '<textarea id="ioneDocDescription" maxlength="600" placeholder="SHORT DESCRIPTION FOR THE DOCUMENTARY CARD"></textarea>'+
         '<input id="ioneDocOrder" type="number" min="0" step="1" value="0" placeholder="SORT ORDER">'+
+        '<div class="ione-doc-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:2px">'+
+          '<label class="ione-doc-note">START DATE (YOUR RECORD)<input id="ioneDocStartDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
+          '<label class="ione-doc-note">EXPIRY DATE (PAYMENT REMINDER)<input id="ioneDocExpiryDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
+        '</div>'+
+        '<label class="ione-doc-check"><input id="ioneDocSoundAllowed" type="checkbox" checked> ALLOW VIDEO SOUND WHEN READER TAPS A VIDEO</label>'+
         '<label class="ione-doc-check"><input id="ioneDocPublished" type="checkbox"> PUBLISH THIS DOCUMENTARY</label>'+
       '</div>'+
       '<div class="ione-doc-row" style="margin-top:10px">'+
