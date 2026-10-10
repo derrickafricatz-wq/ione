@@ -3257,7 +3257,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=122", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=123", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -9287,7 +9287,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bindChapChapAuthority,{once:true});else bindChapChapAuthority();
 })();
 </script>
-<script src="ione-gift-support.js?v=13" defer></script>
+<script src="ione-gift-support.js?v=14" defer></script>
 <script>
 /* I|ONE • branded first-paint shell + first-open visual staging only */
 (function(){
