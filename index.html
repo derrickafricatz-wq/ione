@@ -9261,6 +9261,25 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
 <style id="ioneDocumentaryEditorV1">
   .ione-doc-editor{margin-top:18px;padding:16px;border:1px solid rgba(0,255,255,.18);border-radius:18px;background:linear-gradient(145deg,rgba(9,24,28,.98),rgba(2,7,9,.98));box-shadow:0 12px 28px rgba(0,0,0,.22)}
+
+  .ione-doc-access-launch{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0 16px;padding:13px 16px;border:1px solid #86efac;border-radius:15px;background:linear-gradient(135deg,#16a34a,#15803d 60%,#166534);color:#fff;box-shadow:0 5px 0 #14532d,0 10px 22px rgba(22,163,74,.2);font:900 13px/1.35 Arial,sans-serif;cursor:pointer;text-align:left}
+  .ione-doc-access-launch:active{transform:translateY(2px);box-shadow:0 2px 0 #14532d}
+  .ione-doc-access-price{font-size:23px;line-height:1;white-space:nowrap}
+  .ione-doc-access-launch small{display:block;margin-top:3px;font-size:10px;letter-spacing:.65px;font-weight:800}
+  .ione-doc-access-overlay{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px)}
+  .ione-doc-access-overlay.is-open{display:flex}
+  .ione-doc-access-panel{position:relative;width:min(100%,560px);max-height:min(88dvh,820px);overflow:auto;padding:22px 18px 18px;border:1px solid rgba(134,239,172,.48);border-radius:22px;background:linear-gradient(150deg,#10231b,#07110e 68%,#101c24);color:#f4fff7;box-shadow:0 24px 70px rgba(0,0,0,.55);font:500 13px/1.65 Arial,sans-serif}
+  .ione-doc-access-panel h2{margin:0 38px 5px 0;font:900 21px/1.25 Arial,sans-serif;letter-spacing:.2px}
+  .ione-doc-access-panel h3{margin:16px 0 5px;color:#a7f3c0;font:900 12px/1.4 Arial,sans-serif;letter-spacing:.7px;text-transform:uppercase}
+  .ione-doc-access-panel p{margin:5px 0;color:#d9e8de}
+  .ione-doc-access-close{position:absolute;top:12px;right:12px;width:36px;height:36px;border:1px solid rgba(255,255,255,.18);border-radius:11px;background:#1b3026;color:#fff;font-size:22px;cursor:pointer}
+  .ione-doc-access-pricecard{margin:14px 0;padding:13px;border:1px solid rgba(134,239,172,.3);border-radius:15px;background:rgba(22,163,74,.12);text-align:center}
+  .ione-doc-access-pricecard strong{display:block;color:#86efac;font-size:28px;line-height:1.2}
+  .ione-doc-access-actions{display:grid;gap:9px;margin-top:14px}
+  .ione-doc-access-action{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:45px;padding:11px 14px;border:1px solid rgba(167,243,192,.3);border-radius:12px;background:#153426;color:#fff;text-decoration:none;text-align:center;font:800 12px Arial,sans-serif;cursor:pointer;box-sizing:border-box}
+  .ione-doc-access-action.whatsapp{background:#128c48;border-color:#34d399}
+  .ione-doc-access-footer{margin-top:12px!important;color:#9eb9a8!important;font-size:11px!important}
+
   .ione-doc-editor h3{margin:0 0 6px;color:#fff;letter-spacing:.4px}
   .ione-doc-note{margin:0 0 14px;color:#9db4b9;font:600 12px/1.5 Arial,sans-serif}
   .ione-doc-grid{display:grid;gap:10px}
@@ -9831,7 +9850,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     box.id="ioneDocumentaryEditorV1Mount";
     box.className="ione-doc-editor";
     box.innerHTML=
-      '<h3>DOCUMENTARY</h3>'+
+      '<h3>DOCUMENTARY</h3>'+ 
+      '<button type="button" id="ioneDocAccessLaunch" class="ione-doc-access-launch"><span class="ione-doc-access-price">$5</span><span>FOR MORE ACCESS<small>GET IN · ONE MONTH</small></span></button>'+
       '<p class="ione-doc-note">Create a documentary as an exact sequence of text and large images. The first image automatically becomes the documentary cover.</p>'+
       '<div class="ione-doc-grid">'+
         '<input id="ioneDocTitle" type="text" maxlength="180" placeholder="DOCUMENTARY TITLE">'+
@@ -9860,6 +9880,46 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);
     else inner.appendChild(box);
 
+    if(!document.getElementById("ioneDocAccessOverlay")){
+      const access=document.createElement("div");
+      access.id="ioneDocAccessOverlay";
+      access.className="ione-doc-access-overlay";
+      access.setAttribute("aria-hidden","true");
+      access.innerHTML='<section class="ione-doc-access-panel" role="dialog" aria-modal="true" aria-labelledby="ioneDocAccessTitle">'+
+        '<button type="button" class="ione-doc-access-close" id="ioneDocAccessClose" aria-label="Close panel">×</button>'+
+        '<h2 id="ioneDocAccessTitle">I|ONE Documentary Access</h2>'+
+        '<p>Have I|ONE publish a documentary for your business, market, life story, or another approved subject. Contact our team to discuss your idea and the details before publication.</p>'+
+        '<h3>Terms and Conditions</h3>'+
+        '<p><strong>1. Original and authorized content.</strong> You must submit content you created or have clear permission to use. Do not submit copied, plagiarized, stolen, misleading, or unlawfully shared text, photographs, videos, music, logos, or other materials.</p>'+
+        '<p><strong>2. Do not reuse content without permission.</strong> Content submitted for an I|ONE documentary must be original to you or properly licensed. Do not present another person’s work as your own or submit material that you are not authorized to provide. Tell I|ONE if the material has been published or supplied elsewhere and confirm you have the rights needed for this use.</p>'+
+        '<p><strong>3. Review and approval.</strong> I|ONE may review the proposed documentary, request corrections, decline unsuitable material, or pause publication where rights, accuracy, safety, or legal concerns arise.</p>'+
+        '<p><strong>4. Client responsibility.</strong> You are responsible for the accuracy of the information you provide and for obtaining consent from people shown or quoted where required. Do not provide private or confidential information without proper authorization.</p>'+
+        '<p><strong>5. Payment and publication.</strong> The fee is arranged manually outside the app. Contact I|ONE support to discuss your project; our team will provide bank-transfer instructions and request the necessary details. Publication takes place after the project and payment have been confirmed by I|ONE. This panel does not collect payments.</p>'+
+        '<p><strong>6. Price and period.</strong> The listed fee is <strong>US$5 for one month</strong>, starting when the documentary is published. The month is a publishing period, not a guarantee of views, customers, sales, or earnings.</p>'+
+        '<p><strong>7. Renewal and after the month.</strong> The documentary must be renewed through I|ONE support if you want to continue the service. After the period ends, I|ONE will review the listing and may retain it or remove it based on the renewal agreement, the content, and any applicable obligations. Continued publication is not automatic.</p>'+
+        '<p><strong>8. Changes and removal.</strong> I|ONE may correct, suspend, or remove material when reasonably necessary, including for a rights complaint, inaccurate information, a breach of these terms, or a legal requirement. Contact support to request changes or removal.</p>'+
+        '<p><strong>9. Agreement.</strong> By asking I|ONE to proceed with publication, you confirm that you have read these terms, that the information and content you provide are authorized, and that you understand the one-month period and manual renewal process.</p>'+
+        '<div class="ione-doc-access-pricecard"><strong>US$5</strong><span>One month from the publication date</span><p>Contact I|ONE to discuss your documentary and arrange renewal.</p></div>'+
+        '<h3>For More Information, Contact Us</h3>'+
+        '<div class="ione-doc-access-actions">'+
+        '<a class="ione-doc-access-action" href="tel:+255742097868">☎ Contact I|ONE · +255 742 097 868</a>'+
+        '<a class="ione-doc-access-action whatsapp" href="https://wa.me/255742097868" target="_blank" rel="noopener noreferrer">Chat with us on WhatsApp</a>'+
+        '<button type="button" class="ione-doc-access-action" id="ioneDocAccessInApp">Chat with I|ONE Support in the app</button>'+
+        '</div><p class="ione-doc-access-footer">All project details and bank-transfer arrangements are handled directly with I|ONE support.</p>'+
+        '</section>';
+      document.body.appendChild(access);
+      const closeAccess=function(){access.classList.remove("is-open");access.setAttribute("aria-hidden","true");};
+      access.addEventListener("click",function(event){if(event.target===access)closeAccess();});
+      document.getElementById("ioneDocAccessClose").addEventListener("click",closeAccess);
+      document.addEventListener("keydown",function(event){if(event.key==="Escape"&&access.classList.contains("is-open"))closeAccess();});
+      document.getElementById("ioneDocAccessInApp").addEventListener("click",function(){
+        closeAccess();
+        const support=document.getElementById("openIoneSupport");
+        if(support){support.click();}
+        else window.alert("Please open I|ONE Support from the app menu.");
+      });
+      document.getElementById("ioneDocAccessLaunch").addEventListener("click",function(){access.classList.add("is-open");access.setAttribute("aria-hidden","false");document.getElementById("ioneDocAccessClose").focus();});
+    }
     document.getElementById("ioneDocAddText").onclick=function(){
       blocks.push({type:"text",text:""});
       renderBlocks();
