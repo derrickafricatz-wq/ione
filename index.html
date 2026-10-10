@@ -9849,7 +9849,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       document.getElementById("ioneDocOrder").value=Number(d.sort_order||0);
       document.getElementById("ioneDocPublished").checked=!!d.published;
       const settings=Array.isArray(d.content)?d.content.find(b=>b?.type==="ione_authority_settings"):null;
-      docMeta={start_date:String(settings?.start_date||""),expiry_date:String(settings?.expiry_date||""),video_sound_allowed:settings?.video_sound_allowed!==false};
+      docMeta={start_date:String(settings?.start_date||""),expiry_date:String(settings?.expiry_date||""),video_sound_allowed:settings?.video_sound_allowed!==false,allow_copy:settings?.allow_copy!==false,allow_download:settings?.allow_download!==false,allow_print:settings?.allow_print!==false,active:!!d.published};
       const startDate=document.getElementById("ioneDocStartDate");if(startDate)startDate.value=docMeta.start_date;
       const expiryDate=document.getElementById("ioneDocExpiryDate");if(expiryDate)expiryDate.value=docMeta.expiry_date;
       const soundAllowed=document.getElementById("ioneDocSoundAllowed");if(soundAllowed)soundAllowed.checked=docMeta.video_sound_allowed;
