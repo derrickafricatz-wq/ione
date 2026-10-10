@@ -7807,32 +7807,18 @@ Object.assign(libMarkBtn.style,{flex:"0 0 46px",width:"46px",minWidth:"46px",hei
 
 const bookstoreBtn = document.createElement("button");
 bookstoreBtn.className="ione-lib-content-button";
-bookstoreBtn.innerHTML = '<span class="ione-lib-teaser" aria-live="off" aria-hidden="true"><span class="ione-lib-teaser-message">DISCOVER · INSPIRE · EMPOWER</span></span><span style="display:block;margin-top:5px;font-size:12px;font-weight:600;opacity:.85">Knowledge changes life</span>';
-const ioneLibMessages=["DISCOVER · INSPIRE · EMPOWER","KNOWLEDGE CHANGES LIFE","OPEN A BOOK · OPEN YOUR WORLD","DISCOVER KNOWLEDGE","GROW YOUR MIND","KNOWLEDGE OPENS DOORS"];
-let ioneLibMessageIndex=0;
-setInterval(()=>{
-  if(!bookstoreBtn.isConnected)return;
-  const message=bookstoreBtn.querySelector(".ione-lib-teaser-message");
-  if(!message)return;
-  ioneLibMessageIndex=(ioneLibMessageIndex+1)%ioneLibMessages.length;
-  message.style.animation="none";
-  message.textContent=ioneLibMessages[ioneLibMessageIndex];
-  void message.offsetWidth;
-  message.style.animation="";
-},10000);
-Object.assign(bookstoreBtn.style,{flex:"1 1 auto",width:"auto",minWidth:"0",height:"64px",minHeight:"64px",padding:"8px 16px",boxSizing:"border-box",borderRadius:"12px",overflow:"visible",whiteSpace:"normal",background:"linear-gradient(145deg,#0b2b42,#071725 70%,#142e43)",color:"#fff",fontWeight:"900",border:"1px solid #55748a",boxShadow:"none",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"});
-bookstoreBtn.style.setProperty("flex","1 1 0","important");bookstoreBtn.style.setProperty("min-width","0","important");bookstoreBtn.style.setProperty("width","auto","important");bookstoreBtn.style.setProperty("height","64px","important");bookstoreBtn.style.setProperty("min-height","64px","important");bookstoreBtn.style.setProperty("box-shadow","none","important");
+bookstoreBtn.innerHTML = '<span style="display:block;font-size:15px;font-weight:900;letter-spacing:1.2px;line-height:1.2">BOOKS</span>';
 bookstoreBtn.onclick = () => openHeavensBookstore();
 
-exitBtn.style.flex = "0 0 48px";
-exitBtn.style.width = "48px";
-exitBtn.style.minWidth = "48px";
-exitBtn.style.height = "48px";
-exitBtn.style.minHeight = "48px";
+exitBtn.style.flex = "0 0 64px";
+exitBtn.style.width = "64px";
+exitBtn.style.minWidth = "64px";
+exitBtn.style.height = "64px";
+exitBtn.style.minHeight = "64px";
 exitBtn.style.padding = "8px 4px";
 exitBtn.style.boxSizing = "border-box";
 exitBtn.style.borderRadius = "12px";
-exitBtn.style.fontSize = "11px";
+exitBtn.style.fontSize = "12px";
 exitBtn.style.boxShadow = "none";
 
 // Keep the header focused on the wide motivation/books control, green access control, and compact EXIT.
