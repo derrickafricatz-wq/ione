@@ -9903,7 +9903,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
           '<label class="ione-doc-note">EXPIRY DATE (PAYMENT REMINDER)<input id="ioneDocExpiryDate" type="date" style="display:block;width:100%;margin-top:6px;padding:10px;border-radius:10px;background:#050b0d;color:#fff;border:1px solid #31545a"></label>'+
         '</div>'+
         '<label class="ione-doc-check"><input id="ioneDocSoundAllowed" type="checkbox" checked> ALLOW VIDEO SOUND WHEN READER TAPS A VIDEO</label>'+
-        '<label class="ione-doc-check"><input id="ioneDocPublished" type="checkbox"> PUBLISH THIS DOCUMENTARY</label>'+
+        '<input id="ioneDocPublished" type="checkbox" hidden>'+
+        '<button type="button" id="ioneDocToggleActive" class="ione-doc-btn primary" style="width:100%;min-height:44px">ACTIVATE DOCUMENTARY</button>'+
       '</div>'+
       '<div class="ione-doc-row" style="margin-top:10px">'+
         '<button type="button" id="ioneDocAddText" class="ione-doc-btn">+ ADD TEXT</button>'+
