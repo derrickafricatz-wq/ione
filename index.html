@@ -7770,17 +7770,13 @@ topBar.style.setProperty("overflow","visible","important");
 // EXIT BUTTON
 const exitBtn = document.createElement("button");
 exitBtn.innerText = "EXIT";
-exitBtn.style.background = "linear-gradient(145deg,#ffb86b,#ed704c 58%,#b83c5b)";
-exitBtn.style.color = "white";
-exitBtn.style.border = "1px solid #ffc18b";
-exitBtn.style.boxShadow = "0 7px 0 rgba(0,0,0,.24),0 12px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.45)";
+exitBtn.style.background = "linear-gradient(145deg,#173f68,#0b223d 65%,#071728)";
+exitBtn.style.color = "#ffffff";
+exitBtn.style.border = "1px solid #6f9fc9";
+exitBtn.style.boxShadow = "none";
 
 exitBtn.onclick = () => {
-  // Return the existing $5 button to its persistent editor mount before the home screen is removed.
-  const accessLaunch=document.getElementById("ioneDocAccessLaunch");
-  const accessHomeRow=accessLaunch?.closest("#topicsPanel > div");
-  const accessEditorMount=document.getElementById("ioneDocumentaryEditorV1Mount");
-  if(accessLaunch&&accessHomeRow&&accessEditorMount)accessEditorMount.insertBefore(accessLaunch,accessEditorMount.firstChild.nextSibling);
+  // Keep the single 5$ ACCESS button in the home header; do not duplicate it in the documentary editor.
   document.body.classList.remove("ione-heaven-open");
   document.getElementById("healthyContainer").remove();
   ioneSetHomeControls(true);
