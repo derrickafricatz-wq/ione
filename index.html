@@ -2419,11 +2419,11 @@ Install App
 <!-- MINISTRY AUTHOR ACCESS -->
 <div id="ministryAccessOverlay" class="ministry-access-overlay" aria-hidden="true">
   <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle">
-    <div class="ministry-kicker">MBINGU DUNIANI • MINISTRY AREA</div>
-    <h2 id="ministryAccessTitle">MINISTRY AUTHOR ACCESS</h2>
-    <p>This area is reserved for authorized ministry authors and church content creators.</p>
-    <label class="ministry-access-label" for="ministryAccessKey">ACCESS KEY</label>
-    <input id="ministryAccessKey" class="ministry-access-input" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter the ministry key">
+    <div class="ministry-kicker">I|ONE • AUTHOR STUDIO</div>
+    <h2 id="ministryAccessTitle">AUTHOR'S CREATIVE STUDIO</h2>
+    <p>Your creative workspace to speak, record transcripts, and shape your words into books.</p>
+    <label class="ministry-access-label" for="ministryAccessKey">AUTHOR ACCESS KEY</label>
+    <input id="ministryAccessKey" class="ministry-access-input" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter your author access key">
     <div class="ministry-access-actions">
       <button id="ministryAccessCancel" class="ministry-cancel" type="button">CANCEL</button>
       <button id="ministryAccessUnlock" class="ministry-unlock" type="button">UNLOCK</button>
@@ -2721,7 +2721,7 @@ function getMedia(id){
 <section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText" class="ione-word-loading">Loading today's word…</div></section>
 <section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div><div class="smart-grid">
 <button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
-<button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>SERMON TRANSCRIPT</strong><small>AUTHORIZED MINISTRY</small></button>
+<button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>AUTHOR'S STUDIO</strong><small>RECORD • WRITE • CREATE BOOKS</small></button>
 <button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>DISCOVER & EXPLORE</strong><small>BOOKS • LIBRARY • DOCUMENTARIES</small></button>
 <button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
 <button class="smart-item smart-coming-soon" id="openBusBooking" type="button"><span class="smart-icon">BUS</span><strong>I|ONE BUS</strong><small>BUS BOOKING • COMING SOON</small></button>
@@ -2980,7 +2980,7 @@ const guideLanguages={
   "",
   "SMART PANEL: Tumia kadi nne za huduma kwenye home screen kufungua vipengele vya I|ONE.",
   "",
-  "SERMON TRANSCRIPT: Eneo hili ni la waandishi wa huduma walioidhinishwa. Ingiza ministry access key ili kufungua transcript.",
+  "AUTHOR'S STUDIO: Rekodi maneno yako, tengeneza transcript, na geuza mawazo yako kuwa vitabu.",
   "SAVE: Bonyeza SAVE kuhifadhi transcript yako tayari kwa kutengeneza kitabu.",
   "I|ONE: Fungua HOME OF MARKETING kuona live 3D billboards za biashara kutoka kwa watumiaji wote.",
   "CREATE BOOK: Chagua sermon moja au zaidi kutoka SAVED SERMONS, kisha bonyeza CREATE BOOK.",
@@ -3001,7 +3001,7 @@ const guideLanguages={
   "",
   "SMART PANEL: Use the four service cards on the home screen to open I|ONE features.",
   "",
-  "SERMON TRANSCRIPT: This area is reserved for authorized ministry authors. Enter the ministry access key to open the transcript.",
+  "AUTHOR'S STUDIO: Record your spoken words, create transcripts, and turn your ideas into books.",
   "SAVE: Press SAVE to keep the sermon transcript ready for book creation.",
   "I|ONE: Open HOME OF MARKETING to see live 3D business billboards from users across the app.",
   "CREATE BOOK: Select one or more sermons from SAVED SERMONS, then press CREATE BOOK.",
@@ -3604,16 +3604,16 @@ ministryAccessOverlay.addEventListener("click",e=>{if(e.target===ministryAccessO
 document.getElementById("ministryAccessUnlock").onclick=async()=>{
   const btn=document.getElementById("ministryAccessUnlock");
   const key=ministryAccessKey.value.trim();
-  if(!key){ministryAccessStatus.textContent="Enter the ministry access key.";ministryAccessKey.focus();return;}
-  btn.disabled=true;btn.textContent="CHECKING…";ministryAccessStatus.textContent="Verifying ministry authorization…";
+  if(!key){ministryAccessStatus.textContent="Enter your author access key.";ministryAccessKey.focus();return;}
+  btn.disabled=true;btn.textContent="CHECKING…";ministryAccessStatus.textContent="Verifying author access…";
   try{
     await verifyMinistryAccess(key);
     sessionStorage.setItem("mbinguMinistryAccessUntil",String(Date.now()+8*60*60*1000));
-    ministryAccessStatus.textContent="MINISTRY ACCESS GRANTED ✓";
+    ministryAccessStatus.textContent="AUTHOR STUDIO ACCESS GRANTED ✓";
     setTimeout(()=>{ministryAccessClose();openTranscriptAfterAuthorization();},350);
   }catch(err){
     console.warn("Ministry access denied:",err);
-    ministryAccessStatus.textContent="ACCESS DENIED — AUTHORIZED MINISTRY AUTHORS ONLY";
+    ministryAccessStatus.textContent="ACCESS DENIED — AUTHORIZED AUTHORS ONLY";
     ministryAccessKey.select();
   }finally{btn.disabled=false;btn.textContent="UNLOCK";}
 };
