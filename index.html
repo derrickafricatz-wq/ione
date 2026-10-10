@@ -7816,16 +7816,19 @@ Object.assign(bookstoreBtn.style,{flex:"1 1 0",width:"auto",minWidth:"0",height:
 ["flex","width","min-width","height","min-height","padding","border-radius","box-shadow"].forEach((p)=>bookstoreBtn.style.setProperty(p,({flex:"1 1 0",width:"auto","min-width":"0",height:"56px","min-height":"56px",padding:"8px 10px","border-radius":"10px","box-shadow":"none"})[p],"important"));
 
 
-exitBtn.style.flex = "0 0 48px";
-exitBtn.style.width = "48px";
-exitBtn.style.minWidth = "48px";
-exitBtn.style.height = "56px";
-exitBtn.style.minHeight = "56px";
-exitBtn.style.padding = "6px 3px";
-exitBtn.style.boxSizing = "border-box";
-exitBtn.style.borderRadius = "12px";
-exitBtn.style.fontSize = "11px";
-exitBtn.style.boxShadow = "none";
+exitBtn.style.setProperty("flex","0 0 38px","important");
+exitBtn.style.setProperty("width","38px","important");
+exitBtn.style.setProperty("min-width","38px","important");
+exitBtn.style.setProperty("max-width","38px","important");
+exitBtn.style.setProperty("height","38px","important");
+exitBtn.style.setProperty("min-height","38px","important");
+exitBtn.style.setProperty("max-height","38px","important");
+exitBtn.style.setProperty("padding","0","important");
+exitBtn.style.setProperty("box-sizing","border-box","important");
+exitBtn.style.setProperty("border-radius","9px","important");
+exitBtn.style.setProperty("font-size","10px","important");
+exitBtn.style.setProperty("line-height","1","important");
+exitBtn.style.setProperty("box-shadow","none","important");
 
 // Keep the header focused on the wide motivation/books control, green access control, and compact EXIT.
 libMarkBtn.remove();
@@ -9875,7 +9878,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     box.className="ione-doc-editor";
     box.innerHTML=
       '<h3>DOCUMENTARY</h3>'+ 
-      '<button type="button" id="ioneDocAccessLaunch" class="ione-doc-access-launch"><span class="ione-doc-access-price">$5</span><span>FOR MORE ACCESS<small>GET IN · ONE MONTH</small></span></button>'+
+      '<button type="button" id="ioneDocAccessLaunch" class="ione-doc-access-launch">5$ ACCESS</button>'+
       '<p class="ione-doc-note">Create a documentary as an exact sequence of text and large images. The first image automatically becomes the documentary cover.</p>'+
       '<div class="ione-doc-grid">'+
         '<input id="ioneDocTitle" type="text" maxlength="180" placeholder="DOCUMENTARY TITLE">'+
