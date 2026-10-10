@@ -1,5 +1,5 @@
 {
-  "version": "1.0.71",
-  "message": "Fix documentary access button placement beside I1 LIB",
+  "version": "1.0.72",
+  "message": "Polish home buttons and restore green access button after exit",
   "force": true
 }
