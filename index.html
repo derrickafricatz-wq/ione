@@ -9880,6 +9880,26 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);
     else inner.appendChild(box);
 
+    // Move the existing $5 access button beside I1 LIB and EXIT; keep its panel and click handler intact.
+    const accessLaunch=document.getElementById("ioneDocAccessLaunch");
+    const homeTopBar=typeof bookstoreBtn!=="undefined"&&bookstoreBtn.parentNode?bookstoreBtn.parentNode:null;
+    if(accessLaunch&&homeTopBar){
+      accessLaunch.classList.add("ione-doc-access-topbar");
+      accessLaunch.style.display="flex";
+      accessLaunch.style.flex="1 1 auto";
+      accessLaunch.style.width="auto";
+      accessLaunch.style.minWidth="0";
+      accessLaunch.style.minHeight="unset";
+      accessLaunch.style.height="auto";
+      accessLaunch.style.margin="0";
+      accessLaunch.style.padding="10px 16px";
+      accessLaunch.style.boxSizing="border-box";
+      accessLaunch.style.alignSelf="stretch";
+      accessLaunch.style.borderRadius="12px";
+      accessLaunch.style.whiteSpace="nowrap";
+      homeTopBar.insertBefore(accessLaunch,bookstoreBtn.nextSibling);
+    }
+
     if(!document.getElementById("ioneDocAccessOverlay")){
       const access=document.createElement("div");
       access.id="ioneDocAccessOverlay";
