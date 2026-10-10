@@ -9880,25 +9880,39 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(anchor&&anchor.parentNode)anchor.parentNode.insertBefore(box,anchor.nextSibling);
     else inner.appendChild(box);
 
-    // Move the existing $5 access button beside I1 LIB and EXIT; keep its panel and click handler intact.
-    const accessLaunch=document.getElementById("ioneDocAccessLaunch");
-    const homeBookstoreButton=document.querySelector(".ione-lib-label")?.closest("button");
-    const homeTopBar=homeBookstoreButton&&homeBookstoreButton.parentNode?homeBookstoreButton.parentNode:null;
-    if(accessLaunch&&homeTopBar){
-      accessLaunch.classList.add("ione-doc-access-topbar");
-      accessLaunch.style.display="flex";
-      accessLaunch.style.flex="1 1 auto";
-      accessLaunch.style.width="auto";
-      accessLaunch.style.minWidth="0";
-      accessLaunch.style.minHeight="unset";
-      accessLaunch.style.height="auto";
-      accessLaunch.style.margin="0";
-      accessLaunch.style.padding="10px 16px";
-      accessLaunch.style.boxSizing="border-box";
-      accessLaunch.style.alignSelf="stretch";
-      accessLaunch.style.borderRadius="12px";
-      accessLaunch.style.whiteSpace="nowrap";
-      homeTopBar.insertBefore(accessLaunch,homeBookstoreButton.nextSibling);
+    // Keep trying until the home row exists, then move the original button without rebuilding its panel.
+    function moveDocAccessToHomeRow(){
+      const accessLaunch=document.getElementById("ioneDocAccessLaunch");
+      const homeBookstoreButton=document.querySelector("#topicsPanel .ione-lib-label")?.closest("button");
+      const homeTopBar=homeBookstoreButton&&homeBookstoreButton.parentNode?homeBookstoreButton.parentNode:null;
+      if(!accessLaunch||!homeTopBar)return false;
+      if(accessLaunch.parentNode!==homeTopBar){
+        accessLaunch.classList.add("ione-doc-access-topbar");
+        accessLaunch.style.setProperty("display","flex","important");
+        accessLaunch.style.setProperty("flex","1 1 auto","important");
+        accessLaunch.style.setProperty("width","auto","important");
+        accessLaunch.style.setProperty("min-width","0","important");
+        accessLaunch.style.setProperty("min-height","0","important");
+        accessLaunch.style.setProperty("height","auto","important");
+        accessLaunch.style.setProperty("margin","0","important");
+        accessLaunch.style.setProperty("padding","10px 16px","important");
+        accessLaunch.style.setProperty("box-sizing","border-box","important");
+        accessLaunch.style.setProperty("align-self","stretch","important");
+        accessLaunch.style.setProperty("border-radius","12px","important");
+        accessLaunch.style.setProperty("white-space","nowrap","important");
+        homeTopBar.insertBefore(accessLaunch,homeBookstoreButton.nextSibling);
+      }
+      return true;
+    }
+    if(!moveDocAccessToHomeRow()&&!document.documentElement.dataset.ioneDocAccessMoveWatching){
+      document.documentElement.dataset.ioneDocAccessMoveWatching="1";
+      const moveObserver=new MutationObserver(function(){
+        if(moveDocAccessToHomeRow()){
+          moveObserver.disconnect();
+          delete document.documentElement.dataset.ioneDocAccessMoveWatching;
+        }
+      });
+      moveObserver.observe(document.documentElement,{childList:true,subtree:true});
     }
 
     if(!document.getElementById("ioneDocAccessOverlay")){
