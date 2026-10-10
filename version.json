@@ -1,5 +1,5 @@
 {
-  "version": "1.0.72",
-  "message": "Polish home buttons and restore green access button after exit",
+  "version": "1.0.73",
+  "message": "Reference-matched home controls and green access button",
   "force": true
 }
