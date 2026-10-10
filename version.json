@@ -1,5 +1,5 @@
 {
-  "version": "1.0.70",
-  "message": "Show full documentary cover artwork with cinematic ambient fill",
+  "version": "1.0.71",
+  "message": "Fix documentary access button placement beside I1 LIB",
   "force": true
 }
