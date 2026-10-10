@@ -7790,10 +7790,18 @@ exitBtn.onclick = () => {
   try{ restoreIoneHomeBanner(); }catch(e){ console.warn("I|ONE home banner restore:",e); }
 };
 
-// HEAVEN'S BOOKSTORE BUTTON
+// I1 LIB corner mark, separate from the wide bookstore/motivation button.
+const libMarkBtn=document.createElement("button");
+libMarkBtn.type="button";
+libMarkBtn.innerHTML='<span class="ione-lib-label">I1<br>LIB</span>';
+libMarkBtn.setAttribute("aria-label","I1 LIB");
+Object.assign(libMarkBtn.style,{flex:"0 0 58px",width:"58px",minWidth:"58px",height:"88px",minHeight:"88px",padding:"8px 4px",boxSizing:"border-box",borderRadius:"18px",background:"linear-gradient(145deg,#263b50,#081629)",color:"#fff",border:"1px solid #8fa9c5",boxShadow:"0 5px 0 rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.25)",font:"900 16px/1.2 Arial,sans-serif",textAlign:"center"});
+libMarkBtn.onclick=()=>openHeavensBookstore();
+
 const bookstoreBtn = document.createElement("button");
-bookstoreBtn.innerHTML = '<span class="ione-lib-label">I1 LIB</span><span class="ione-lib-teaser" aria-live="off" aria-hidden="true"><span class="ione-lib-teaser-message">OPEN A BOOK • OPEN YOUR WORLD</span></span>';
-const ioneLibMessages=["OPEN A BOOK • OPEN YOUR WORLD","DISCOVER KNOWLEDGE","GROW YOUR MIND","YOUR NEXT BIG IDEA STARTS HERE","READ MORE • DREAM BIGGER","KNOWLEDGE OPENS DOORS"];
+bookstoreBtn.className="ione-lib-content-button";
+bookstoreBtn.innerHTML = '<span class="ione-lib-teaser" aria-live="off" aria-hidden="true"><span class="ione-lib-teaser-message">DISCOVER · INSPIRE · EMPOWER</span></span><span style="display:block;margin-top:5px;font-size:12px;font-weight:600;opacity:.85">Knowledge changes life</span>';
+const ioneLibMessages=["DISCOVER · INSPIRE · EMPOWER","KNOWLEDGE CHANGES LIFE","OPEN A BOOK · OPEN YOUR WORLD","DISCOVER KNOWLEDGE","GROW YOUR MIND","KNOWLEDGE OPENS DOORS"];
 let ioneLibMessageIndex=0;
 setInterval(()=>{
   if(!bookstoreBtn.isConnected)return;
@@ -7805,31 +7813,22 @@ setInterval(()=>{
   void message.offsetWidth;
   message.style.animation="";
 },10000);
-bookstoreBtn.style.background = "linear-gradient(145deg,#6ef5ee,#13b9c9 55%,#1677ae)";
-bookstoreBtn.style.color = "#03282e";
-bookstoreBtn.style.fontWeight = "900";
-bookstoreBtn.style.border = "1px solid #a1fffa";
-bookstoreBtn.style.boxShadow = "0 7px 0 rgba(0,0,0,.24),0 12px 24px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.45)";
-bookstoreBtn.style.flex = "0 1 104px";
-bookstoreBtn.style.width = "104px";
-bookstoreBtn.style.minWidth = "82px";
-bookstoreBtn.style.minHeight = "108px";
-bookstoreBtn.style.padding = "10px 5px";
-bookstoreBtn.style.boxSizing = "border-box";
-bookstoreBtn.style.borderRadius = "24px";
-bookstoreBtn.style.overflow = "visible";
-bookstoreBtn.style.whiteSpace = "normal";
-exitBtn.style.flex = "0 0 78px";
-exitBtn.style.width = "78px";
-exitBtn.style.minWidth = "78px";
-exitBtn.style.height = "88px";
-exitBtn.style.minHeight = "88px";
-exitBtn.style.padding = "8px 5px";
-exitBtn.style.boxSizing = "border-box";
-exitBtn.style.borderRadius = "22px";
+Object.assign(bookstoreBtn.style,{flex:"1 1 auto",width:"auto",minWidth:"0",height:"88px",minHeight:"88px",padding:"8px 10px",boxSizing:"border-box",borderRadius:"18px",overflow:"hidden",whiteSpace:"normal",background:"linear-gradient(145deg,#0e2c43,#071725 70%,#142e43)",color:"#fff",fontWeight:"900",border:"1px solid #55748a",boxShadow:"0 5px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.18)",textAlign:"center"});
 bookstoreBtn.onclick = () => openHeavensBookstore();
 
-// Keep only the two requested top controls.
+exitBtn.style.flex = "0 0 58px";
+exitBtn.style.width = "58px";
+exitBtn.style.minWidth = "58px";
+exitBtn.style.height = "88px";
+exitBtn.style.minHeight = "88px";
+exitBtn.style.padding = "8px 4px";
+exitBtn.style.boxSizing = "border-box";
+exitBtn.style.borderRadius = "18px";
+exitBtn.style.fontSize = "13px";
+exitBtn.style.boxShadow = "0 5px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.35)";
+
+// Arrange controls in the same compact horizontal order as the reference.
+topBar.appendChild(libMarkBtn);
 topBar.appendChild(bookstoreBtn);
 topBar.appendChild(exitBtn);
 
@@ -9905,7 +9904,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     // Keep the same $5 button available across home-screen exits and reopens.
     function moveDocAccessToHomeRow(){
       const accessLaunch=document.getElementById("ioneDocAccessLaunch");
-      const homeBookstoreButton=document.querySelector("#topicsPanel .ione-lib-label")?.closest("button");
+      const homeBookstoreButton=document.querySelector("#topicsPanel .ione-lib-content-button");
       const homeTopBar=homeBookstoreButton&&homeBookstoreButton.parentNode?homeBookstoreButton.parentNode:null;
       if(!accessLaunch||!homeTopBar)return false;
       if(accessLaunch.parentNode!==homeTopBar){
@@ -9924,6 +9923,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
         accessLaunch.style.setProperty("height","88px","important");
         accessLaunch.style.setProperty("min-height","88px","important");
         accessLaunch.style.setProperty("padding","7px 4px","important");
+        accessLaunch.style.setProperty("background","linear-gradient(145deg,#18a94b 0%,#07852f 58%,#056522 100%)","important");
+        accessLaunch.style.setProperty("color","#ffffff","important");
+        accessLaunch.style.setProperty("border","1px solid #8af5a5","important");
         accessLaunch.style.setProperty("border-radius","22px","important");
         accessLaunch.style.setProperty("box-shadow","0 5px 0 #14532d,0 9px 18px rgba(22,163,74,.2),inset 0 1px 0 rgba(255,255,255,.35)","important");
         accessLaunch.style.setProperty("box-sizing","border-box","important");
