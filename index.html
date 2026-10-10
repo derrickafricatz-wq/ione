@@ -9882,7 +9882,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
     // Move the existing $5 access button beside I1 LIB and EXIT; keep its panel and click handler intact.
     const accessLaunch=document.getElementById("ioneDocAccessLaunch");
-    const homeTopBar=typeof bookstoreBtn!=="undefined"&&bookstoreBtn.parentNode?bookstoreBtn.parentNode:null;
+    const homeBookstoreButton=document.querySelector(".ione-lib-label")?.closest("button");
+    const homeTopBar=homeBookstoreButton&&homeBookstoreButton.parentNode?homeBookstoreButton.parentNode:null;
     if(accessLaunch&&homeTopBar){
       accessLaunch.classList.add("ione-doc-access-topbar");
       accessLaunch.style.display="flex";
