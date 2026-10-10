@@ -7820,23 +7820,26 @@ setInterval(()=>{
   void message.offsetWidth;
   message.style.animation="";
 },10000);
-Object.assign(bookstoreBtn.style,{flex:"1 1 0",width:"auto",minWidth:"0",height:"82px",minHeight:"82px",padding:"8px 6px",boxSizing:"border-box",borderRadius:"12px",overflow:"visible",whiteSpace:"normal",background:"linear-gradient(145deg,#0b2b42,#071725 70%,#142e43)",color:"#fff",fontWeight:"900",border:"1px solid #55748a",boxShadow:"none",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"});
-bookstoreBtn.style.setProperty("flex","1 1 0","important");bookstoreBtn.style.setProperty("min-width","0","important");bookstoreBtn.style.setProperty("width","auto","important");bookstoreBtn.style.setProperty("height","82px","important");bookstoreBtn.style.setProperty("min-height","82px","important");bookstoreBtn.style.setProperty("box-shadow","none","important");
+Object.assign(bookstoreBtn.style,{flex:"1 1 auto",width:"auto",minWidth:"0",height:"64px",minHeight:"64px",padding:"8px 16px",boxSizing:"border-box",borderRadius:"12px",overflow:"visible",whiteSpace:"normal",background:"linear-gradient(145deg,#0b2b42,#071725 70%,#142e43)",color:"#fff",fontWeight:"900",border:"1px solid #55748a",boxShadow:"none",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"});
+bookstoreBtn.style.setProperty("flex","1 1 0","important");bookstoreBtn.style.setProperty("min-width","0","important");bookstoreBtn.style.setProperty("width","auto","important");bookstoreBtn.style.setProperty("height","64px","important");bookstoreBtn.style.setProperty("min-height","64px","important");bookstoreBtn.style.setProperty("box-shadow","none","important");
 bookstoreBtn.onclick = () => openHeavensBookstore();
 
-exitBtn.style.flex = "0 0 54px";
-exitBtn.style.width = "54px";
-exitBtn.style.minWidth = "54px";
-exitBtn.style.height = "64px";
-exitBtn.style.minHeight = "64px";
+exitBtn.style.flex = "0 0 48px";
+exitBtn.style.width = "48px";
+exitBtn.style.minWidth = "48px";
+exitBtn.style.height = "48px";
+exitBtn.style.minHeight = "48px";
 exitBtn.style.padding = "8px 4px";
 exitBtn.style.boxSizing = "border-box";
 exitBtn.style.borderRadius = "12px";
-exitBtn.style.fontSize = "13px";
+exitBtn.style.fontSize = "11px";
 exitBtn.style.boxShadow = "none";
 
-// Arrange controls in the same compact horizontal order as the reference.
-topBar.appendChild(libMarkBtn);
+// Keep the header focused on the wide motivation/books control, green access control, and compact EXIT.
+libMarkBtn.remove();
+topBar.style.setProperty("gap","12px","important");
+topBar.style.setProperty("width","100%","important");
+topBar.style.setProperty("justify-content","space-between","important");
 topBar.appendChild(bookstoreBtn);
 topBar.appendChild(exitBtn);
 
@@ -9925,15 +9928,15 @@ function ioneRunBackgroundMediaPreload(){ return; }
         accessLaunch.style.setProperty("height","auto","important");
         accessLaunch.style.setProperty("margin","0","important");
         accessLaunch.style.setProperty("padding","7px 8px","important");
-        accessLaunch.style.setProperty("flex","0 0 72px","important");
-        accessLaunch.style.setProperty("width","72px","important");
-        accessLaunch.style.setProperty("max-width","72px","important");
-        accessLaunch.style.setProperty("height","64px","important");
-        accessLaunch.style.setProperty("min-height","64px","important");
+        accessLaunch.style.setProperty("flex","0 0 76px","important");
+        accessLaunch.style.setProperty("width","76px","important");
+        accessLaunch.style.setProperty("max-width","76px","important");
+        accessLaunch.style.setProperty("height","48px","important");
+        accessLaunch.style.setProperty("min-height","48px","important");
         accessLaunch.style.setProperty("background","linear-gradient(145deg,#19a84b 0%,#07852f 58%,#056522 100%)","important");
         accessLaunch.style.setProperty("color","#ffffff","important");
         accessLaunch.style.setProperty("border","1px solid #8af5a5","important");
-        accessLaunch.style.setProperty("font-size","12px","important");
+        accessLaunch.style.setProperty("font-size","10px","important");
         accessLaunch.style.setProperty("width","78px","important");
         accessLaunch.style.setProperty("max-width","78px","important");
         accessLaunch.style.setProperty("height","88px","important");
