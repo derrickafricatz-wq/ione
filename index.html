@@ -8044,6 +8044,7 @@ async function loadHeavensServerBooks(){
       contents: b.contents || "",
       frontCover: b.front_cover || "",
       backCover: b.back_cover || "",
+      pdfPath: b.pdf_path || "",
       chapters: Array.isArray(b.chapters) ? b.chapters : [],
       date: b.created_at ? new Date(b.created_at).toLocaleDateString() : ""
     }));
@@ -8665,6 +8666,7 @@ function openBookReader(book,store){
   const existing=document.getElementById("heavensReader");
   if(existing) existing.remove();
   if(!isBookPaid(book)){startBookPayment(book,store);return;}
+  if(book.pdfPath){openPaidPdfReader(book);return;}
 
   const reader=document.createElement("div");
   reader.id="heavensReader";
