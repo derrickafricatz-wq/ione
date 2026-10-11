@@ -224,11 +224,12 @@
   async function cacheMediaUrl(value) {
     const url = validMediaUrl(value);
     if (!url || !("caches" in window)) return false;
-    const endActivity = beginOfflineActivity("MEDIA");
     try {
       const cache = await caches.open(MEDIA_CACHE_NAME);
       if (await cache.match(url)) return true;
-      const response = await fetch(url, { method: "GET", cache: "no-store", credentials: "omit", mode: "cors" });
+      const endActivity = beginOfflineActivity("MEDIA");
+      try {
+        const response = await fetch(url, { method: "GET", cache: "no-store", credentials: "omit", mode: "cors" });
       if (!response.ok || (response.type !== "basic" && response.type !== "cors" && response.type !== "default")) return false;
       const length = Number(response.headers.get("content-length") || 0);
       if (length > MAX_MEDIA_BYTES) return false;
@@ -240,12 +241,16 @@
       } else {
         await cache.put(url, response.clone());
       }
-      return true;
+        return true;
+      } catch (error) {
+        console.warn("I|ONE offline media cache skipped:", url, error);
+        return false;
+      } finally {
+        endActivity();
+      }
     } catch (error) {
       console.warn("I|ONE offline media cache skipped:", url, error);
       return false;
-    } finally {
-      endActivity();
     }
   }
 
@@ -299,7 +304,7 @@
         const result = await originalInvoke(name, options);
         const docs = Array.isArray(result && result.data && result.data.documentaries) ? result.data.documentaries : [];
         if (!result.error && docs.length) saveDocumentaryShelf(docs).catch(error => console.warn("I|ONE offline documentary save failed:", error));
-        if (result.error && navigator.onLine === false) {
+        if (result.error) {
           const saved = await getSavedDocumentaries();
           if (saved.length) return { data: { documentaries: saved }, error: null };
         }
