@@ -44,8 +44,8 @@ assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
 
-assert.match(sw, /ione-app-v165/);
-assert.equal(version.version, "1.0.98");
+assert.match(sw, /ione-app-v166/);
+assert.equal(version.version, "1.0.99");
 assert.match(html, /id="bookInsight2"/);
 assert.match(html, /id="bookInsight3"/);
 assert.match(html, /book_insight_2/);
