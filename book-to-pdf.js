@@ -300,9 +300,11 @@
       publish.disabled = true; publish.style.opacity = ".65"; status.textContent = coverFile ? "Preparing the front cover…" : "Using the first page of your PDF as the book cover…";
       let path = "";
       let frontCover = "";
+      let pdfCoverPage = false;
       let published = false;
       try {
         frontCover = coverFile ? await compressFrontCover(coverFile) : await coverFromPdfFirstPage(file);
+        pdfCoverPage = !coverFile && !!frontCover;
         if (!frontCover) throw new Error("A separate front-cover image is needed because the first PDF page does not look like a cover. Upload the cover image and publish again.");
         status.textContent = "Preparing secure upload…";
         const session = await ensureHeavensAnonymousSession();
@@ -315,8 +317,8 @@
         status.textContent = "File uploaded securely. Publishing bookstore listing…";
         const inserted = await heavensSupabase.from("heavens_books").insert({
           title, category, price, currency: "TZS", front_cover: frontCover, back_cover: null,
-          contents: "", chapters: [], author_id: session.user.id, active: true, payment_required: true, pdf_path: path
-        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,created_at").single();
+          contents: "", chapters: [], author_id: session.user.id, active: true, payment_required: true, pdf_path: path, pdf_cover_page: pdfCoverPage
+        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,pdf_cover_page,created_at").single();
         if (inserted.error) throw inserted.error;
         published = true;
 
@@ -325,12 +327,9 @@
           id: "HB-SERVER-" + row.id, supabaseId: row.id, title: row.title,
           category: row.category, price: Number(row.price), currency: row.currency || "TZS",
           contents: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
-          chapters: [], paymentRequired: row.payment_required !== false, isAuthor: true,
+          pdfCoverPage: row.pdf_cover_page === true, chapters: [], paymentRequired: row.payment_required !== false, isAuthor: true,
           date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
-        if (typeof markBookPaid === "function") {
-          try { markBookPaid(book); } catch (storageError) { console.warn("Could not cache author preview state:", storageError); }
-        }
         status.textContent = "Published successfully. Your PDF is now listed in Explore.";
         publish.textContent = "PUBLISHED";
         setTimeout(close, 1200);
@@ -602,7 +601,8 @@
         bookEl.appendChild(titlePage);
         pages.push({ element: titlePage, kind: "cover", pdfPage: null });
       }
-      for (let number = 1; number <= pdfDocument.numPages; number++) addPdfPage(number);
+      const firstPdfPageIsCover = book.pdfCoverPage === true;
+      for (let number = firstPdfPageIsCover ? 2 : 1; number <= pdfDocument.numPages; number++) addPdfPage(number);
       updateReader();
     } catch (error) {
       console.error("Could not open interactive PDF book:", error);
