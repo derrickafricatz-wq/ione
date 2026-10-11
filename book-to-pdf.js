@@ -2,6 +2,40 @@
 (function () {
   "use strict";
 
+  async function compressFrontCover(file) {
+    if (!file) return "";
+    let bitmap;
+    try {
+      if (window.createImageBitmap) bitmap = await createImageBitmap(file);
+      else {
+        bitmap = await new Promise((resolve, reject) => {
+          const image = new Image();
+          const url = URL.createObjectURL(file);
+          image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+          image.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read cover image.")); };
+          image.src = url;
+        });
+      }
+      const maxW = 900, maxH = 1200;
+      const ratio = Math.min(1, maxW / bitmap.width, maxH / bitmap.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
+      canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("Cover image processing is unavailable.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const data = canvas.toDataURL("image/jpeg", 0.78);
+      if (bitmap.close) bitmap.close();
+      return data;
+    } catch (error) {
+      if (bitmap && bitmap.close) bitmap.close();
+      console.warn("Front cover compression failed:", error);
+      return "";
+    }
+  }
+
   window.openBookToPdfPanel = function openBookToPdfPanel() {
     const old = document.getElementById("bookToPdfPanel");
     if (old) { old.remove(); return; }
@@ -16,7 +50,7 @@
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">BOOK TITLE</label><input id="b2pTitle" maxlength="160" placeholder="Enter book title" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">CATEGORY</label><select id="b2pCategory" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;"><option>SERMONS</option><option>BIBLE</option><option>PRAYER</option><option>TEACHING</option><option>WORSHIP</option><option>PROPHECY</option><option>SPIRITUAL GROWTH</option></select>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PRICE (TZS)</label><input id="b2pPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 2500" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
-        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
+        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
         <div id="b2pFileInfo" style="font-size:12px;color:#a9c9bd;min-height:18px;margin-top:7px;">Choose a finished PDF from your device.</div><div id="b2pStatus" role="status" style="font-size:13px;color:#bfe8d7;margin-top:12px;line-height:1.5;"></div>
         <button id="b2pPublish" type="button" style="width:100%;margin-top:16px;padding:13px;border:0;border-radius:11px;background:#00c995;color:#04251b;font-weight:800;font-size:15px;">PUBLISH BOOK</button>
       </section>`;
@@ -26,9 +60,37 @@
     panel.querySelector("#b2pClose").onclick = close;
     panel.addEventListener("click", e => { if (e.target === panel) close(); });
     const fileInput = panel.querySelector("#b2pFile");
+    const coverInput = panel.querySelector("#b2pCover");
+    const coverPreview = panel.querySelector("#b2pCoverPreview");
     const info = panel.querySelector("#b2pFileInfo");
     const status = panel.querySelector("#b2pStatus");
     const publish = panel.querySelector("#b2pPublish");
+
+    coverInput.onchange = () => {
+      const cover = coverInput.files && coverInput.files[0];
+      coverPreview.innerHTML = "";
+      coverPreview.style.display = cover ? "block" : "none";
+      if (!cover) return;
+      if (!cover.type || !cover.type.startsWith("image/")) {
+        status.textContent = "Please choose a valid image for the front cover.";
+        coverInput.value = "";
+        coverPreview.style.display = "none";
+        return;
+      }
+      if (cover.size > 15 * 1024 * 1024) {
+        status.textContent = "The cover image must be 15 MB or smaller.";
+        coverInput.value = "";
+        coverPreview.style.display = "none";
+        return;
+      }
+      const img = document.createElement("img");
+      img.alt = "Front cover preview";
+      img.style.cssText = "width:100%;height:100%;object-fit:cover;display:block;";
+      img.src = URL.createObjectURL(cover);
+      img.onload = () => URL.revokeObjectURL(img.src);
+      coverPreview.appendChild(img);
+      status.textContent = "";
+    };
 
     fileInput.onchange = () => {
       const file = fileInput.files && fileInput.files[0];
@@ -43,8 +105,12 @@
       const category = panel.querySelector("#b2pCategory").value;
       const price = Number(panel.querySelector("#b2pPrice").value.trim());
       const file = fileInput.files && fileInput.files[0];
+      const coverFile = coverInput.files && coverInput.files[0];
       if (!title) { status.textContent = "Enter the book title."; panel.querySelector("#b2pTitle").focus(); return; }
       if (!Number.isInteger(price) || price <= 0) { status.textContent = "Enter a whole-number price in TZS."; panel.querySelector("#b2pPrice").focus(); return; }
+      if (!coverFile) { status.textContent = "Upload a front cover image so your book appears properly in Explore."; return; }
+      if (!coverFile.type || !coverFile.type.startsWith("image/")) { status.textContent = "Please choose a valid front cover image."; return; }
+      if (coverFile.size > 15 * 1024 * 1024) { status.textContent = "The cover image must be 15 MB or smaller."; return; }
       if (!file) { status.textContent = "Choose a PDF file first."; return; }
       if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) { status.textContent = "Only PDF files are accepted."; return; }
       if (file.size > 50 * 1024 * 1024) { status.textContent = "This PDF is over the 50 MB limit."; return; }
@@ -62,9 +128,9 @@
 
         status.textContent = "File uploaded securely. Publishing bookstore listing…";
         const inserted = await heavensSupabase.from("heavens_books").insert({
-          title, category, price, currency: "TZS", front_cover: null, back_cover: null,
+          title, category, price, currency: "TZS", front_cover: frontCover, back_cover: null,
           contents: "", chapters: [], author_id: session.user.id, active: true, pdf_path: path
-        }).select("id,title,category,price,currency,pdf_path,created_at").single();
+        }).select("id,title,category,price,currency,front_cover,pdf_path,created_at").single();
         if (inserted.error) throw inserted.error;
         published = true;
 
@@ -72,7 +138,7 @@
         const book = {
           id: "HB-SERVER-" + row.id, supabaseId: row.id, title: row.title,
           category: row.category, price: Number(row.price), currency: row.currency || "TZS",
-          contents: "", frontCover: "", backCover: "", pdfPath: row.pdf_path,
+          contents: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
           chapters: [], date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
         if (typeof markBookPaid === "function") {
@@ -93,31 +159,230 @@
     };
   };
 
+  let pdfJsLoadPromise = null;
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfJsLoadPromise) return pdfJsLoadPromise;
+    pdfJsLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.async = true;
+      script.onload = () => {
+        if (!window.pdfjsLib) return reject(new Error("The book reader library did not load."));
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = () => reject(new Error("Could not load the interactive book reader. Check your internet connection and try again."));
+      document.head.appendChild(script);
+    });
+    return pdfJsLoadPromise;
+  }
+
   window.openPaidPdfReader = async function openPaidPdfReader(book) {
     const existing = document.getElementById("heavensReader");
     if (existing) existing.remove();
+    let reader = null;
+    let resizeHandler = null;
+    let closed = false;
     try {
       const session = await ensureHeavensAnonymousSession();
-      if (!session || !session.access_token) throw new Error("Please reconnect before opening this PDF.");
+      if (!session || !session.access_token) throw new Error("Please reconnect before opening this book.");
       const result = await heavensSupabase.functions.invoke("book-pdf-access", {
         body: { book_id: String(book.supabaseId || book.id || "") }
       });
       if (result.error || !result.data || !result.data.success || !result.data.url) {
         console.error("Protected PDF access failed:", result.error || result.data);
-        throw new Error((result.data && result.data.error) || "Payment must be confirmed by the server before this PDF can open.");
+        throw new Error((result.data && result.data.error) || "Payment must be confirmed by the server before this book can open.");
       }
-      const reader = document.createElement("div");
+
+      const pdfjs = await loadPdfJs();
+      if (closed) return;
+      reader = document.createElement("div");
       reader.id = "heavensReader";
-      reader.style.cssText = "position:fixed;inset:0;z-index:1000000;background:#07110f;display:flex;flex-direction:column;color:#f3fffb;";
-      reader.innerHTML = '<div style="height:56px;flex-shrink:0;display:flex;align-items:center;gap:12px;padding:0 14px;background:#0d211c;border-bottom:1px solid #24443a;"><button type="button" aria-label="Close PDF" style="width:38px;height:38px;border:0;border-radius:10px;background:#17372e;color:#fff;font-size:25px;">×</button><div id="b2pReaderTitle" style="min-width:0;flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div><span style="font-size:11px;color:#a8c8bc;">PDF</span></div><iframe title="Book PDF" style="width:100%;height:100%;flex:1;border:0;background:#fff;" referrerpolicy="no-referrer"></iframe>';
-      reader.querySelector("#b2pReaderTitle").textContent = String(book.title || "Book PDF");
-      reader.querySelector("iframe").src = result.data.url;
-      reader.querySelector("button").onclick = () => { reader.remove(); document.body.style.overflow = ""; };
+      reader.innerHTML = `
+        <div class="hr-head">
+          <button class="hr-back" type="button" aria-label="Close book">×</button>
+          <div class="hr-name"></div>
+          <div class="hr-counter" id="hrTopCount">1 / 1</div>
+        </div>
+        <div class="hr-stage" id="hrStage">
+          <div class="hr-book" id="hrBook"></div>
+          <div class="hr-controls">
+            <button class="hr-nav" id="hrPrev" type="button" aria-label="Previous page">‹</button>
+            <div class="hr-page-count" id="hrPageCount">1 / 1</div>
+            <button class="hr-nav" id="hrNext" type="button" aria-label="Next page">›</button>
+          </div>
+        </div>`;
+      reader.querySelector(".hr-name").textContent = String(book.title || "Untitled Book");
       document.body.appendChild(reader);
       document.body.style.overflow = "hidden";
+      if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
+
+      const bookEl = reader.querySelector("#hrBook");
+      const stage = reader.querySelector("#hrStage");
+      const pages = [];
+      const rendered = new Map();
+      let currentPage = 0, turning = false, turnTimer = null, pdfDocument = null;
+
+      function addCoverPage() {
+        const page = document.createElement("article");
+        page.className = "hr-page hr-page-cover-wrap";
+        page.style.display = "none";
+        page.innerHTML = '<div class="hr-page-inner hr-cover-inner"></div>';
+        const inner = page.querySelector(".hr-page-inner");
+        const img = document.createElement("img");
+        img.className = "hr-page-cover";
+        img.alt = "Front cover";
+        img.src = String(book.frontCover || "");
+        img.onerror = () => {
+          inner.innerHTML = "";
+          inner.classList.add("hr-cover-fallback");
+          const title = document.createElement("div");
+          title.className = "hr-cover-fallback-title";
+          title.textContent = String(book.title || "Untitled Book");
+          inner.appendChild(title);
+        };
+        inner.appendChild(img);
+        bookEl.appendChild(page);
+        pages.push({ element: page, kind: "cover", pdfPage: null });
+      }
+
+      function addPdfPage(number) {
+        const page = document.createElement("article");
+        page.className = "hr-page hr-pdf-page";
+        page.style.display = "none";
+        page.innerHTML = '<div class="hr-page-inner"><canvas aria-label="Book page ' + number + '"></canvas><div class="hr-pdf-loading">Loading page…</div></div>';
+        bookEl.appendChild(page);
+        pages.push({ element: page, kind: "pdf", pdfPage: number });
+      }
+
+      function updateReader() {
+        pages.forEach((item, index) => {
+          item.element.style.display = index === currentPage ? "block" : "none";
+          item.element.style.visibility = "visible";
+          item.element.style.zIndex = index === currentPage ? "20" : "1";
+          item.element.classList.remove("is-turning-next", "is-turning-prev");
+        });
+        const label = (currentPage + 1) + " / " + pages.length;
+        reader.querySelector("#hrPageCount").textContent = label;
+        reader.querySelector("#hrTopCount").textContent = label;
+        reader.querySelector("#hrPrev").disabled = currentPage === 0;
+        reader.querySelector("#hrNext").disabled = currentPage === pages.length - 1;
+        renderCurrentPdfPage();
+      }
+
+      async function renderCurrentPdfPage() {
+        const item = pages[currentPage];
+        if (!item || item.kind !== "pdf" || rendered.has(item.pdfPage) || !pdfDocument) return;
+        const pageEl = item.element;
+        const canvas = pageEl.querySelector("canvas");
+        const loading = pageEl.querySelector(".hr-pdf-loading");
+        try {
+          const pdfPage = await pdfDocument.getPage(item.pdfPage);
+          if (closed || !pageEl.isConnected) return;
+          const base = pdfPage.getViewport({ scale: 1 });
+          const availableWidth = Math.max(240, stage.clientWidth - 24);
+          const availableHeight = Math.max(240, stage.clientHeight - 90);
+          const fitScale = Math.min(availableWidth / base.width, availableHeight / base.height);
+          const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+          const viewport = pdfPage.getViewport({ scale: Math.max(0.35, fitScale * outputScale) });
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          canvas.style.width = Math.max(1, Math.round(viewport.width / outputScale)) + "px";
+          canvas.style.height = Math.max(1, Math.round(viewport.height / outputScale)) + "px";
+          await pdfPage.render({ canvasContext: canvas.getContext("2d", { alpha: false }), viewport }).promise;
+          if (loading) loading.remove();
+          rendered.set(item.pdfPage, true);
+        } catch (error) {
+          console.error("PDF page render failed:", error);
+          if (loading) loading.textContent = "This page could not be rendered. Try turning away and back.";
+        }
+      }
+
+      function turnTo(nextPage, direction) {
+        if (turning || nextPage < 0 || nextPage >= pages.length || nextPage === currentPage) return;
+        turning = true;
+        const old = pages[currentPage].element, next = pages[nextPage].element;
+        next.style.display = "block"; next.style.zIndex = "19"; old.style.zIndex = "20";
+        old.classList.add(direction > 0 ? "is-turning-next" : "is-turning-prev");
+        clearTimeout(turnTimer);
+        turnTimer = setTimeout(() => { currentPage = nextPage; turning = false; updateReader(); }, 560);
+      }
+      const nextPage = () => turnTo(currentPage + 1, 1);
+      const prevPage = () => turnTo(currentPage - 1, -1);
+      reader.querySelector("#hrNext").onclick = event => { event.stopPropagation(); nextPage(); };
+      reader.querySelector("#hrPrev").onclick = event => { event.stopPropagation(); prevPage(); };
+
+      const closeReader = () => {
+        closed = true;
+        clearTimeout(turnTimer);
+        if (resizeHandler) window.removeEventListener("resize", resizeHandler);
+        if (pdfDocument) { try { pdfDocument.destroy(); } catch (_) {} }
+        if (reader) reader.remove();
+        document.body.style.overflow = "";
+        if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
+      };
+      reader.querySelector(".hr-back").onclick = event => { event.stopPropagation(); closeReader(); };
+      reader.tabIndex = 0;
+      reader.focus();
+      reader.addEventListener("keydown", event => {
+        if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); nextPage(); }
+        else if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); prevPage(); }
+        else if (event.key === "Escape") { event.preventDefault(); closeReader(); }
+      });
+      let startX = 0, startY = 0;
+      reader.addEventListener("touchstart", event => { const touch = event.changedTouches[0]; startX = touch.screenX; startY = touch.screenY; }, { passive: true });
+      reader.addEventListener("touchend", event => {
+        const touch = event.changedTouches[0], dx = touch.screenX - startX, dy = touch.screenY - startY;
+        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.2) dx < 0 ? nextPage() : prevPage();
+      }, { passive: true });
+      reader.addEventListener("contextmenu", event => event.preventDefault());
+      reader.addEventListener("copy", event => event.preventDefault());
+      reader.addEventListener("cut", event => event.preventDefault());
+      reader.addEventListener("dragstart", event => event.preventDefault());
+      resizeHandler = () => {
+        rendered.clear();
+        pages.forEach(item => {
+          if (item.kind === "pdf") {
+            const canvas = item.element.querySelector("canvas");
+            if (canvas) { canvas.width = 0; canvas.height = 0; }
+            const loading = item.element.querySelector(".hr-pdf-loading");
+            if (loading && !loading.isConnected) item.element.querySelector(".hr-page-inner").appendChild(loading);
+          }
+        });
+        renderCurrentPdfPage();
+      };
+      window.addEventListener("resize", resizeHandler);
+
+      const loadingPage = document.createElement("div");
+      loadingPage.className = "hr-pdf-loading";
+      loadingPage.textContent = "Opening your book…";
+      bookEl.appendChild(loadingPage);
+      try {
+        const task = pdfjs.getDocument({ url: result.data.url, withCredentials: false });
+        pdfDocument = await task.promise;
+      } finally {
+        loadingPage.remove();
+      }
+      if (closed) return;
+      if (book.frontCover) addCoverPage();
+      else {
+        const titlePage = document.createElement("article");
+        titlePage.className = "hr-page";
+        titlePage.style.display = "none";
+        titlePage.innerHTML = '<div class="hr-page-inner"><div class="hr-page-subtitle">I|ONE LIBRARY</div><h1 class="hr-page-title"></h1><div class="hr-page-rule"></div></div>';
+        titlePage.querySelector(".hr-page-title").textContent = String(book.title || "Untitled Book");
+        bookEl.appendChild(titlePage);
+        pages.push({ element: titlePage, kind: "cover", pdfPage: null });
+      }
+      for (let number = 1; number <= pdfDocument.numPages; number++) addPdfPage(number);
+      updateReader();
     } catch (error) {
-      console.error("Could not open PDF book:", error);
-      alert(error && error.message ? error.message : "Could not open this PDF.");
+      console.error("Could not open interactive PDF book:", error);
+      if (reader) reader.remove();
+      document.body.style.overflow = "";
+      if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
+      alert(error && error.message ? error.message : "Could not open this book. Please try again.");
     }
   };
 })();
