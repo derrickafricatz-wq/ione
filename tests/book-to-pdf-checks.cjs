@@ -20,8 +20,8 @@ assert.ok(html.includes('href="tel:+255742097868"'));
 assert.ok(html.includes('href="https://wa.me/255742097868"'));
 assert.ok(html.includes('tap the existing I|ONE Support chat button'));
 assert.ok(html.includes('I|ONE / Authority Press may review'));
-assert.match(sw, /ione-app-v\\d+/);
-assert.match(version.version, /^\\d+\\.\\d+\\.\\d+$/);
+assert.match(sw, /ione-app-v\d+/);
+assert.match(version.version, /^\d+\.\d+\.\d+$/);
 console.log("PASS: Author Studio consent, support links, and cache/version checks");
 
 
@@ -85,6 +85,12 @@ assert.match(feature, /frontCover = coverFile \? await compressFrontCover\(cover
 assert.match(feature, /id="b2pUpdateCover"/);
 assert.match(feature, /update\(\{ front_cover: frontCover \}\)/);
 assert.match(feature, /pdfjs\.getDocument/);
+assert.match(feature, /IoneOfflineBooks/);
+assert.match(feature, /savedBook\.blob/);
+assert.match(feature, /saveFromUrl/);
+assert.match(html, /ione-offline-books\.js/);
+assert.match(sw, /ione-pdfjs-v3\.11\.174/);
+assert.match(sw, /ione-offline-books\.js/);
 assert.match(feature, /hrNext/);
 assert.match(html, /book-to-pdf-reader-and-explore-layout/);
 assert.match(html, /grid-auto-rows:max-content/);
