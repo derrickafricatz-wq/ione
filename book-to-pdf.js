@@ -78,6 +78,30 @@
       title.style.cssText = "font-size:15px;font-weight:900;overflow-wrap:anywhere;";
       const kind = document.createElement("div"); kind.textContent = (book.pdf_path ? "PDF book" : "Created in I|ONE") + " • " + (book.active ? "Published" : "Revoked");
       kind.style.cssText = "font-size:11px;color:#9dbdaf;";
+      const authorNameInput = document.createElement("input"); authorNameInput.type = "text"; authorNameInput.maxLength = 160; authorNameInput.value = String(book.author_name || ""); authorNameInput.placeholder = "Author name";
+      authorNameInput.style.cssText = "width:100%;box-sizing:border-box;padding:10px;border:1px solid #31594c;border-radius:9px;background:#07140f;color:#fff;";
+      const insightInput = document.createElement("textarea"); insightInput.maxLength = 12000; insightInput.rows = 3; insightInput.value = String(book.book_insight || ""); insightInput.placeholder = "Book insight / introduction for Explore";
+      insightInput.style.cssText = "width:100%;box-sizing:border-box;padding:10px;border:1px solid #31594c;border-radius:9px;background:#07140f;color:#fff;resize:vertical;";
+      const saveInsight = document.createElement("button"); saveInsight.type = "button"; saveInsight.textContent = "SAVE AUTHOR & INSIGHT";
+      saveInsight.style.cssText = "padding:10px 12px;border:1px solid #2a6b54;border-radius:9px;background:#102a20;color:#bffff0;font-weight:900;font-size:11px;";
+      saveInsight.onclick = async () => {
+        const nextAuthor = authorNameInput.value.trim(), nextInsight = insightInput.value.trim();
+        if (!nextAuthor) { status.textContent = "Enter the author's name."; authorNameInput.focus(); return; }
+        if (!nextInsight) { status.textContent = "Write a short book insight."; insightInput.focus(); return; }
+        saveInsight.disabled = true; saveInsight.textContent = "SAVING…";
+        try {
+          const session = await ensureHeavensAnonymousSession();
+          if (!session?.user?.id) throw new Error("Please reconnect before saving book details.");
+          const saved = await heavensSupabase.from("heavens_books").update({ author_name: nextAuthor, book_insight: nextInsight }).eq("id", String(book.id)).eq("author_id", String(session.user.id)).select("id").single();
+          if (saved.error) throw saved.error;
+          book.author_name = nextAuthor; book.book_insight = nextInsight;
+          status.textContent = "Author name and insight saved for “" + String(book.title || "your book") + "”. You can now request narration.";
+          saveInsight.textContent = "SAVED";
+        } catch (error) {
+          status.textContent = error && error.message ? error.message : "Could not save author details.";
+          saveInsight.textContent = "SAVE AUTHOR & INSIGHT";
+        } finally { saveInsight.disabled = false; }
+      };
       const controls = document.createElement("div"); controls.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;";
       const price = document.createElement("input"); price.type = "number"; price.min = "0"; price.step = "1"; price.inputMode = "numeric"; price.value = String(Number(book.price || 0));
       price.setAttribute("aria-label", "Price in TZS"); price.style.cssText = "width:125px;max-width:42%;padding:10px;border-radius:9px;border:1px solid #31594c;background:#07140f;color:#fff;box-sizing:border-box;";
@@ -148,7 +172,7 @@
           revoke.disabled = false; revoke.textContent = "REVOKE & DELETE";
         }
       };
-      actions.append(save, revoke); details.append(title, kind, controls, actions, requestAudio); card.append(cover, details);
+      actions.append(save, revoke); details.append(title, kind, authorNameInput, insightInput, saveInsight, controls, actions, requestAudio); card.append(cover, details);
       return card;
     };
 
@@ -157,6 +181,15 @@
         const result = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "my_books" } });
         if (result.error || !result.data || !result.data.success) throw new Error((result.data && result.data.error) || "Could not load your published books.");
         const books = Array.isArray(result.data.books) ? result.data.books : [];
+        if (books.length) {
+          try {
+            const meta = await heavensSupabase.from("heavens_books").select("id,author_name,book_insight").in("id", books.map(book => String(book.id)));
+            if (!meta.error && Array.isArray(meta.data)) {
+              const byId = new Map(meta.data.map(row => [String(row.id), row]));
+              books.forEach(book => { const row = byId.get(String(book.id)); if (row) { book.author_name = row.author_name || ""; book.book_insight = row.book_insight || ""; } });
+            }
+          } catch (metaError) { console.warn("Book insight metadata could not be loaded:", metaError); }
+        }
         list.replaceChildren();
         if (!books.length) { status.textContent = "No books are published under this author account yet."; return; }
         status.textContent = books.length + " published book" + (books.length === 1 ? "" : "s") + ". Change prices, switch between paid and free, or revoke a book.";
