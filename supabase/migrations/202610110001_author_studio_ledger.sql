@@ -143,7 +143,7 @@ declare
   v_profile public.author_studio_profiles%rowtype;
 begin
   if new.active is distinct from true then return new; end if;
-  select * into v_profile from public.author_studio_profiles where user_id = new.author_id;
+  select * into v_profile from public.author_studio_profiles where user_id = new.author_id for update;
   if not found then return new; end if;
   if tg_op = 'UPDATE' and old.active is true and old.author_id = new.author_id then return new; end if;
   if v_profile.package_status <> 'active' then
