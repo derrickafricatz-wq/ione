@@ -118,7 +118,7 @@ declare
   v_count integer;
 begin
   v_author_id := coalesce(new.author_id, old.author_id);
-  if v_author_id is null then return coalesce(new,old); end if;
+  if v_author_id is null then return null; end if;
   select count(*) into v_count from public.heavens_books
     where author_id = v_author_id and active = true;
   update public.author_studio_profiles
@@ -129,10 +129,40 @@ begin
           else package_status end,
         updated_at = now()
     where user_id = v_author_id and package_status in ('active','locked');
-  return coalesce(new,old);
+  return null;
 end;
-$$;
+$;
 drop trigger if exists author_studio_published_count on public.heavens_books;
 create trigger author_studio_published_count
 after insert or update of active, author_id or delete on public.heavens_books
 for each row execute function public.author_studio_sync_published_count();
+
+-- New package holders must have an active package before publishing; legacy
+-- authors without an author_studio_profiles row keep their existing behavior.
+create or replace function public.author_studio_guard_publish()
+returns trigger language plpgsql security invoker set search_path = public
+as $$
+declare
+  v_profile public.author_studio_profiles%rowtype;
+  v_count integer;
+begin
+  if new.active is distinct from true then return new; end if;
+  select * into v_profile from public.author_studio_profiles where user_id = new.author_id;
+  if not found then return new; end if;
+  if tg_op = 'UPDATE' and old.active is true then return new; end if;
+  if v_profile.package_status <> 'active' then
+    raise exception 'Author Studio publishing access is locked; contact I|ONE support.';
+  end if;
+  select count(*) into v_count from public.heavens_books
+    where author_id = new.author_id and active = true
+      and (tg_op <> 'UPDATE' or id <> new.id);
+  if v_count >= 3 then
+    raise exception 'This publishing package includes up to three published books.';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists author_studio_publish_guard on public.heavens_books;
+create trigger author_studio_publish_guard
+before insert or update of active on public.heavens_books
+for each row execute function public.author_studio_guard_publish();
