@@ -2858,6 +2858,7 @@ function getMedia(id){
   <button id="savedSermons">SAVED SERMONS</button>
   <button id="clearTranscript">NEW</button>
   <button id="bookToPdfButton" type="button" onclick="openBookToPdfPanel()" style="border:1px solid #00d7a8;background:#102b25;color:#eafff8;border-radius:9px;padding:8px 11px;font-weight:700;">BOOK TO PDF</button>
+  <button id="myPublishedBooksButton" type="button" onclick="openMyPublishedBooksPanel()" style="border:1px solid #31594c;background:#122820;color:#eafff8;border-radius:9px;padding:8px 11px;font-weight:700;">MY PUBLISHED BOOKS</button>
 </div>
 
 <div id="transcriptText" contenteditable="true">
@@ -8063,15 +8064,28 @@ async function loadHeavensServerBooks(){
     const session = await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,author_id,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,author_id,payment_required,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
+    let purchasedIds = new Set();
+    try {
+      const accessResult = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "my_access" } });
+      if (!accessResult.error && accessResult.data?.success && Array.isArray(accessResult.data.book_ids)) {
+        purchasedIds = new Set(accessResult.data.book_ids.map(String));
+      } else if (accessResult.error) {
+        console.warn("Saved book access could not be refreshed:", accessResult.error);
+      }
+    } catch (accessError) {
+      console.warn("Saved book access lookup failed:", accessError);
+    }
     return (data || []).map(b => ({
       id: "HB-SERVER-" + b.id,
       supabaseId: b.id,
       authorId: b.author_id || "",
       isAuthor: !!session?.user?.id && String(b.author_id) === String(session.user.id),
+      isPurchased: purchasedIds.has(String(b.id)),
+      paymentRequired: b.payment_required !== false,
       title: b.title,
       category: b.category || "SERMONS",
       price: Number(b.price || 0),
@@ -8100,7 +8114,8 @@ function getHeavensBookStableKey(book){
   return String(book?.supabaseId || book?.id || "").trim();
 }
 function isBookPaid(book){
-  if(book?.isAuthor === true) return true;
+  if(book?.isAuthor === true || book?.isPurchased === true) return true;
+  if(book?.paymentRequired === false || Number(book?.price || 0) <= 0) return true;
   const paid=getPaidBooks();
   const key=getHeavensBookStableKey(book);
   if(key && paid[key]) return true;
@@ -8171,7 +8186,7 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = Number.isFinite(displayPrice) && displayPrice > 0 ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET";
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><div class="hb-lock">${paid?'Unlocked on this device':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><div class="hb-lock">${book.isAuthor?'Your published book':(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
       const coverImg=card.querySelector('.hb-cover img');
       if(coverImg){
         coverImg.onerror=()=>{
