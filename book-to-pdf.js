@@ -1,4 +1,5 @@
 /* I|ONE Book to PDF — isolated feature module. Requires the matching Supabase migration and book-pdf-access function. */
+/* PDF cover selection: prefer a detected cover page; request an uploaded cover for dense content pages. */
 (function () {
   "use strict";
 
@@ -302,7 +303,7 @@
       let published = false;
       try {
         frontCover = coverFile ? await compressFrontCover(coverFile) : await coverFromPdfFirstPage(file);
-        if (!frontCover) throw new Error("Could not create the book cover from this PDF. Please upload a separate front-cover image.");
+        if (!frontCover) throw new Error("A separate front-cover image is needed because the first PDF page does not look like a cover. Upload the cover image and publish again.");
         status.textContent = "Preparing secure upload…";
         const session = await ensureHeavensAnonymousSession();
         if (!session || !session.user || !session.user.id) throw new Error("Please reconnect before publishing.");
@@ -352,6 +353,22 @@
     const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
     try {
       const page = await doc.getPage(1);
+      const textContent = await page.getTextContent();
+      const textItems = Array.isArray(textContent.items) ? textContent.items : [];
+      const characterCount = textItems.reduce((sum, item) => sum + String(item.str || "").trim().length, 0);
+      const operators = await page.getOperatorList();
+      const imageOps = new Set([
+        pdfjs.OPS.paintImageXObject,
+        pdfjs.OPS.paintInlineImageXObject,
+        pdfjs.OPS.paintJpegXObject,
+        pdfjs.OPS.paintImageMaskXObject,
+        pdfjs.OPS.paintImageMaskXObjectGroup
+      ].filter(value => value !== undefined));
+      const hasImage = Array.isArray(operators.fnArray) && operators.fnArray.some(op => imageOps.has(op));
+      // A cover usually has a sparse title/layout or a large image. Dense first pages are treated as body text.
+      const likelyCover = (textItems.length <= 28 && characterCount > 0 && characterCount <= 520)
+        || (hasImage && textItems.length <= 55 && characterCount <= 900);
+      if (!likelyCover) return "";
       const original = page.getViewport({ scale: 1 });
       const scale = Math.min(1.25, 900 / Math.max(1, original.width));
       const viewport = page.getViewport({ scale });
