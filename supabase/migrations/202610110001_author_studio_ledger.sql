@@ -115,23 +115,20 @@ returns trigger language plpgsql security invoker set search_path = public
 as $$
 declare
   v_author_id uuid;
-  v_count integer;
 begin
-  v_author_id := coalesce(new.author_id, old.author_id);
+  if tg_op = 'DELETE' then return null; end if;
+  v_author_id := new.author_id;
   if v_author_id is null then return null; end if;
-  select count(*) into v_count from public.heavens_books
-    where author_id = v_author_id and active = true;
-  update public.author_studio_profiles
-    set published_books_used = least(v_count,3),
-        package_status = case
-          when package_status = 'active' and v_count >= 3 then 'locked'
-          when package_status = 'locked' and v_count < 3 then 'active'
-          else package_status end,
-        updated_at = now()
-    where user_id = v_author_id and package_status in ('active','locked');
+  if new.active is true and (tg_op = 'INSERT' or old.active is distinct from true or old.author_id is distinct from new.author_id) then
+    update public.author_studio_profiles
+      set published_books_used = least(3, published_books_used + 1),
+          package_status = case when published_books_used + 1 >= 3 then 'locked' else package_status end,
+          updated_at = now()
+      where user_id = v_author_id and package_status in ('active','locked');
+  end if;
   return null;
 end;
-$;
+$$;
 drop trigger if exists author_studio_published_count on public.heavens_books;
 create trigger author_studio_published_count
 after insert or update of active, author_id or delete on public.heavens_books
@@ -144,19 +141,15 @@ returns trigger language plpgsql security invoker set search_path = public
 as $$
 declare
   v_profile public.author_studio_profiles%rowtype;
-  v_count integer;
 begin
   if new.active is distinct from true then return new; end if;
   select * into v_profile from public.author_studio_profiles where user_id = new.author_id;
   if not found then return new; end if;
-  if tg_op = 'UPDATE' and old.active is true then return new; end if;
+  if tg_op = 'UPDATE' and old.active is true and old.author_id = new.author_id then return new; end if;
   if v_profile.package_status <> 'active' then
     raise exception 'Author Studio publishing access is locked; contact I|ONE support.';
   end if;
-  select count(*) into v_count from public.heavens_books
-    where author_id = new.author_id and active = true
-      and (tg_op <> 'UPDATE' or id <> new.id);
-  if v_count >= 3 then
+  if v_profile.published_books_used >= 3 then
     raise exception 'This publishing package includes up to three published books.';
   end if;
   return new;
