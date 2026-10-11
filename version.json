@@ -1,5 +1,5 @@
 {
-  "version": "1.0.94",
-  "message": "Public bookstore labels and persistent access",
+  "version": "1.0.95",
+  "message": "PDF cover page deduplication and publisher payment rules",
   "force": true
 }
