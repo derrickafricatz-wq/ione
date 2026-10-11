@@ -75,13 +75,16 @@
 
   async function saveFromUrl(id, url, metadata) {
     const endActivity = beginOfflineActivity("BOOK");
+    let success = false;
     try {
       const response = await fetch(url, { method: "GET", cache: "no-store", credentials: "omit" });
       if (!response.ok) throw new Error("Book download failed (" + response.status + ").");
       const blob = await response.blob();
-      return await save(id, blob, metadata);
+      const result = await save(id, blob, metadata);
+      success = true;
+      return result;
     } finally {
-      endActivity();
+      endActivity(success);
     }
   }
 
@@ -100,6 +103,7 @@
 
   /* ================= I|ONE OFFLINE MEDIA + DOWNLOAD ALERT ================= */
   let activeDownloads = 0;
+  let failedDownloads = 0;
   let statusElement = null;
   let beepTimer = 0;
   let audioContext = null;
@@ -172,9 +176,10 @@
     }
     tryResumeAudio();
     let ended = false;
-    return function endOfflineActivity() {
+    return function endOfflineActivity(success) {
       if (ended) return;
       ended = true;
+      if (success === false) failedDownloads += 1;
       activeDownloads = Math.max(0, activeDownloads - 1);
       const current = ensureStatusElement();
       if (activeDownloads > 0) {
@@ -184,13 +189,15 @@
       }
       if (beepTimer) { clearInterval(beepTimer); beepTimer = 0; }
       if (current) {
-        current.classList.add("is-complete");
+        const failed = failedDownloads > 0;
+        failedDownloads = 0;
+        current.classList.toggle("is-complete", !failed);
         const text = current.querySelector(".ione-offline-alert-text");
-        if (text) text.textContent = "OFFLINE SAVED";
+        if (text) text.textContent = failed ? "SOME ITEMS NOT SAVED" : "OFFLINE SAVED";
         hideStatusTimer = window.setTimeout(() => {
           if (current && !activeDownloads) current.style.display = "none";
           hideStatusTimer = 0;
-        }, 1800);
+        }, failed ? 3200 : 1800);
       }
     };
   }
@@ -228,6 +235,7 @@
       const cache = await caches.open(MEDIA_CACHE_NAME);
       if (await cache.match(url)) return true;
       const endActivity = beginOfflineActivity("MEDIA");
+      let success = false;
       try {
         const response = await fetch(url, { method: "GET", cache: "no-store", credentials: "omit", mode: "cors" });
       if (!response.ok || (response.type !== "basic" && response.type !== "cors" && response.type !== "default")) return false;
@@ -241,12 +249,13 @@
       } else {
         await cache.put(url, response.clone());
       }
+        success = true;
         return true;
       } catch (error) {
         console.warn("I|ONE offline media cache skipped:", url, error);
         return false;
       } finally {
-        endActivity();
+        endActivity(success);
       }
     } catch (error) {
       console.warn("I|ONE offline media cache skipped:", url, error);
