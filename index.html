@@ -8135,8 +8135,8 @@ async function openHeavensBookstore(){
     <div class="hb-head">
       <button class="hb-close" id="hbClose">×</button>
       <div class="hb-title">I1 LIB</div>
-      <div class="hb-sub">God's books • Read inside the app</div>
-      <div class="hb-search"><input id="hbSearch" placeholder="Search God's books..." autocomplete="off"><button id="hbSearchBtn">⌕</button></div>
+      <div class="hb-sub">Call now • Read inside the app</div>
+      <div class="hb-search"><input id="hbSearch" placeholder="Find words that move you..." autocomplete="off"><button id="hbSearchBtn">⌕</button></div>
       <div class="hb-cats" id="hbCats"></div>
     </div>
     <div class="hb-grid" id="hbGrid"></div>`;
@@ -8597,7 +8597,7 @@ function heavensPhonePaymentDialog(book, amount){
     const overlay=document.createElement("div"); overlay.id="heavensPaymentDialog"; overlay.className="heavens-payment-overlay";
     overlay.innerHTML=`<div class="heavens-payment-card" role="dialog" aria-modal="true" aria-labelledby="heavensPayTitle">
       <button class="heavens-payment-close" type="button" aria-label="Close">×</button>
-      <div class="heavens-payment-kicker">HEAVEN'S BOOKS</div>
+      <div class="heavens-payment-kicker">PUBLIC BOOKS</div>
       <h2 id="heavensPayTitle">Confirm your purchase</h2>
       <div class="heavens-payment-book">${escapeBookHtml(book.title||"Untitled Book")}</div>
       <div class="heavens-payment-total"><span>TOTAL PRICE</span><strong>TZS ${amount.toLocaleString()}</strong></div>
