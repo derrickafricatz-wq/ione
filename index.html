@@ -8030,7 +8030,7 @@ async function loadHeavensServerBooks(){
     await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
