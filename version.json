@@ -1,5 +1,5 @@
 {
-  "version": "1.0.109",
-  "message": "Refresh app scripts from network first and fix referral token lookup",
+  "version": "1.0.110",
+  "message": "Repair I|ONE update detection and refresh app scripts",
   "force": true
 }
