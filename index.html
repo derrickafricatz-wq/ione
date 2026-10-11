@@ -8057,6 +8057,10 @@ async function checkForUpdate() {
   }
 }
 
+  // Check immediately on startup and periodically so installed PWAs receive fixes.
+  checkForUpdate();
+  setInterval(checkForUpdate, 60000);
+
 // check every 1 minute
 setInterval(checkForUpdate, 60000);
 
