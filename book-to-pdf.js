@@ -174,20 +174,19 @@
       const coverFile = coverInput.files && coverInput.files[0];
       if (!title) { status.textContent = "Enter the book title."; panel.querySelector("#b2pTitle").focus(); return; }
       if (!Number.isInteger(price) || price <= 0) { status.textContent = "Enter a whole-number price in TZS."; panel.querySelector("#b2pPrice").focus(); return; }
-      if (!coverFile) { status.textContent = "Upload a front cover image so your book appears properly in Explore."; return; }
-      if (!coverFile.type || !coverFile.type.startsWith("image/")) { status.textContent = "Please choose a valid front cover image."; return; }
-      if (coverFile.size > 15 * 1024 * 1024) { status.textContent = "The cover image must be 15 MB or smaller."; return; }
+      if (coverFile && (!coverFile.type || !coverFile.type.startsWith("image/"))) { status.textContent = "Please choose a valid front cover image."; return; }
+      if (coverFile && coverFile.size > 15 * 1024 * 1024) { status.textContent = "The cover image must be 15 MB or smaller."; return; }
       if (!file) { status.textContent = "Choose a PDF file first."; return; }
       if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) { status.textContent = "Only PDF files are accepted."; return; }
       if (file.size > 50 * 1024 * 1024) { status.textContent = "This PDF is over the 50 MB limit."; return; }
 
-      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing the front cover…";
+      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = coverFile ? "Preparing the front cover…" : "Using the first page of your PDF as the book cover…";
       let path = "";
       let frontCover = "";
       let published = false;
       try {
-        frontCover = await compressFrontCover(coverFile);
-        if (!frontCover) throw new Error("Could not process the front cover image. Please choose another image.");
+        frontCover = coverFile ? await compressFrontCover(coverFile) : await coverFromPdfFirstPage(file);
+        if (!frontCover) throw new Error("Could not create the book cover from this PDF. Please upload a separate front-cover image.");
         status.textContent = "Preparing secure upload…";
         const session = await ensureHeavensAnonymousSession();
         if (!session || !session.user || !session.user.id) throw new Error("Please reconnect before publishing.");
@@ -199,8 +198,8 @@
         status.textContent = "File uploaded securely. Publishing bookstore listing…";
         const inserted = await heavensSupabase.from("heavens_books").insert({
           title, category, price, currency: "TZS", front_cover: frontCover, back_cover: null,
-          contents: "", chapters: [], author_id: session.user.id, active: true, pdf_path: path
-        }).select("id,title,category,price,currency,front_cover,pdf_path,created_at").single();
+          contents: "", chapters: [], author_id: session.user.id, active: true, payment_required: true, pdf_path: path
+        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,created_at").single();
         if (inserted.error) throw inserted.error;
         published = true;
 
@@ -209,7 +208,8 @@
           id: "HB-SERVER-" + row.id, supabaseId: row.id, title: row.title,
           category: row.category, price: Number(row.price), currency: row.currency || "TZS",
           contents: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
-          chapters: [], date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
+          chapters: [], paymentRequired: row.payment_required !== false, isAuthor: true,
+          date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
         if (typeof markBookPaid === "function") {
           try { markBookPaid(book); } catch (storageError) { console.warn("Could not cache author preview state:", storageError); }
@@ -228,6 +228,30 @@
       }
     };
   };
+
+
+  async function coverFromPdfFirstPage(file) {
+    const pdfjs = await loadPdfJs();
+    const buffer = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+    try {
+      const page = await doc.getPage(1);
+      const original = page.getViewport({ scale: 1 });
+      const scale = Math.min(1.25, 900 / Math.max(1, original.width));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.ceil(viewport.width));
+      canvas.height = Math.max(1, Math.ceil(viewport.height));
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("Cover image processing is unavailable.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      return canvas.toDataURL("image/jpeg", 0.82);
+    } finally {
+      try { await doc.destroy(); } catch (_) {}
+    }
+  }
 
   let pdfJsLoadPromise = null;
   function loadPdfJs() {
