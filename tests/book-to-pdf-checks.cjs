@@ -16,9 +16,9 @@ const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)
   .map((match) => match[1])
   .filter((source) => source.trim() && !/^\s*(?:import|export)\b/m.test(source));
 for (let i = 0; i < inlineScripts.length; i++) {
-  new vm.Script(inlineScripts[i], { filename: \`index.html inline script \${i + 1}\` });
+  new vm.Script(inlineScripts[i], { filename: "index.html inline script " + (i + 1) });
 }
-console.log(\`PASS: \${inlineScripts.length} inline scripts parse\`);
+console.log("PASS: " + inlineScripts.length + " inline scripts parse");
 
 assert.match(html, /BOOK TO PDF/);
 assert.match(html, /book-to-pdf\.js/);
