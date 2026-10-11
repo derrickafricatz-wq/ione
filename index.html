@@ -271,11 +271,76 @@ window.ioneEnsureBookPdfLibraries = async function(){
 
   let ioneAuthorityLoadedPrices={"2weeks":null,"1month":null,"3months":null};
 
+  async function loadAuthorityNarrationRequests(){
+    const list=document.getElementById("authorityNarrationList");
+    const status=document.getElementById("authorityNarrationStatus");
+    const refresh=document.getElementById("authorityNarrationRefresh");
+    if(!list||!status)return;
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    if(!password){status.textContent="Unlock Authority Press again to manage narration.";return;}
+    if(refresh){refresh.disabled=true;refresh.textContent="LOADING…";}
+    status.textContent="Loading requests…";
+    try{
+      const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_list",password}});
+      if(result.error||!result.data?.success)throw new Error(result.data?.error||"Could not load narration requests.");
+      list.replaceChildren();
+      const requests=Array.isArray(result.data.requests)?result.data.requests:[];
+      if(!requests.length){status.textContent="No narration requests yet.";return;}
+      status.textContent=requests.length+" narration request(s).";
+      requests.forEach(request=>{
+        const card=document.createElement("article");
+        card.style.cssText="display:grid;gap:9px;padding:13px;border:1px solid #31564a;border-radius:12px;background:#07140f;color:#eafff4;";
+        const heading=document.createElement("div");heading.textContent=String(request.book_title||"Untitled book")+" • "+String(request.author_name||"Author not named");heading.style.cssText="font-size:14px;font-weight:900;overflow-wrap:anywhere;";
+        const state=document.createElement("div");state.textContent="STATUS: "+String(request.status||"requested").replace(/_/g," ").toUpperCase();state.style.cssText="font-size:10px;letter-spacing:1px;color:#70e5bd;font-weight:900;";
+        const insight=document.createElement("div");insight.textContent=String(request.book_insight||"No insight supplied.");insight.style.cssText="font-size:12px;line-height:1.55;color:#c5d9d0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;";
+        const notes=document.createElement("textarea");notes.rows=2;notes.maxLength=4000;notes.placeholder="Internal review notes / message for author";notes.value=String(request.authority_notes||"");notes.style.cssText="width:100%;box-sizing:border-box;padding:10px;border:1px solid #31594c;border-radius:9px;background:#10231d;color:#fff;";
+        const actions=document.createElement("div");actions.style.cssText="display:flex;gap:7px;flex-wrap:wrap;";
+        const setStatus=async(next,label)=>{
+          const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_status",password,request_id:request.id,status:next,authority_notes:notes.value}});
+          if(result.error||!result.data?.success)throw new Error(result.data?.error||"Could not update request status.");
+          request.status=next;request.authority_notes=notes.value;state.textContent="STATUS: "+next.replace(/_/g," ").toUpperCase();status.textContent=label;
+        };
+        [["in_review","START REVIEW"],["needs_author","NEED AUTHOR DETAILS"],["recording","READY / RECORDING"],["rejected","REJECT"]].forEach(([next,label])=>{
+          const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="padding:9px 10px;border:1px solid #31594c;border-radius:8px;background:#10251d;color:#dffff2;font-size:10px;font-weight:900;";
+          b.onclick=async()=>{b.disabled=true;try{await setStatus(next,label+" saved.");}catch(e){status.textContent=e.message||"Could not update request.";}finally{b.disabled=false;}};
+          actions.appendChild(b);
+        });
+        const audioLabel=document.createElement("label");audioLabel.textContent="Checked narration MP3";audioLabel.style.cssText="font-size:11px;color:#bfe8d7;font-weight:800;display:grid;gap:6px;";
+        const file=document.createElement("input");file.type="file";file.accept="audio/mpeg,.mp3";file.style.cssText="max-width:100%;font-size:12px;color:#dffff2;";
+        const publish=document.createElement("button");publish.type="button";publish.textContent="UPLOAD & PUBLISH AUDIO";publish.style.cssText="padding:11px;border:0;border-radius:9px;background:#00c995;color:#04251b;font-weight:900;font-size:11px;";
+        publish.onclick=async()=>{
+          const audioFile=file.files&&file.files[0];if(!audioFile){status.textContent="Choose the checked MP3 narration first.";return;}
+          if(audioFile.size>50*1024*1024){status.textContent="Audio file exceeds 50 MB.";return;}
+          if(audioFile.type && !["audio/mpeg","audio/mp3","audio/x-mpeg-3"].includes(audioFile.type)){status.textContent="Please choose an MP3 audio file.";return;}
+          publish.disabled=true;publish.textContent="PREPARING…";
+          try{
+            const signed=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_upload_url",password,request_id:request.id}});
+            if(signed.error||!signed.data?.success||!signed.data.path||!signed.data.token)throw new Error(signed.data?.error||"Could not prepare audio upload.");
+            publish.textContent="UPLOADING…";
+            const upload=await heavensSupabase.storage.from("book-narrations").uploadToSignedUrl(signed.data.path,signed.data.token,audioFile,{contentType:"audio/mpeg",upsert:false});
+            if(upload.error)throw upload.error;
+            publish.textContent="PUBLISHING…";
+            const final=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_publish",password,request_id:request.id,audio_path:signed.data.path,authority_notes:notes.value}});
+            if(final.error||!final.data?.success)throw new Error(final.data?.error||"Could not publish narration.");
+            request.status="published";state.textContent="STATUS: PUBLISHED";status.textContent="Narration published for "+request.book_title+".";
+            publish.textContent="AUDIO PUBLISHED";file.disabled=true;publish.disabled=true;
+          }catch(e){status.textContent=e.message||"Audio upload/publication failed.";publish.disabled=false;publish.textContent="UPLOAD & PUBLISH AUDIO";}
+        };
+        audioLabel.appendChild(file);
+        card.append(heading,state,insight,notes,actions,audioLabel,publish);
+        list.appendChild(card);
+      });
+    }catch(e){status.textContent=e.message||"Could not load narration requests.";}
+    finally{if(refresh){refresh.disabled=false;refresh.textContent="REFRESH REQUESTS";}}
+  }
+  document.addEventListener("click",event=>{if(event.target&&event.target.id==="authorityNarrationRefresh")loadAuthorityNarrationRequests();});
+
   async function openAuthorityPanel(){
     const panel=document.getElementById("authorityPressPanel");
     if(!panel)return;
     panel.style.display="block";
     panel.setAttribute("aria-hidden","false");
+    loadAuthorityNarrationRequests();
     const status=document.getElementById("authorityPriceStatus");
     if(status)status.textContent="Loading…";
     try{
@@ -2804,6 +2869,16 @@ function getMedia(id){
 
       <button type="button" id="authoritySavePrices" class="authority-save-button">SAVE PRICES</button>
       <div id="authoritySaveStatus" class="authority-save-status"></div>
+    <div class="authority-panel-section" id="authorityNarrationSection">
+      <div class="authority-section-kicker">BOOK INSIGHT & NARRATION</div>
+      <h3>BOOK NARRATION REQUESTS</h3>
+      <p class="authority-section-note">Review the author, book title and written insight. Update the request, upload the checked narration audio, then publish it to that book.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+        <button type="button" id="authorityNarrationRefresh" class="authority-save-button">REFRESH REQUESTS</button>
+        <span id="authorityNarrationStatus" role="status" style="font-size:12px;align-self:center;color:#bfe8d7;">Requests have not been loaded.</span>
+      </div>
+      <div id="authorityNarrationList" style="display:grid;gap:12px;"></div>
+    </div>
     <div class="authority-panel-section">
       <div class="authority-section-kicker">I|ONE COMMUNICATION</div>
       <h3>SCROLLING BANNERS</h3>
