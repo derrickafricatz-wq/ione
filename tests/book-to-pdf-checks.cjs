@@ -43,11 +43,11 @@ assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
 
-assert.match(sw, /ione-app-v158/);
-assert.equal(version.version, "1.0.91");
+assert.match(sw, /ione-app-v159/);
+assert.equal(version.version, "1.0.92");
 assert.match(feature, /id="b2pCover"/);
 assert.match(feature, /front_cover: frontCover/);
-assert.match(feature, /frontCover = await compressFrontCover\(coverFile\)/);
+assert.match(feature, /frontCover = coverFile \? await compressFrontCover\(coverFile\) : await coverFromPdfFirstPage\(file\)/);
 assert.match(feature, /id="b2pUpdateCover"/);
 assert.match(feature, /update\(\{ front_cover: frontCover \}\)/);
 assert.match(feature, /pdfjs\.getDocument/);
