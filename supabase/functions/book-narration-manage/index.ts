@@ -16,8 +16,7 @@ Deno.serve(async (req: Request) => {
     const url = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const authorityPassword = Deno.env.get("IONE_AUTHORITY_PASSWORD");
-    if (!url || !serviceKey || !anonKey || !authorityPassword) {
+    if (!url || !serviceKey || !anonKey) {
       return json({ success: false, error: "Server configuration is missing." }, 500);
     }
 
@@ -34,8 +33,18 @@ Deno.serve(async (req: Request) => {
     const password = String(body.password || "");
     const isAuthorityAction = ["authority_list", "authority_status", "authority_upload_url", "authority_publish", "authority_unpublish"].includes(action);
 
-    if (isAuthorityAction && password !== authorityPassword) {
-      return json({ success: false, error: "Unauthorized Authority Press access." }, 401);
+    if (isAuthorityAction) {
+      // Reuse the existing Authority Press verifier rather than introducing a second password.
+      const verifyResponse = await fetch(url + "/functions/v1/ione-subscription-plans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": "Bearer " + anonKey },
+        body: JSON.stringify({ action: "verify", password }),
+      });
+      let verified: Record<string, unknown> = {};
+      try { verified = await verifyResponse.json(); } catch { verified = {}; }
+      if (!verifyResponse.ok || verified.success !== true) {
+        return json({ success: false, error: "Unauthorized Authority Press access." }, 401);
+      }
     }
 
     if (action === "request") {
