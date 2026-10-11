@@ -60,6 +60,17 @@ Deno.serve(async(req:Request)=>{
       if(requestError) return json({success:false,error:"Registration saved, but package request needs Authority review." ,profile},500);
       return json({success:true,profile,package_request:request,payment:{amount_tzs:10000,merchant_name:"DERRICK KIPAJI OF AFRIKA & CO",merchant_number:"140001788",network:"Airtel Money"}});
     }
+    if(action==="request_package"){
+      if(!user) return json({success:false,error:"Please sign in first."},401);
+      const {data:profile,error:profileError}=await admin.from("author_studio_profiles").select("id,user_id").eq("user_id",user.id).maybeSingle();
+      if(profileError||!profile) return json({success:false,error:"Register as an author before requesting a package."},400);
+      const {data:pending,error:pendingError}=await admin.from("author_studio_package_requests").select("id,status").eq("author_id",profile.id).eq("status","pending").limit(1).maybeSingle();
+      if(pendingError) return json({success:false,error:"Could not check existing package requests."},500);
+      if(pending) return json({success:true,already_pending:true,package_request:pending});
+      const {data:request,error}=await admin.from("author_studio_package_requests").insert({author_id:profile.id,user_id:user.id,terms_accepted_at:new Date().toISOString()}).select("*").single();
+      if(error) return json({success:false,error:"Could not create a new package request."},500);
+      return json({success:true,package_request:request,payment:{amount_tzs:10000,merchant_name:"DERRICK KIPAJI OF AFRIKA & CO",merchant_number:"140001788",network:"Airtel Money"}});
+    }
     if(action==="my_status"){
       if(!user) return json({success:false,error:"Please sign in first."},401);
       const {data:profile,error}=await admin.from("author_studio_profiles").select("id,full_name,phone,payout_network,package_status,package_price_tzs,package_book_limit,published_books_used,package_paid_at,created_at").eq("user_id",user.id).maybeSingle();
@@ -113,11 +124,18 @@ Deno.serve(async(req:Request)=>{
       const {data:profile,error:lookupError}=await admin.from("author_studio_profiles").select("*").eq("id",authorId).maybeSingle();
       if(lookupError||!profile) return json({success:false,error:"Author record not found."},404);
       if(approve){
-        const {count:publishedCount,error:countError}=await admin.from("heavens_books").select("id",{count:"exact",head:true}).eq("author_id",profile.user_id).eq("active",true);
-        if(countError) return json({success:false,error:"Could not verify the author's published-book count."},500);
-        const used=Math.min(Math.max(Number(profile.published_books_used||0),Number(publishedCount||0)),3);
+        let used=Math.min(Number(profile.published_books_used||0),3);
+        if(profile.package_status==="locked" && used>=3){
+          // A verified new package starts a new three-book allowance while all
+          // previously published books and sales history remain untouched.
+          used=0;
+        }else if(profile.package_status==="pending_payment"){
+          const {count:publishedCount,error:countError}=await admin.from("heavens_books").select("id",{count:"exact",head:true}).eq("author_id",profile.user_id).eq("active",true);
+          if(countError) return json({success:false,error:"Could not verify the author's published-book count."},500);
+          used=Math.min(Math.max(used,Number(publishedCount||0)),3);
+        }
         const nextStatus=used>=3?"locked":"active";
-        const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:nextStatus,package_paid_at:profile.package_paid_at||new Date().toISOString(),package_unlocked_by:"Authority Press",published_books_used:used,updated_at:new Date().toISOString()}).eq("id",authorId).select("*").single();
+        const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:nextStatus,package_paid_at:new Date().toISOString(),package_unlocked_by:"Authority Press",published_books_used:used,updated_at:new Date().toISOString()}).eq("id",authorId).select("*").single();
         if(error) return json({success:false,error:"Could not unlock publishing access."},500);
         await admin.from("author_studio_package_requests").update({status:"approved",reviewed_by:"Authority Press",reviewed_at:new Date().toISOString()}).eq("author_id",authorId).eq("status","pending");
         return json({success:true,profile:updated});
