@@ -49,6 +49,19 @@ Deno.serve(async (req: Request) => {
       if (!Number.isFinite(total) || total < amount) throw new Error("BLMPay returned an invalid fee quote.");
       return { fee, total };
     };
+    const lookupRecipient = async (phone: string) => {
+      const response = await fetch("https://pay.blmtec.co.tz/api/v1/payouts/name-lookup", {
+        method: "POST",
+        headers: { ...apiHeaders, Accept: "application/json" },
+        body: JSON.stringify({ channel: "mobile", account_number: phone }),
+      });
+      const raw = await response.text(); let payload: any = {}; try { payload = raw ? JSON.parse(raw) : {}; } catch {}
+      if (!response.ok) throw new Error("BLMPay could not verify this mobile-money recipient. Check the number and payout API permissions.");
+      const p = parseApi(payload);
+      const name = safeText(p?.account_name || p?.recipient?.name || p?.name, 160);
+      if (!name) throw new Error("BLMPay did not return a verified recipient name. No payout can be sent.");
+      return name;
+    };
     const getEarnedRows = async (authorId: string, urgent: boolean) => {
       let q = admin.from("ione_author_earnings")
         .select("id,order_id,book_id,author_id,sale_amount_tzs,author_share_tzs,status,available_at")
@@ -129,8 +142,9 @@ Deno.serve(async (req: Request) => {
       const balance = rows.reduce((s: number, x: any) => s + Number(x.author_share_tzs || 0), 0);
       const amount = balance;
       if (amount < 5000) return json({ success: false, error: "Author's eligible balance is below the 5,000 TZS minimum.", balance_tzs: balance }, 409);
+      const recipientName = await lookupRecipient(phone);
       const q = await quoteFee(amount);
-      return json({ success: true, author_id: authorId, recipient_phone: phone, recipient_network: network, payout_reason: reason, reason_details: explanation, balance_tzs: balance, amount_tzs: amount, provider_fee_tzs: q.fee, total_debit_tzs: q.total, reserved_order_count: rows.length });
+      return json({ success: true, author_id: authorId, recipient_phone: phone, recipient_name: recipientName, recipient_network: network, payout_reason: reason, reason_details: explanation, balance_tzs: balance, amount_tzs: amount, provider_fee_tzs: q.fee, total_debit_tzs: q.total, reserved_order_count: rows.length });
     }
 
     if (action === "send") {
@@ -143,8 +157,9 @@ Deno.serve(async (req: Request) => {
       if (!["monthly", "urgent_exception"].includes(reason) || (urgent && explanation.length < 12)) return json({ success: false, error: "Urgent payouts require a clear reason of at least 12 characters." }, 400);
       const rows = await getEarnedRows(authorId, urgent);
       const balance = rows.reduce((s: number, x: any) => s + Number(x.author_share_tzs || 0), 0);
+      if (quotedAmount !== balance) return json({ success: false, error: "The payout must match the full eligible author balance. Recalculate before sending." }, 409);
+      const recipientName = await lookupRecipient(phone);
       const q = await quoteFee(quotedAmount);
-      if (quotedAmount > balance) return json({ success: false, error: "Author balance changed. Recalculate before sending." }, 409);
       const rowIds = rows.map((x: any) => x.id);
       if (!rowIds.length) return json({ success: false, error: "No eligible earnings found." }, 409);
       const authorName = await resolveAuthorName(authorId, rows);
