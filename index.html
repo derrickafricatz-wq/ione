@@ -3592,7 +3592,14 @@ const ioneTopActions=document.getElementById("ioneTopActions");
 function ioneSetHomeControls(isHome){
   document.body.classList.toggle("ione-non-home",!isHome);
   if(ioneTopActions) ioneTopActions.setAttribute("aria-hidden",isHome?"false":"true");
+  if(isHome){
+    const homePanel=document.getElementById("smartPanel");
+    const guideControl=document.getElementById("settingsBtn");
+    if(homePanel)homePanel.classList.add("show");
+    if(guideControl)guideControl.style.display="";
+  }
 }
+window.ioneRestoreHome=function(){ioneSetHomeControls(true);};
 settingsBtn.onclick=()=>{ioneSetHomeControls(false);guideOverlay.style.display="flex";showGuideHome();};
 /* I|ONE HOME-ONLY CONTROLS • feature navigation must hide GUIDE + PUSH */
 (function(){
@@ -4135,7 +4142,6 @@ async function authorAccessCall(payload){
 }
 function openTranscriptAfterAuthorization(){
   ioneSetHomeControls(false);
-  settingsBtn.style.display="none";
   transcriptPanel.style.display="block";
   transcriptText.scrollTop=0;
 }
@@ -4150,7 +4156,7 @@ const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit");
 const authorRenewButton=document.getElementById("ioneAuthorRenew");
 const authorEnterButton=document.getElementById("ioneAuthorEnterStudio");
 let authorAccessRequest=null;
-const ministryAccessClose=()=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
+const ministryAccessClose=(restoreHome=true)=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");if(restoreHome)window.ioneRestoreHome?.();heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
 function showAuthorAccessStatus(message,bad=false){ministryAccessStatus.textContent=message||"";ministryAccessStatus.style.color=bad?"#ff9f9f":"#8ffcff";}
 async function openAuthorAccessForm(){
   ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
@@ -4160,6 +4166,11 @@ async function openAuthorAccessForm(){
   try{
     const data=await authorAccessCall({action:"my_status"});
     authorAccessRequest=data.request||null;
+    if(authorAccessRequest?.status==="active"){
+      ministryAccessClose(false);
+      openTranscriptAfterAuthorization();
+      return;
+    }
     if(authorAccessRequest){
       authorNameInput.value=authorAccessRequest.real_name||"";
       authorPhoneInput.value=authorAccessRequest.phone||"";
@@ -4184,13 +4195,8 @@ async function openAuthorAccessForm(){
     }
   }catch(err){showAuthorAccessStatus(err.message||"Could not load your saved form.",true);}
 }
-openTranscript.onclick=async()=>{
+openTranscript.onclick=()=>{
   smartPanel.classList.remove("show");
-  try{
-    await ensureHeavensAnonymousSession();
-    const d=await authorAccessCall({action:"my_status"});
-    if(d.request?.status==="active"){openTranscriptAfterAuthorization();return;}
-  }catch(err){console.warn("Author Studio access status:",err);}
   openAuthorAccessForm();
 };
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
@@ -4215,7 +4221,7 @@ authorRenewButton.addEventListener("click",async()=>{
   catch(err){showAuthorAccessStatus(err.message||"Renewal request failed.",true);}
   finally{authorRenewButton.disabled=false;}
 });
-authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must activate your package first.",true);return;}ministryAccessClose();openTranscriptAfterAuthorization();});
+authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must activate your package first.",true);return;}ministryAccessClose(false);openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
 
   document.getElementById("saveTranscript").onclick = (event) => {
@@ -9917,6 +9923,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const e=els();
     closeChapChap();
     if(e.panel){e.panel.style.display="none";e.panel.setAttribute("aria-hidden","true");e.panel.scrollTop=0;}
+    window.ioneRestoreHome?.();
   }
   function openPasswordGate(){
     const e=els();
@@ -9950,7 +9957,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const target=event.target;
     if(!target||!target.closest)return;
     if(target.closest("#openAuthority")){event.preventDefault();event.stopPropagation();openPasswordGate();return;}
-    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}return;}
+    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}window.ioneRestoreHome?.();return;}
     if(target.closest("#authorityPasswordUnlock")){event.preventDefault();unlockAuthority();return;}
     if(target.closest("#authorityPressClose")){event.preventDefault();closeAuthorityPanel();return;}
   },true);
@@ -9960,7 +9967,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const e=els();
     if(event.key==="Enter"&&e.overlay?.getAttribute("aria-hidden")==="false"&&document.activeElement===e.input){event.preventDefault();unlockAuthority();}
     if(event.key==="Escape"){
-      if(e.overlay?.getAttribute("aria-hidden")==="false"){event.preventDefault();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}}
+      if(e.overlay?.getAttribute("aria-hidden")==="false"){event.preventDefault();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}window.ioneRestoreHome?.();}
       else if(e.panel?.getAttribute("aria-hidden")==="false"){event.preventDefault();closeAuthorityPanel();}
     }
   },true);
