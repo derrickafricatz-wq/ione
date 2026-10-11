@@ -8665,8 +8665,8 @@ async function startBookPayment(book,store){
 function openBookReader(book,store){
   const existing=document.getElementById("heavensReader");
   if(existing) existing.remove();
-  if(!isBookPaid(book)){startBookPayment(book,store);return;}
   if(book.pdfPath){openPaidPdfReader(book);return;}
+  if(!isBookPaid(book)){startBookPayment(book,store);return;}
 
   const reader=document.createElement("div");
   reader.id="heavensReader";
