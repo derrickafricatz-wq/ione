@@ -72,7 +72,7 @@ serve(async (req) => {
           .select("id")
           .eq("book_id", bookId)
           .eq("customer_id", user.id)
-          .eq("status", "paid")
+          .in("status", ["paid", "completed"])
           .limit(1)
           .maybeSingle();
         if (orderError) return json({ success: false, error: "Could not verify payment." }, 500);
