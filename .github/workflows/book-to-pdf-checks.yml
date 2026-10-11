@@ -1,6 +1,8 @@
 name: Book to PDF safe checks
 
 on:
+  push:
+    branches: [feature/book-to-pdf-safe]
   pull_request:
     branches: [main]
     paths:
