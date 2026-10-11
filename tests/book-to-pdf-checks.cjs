@@ -24,6 +24,15 @@ assert.ok(html.includes('tap the existing I|ONE Support chat button'));
 assert.ok(html.includes('I|ONE / Authority Press may review'));
 assert.match(sw, /ione-app-v\d+/);
 assert.match(version.version, /^\d+\.\d+\.\d+$/);
+assert.match(sw, /ione-app-v182/);
+assert.match(sw, /SUPABASE_JS_CACHE_NAME/);
+assert.match(sw, /SUPABASE_JS_URL/);
+assert.match(sw, /"\.\/index\.html"/);
+assert.match(sw, /new URL\(url\.pathname, self\.location\.origin\)/);
+assert.match(html, /ioneOfflineCommunications/);
+assert.match(html, /OFFLINE • SAVED CONTENT/);
+assert.match(html, /sw\.js\?v=126/);
+console.log("PASS: offline shell, Supabase CDN fallback, query-string asset fallback, and saved homepage communications");
 console.log("PASS: Author Studio consent, support links, and cache/version checks");
 
 
