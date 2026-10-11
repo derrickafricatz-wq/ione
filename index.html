@@ -8185,7 +8185,7 @@ async function openHeavensBookstore(){
         }catch(e){ return false; }
       })();
       const displayPrice = Number(book.price || 0);
-      const priceLabel = Number.isFinite(displayPrice) && displayPrice > 0 ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET";
+      const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "FREE" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
       card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><div class="hb-lock">${book.isAuthor?'Your published book':(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
       const coverImg=card.querySelector('.hb-cover img');
       if(coverImg){
@@ -8194,7 +8194,7 @@ async function openHeavensBookstore(){
           holder.innerHTML=`<div class="hb-cover-empty">${escapeBookHtml(book.title||'BOOK')}</div>`;
         };
       }
-      card.querySelector(".hb-btn:not(.hb-check-payment)").onclick=()=> paid ? openBookReader(book,store) : startBookPayment(book,store);
+      card.querySelector(".hb-btn:not(.hb-check-payment)").onclick=()=> isBookPaid(book) ? openBookReader(book,store) : startBookPayment(book,store);
       const checkBtn=card.querySelector('.hb-check-payment');
       if(checkBtn){
         checkBtn.onclick=async()=>{
