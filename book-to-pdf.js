@@ -365,8 +365,8 @@
       ].filter(value => value !== undefined));
       const hasImage = Array.isArray(operators.fnArray) && operators.fnArray.some(op => imageOps.has(op));
       // A cover usually has a sparse title/layout or a large image. Dense first pages are treated as body text.
-      const likelyCover = textItems.length <= 28 && characterCount <= 520
-        || hasImage && textItems.length <= 55 && characterCount <= 900;
+      const likelyCover = (textItems.length <= 28 && characterCount > 0 && characterCount <= 520)
+        || (hasImage && textItems.length <= 55 && characterCount <= 900);
       if (!likelyCover) return "";
       const original = page.getViewport({ scale: 1 });
       const scale = Math.min(1.25, 900 / Math.max(1, original.width));
