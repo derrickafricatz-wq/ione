@@ -8366,7 +8366,7 @@ async function openHeavensBookstore(){
       insightBox.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();insightBox.click();}});
       startInsightTimer();
       const audioButton=card.querySelector(".hb-audio-btn");
-      const resetNarrationButton=()=>{audioButton.disabled=false;audioButton.textContent=book.narrationPath?"▶ LISTEN TO NARRATION":"NARRATION NOT PUBLISHED";audioButton.classList.remove("is-playing");};
+      const resetNarrationButton=()=>{audioButton.disabled=!book.narrationPath;audioButton.textContent=book.narrationPath?"▶ LISTEN TO NARRATION":"NARRATION";audioButton.classList.remove("is-playing");};
       audioButton.onclick=async()=>{
         if(!book.narrationPath)return;
         if(window.ioneBookNarrationAudio&&!window.ioneBookNarrationAudio.paused){window.ioneBookNarrationAudio.pause();window.ioneBookNarrationAudio=null;resetNarrationButton();return;}
