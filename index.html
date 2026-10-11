@@ -2730,6 +2730,74 @@ body.ione-gentle-boot #ioneTopActions{
  #heavensBookstore .hb-insight-text{font-size:11px!important;line-height:1.4!important}
 }
 </style>
+
+<style id="ione-explore-cute-billboard-v6">
+/* I|ONE Explore: polished mini-billboards, jewel-toned accents and a soft premium shine. */
+#heavensBookstore .hb-card{
+ position:relative!important;isolation:isolate!important;
+ border-radius:15px!important;
+ border:1px solid color-mix(in srgb,var(--hb-accent,#b8d8ce) 43%,transparent)!important;
+ background:linear-gradient(118deg,rgba(255,255,255,.075),transparent 30%),var(--hb-card-bg,linear-gradient(135deg,#172821,#111a17))!important;
+ box-shadow:0 5px 15px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.09),0 0 0 1px rgba(255,255,255,.018)!important;
+ transition:box-shadow .22s ease,border-color .22s ease,transform .22s ease!important;
+}
+#heavensBookstore .hb-card:before{
+ content:"";position:absolute;z-index:0;pointer-events:none;inset:0 0 auto;height:3px;border-radius:15px 15px 0 0;
+ background:linear-gradient(90deg,transparent,var(--hb-accent,#b8d8ce),rgba(255,255,255,.92),var(--hb-accent,#b8d8ce),transparent);
+ opacity:.9;
+}
+#heavensBookstore .hb-card:after{
+ content:"";position:absolute;z-index:0;pointer-events:none;inset:1px;border-radius:14px;
+ background:linear-gradient(112deg,transparent 18%,rgba(255,255,255,.055) 34%,transparent 49%);
+ opacity:.7;
+}
+#heavensBookstore .hb-card>*{position:relative;z-index:1;min-width:0}
+#heavensBookstore .hb-card:nth-child(5n+1){--hb-accent:#a8e0ce;--hb-accent-border:rgba(168,224,206,.38);--hb-card-bg:linear-gradient(135deg,#1b3932,#111d1b 78%)}
+#heavensBookstore .hb-card:nth-child(5n+2){--hb-accent:#f0d29a;--hb-accent-border:rgba(240,210,154,.4);--hb-card-bg:linear-gradient(135deg,#393020,#1d1a15 78%)}
+#heavensBookstore .hb-card:nth-child(5n+3){--hb-accent:#b3d2f4;--hb-accent-border:rgba(179,210,244,.4);--hb-card-bg:linear-gradient(135deg,#23394e,#131e29 78%)}
+#heavensBookstore .hb-card:nth-child(5n+4){--hb-accent:#d7c3f2;--hb-accent-border:rgba(215,195,242,.4);--hb-card-bg:linear-gradient(135deg,#352b45,#1b1723 78%)}
+#heavensBookstore .hb-card:nth-child(5n){--hb-accent:#d5dfa4;--hb-accent-border:rgba(213,223,164,.4);--hb-card-bg:linear-gradient(135deg,#303a25,#181d14 78%)}
+#heavensBookstore .hb-card-title{letter-spacing:.01em!important;text-wrap:pretty!important}
+#heavensBookstore .hb-cover{border-radius:9px!important;overflow:hidden!important;background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(0,0,0,.23))!important;box-shadow:0 4px 12px rgba(0,0,0,.24),inset 0 0 0 1px rgba(255,255,255,.12)!important}
+#heavensBookstore .hb-cover img{filter:drop-shadow(0 3px 4px rgba(0,0,0,.24))!important}
+#heavensBookstore .hb-author{border-radius:9px!important}
+#heavensBookstore .hb-insight{border-radius:10px!important;background:linear-gradient(135deg,rgba(255,255,255,.045),rgba(0,0,0,.17))!important}
+#heavensBookstore .hb-btn,#heavensBookstore .hb-audio-btn{border-radius:9px!important;transition:filter .18s ease,box-shadow .18s ease!important}
+#heavensBookstore .hb-btn:focus-visible,#heavensBookstore .hb-audio-btn:focus-visible{outline:2px solid var(--hb-accent,#b8d8ce)!important;outline-offset:2px!important}
+@media(hover:hover){
+ #heavensBookstore .hb-card:hover{border-color:var(--hb-accent,#b8d8ce)!important;box-shadow:0 8px 22px rgba(0,0,0,.28),0 0 13px color-mix(in srgb,var(--hb-accent,#b8d8ce) 13%,transparent),inset 0 1px 0 rgba(255,255,255,.12)!important;transform:translateY(-2px)}
+ #heavensBookstore .hb-btn:hover,#heavensBookstore .hb-audio-btn:hover{filter:brightness(1.12)}
+}
+@media(max-width:699px){
+ #heavensBookstore .hb-grid{gap:10px!important;padding-left:9px!important;padding-right:9px!important}
+ #heavensBookstore .hb-card{grid-template-columns:112px minmax(0,1fr)!important;gap:0!important;border-radius:14px!important}
+ #heavensBookstore .hb-cover{width:112px!important;height:168px!important;min-height:168px!important;max-height:168px!important;aspect-ratio:2/3!important;margin:7px 0 7px 7px!important;align-self:start!important}
+ #heavensBookstore .hb-cover img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center center!important}
+ #heavensBookstore .hb-cover-empty{width:100%!important;height:168px!important;min-height:168px!important}
+ #heavensBookstore .hb-card-body{padding:10px 9px 9px 12px!important;gap:6px!important}
+ #heavensBookstore .hb-card-title{font-size:13px!important;line-height:1.27!important}
+ #heavensBookstore .hb-meta{font-size:9.5px!important}
+ #heavensBookstore .hb-insight{padding:7px 8px!important}
+ #heavensBookstore .hb-insight-kicker{font-size:7.5px!important}
+ #heavensBookstore .hb-insight-text{font-size:10.5px!important;line-height:1.42!important}
+ #heavensBookstore .hb-btn{min-height:33px!important}
+}
+@media(max-width:360px){
+ #heavensBookstore .hb-card{grid-template-columns:100px minmax(0,1fr)!important}
+ #heavensBookstore .hb-cover{width:100px!important;height:150px!important;min-height:150px!important;max-height:150px!important}
+ #heavensBookstore .hb-cover-empty{height:150px!important;min-height:150px!important}
+ #heavensBookstore .hb-card-body{padding:9px 7px 8px 10px!important}
+}
+@media(min-width:700px){
+ #heavensBookstore .hb-card{border-radius:16px!important}
+ #heavensBookstore .hb-cover{box-shadow:0 5px 14px rgba(0,0,0,.25),inset 0 0 0 1px rgba(255,255,255,.12)!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #heavensBookstore .hb-card,#heavensBookstore .hb-btn,#heavensBookstore .hb-audio-btn{transition:none!important}
+ #heavensBookstore .hb-card:hover{transform:none!important}
+}
+</style>
+
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true"><div class="ione-network-mark"><strong>I|ONE</strong><span>intoione.space</span><i></i></div></div>
