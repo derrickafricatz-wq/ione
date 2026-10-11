@@ -127,7 +127,7 @@ Deno.serve(async(req:Request)=>{
       const sent=await provider("/payouts/send",apiKey,"POST",{amount,currency:"TZS",channel:"mobile",recipient_phone:p,network,narration:"I|ONE author book earnings",metadata:{author_id:authorId,payout_id:record.id},},idempotency);
       const out=payload(sent.data);
       const providerStatus=String(out.status||"pending").toLowerCase();
-      const status=sent.ok?(["completed","failed","reversed","processing","pending"].includes(providerStatus)?providerStatus:"pending"):"failed";
+      const status=sent.ok?(["completed","failed","reversed","processing","pending"].includes(providerStatus)?providerStatus:"pending"):"pending";
       const reference=out.reference||out.payout_reference||out.id||null;
       const {data:updated}=await admin.from("author_studio_payouts").update({status,provider_reference:reference,provider_response:{http_status:sent.status,data:out},updated_at:new Date().toISOString(),completed_at:status==="completed"?new Date().toISOString():null}).eq("id",record.id).select("*").single();
       return json({success:sent.ok,payout:updated||record,fee_paid_by:"I|ONE",error:sent.ok?undefined:"BLMPay rejected the payout request; check the provider reference before retrying."},sent.ok?200:502);
