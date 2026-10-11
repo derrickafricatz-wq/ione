@@ -70,13 +70,26 @@ Deno.serve(async(req:Request)=>{
     if(["admin_list","admin_unlock","payout_quote","payout_send","payout_status"].includes(action)){
       if(!(await isAuthority())) return json({success:false,error:"Unauthorized Authority Press access."},401);
     }
-    if(action==="admin_list"){
+    if(action==="admin_list"||action==="admin_ledger"){
       const {data:profiles,error}=await admin.from("author_studio_profiles").select("*").order("created_at",{ascending:false}).limit(300);
       if(error) return json({success:false,error:"Could not load author registrations."},500);
       const ids=(profiles||[]).map((x:any)=>x.id);
-      const {data:requests,error:reqError}=ids.length?await admin.from("author_studio_package_requests").select("*").in("author_id",ids).order("created_at",{ascending:false}).limit(500):{data:[],error:null};
-      if(reqError) return json({success:false,error:"Could not load package requests."},500);
-      return json({success:true,authors:profiles||[],package_requests:requests||[]});
+      const userIds=(profiles||[]).map((x:any)=>x.user_id);
+      const [{data:requests,error:reqError},{data:sales,error:salesError},{data:payouts,error:payoutError},{data:books,error:bookError}]=await Promise.all([
+        ids.length?admin.from("author_studio_package_requests").select("*").in("author_id",ids).order("created_at",{ascending:false}).limit(500):Promise.resolve({data:[],error:null}),
+        ids.length?admin.from("author_studio_sales").select("*").in("author_id",ids).order("confirmed_at",{ascending:false}).limit(5000):Promise.resolve({data:[],error:null}),
+        ids.length?admin.from("author_studio_payouts").select("*").in("author_id",ids).order("created_at",{ascending:false}).limit(2000):Promise.resolve({data:[],error:null}),
+        userIds.length?admin.from("heavens_books").select("id,author_id,title,price,active,created_at").in("author_id",userIds).order("created_at",{ascending:false}).limit(1500):Promise.resolve({data:[],error:null})
+      ]);
+      if(reqError||salesError||payoutError||bookError) return json({success:false,error:"Could not load the complete author ledger."},500);
+      const records=(profiles||[]).map((a:any)=>{
+        const as=(sales||[]).filter((x:any)=>x.author_id===a.id), ap=(payouts||[]).filter((x:any)=>x.author_id===a.id), ab=(books||[]).filter((x:any)=>x.author_id===a.user_id);
+        const sum=(xs:any[],field:string)=>xs.reduce((n:number,x:any)=>n+Number(x[field]||0),0);
+        const reserved=ap.filter((x:any)=>["initiated","pending","processing"].includes(x.status));
+        const paid=ap.filter((x:any)=>x.status==="completed");
+        return {...a,books:ab,sales:as,payouts:ap,ledger:{confirmed_sales:as.length,gross_tzs:money(sum(as,"gross_tzs")),billonpay_fee_tzs:money(sum(as,"billonpay_fee_tzs")),platform_fee_tzs:money(sum(as,"platform_fee_tzs")),author_earnings_tzs:money(sum(as,"author_net_tzs")),paid_out_tzs:money(sum(paid,"amount_tzs")),pending_payout_tzs:money(sum(reserved,"amount_tzs")),available_tzs:money(sum(as,"author_net_tzs")-sum(paid,"amount_tzs")-sum(reserved,"amount_tzs"))}};
+      });
+      return json({success:true,authors:records,package_requests:requests||[]});
     }
     if(action==="admin_unlock"){
       const authorId=clean(body?.author_id,60), approve=body?.approve===true;
