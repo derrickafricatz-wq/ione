@@ -67,7 +67,7 @@ Deno.serve(async(req:Request)=>{
       const reserved=(payouts||[]).filter((x:any)=>["initiated","pending","processing"].includes(x.status)).reduce((n:any,x:any)=>n+Number(x.amount_tzs||0),0);
       return json({success:true,registered:true,profile,books:books||[],ledger:{confirmed_sales:(sales||[]).length,gross_tzs:money(gross),fees_tzs:money(fees),author_earnings_tzs:money(earned),paid_out_tzs:money(paid),pending_payout_tzs:money(reserved),available_tzs:money(earned-paid-reserved)},payouts:payouts||[]});
     }
-    if(["admin_list","admin_ledger","admin_unlock","payout_quote","payout_send","payout_status"].includes(action)){
+    if(["admin_list","admin_ledger","admin_lock","admin_unlock","payout_quote","payout_send","payout_status"].includes(action)){
       if(!(await isAuthority())) return json({success:false,error:"Unauthorized Authority Press access."},401);
     }
     if(action==="admin_list"||action==="admin_ledger"){
@@ -91,6 +91,13 @@ Deno.serve(async(req:Request)=>{
       });
       return json({success:true,authors:records,package_requests:requests||[]});
     }
+    if(action==="admin_lock"){
+      const authorId=clean(body?.author_id,60);
+      if(!authorId) return json({success:false,error:"Author record is required."},400);
+      const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:"suspended",updated_at:new Date().toISOString()}).eq("id",authorId).select("id,full_name,package_status,published_books_used").maybeSingle();
+      if(error||!updated) return json({success:false,error:"Could not lock author publishing access."},500);
+      return json({success:true,profile:updated});
+    }
     if(action==="admin_unlock"){
       const authorId=clean(body?.author_id,60), approve=body?.approve===true;
       if(!authorId) return json({success:false,error:"Author record is required."},400);
@@ -99,9 +106,9 @@ Deno.serve(async(req:Request)=>{
       if(approve){
         const {count:publishedCount,error:countError}=await admin.from("heavens_books").select("id",{count:"exact",head:true}).eq("author_id",profile.user_id).eq("active",true);
         if(countError) return json({success:false,error:"Could not verify the author's published-book count."},500);
-        const used=Math.min(Number(publishedCount||0),3);
+        const used=Math.min(Math.max(Number(profile.published_books_used||0),Number(publishedCount||0)),3);
         const nextStatus=used>=3?"locked":"active";
-        const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:nextStatus,package_paid_at:new Date().toISOString(),package_unlocked_by:"Authority Press",published_books_used:used,updated_at:new Date().toISOString()}).eq("id",authorId).select("*").single();
+        const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:nextStatus,package_paid_at:profile.package_paid_at||new Date().toISOString(),package_unlocked_by:"Authority Press",published_books_used:used,updated_at:new Date().toISOString()}).eq("id",authorId).select("*").single();
         if(error) return json({success:false,error:"Could not unlock publishing access."},500);
         await admin.from("author_studio_package_requests").update({status:"approved",reviewed_by:"Authority Press",reviewed_at:new Date().toISOString()}).eq("author_id",authorId).eq("status","pending");
         return json({success:true,profile:updated});
