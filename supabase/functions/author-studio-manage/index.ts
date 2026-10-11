@@ -34,8 +34,17 @@ Deno.serve(async(req:Request)=>{
       if(!result.error) user=result.data.user;
     }
     const isAuthority=async()=>{
-      const expected=Deno.env.get("IONE_AUTHORITY_PASSWORD")||"";
-      return !!expected && clean(body?.password,300)===expected;
+      const password=String(body?.password||"");
+      if(!password) return false;
+      // Reuse I|ONE's existing server-side authority verifier.
+      const verify=await fetch(url.replace(/\\/$/,"")+"/functions/v1/ione-subscription-plans",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","apikey":service,"Authorization":"Bearer "+service},
+        body:JSON.stringify({action:"verify",password})
+      });
+      if(!verify.ok) return false;
+      const result=await verify.json().catch(()=>({}));
+      return result?.success===true;
     };
     if(action==="register"){
       if(!user) return json({success:false,error:"Please sign in to register."},401);
