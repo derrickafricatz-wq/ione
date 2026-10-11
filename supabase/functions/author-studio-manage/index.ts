@@ -155,9 +155,10 @@ Deno.serve(async(req:Request)=>{
       if(phone(author.phone)!==p||String(author.payout_network).toUpperCase()!==network) return json({success:false,error:"Payout phone/network must match the verified author record. Update the record through Authority review first."},400);
       const [salesResult,payoutResult]=await Promise.all([
         admin.from("author_studio_sales").select("author_net_tzs").eq("author_id",authorId),
-        admin.from("author_studio_payouts").select("amount_tzs,status").eq("author_id",authorId)
+        admin.from("author_studio_payouts").select("amount_tzs,status,provider_reference").eq("author_id",authorId)
       ]);
       if(salesResult.error||payoutResult.error) return json({success:false,error:"Could not verify the author balance."},500);
+      if((payoutResult.data||[]).some((x:any)=>["initiated","pending","processing"].includes(x.status)&&!x.provider_reference)) return json({success:false,error:"An earlier payout has no provider reference yet. Reconcile that payout with BLMPay before starting another; this protects the author from duplicate transfers."},409);
       const earned=(salesResult.data||[]).reduce((n:number,x:any)=>n+Number(x.author_net_tzs||0),0);
       const used=(payoutResult.data||[]).filter((x:any)=>["initiated","pending","processing","completed"].includes(x.status)).reduce((n:number,x:any)=>n+Number(x.amount_tzs||0),0);
       if(amount>money(earned-used)) return json({success:false,error:"Payout exceeds the available author balance."},400);
