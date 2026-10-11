@@ -136,7 +136,7 @@ self.addEventListener("fetch", (event) => {
         if (!saved) return Response.error();
         const range = event.request.headers.get("range");
         if (range && event.request.destination === "video") {
-          const match = /^bytes=(\\d*)-(\\d*)$/i.exec(range.trim());
+          const match = /^bytes=(\d*)-(\d*)$/i.exec(range.trim());
           if (match) {
             const blob = await saved.clone().blob();
             const start = match[1] ? Number(match[1]) : 0;
