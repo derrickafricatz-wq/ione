@@ -5492,12 +5492,22 @@ function aflStartLoops(){
   });
 }
 
+let aflFeedLoadPending=false;
 function aflOpenWorld(){
   ioneSetHomeControls(false);
   smartPanel.classList.remove("show");
   aflOverlay.style.display="flex";
   aflOverlay.setAttribute("aria-hidden","false");
-  aflLoadFeed();
+
+  // Paint the marketplace shell before starting the network-backed feed.
+  if(!aflFeed.children.length){
+    aflFeed.innerHTML='<div class="afl-empty"><div><strong>I|ONE</strong>Opening live marketing…</div></div>';
+  }
+  if(aflFeedLoadPending)return;
+  aflFeedLoadPending=true;
+  requestAnimationFrame(()=>{
+    Promise.resolve(aflLoadFeed()).finally(()=>{aflFeedLoadPending=false;});
+  });
 }
 
 function aflCloseWorld(){
@@ -8461,8 +8471,8 @@ topBar.appendChild(exitBtn);
 
   const list=document.createElement("div"); list.id="topicsList";
 
-  // Main content now displays published documentaries instead of lesson titles.
-  loadIoneHomeDocumentaries(list);
+  // Let the Discover screen paint before requesting published documentaries.
+  requestAnimationFrame(()=>loadIoneHomeDocumentaries(list));
 
   topics.appendChild(topBar);
   topics.appendChild(list);
