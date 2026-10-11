@@ -70,6 +70,13 @@ serve(async (req) => {
         patch.front_cover = body.front_cover;
       }
       if (!Object.keys(patch).length) return json({ success: false, error: "No book changes were supplied." }, 400);
+      const { data: existingBook, error: existingError } = await admin.from("heavens_books")
+        .select("price,payment_required").eq("id", bookId).eq("author_id", user.id).maybeSingle();
+      if (existingError) return json({ success: false, error: "Could not verify the current book settings." }, 500);
+      if (!existingBook) return json({ success: false, error: "This book is not owned by your current author account." }, 404);
+      const finalPrice = patch.price === undefined ? Number(existingBook.price) : Number(patch.price);
+      const finalPaymentRequired = patch.payment_required === undefined ? existingBook.payment_required !== false : patch.payment_required === true;
+      if (finalPaymentRequired && finalPrice <= 0) return json({ success: false, error: "Set a price above 0 TZS before turning payment on." }, 400);
       const { data, error } = await admin.from("heavens_books").update(patch).eq("id", bookId).eq("author_id", user.id)
         .select("id,title,category,price,currency,front_cover,pdf_path,payment_required,active,created_at").maybeSingle();
       if (error) return json({ success: false, error: "Could not save the book settings." }, 500);
