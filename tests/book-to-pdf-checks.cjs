@@ -64,6 +64,8 @@ assert.match(html, /Call now • Read inside the app/);
 assert.match(html, /Find words that move you/);
 assert.match(html, /PUBLIC BOOKS/);
 assert.match(feature, /coverFromPdfFirstPage\(file\)/);
+assert.match(feature, /const likelyCover/);
+assert.match(feature, /first PDF page does not look like a cover/);
 assert.match(feature, /payment_required: true/);
 assert.match(feature, /REVOKE & DELETE/);
 assert.match(feature, /SAVE PRICE & ACCESS/);
