@@ -2377,6 +2377,39 @@ body.ione-gentle-boot #ioneTopActions{
  .ione-home-doc-title{font-size:clamp(17px,4.7vw,21px)!important}
 }
 </style>
+<style id="book-to-pdf-reader-and-explore-layout">
+/* Book-to-PDF: use the same page-turn reader and controls as author-created books. */
+#heavensReader .hr-pdf-page{padding:0!important;background:#fff!important;border-radius:3px 12px 12px 3px!important;overflow:hidden!important}
+#heavensReader .hr-pdf-page:after{display:none!important}
+#heavensReader .hr-pdf-page .hr-page-inner{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden!important;padding:0!important;background:#fff}
+#heavensReader .hr-pdf-page canvas{display:block;max-width:100%;max-height:100%;object-fit:contain;background:#fff}
+#heavensReader .hr-pdf-loading{display:flex;align-items:center;justify-content:center;position:absolute;inset:0;background:#fff;color:#34454b;font:700 13px/1.5 Arial,sans-serif;text-align:center;padding:20px;box-sizing:border-box}
+#heavensReader .hr-pdf-page .hr-pdf-loading{z-index:2;pointer-events:none}
+#heavensReader .hr-book>.hr-pdf-loading{position:absolute;inset:0;z-index:30;border-radius:8px}
+/* Book panels remain complete; the shelf itself owns vertical scrolling. */
+#heavensBookstore .hb-grid{flex:1 1 auto;min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;align-content:start;align-items:stretch;grid-auto-rows:max-content;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+#heavensBookstore .hb-card{min-width:0;height:100%;display:flex;flex-direction:column;align-self:stretch}
+#heavensBookstore .hb-cover{flex:0 0 auto;height:auto;aspect-ratio:3/4;min-height:0;max-height:260px;background:linear-gradient(145deg,#102b30,#071316)}
+#heavensBookstore .hb-cover img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+#heavensBookstore .hb-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;font-size:clamp(15px,3vw,24px)}
+#heavensBookstore .hb-card-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}
+#heavensBookstore .hb-card-title{min-height:0;overflow-wrap:anywhere;word-break:normal}
+#heavensBookstore .hb-actions{margin-top:auto;padding-top:5px}
+#heavensBookstore .hb-btn{min-width:0;padding:8px 5px;overflow-wrap:anywhere}
+#heavensBookstore .hb-lock{line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:560px){
+  #heavensBookstore .hb-grid{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}
+  #heavensBookstore .hb-card{display:grid;grid-template-columns:minmax(100px,34%) minmax(0,1fr);height:auto;min-height:178px}
+  #heavensBookstore .hb-cover{height:100%;min-height:178px;max-height:none;aspect-ratio:auto}
+  #heavensBookstore .hb-card-body{padding:11px;min-width:0}
+  #heavensBookstore .hb-card-title{font-size:15px;line-height:1.3}
+  #heavensBookstore .hb-meta{font-size:10px;line-height:1.4}
+  #heavensBookstore .hb-price{font-size:13px;align-self:flex-start;max-width:100%;overflow-wrap:anywhere}
+  #heavensBookstore .hb-actions{gap:6px}
+  #heavensBookstore .hb-btn{min-height:38px;font-size:12px}
+}
+</style>
+
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true"><div class="ione-network-mark"><strong>I|ONE</strong><span>intoione.space</span><i></i></div></div>

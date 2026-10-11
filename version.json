@@ -1,5 +1,5 @@
 {
-  "version": "1.0.89",
-  "message": "Book to PDF security and access fixes",
+  "version": "1.0.90",
+  "message": "Interactive PDF book reader, front covers and bookstore layout",
   "force": true
 }
