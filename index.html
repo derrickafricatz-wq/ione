@@ -2660,6 +2660,76 @@ body.ione-gentle-boot #ioneTopActions{
  #heavensBookstore .hb-insight-text{-webkit-line-clamp:3!important}
 }
 </style>
+
+<style id="ione-explore-refined-premium-cards-v5">
+/* Refined compact bookstore cards: slightly larger cover, stable card footprint, complete insight text. */
+#heavensBookstore .hb-card{
+ border-radius:12px!important;
+ border:1px solid var(--hb-accent-border,rgba(161,174,189,.22))!important;
+ background:var(--hb-card-bg,linear-gradient(135deg,#17212a,#10161d))!important;
+ box-shadow:0 3px 10px rgba(0,0,0,.16)!important;
+}
+#heavensBookstore .hb-card:nth-child(5n+1){--hb-accent:#9fc7b8;--hb-accent-border:rgba(159,199,184,.28);--hb-card-bg:linear-gradient(135deg,#172821,#111a17)}
+#heavensBookstore .hb-card:nth-child(5n+2){--hb-accent:#d8bd8a;--hb-accent-border:rgba(216,189,138,.28);--hb-card-bg:linear-gradient(135deg,#29251d,#191712)}
+#heavensBookstore .hb-card:nth-child(5n+3){--hb-accent:#9fb9d6;--hb-accent-border:rgba(159,185,214,.28);--hb-card-bg:linear-gradient(135deg,#1c2836,#121a23)}
+#heavensBookstore .hb-card:nth-child(5n+4){--hb-accent:#c4b5d9;--hb-accent-border:rgba(196,181,217,.28);--hb-card-bg:linear-gradient(135deg,#282332,#19151f)}
+#heavensBookstore .hb-card:nth-child(5n){--hb-accent:#c5cba0;--hb-accent-border:rgba(197,203,160,.28);--hb-card-bg:linear-gradient(135deg,#262a20,#171a14)}
+#heavensBookstore .hb-author-label,#heavensBookstore .hb-insight-kicker{color:var(--hb-accent,#9fc7b8)!important}
+#heavensBookstore .hb-author{border-color:var(--hb-accent-border)!important;background:rgba(255,255,255,.025)!important}
+#heavensBookstore .hb-author-name{font-size:12px!important;line-height:1.2!important;text-decoration:none!important;text-shadow:none!important}
+#heavensBookstore .hb-insight{
+ box-sizing:border-box!important;min-height:0!important;height:auto!important;max-height:none!important;
+ padding:6px 7px!important;overflow:visible!important;
+ border:1px solid var(--hb-accent-border)!important;border-radius:8px!important;background:rgba(0,0,0,.12)!important;
+}
+#heavensBookstore .hb-insight-kicker{margin-bottom:3px!important;line-height:1.2!important}
+#heavensBookstore .hb-insight-text{
+ display:block!important;height:auto!important;max-height:none!important;
+ -webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;
+ white-space:normal!important;overflow:visible!important;text-overflow:clip!important;
+ overflow-wrap:anywhere!important;word-break:normal!important;hyphens:auto;
+ font-size:10px!important;line-height:1.35!important;text-align:left!important;
+}
+#heavensBookstore .hb-card-body{gap:5px!important}
+#heavensBookstore .hb-price{margin:0!important}
+#heavensBookstore .hb-actions{gap:5px!important}
+#heavensBookstore .hb-btn{min-height:32px!important;padding:5px 4px!important;font-size:10px!important}
+#heavensBookstore .hb-audio-btn{min-height:30px!important;margin-top:0!important;padding:5px 4px!important;font-size:9px!important}
+@media(max-width:699px){
+ #heavensBookstore .hb-grid{grid-template-columns:minmax(0,1fr)!important;gap:8px!important;padding:8px 9px calc(16px + env(safe-area-inset-bottom))!important}
+ #heavensBookstore .hb-card{grid-template-columns:96px minmax(0,1fr)!important;align-items:start!important;overflow:hidden!important;border-radius:11px!important}
+ #heavensBookstore .hb-cover{width:96px!important;height:144px!important;min-height:144px!important;max-height:144px!important;aspect-ratio:2/3!important;overflow:hidden!important}
+ #heavensBookstore .hb-cover img{display:block!important;width:100%!important;height:100%!important;aspect-ratio:auto!important;object-fit:contain!important;object-position:center top!important;background:rgba(0,0,0,.16)!important}
+ #heavensBookstore .hb-cover-empty{width:100%!important;height:144px!important;min-height:144px!important;aspect-ratio:auto!important;font-size:12px!important}
+ #heavensBookstore .hb-card-body{min-width:0!important;padding:6px 7px!important;gap:4px!important}
+ #heavensBookstore .hb-card-title{font-size:12px!important;line-height:1.2!important;-webkit-line-clamp:2!important}
+ #heavensBookstore .hb-meta{font-size:9px!important;line-height:1.2!important;margin:0!important}
+ #heavensBookstore .hb-author{padding:4px 5px!important;gap:2px!important}
+ #heavensBookstore .hb-author-label{font-size:7px!important;letter-spacing:.6px!important}
+ #heavensBookstore .hb-author-name{font-size:11px!important;line-height:1.15!important}
+ #heavensBookstore .hb-insight{padding:5px 6px!important}
+ #heavensBookstore .hb-insight-kicker{font-size:7px!important;letter-spacing:.4px!important}
+ #heavensBookstore .hb-insight-text{font-size:10px!important;line-height:1.3!important}
+ #heavensBookstore .hb-price{font-size:10px!important;padding:3px 6px!important}
+ #heavensBookstore .hb-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important}
+ #heavensBookstore .hb-btn{min-height:29px!important;font-size:9px!important;padding:4px 3px!important}
+ #heavensBookstore .hb-audio-btn{min-height:28px!important;font-size:9px!important}
+ #heavensBookstore .hb-lock{font-size:8px!important;line-height:1.25!important}
+}
+@media(max-width:360px){
+ #heavensBookstore .hb-card{grid-template-columns:90px minmax(0,1fr)!important}
+ #heavensBookstore .hb-cover{width:90px!important;height:135px!important;min-height:135px!important;max-height:135px!important}
+ #heavensBookstore .hb-cover-empty{height:135px!important;min-height:135px!important}
+}
+@media(min-width:700px){
+ #heavensBookstore .hb-grid{gap:10px!important}
+ #heavensBookstore .hb-card{display:grid!important;grid-template-columns:minmax(104px,35%) minmax(0,1fr)!important;align-items:start!important;overflow:hidden!important}
+ #heavensBookstore .hb-cover{width:100%!important;height:auto!important;max-height:none!important;aspect-ratio:2/3!important}
+ #heavensBookstore .hb-cover img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:top center!important}
+ #heavensBookstore .hb-card-body{padding:8px!important;gap:6px!important}
+ #heavensBookstore .hb-insight-text{font-size:11px!important;line-height:1.4!important}
+}
+</style>
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true"><div class="ione-network-mark"><strong>I|ONE</strong><span>intoione.space</span><i></i></div></div>
