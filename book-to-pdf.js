@@ -51,6 +51,7 @@
 
       publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing secure upload…";
       let path = "";
+      let published = false;
       try {
         const session = await ensureHeavensAnonymousSession();
         if (!session || !session.user || !session.user.id) throw new Error("Please reconnect before publishing.");
@@ -65,6 +66,7 @@
           contents: "", chapters: [], author_id: session.user.id, active: true, pdf_path: path
         }).select("id,title,category,price,currency,pdf_path,created_at").single();
         if (inserted.error) throw inserted.error;
+        published = true;
 
         const row = inserted.data;
         const book = {
@@ -73,13 +75,15 @@
           contents: "", frontCover: "", backCover: "", pdfPath: row.pdf_path,
           chapters: [], date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
-        if (typeof markBookPaid === "function") markBookPaid(book);
+        if (typeof markBookPaid === "function") {
+          try { markBookPaid(book); } catch (storageError) { console.warn("Could not cache author preview state:", storageError); }
+        }
         status.textContent = "Published successfully. Your PDF is now listed in Explore.";
         publish.textContent = "PUBLISHED";
         setTimeout(close, 1200);
       } catch (error) {
         console.error("Book to PDF publish failed:", error);
-        if (path) {
+        if (path && !published) {
           try { await heavensSupabase.storage.from("paid-book-pdfs").remove([path]); }
           catch (cleanupError) { console.warn("Could not clean up incomplete PDF upload:", cleanupError); }
         }
