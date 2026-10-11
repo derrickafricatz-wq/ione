@@ -7098,12 +7098,18 @@ async function compressBookCover(dataUrl){
   }catch(e){ return ""; }
 }
 
+const authorName = document.getElementById("bookAuthorName")?.value.trim() || "";
+const bookInsight = document.getElementById("bookInsight")?.value.trim() || "";
+if (!authorName) { alert("Enter the author's name before publishing."); document.getElementById("bookAuthorName")?.focus(); return; }
+if (!bookInsight) { alert("Write a short book insight before publishing."); document.getElementById("bookInsight")?.focus(); return; }
 const libraryCover = await compressBookCover(coverImage);
 const libraryBackCover = await compressBookCover(backCoverImage);
 
 const newBook = {
   id: "HB-" + Date.now() + "-" + Math.random().toString(36).slice(2,8),
   title: bookTitle || "Untitled Book",
+  authorName,
+  bookInsight,
   category: bookCategory || "SERMONS",
   price: bookPrice,
   currency: "TZS",
@@ -8273,9 +8279,9 @@ async function openHeavensBookstore(){
       const insightText=card.querySelector(".hb-insight-text");
       const insightSource=String(book.bookInsight||"The author has not added a book introduction yet.").trim();
       const insightChunks=[];
-      const sentences=insightSource.split(/(?<=[.!?])\\s+/).filter(Boolean);
+      const insightWords=insightSource.split(/\\s+/).filter(Boolean);
       let insightChunk="";
-      sentences.forEach(sentence=>{if((insightChunk+" "+sentence).trim().length>190&&insightChunk){insightChunks.push(insightChunk);insightChunk=sentence;}else insightChunk=(insightChunk+" "+sentence).trim();});
+      insightWords.forEach(word=>{if((insightChunk+" "+word).trim().length>190&&insightChunk){insightChunks.push(insightChunk);insightChunk=word;}else insightChunk=(insightChunk+" "+word).trim();});
       if(insightChunk)insightChunks.push(insightChunk);
       if(!insightChunks.length)insightChunks.push("The author has not added a book introduction yet.");
       let insightIndex=0, insightTimer=null, insightPaused=false;
