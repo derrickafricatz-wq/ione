@@ -1,5 +1,5 @@
 {
-  "version": "1.0.90",
-  "message": "Interactive PDF book reader, front covers and bookstore layout",
+  "version": "1.0.91",
+  "message": "Fix PDF cover publishing and author access",
   "force": true
 }

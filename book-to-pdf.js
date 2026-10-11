@@ -74,8 +74,7 @@
         if (!session || !session.user) throw new Error("Please reconnect to load your published books.");
         const { data, error } = await heavensSupabase
           .from("heavens_books")
-          .select("id,title,pdf_path,created_at")
-          .eq("author_id", session.user.id)
+          .select("id,title,pdf_path,created_at,author_id")
           .eq("active", true)
           .not("pdf_path", "is", null)
           .order("created_at", { ascending: false });
@@ -84,11 +83,12 @@
         (data || []).forEach(item => {
           const option = document.createElement("option");
           option.value = String(item.id);
-          option.textContent = String(item.title || "Untitled PDF book");
+          option.textContent = String(item.title || "Untitled PDF book") + (item.author_id === session.user.id ? " — YOUR BOOK" : "");
+          if (item.author_id !== session.user.id) option.disabled = true;
           existingBookSelect.appendChild(option);
         });
         if (!data || !data.length) {
-          existingBookSelect.innerHTML = '<option value="">No existing PDF books found for this publisher</option>';
+          existingBookSelect.innerHTML = '<option value="">No published PDF books found</option>';
         }
       } catch (error) {
         console.warn("Could not load existing PDF books for cover updates:", error);
@@ -181,10 +181,14 @@
       if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) { status.textContent = "Only PDF files are accepted."; return; }
       if (file.size > 50 * 1024 * 1024) { status.textContent = "This PDF is over the 50 MB limit."; return; }
 
-      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing secure upload…";
+      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing the front cover…";
       let path = "";
+      let frontCover = "";
       let published = false;
       try {
+        frontCover = await compressFrontCover(coverFile);
+        if (!frontCover) throw new Error("Could not process the front cover image. Please choose another image.");
+        status.textContent = "Preparing secure upload…";
         const session = await ensureHeavensAnonymousSession();
         if (!session || !session.user || !session.user.id) throw new Error("Please reconnect before publishing.");
         const random = window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(16).slice(2);

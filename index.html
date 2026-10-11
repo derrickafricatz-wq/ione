@@ -8060,16 +8060,18 @@ async function publishBookToHeavensServer(book){
 
 async function loadHeavensServerBooks(){
   try{
-    await ensureHeavensAnonymousSession();
+    const session = await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,author_id,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
     return (data || []).map(b => ({
       id: "HB-SERVER-" + b.id,
       supabaseId: b.id,
+      authorId: b.author_id || "",
+      isAuthor: !!session?.user?.id && String(b.author_id) === String(session.user.id),
       title: b.title,
       category: b.category || "SERMONS",
       price: Number(b.price || 0),
@@ -8098,6 +8100,7 @@ function getHeavensBookStableKey(book){
   return String(book?.supabaseId || book?.id || "").trim();
 }
 function isBookPaid(book){
+  if(book?.isAuthor === true) return true;
   const paid=getPaidBooks();
   const key=getHeavensBookStableKey(book);
   if(key && paid[key]) return true;
