@@ -62,6 +62,7 @@ Deno.serve(async(req:Request)=>{
     }
     if(action==="request_package"){
       if(!user) return json({success:false,error:"Please sign in first."},401);
+      if(body?.terms_accepted!==true) return json({success:false,error:"Please accept the Author Studio terms for the new package."},400);
       const {data:profile,error:profileError}=await admin.from("author_studio_profiles").select("id,user_id").eq("user_id",user.id).maybeSingle();
       if(profileError||!profile) return json({success:false,error:"Register as an author before requesting a package."},400);
       const {data:pending,error:pendingError}=await admin.from("author_studio_package_requests").select("id,status").eq("author_id",profile.id).eq("status","pending").limit(1).maybeSingle();
