@@ -164,7 +164,7 @@ Deno.serve(async (req: Request) => {
       if (!rowIds.length) return json({ success: false, error: "No eligible earnings found." }, 409);
       const authorName = await resolveAuthorName(authorId, rows);
       const payoutId = crypto.randomUUID();
-      const idem = "I1-AUTH-" + payoutId.replace(/-/g, "");
+      const idem = "I1-AUTH-" + payoutId.replace(/-/g, "").slice(0, 22);
       const { error: createError } = await admin.from("ione_author_payouts").insert({
         id: payoutId, author_id: authorId, author_name: authorName, recipient_phone: phone, recipient_network: network,
         amount_tzs: quotedAmount, provider_fee_tzs: q.fee, total_debit_tzs: q.total, idempotency_key: idem,
