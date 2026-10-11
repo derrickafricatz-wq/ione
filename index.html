@@ -2458,26 +2458,44 @@ body.ione-gentle-boot #ioneTopActions{
 #heavensReader .hr-pdf-page .hr-pdf-loading{z-index:2;pointer-events:none}
 #heavensReader .hr-book>.hr-pdf-loading{position:absolute;inset:0;z-index:30;border-radius:8px}
 /* Book panels remain complete; the shelf itself owns vertical scrolling. */
-#heavensBookstore .hb-grid{flex:1 1 auto;min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;align-content:start;align-items:stretch;grid-auto-rows:max-content;padding-bottom:calc(24px + env(safe-area-inset-bottom))}
-#heavensBookstore .hb-card{min-width:0;height:100%;display:flex;flex-direction:column;align-self:stretch}
-#heavensBookstore .hb-cover{flex:0 0 auto;height:auto;aspect-ratio:3/4;min-height:0;max-height:260px;background:linear-gradient(145deg,#102b30,#071316)}
+#heavensBookstore .hb-grid{flex:1 1 auto;min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;align-content:start;align-items:stretch;grid-auto-rows:max-content;padding:12px 14px calc(24px + env(safe-area-inset-bottom));gap:14px}
+#heavensBookstore .hb-card{min-width:0;height:auto;display:flex;flex-direction:column;align-self:stretch;border-radius:14px;border-color:rgba(130,177,170,.24);background:linear-gradient(155deg,#14201e 0%,#0b1110 75%);box-shadow:0 5px 15px rgba(0,0,0,.22)}
+#heavensBookstore .hb-cover{flex:0 0 auto;height:auto;aspect-ratio:3/3.45;min-height:0;max-height:205px;background:linear-gradient(145deg,#102b30,#071316)}
 #heavensBookstore .hb-cover img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
-#heavensBookstore .hb-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;font-size:clamp(15px,3vw,24px)}
-#heavensBookstore .hb-card-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:0}
-#heavensBookstore .hb-card-title{min-height:0;overflow-wrap:anywhere;word-break:normal}
-#heavensBookstore .hb-actions{margin-top:auto;padding-top:5px}
-#heavensBookstore .hb-btn{min-width:0;padding:8px 5px;overflow-wrap:anywhere}
-#heavensBookstore .hb-lock{line-height:1.4;overflow-wrap:anywhere}
+#heavensBookstore .hb-cover-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere;font-size:clamp(13px,2vw,21px)}
+#heavensBookstore .hb-card-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:0;padding:10px}
+#heavensBookstore .hb-card-title{min-height:0;overflow-wrap:anywhere;word-break:normal;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#heavensBookstore .hb-meta{font-size:10px;line-height:1.4;margin:5px 0 7px;overflow-wrap:anywhere}
+#heavensBookstore .hb-author{display:grid;gap:3px;margin:0 0 8px;line-height:1.25}
+#heavensBookstore .hb-author-label{font-size:8px;letter-spacing:1.1px;color:#81b9a5;font-weight:900}
+#heavensBookstore .hb-author-name{font-size:11px;color:#e1f4eb;font-weight:700;overflow-wrap:anywhere}
+#heavensBookstore .hb-insight{box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;min-height:98px;height:98px;max-height:98px;padding:10px 9px;text-align:center;border-radius:10px;border-color:rgba(114,202,167,.24);background:linear-gradient(145deg,rgba(34,86,66,.22),rgba(11,23,19,.45));cursor:pointer}
+#heavensBookstore .hb-insight-kicker{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:7px;color:#7fe0b7;font-size:8px;font-weight:900;letter-spacing:1px}
+#heavensBookstore .hb-insight-count{flex:0 0 auto;color:#8ca69c;font-size:8px;letter-spacing:.4px}
+#heavensBookstore .hb-insight-text{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;text-align:center;font-size:11px;line-height:1.5;color:#e2eee8;opacity:1;transition:opacity .52s ease}
+#heavensBookstore .hb-insight-text.is-fading{opacity:0}
+#heavensBookstore .hb-price{font-size:12px;align-self:flex-start;margin:8px 0;padding:5px 8px;border-radius:7px}
+#heavensBookstore .hb-actions{margin-top:auto;padding-top:2px;gap:6px}
+#heavensBookstore .hb-btn{min-width:0;min-height:36px;padding:7px 4px;overflow-wrap:anywhere;border-radius:9px;font-size:10px}
+#heavensBookstore .hb-audio-btn{min-height:35px;padding:7px 5px;margin-top:7px;border-radius:9px;font-size:10px;letter-spacing:.1px;transition:opacity .3s ease,transform .3s ease,background .3s ease}
+#heavensBookstore .hb-audio-btn.is-playing{background:linear-gradient(120deg,#173d2e,#10251f);box-shadow:inset 0 0 0 1px rgba(127,255,210,.16)}
+#heavensBookstore .hb-audio-btn:disabled{opacity:.55}
+#heavensBookstore .hb-lock{line-height:1.35;overflow-wrap:anywhere;font-size:9px;margin-top:6px}
+@media(min-width:760px){#heavensBookstore .hb-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}#heavensBookstore .hb-cover{max-height:225px}}
+@media(min-width:1120px){#heavensBookstore .hb-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}#heavensBookstore .hb-cover{max-height:220px}}
 @media(max-width:560px){
-  #heavensBookstore .hb-grid{grid-template-columns:minmax(0,1fr);gap:12px;padding:12px}
-  #heavensBookstore .hb-card{display:grid;grid-template-columns:minmax(100px,34%) minmax(0,1fr);height:auto;min-height:178px}
-  #heavensBookstore .hb-cover{height:100%;min-height:178px;max-height:none;aspect-ratio:auto}
-  #heavensBookstore .hb-card-body{padding:11px;min-width:0}
-  #heavensBookstore .hb-card-title{font-size:15px;line-height:1.3}
-  #heavensBookstore .hb-meta{font-size:10px;line-height:1.4}
-  #heavensBookstore .hb-price{font-size:13px;align-self:flex-start;max-width:100%;overflow-wrap:anywhere}
-  #heavensBookstore .hb-actions{gap:6px}
-  #heavensBookstore .hb-btn{min-height:38px;font-size:12px}
+  #heavensBookstore .hb-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:10px 10px calc(20px + env(safe-area-inset-bottom))}
+  #heavensBookstore .hb-card{display:flex;min-height:0;height:auto}
+  #heavensBookstore .hb-cover{height:auto;min-height:0;max-height:165px;aspect-ratio:3/3.35}
+  #heavensBookstore .hb-card-body{padding:9px;min-width:0}
+  #heavensBookstore .hb-card-title{font-size:12px;line-height:1.3}
+  #heavensBookstore .hb-insight{min-height:104px;height:104px;max-height:104px;padding:8px 7px}
+  #heavensBookstore .hb-insight-text{font-size:10px;line-height:1.45;-webkit-line-clamp:4}
+  #heavensBookstore .hb-insight-kicker{font-size:7px;letter-spacing:.65px}
+  #heavensBookstore .hb-insight-count{font-size:7px}
+  #heavensBookstore .hb-price{font-size:11px;padding:5px 7px}
+  #heavensBookstore .hb-btn{min-height:34px;font-size:9px}
+  #heavensBookstore .hb-audio-btn{font-size:9px;line-height:1.3}
 }
 </style>
 
@@ -6270,8 +6288,12 @@ bookScreen.innerHTML = `
       ></div>
       <label for="bookAuthorName" class="book-section-title" style="display:block;margin-top:14px;">AUTHOR NAME</label>
       <input id="bookAuthorName" class="book-input" maxlength="160" placeholder="Name of the person who wrote this book" style="width:100%;box-sizing:border-box;">
-      <label for="bookInsight" class="book-section-title" style="display:block;margin-top:14px;">BOOK INSIGHT / INTRODUCTION</label>
-      <textarea id="bookInsight" class="book-input" maxlength="12000" rows="5" placeholder="Write a short introduction explaining what readers will discover in this book." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
+      <label for="bookInsight" class="book-section-title" style="display:block;margin-top:14px;">INSIGHT 01</label>
+      <textarea id="bookInsight" class="book-input" maxlength="12000" rows="3" placeholder="Insight 1 — the first thing readers should discover." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
+      <label for="bookInsight2" class="book-section-title" style="display:block;margin-top:10px;">INSIGHT 02 <span style="opacity:.6;font-weight:500;">(OPTIONAL)</span></label>
+      <textarea id="bookInsight2" class="book-input" maxlength="12000" rows="3" placeholder="Insight 2 — another valuable idea." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
+      <label for="bookInsight3" class="book-section-title" style="display:block;margin-top:10px;">INSIGHT 03 <span style="opacity:.6;font-weight:500;">(OPTIONAL)</span></label>
+      <textarea id="bookInsight3" class="book-input" maxlength="12000" rows="3" placeholder="Insight 3 — a final takeaway." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
       <select id="bookCategory" class="book-input" style="margin-top:10px;">
         <option value="SERMONS">SERMONS</option>
         <option value="BIBLE">BIBLE</option>
@@ -7104,8 +7126,10 @@ async function compressBookCover(dataUrl){
 
 const authorName = document.getElementById("bookAuthorName")?.value.trim() || "";
 const bookInsight = document.getElementById("bookInsight")?.value.trim() || "";
+const bookInsight2 = document.getElementById("bookInsight2")?.value.trim() || "";
+const bookInsight3 = document.getElementById("bookInsight3")?.value.trim() || "";
 if (!authorName) { alert("Enter the author's name before publishing."); document.getElementById("bookAuthorName")?.focus(); return; }
-if (!bookInsight) { alert("Write a short book insight before publishing."); document.getElementById("bookInsight")?.focus(); return; }
+if (!bookInsight) { alert("Write Insight 01 before publishing."); document.getElementById("bookInsight")?.focus(); return; }
 const libraryCover = await compressBookCover(coverImage);
 const libraryBackCover = await compressBookCover(backCoverImage);
 
@@ -7114,6 +7138,8 @@ const newBook = {
   title: bookTitle || "Untitled Book",
   authorName,
   bookInsight,
+  bookInsight2,
+  bookInsight3,
   category: bookCategory || "SERMONS",
   price: bookPrice,
   currency: "TZS",
@@ -8128,6 +8154,8 @@ async function publishBookToHeavensServer(book){
     chapters: Array.isArray(book.chapters) ? book.chapters : [],
     author_name: String(book.authorName || ""),
     book_insight: String(book.bookInsight || ""),
+    book_insight_2: String(book.bookInsight2 || ""),
+    book_insight_3: String(book.bookInsight3 || ""),
     author_id: session.user.id,
     active: true
   };
@@ -8157,7 +8185,7 @@ async function loadHeavensServerBooks(){
     const session = await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,narration_path,narration_published_at,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,book_insight_2,book_insight_3,narration_path,narration_published_at,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
@@ -8182,6 +8210,8 @@ async function loadHeavensServerBooks(){
       title: b.title,
       authorName: b.author_name || "",
       bookInsight: b.book_insight || "",
+      bookInsight2: b.book_insight_2 || "",
+      bookInsight3: b.book_insight_3 || "",
       narrationPath: b.narration_path || "",
       narrationPublishedAt: b.narration_published_at || "",
       category: b.category || "SERMONS",
@@ -8284,34 +8314,35 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "FREE" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-author">${book.authorName ? "By " + escapeBookHtml(book.authorName) : "Author details not added"}</div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insight preview"><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book introduction yet.")}</div></div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION NOT PUBLISHED'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
-      const insightBox=card.querySelector(".hb-insight");
-      const insightText=card.querySelector(".hb-insight-text");
-      const insightSource=String(book.bookInsight||"The author has not added a book introduction yet.").trim();
-      const insightChunks=[];
-      const insightWords=insightSource.split(/\s+/).filter(Boolean);
-      let insightChunk="";
-      insightWords.forEach(word=>{if((insightChunk+" "+word).trim().length>190&&insightChunk){insightChunks.push(insightChunk);insightChunk=word;}else insightChunk=(insightChunk+" "+word).trim();});
-      if(insightChunk)insightChunks.push(insightChunk);
-      if(!insightChunks.length)insightChunks.push("The author has not added a book introduction yet.");
-      let insightIndex=0, insightTimer=null, insightPaused=false;
-      const stopInsightTimer=()=>{if(insightTimer)clearInterval(insightTimer);insightTimer=null;};
-      const startInsightTimer=()=>{stopInsightTimer();if(insightChunks.length<2||insightPaused)return;insightTimer=setInterval(()=>{insightText.classList.add("is-fading");setTimeout(()=>{if(!insightPaused){insightIndex=(insightIndex+1)%insightChunks.length;insightText.textContent=insightChunks[insightIndex];}insightText.classList.remove("is-fading");},560);},5000);};
-      insightBox.addEventListener("click",()=>{insightPaused=!insightPaused;insightBox.setAttribute("aria-label",insightPaused?"Book insight preview paused. Tap to resume":"Book insight preview playing. Tap to pause");if(insightPaused)stopInsightTimer();else startInsightTimer();});
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}${book.date?' • '+escapeBookHtml(book.date):''}</div><div class="hb-author"><span class="hb-author-label">CURATED AUTHOR</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK <span class="hb-insight-count">01 / 01</span></div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">${paid?'ACCESS':'CHECK'}</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION NOT PUBLISHED'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      const insightBox=card.querySelector(".hb-insight"), insightText=card.querySelector(".hb-insight-text"), insightCount=card.querySelector(".hb-insight-count");
+      const insightItems=[book.bookInsight,book.bookInsight2,book.bookInsight3].map(v=>String(v||"").trim()).filter(Boolean);
+      if(!insightItems.length)insightItems.push("The author has not added a book insight yet.");
+      let insightIndex=0, insightTimer=null, insightFadeTimer=null, insightPaused=false;
+      const paintInsight=()=>{insightText.textContent=insightItems[insightIndex];insightCount.textContent=String(insightIndex+1).padStart(2,"0")+" / "+String(insightItems.length).padStart(2,"0");};
+      const stopInsightTimer=()=>{if(insightTimer)clearInterval(insightTimer);if(insightFadeTimer)clearTimeout(insightFadeTimer);insightTimer=null;insightFadeTimer=null;};
+      const startInsightTimer=()=>{stopInsightTimer();if(insightItems.length<2||insightPaused)return;insightTimer=setInterval(()=>{insightText.classList.add("is-fading");insightFadeTimer=setTimeout(()=>{if(!insightPaused){insightIndex=(insightIndex+1)%insightItems.length;paintInsight();}insightText.classList.remove("is-fading");insightFadeTimer=null;},520);},15000);};
+      paintInsight();
+      insightBox.addEventListener("click",()=>{insightPaused=!insightPaused;insightBox.setAttribute("aria-label",insightPaused?"Book insights paused. Tap to resume":"Book insights playing. Tap to pause");if(insightPaused)stopInsightTimer();else startInsightTimer();});
       insightBox.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();insightBox.click();}});
       startInsightTimer();
       const audioButton=card.querySelector(".hb-audio-btn");
+      const resetNarrationButton=()=>{audioButton.disabled=false;audioButton.textContent=book.narrationPath?"▶ LISTEN TO NARRATION":"NARRATION NOT PUBLISHED";audioButton.classList.remove("is-playing");};
       audioButton.onclick=async()=>{
         if(!book.narrationPath)return;
-        audioButton.disabled=true;audioButton.textContent="LOADING AUDIO…";
+        if(window.ioneBookNarrationAudio&&!window.ioneBookNarrationAudio.paused){window.ioneBookNarrationAudio.pause();window.ioneBookNarrationAudio=null;resetNarrationButton();return;}
+        audioButton.disabled=true;audioButton.textContent="PREPARING AUDIO…";
         try{
           if(window.ioneBookNarrationAudio){window.ioneBookNarrationAudio.pause();window.ioneBookNarrationAudio=null;}
           const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"audio_url",book_id:String(book.supabaseId||"")}});
           if(result.error||!result.data?.success||!result.data.url)throw new Error(result.data?.error||"Narration could not be opened.");
-          const audio=new Audio(result.data.url);audio.preload="none";window.ioneBookNarrationAudio=audio;
-          audio.onended=()=>{audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";};
-          audio.onerror=()=>{audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";};
-          await audio.play();audioButton.textContent="Ⅱ PLAYING NARRATION";
+          const audio=new Audio(result.data.url);audio.preload="none";audio.volume=0;window.ioneBookNarrationAudio=audio;window.ioneBookNarrationButton=audioButton;audioButton.disabled=false;audioButton.textContent="Ⅱ PLAYING NARRATION";audioButton.classList.add("is-playing");
+          audio.onended=()=>{if(window.ioneBookNarrationAudio===audio)window.ioneBookNarrationAudio=null;resetNarrationButton();};
+          audio.onerror=()=>{if(window.ioneBookNarrationAudio===audio)window.ioneBookNarrationAudio=null;resetNarrationButton();};
+          await audio.play();
+          const fadeStart=performance.now(),fadeDuration=1250;
+          const fadeIn=now=>{if(window.ioneBookNarrationAudio!==audio||audio.paused)return;audio.volume=Math.min(1,Math.max(0,(now-fadeStart)/fadeDuration));if(audio.volume<1)requestAnimationFrame(fadeIn);};
+          requestAnimationFrame(fadeIn);
         }catch(e){audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";alert(e.message||"Narration could not be played.");}
       };
       const coverImg=card.querySelector('.hb-cover img');
@@ -8380,7 +8411,15 @@ async function openHeavensBookstore(){
       grid.appendChild(card);
     });
   }
-  search.oninput=render; store.querySelector("#hbSearchBtn").onclick=render;
+  const fadeStopBookNarration=(reason)=>{
+    const audio=window.ioneBookNarrationAudio;if(!audio)return;
+    const activeButton=window.ioneBookNarrationButton;window.ioneBookNarrationAudio=null;window.ioneBookNarrationButton=null;
+    const startVolume=Number(audio.volume||0),start=performance.now(),duration=950;
+    const fadeOut=now=>{const progress=Math.min(1,(now-start)/duration);try{audio.volume=Math.max(0,startVolume*(1-progress));}catch(_){}if(progress<1){requestAnimationFrame(fadeOut);}else{try{audio.pause();audio.volume=0;}catch(_){}if(activeButton){activeButton.disabled=false;activeButton.textContent="▶ LISTEN TO NARRATION";activeButton.classList.remove("is-playing");}}};
+    requestAnimationFrame(fadeOut);
+  };
+  grid.addEventListener("scroll",()=>{if(window.ioneBookNarrationAudio)fadeStopBookNarration("scroll");},{passive:true});
+  search.oninput=()=>{if(window.ioneBookNarrationAudio)fadeStopBookNarration("browse");render();}; store.querySelector("#hbSearchBtn").onclick=render;
   store.querySelector("#hbClose").onclick=()=>{
     document.body.classList.remove("ione-books-open");
     store.remove();
