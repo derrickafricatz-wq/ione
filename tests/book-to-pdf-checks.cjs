@@ -44,8 +44,8 @@ assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
 
-assert.match(sw, /ione-app-v164/);
-assert.equal(version.version, "1.0.97");
+assert.match(sw, /ione-app-v165/);
+assert.equal(version.version, "1.0.98");
 assert.match(html, /id="bookInsight2"/);
 assert.match(html, /id="bookInsight3"/);
 assert.match(html, /book_insight_2/);
@@ -54,6 +54,15 @@ assert.match(html, /INSIDE THE BOOK/);
 assert.match(html, /15000/);
 assert.match(html, /fadeStopBookNarration/);
 assert.match(html, /AUTHOR SIGNATURE/);
+assert.match(html, /grid-template-columns:repeat\\(2,minmax\\(0,1fr\\)\\)!important/);
+assert.match(html, /grid-template-columns:repeat\\(3,minmax\\(0,1fr\\)\\)!important/);
+assert.match(html, /grid-template-columns:repeat\\(4,minmax\\(0,1fr\\)\\)!important/);
+assert.doesNotMatch(html, /book\\.date\\?' • '/);
+assert.doesNotMatch(html, /NARRATION NOT PUBLISHED/);
+assert.doesNotMatch(html, /Free to read/);
+assert.match(html, /bookInsight,book\\.bookInsight2,book\\.bookInsight3/);
+assert.match(html, /overflow-wrap:anywhere!important/);
+
 assert.match(feature, /id="b2pInsight2"/);
 assert.match(feature, /id="b2pInsight3"/);
 assert.match(feature, /book_insight_2/);
