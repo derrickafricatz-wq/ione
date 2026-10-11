@@ -14,13 +14,13 @@ const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 new vm.Script(feature, { filename: "book-to-pdf.js" });
 console.log("PASS: Book to PDF JavaScript parses");
 
-assert.match(html, /id="ioneAuthorTermsPanel"/);
-assert.match(html, /id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"/);
-assert.match(html, /href="tel:\\+255742097868"/);
-assert.match(html, /href="https:\\/\\/wa\\.me\\/255742097868"/);
-assert.match(html, /I\\|ONE Support chat button/);
-assert.match(html, /I\\|ONE \\/ Authority Press may review/);
-assert.match(sw, /ione-app-v178/);
+assert.ok(html.includes('id="ioneAuthorTermsPanel"'));
+assert.ok(html.includes('id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"'));
+assert.ok(html.includes('href="tel:+255742097868"'));
+assert.ok(html.includes('href="https://wa.me/255742097868"'));
+assert.ok(html.includes('tap the existing I|ONE Support chat button'));
+assert.ok(html.includes('I|ONE / Authority Press may review'));
+assert.ok(sw.includes("ione-app-v178"));
 assert.equal(version.version, "1.0.111");
 console.log("PASS: Author Studio consent, support links, and cache/version checks");
 
