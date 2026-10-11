@@ -271,11 +271,76 @@ window.ioneEnsureBookPdfLibraries = async function(){
 
   let ioneAuthorityLoadedPrices={"2weeks":null,"1month":null,"3months":null};
 
+  async function loadAuthorityNarrationRequests(){
+    const list=document.getElementById("authorityNarrationList");
+    const status=document.getElementById("authorityNarrationStatus");
+    const refresh=document.getElementById("authorityNarrationRefresh");
+    if(!list||!status)return;
+    const password=String(document.getElementById("authorityPasswordInput")?.value||"");
+    if(!password){status.textContent="Unlock Authority Press again to manage narration.";return;}
+    if(refresh){refresh.disabled=true;refresh.textContent="LOADING…";}
+    status.textContent="Loading requests…";
+    try{
+      const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_list",password}});
+      if(result.error||!result.data?.success)throw new Error(result.data?.error||"Could not load narration requests.");
+      list.replaceChildren();
+      const requests=Array.isArray(result.data.requests)?result.data.requests:[];
+      if(!requests.length){status.textContent="No narration requests yet.";return;}
+      status.textContent=requests.length+" narration request(s).";
+      requests.forEach(request=>{
+        const card=document.createElement("article");
+        card.style.cssText="display:grid;gap:9px;padding:13px;border:1px solid #31564a;border-radius:12px;background:#07140f;color:#eafff4;";
+        const heading=document.createElement("div");heading.textContent=String(request.book_title||"Untitled book")+" • "+String(request.author_name||"Author not named");heading.style.cssText="font-size:14px;font-weight:900;overflow-wrap:anywhere;";
+        const state=document.createElement("div");state.textContent="STATUS: "+String(request.status||"requested").replace(/_/g," ").toUpperCase();state.style.cssText="font-size:10px;letter-spacing:1px;color:#70e5bd;font-weight:900;";
+        const insight=document.createElement("div");insight.textContent=String(request.book_insight||"No insight supplied.");insight.style.cssText="font-size:12px;line-height:1.55;color:#c5d9d0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;";
+        const notes=document.createElement("textarea");notes.rows=2;notes.maxLength=4000;notes.placeholder="Internal review notes / message for author";notes.value=String(request.authority_notes||"");notes.style.cssText="width:100%;box-sizing:border-box;padding:10px;border:1px solid #31594c;border-radius:9px;background:#10231d;color:#fff;";
+        const actions=document.createElement("div");actions.style.cssText="display:flex;gap:7px;flex-wrap:wrap;";
+        const setStatus=async(next,label)=>{
+          const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_status",password,request_id:request.id,status:next,authority_notes:notes.value}});
+          if(result.error||!result.data?.success)throw new Error(result.data?.error||"Could not update request status.");
+          request.status=next;request.authority_notes=notes.value;state.textContent="STATUS: "+next.replace(/_/g," ").toUpperCase();status.textContent=label;
+        };
+        [["in_review","START REVIEW"],["needs_author","NEED AUTHOR DETAILS"],["recording","READY / RECORDING"],["rejected","REJECT"]].forEach(([next,label])=>{
+          const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="padding:9px 10px;border:1px solid #31594c;border-radius:8px;background:#10251d;color:#dffff2;font-size:10px;font-weight:900;";
+          b.onclick=async()=>{b.disabled=true;try{await setStatus(next,label+" saved.");}catch(e){status.textContent=e.message||"Could not update request.";}finally{b.disabled=false;}};
+          actions.appendChild(b);
+        });
+        const audioLabel=document.createElement("label");audioLabel.textContent="Checked narration MP3";audioLabel.style.cssText="font-size:11px;color:#bfe8d7;font-weight:800;display:grid;gap:6px;";
+        const file=document.createElement("input");file.type="file";file.accept="audio/mpeg,.mp3";file.style.cssText="max-width:100%;font-size:12px;color:#dffff2;";
+        const publish=document.createElement("button");publish.type="button";publish.textContent="UPLOAD & PUBLISH AUDIO";publish.style.cssText="padding:11px;border:0;border-radius:9px;background:#00c995;color:#04251b;font-weight:900;font-size:11px;";
+        publish.onclick=async()=>{
+          const audioFile=file.files&&file.files[0];if(!audioFile){status.textContent="Choose the checked MP3 narration first.";return;}
+          if(audioFile.size>50*1024*1024){status.textContent="Audio file exceeds 50 MB.";return;}
+          if(audioFile.type && !["audio/mpeg","audio/mp3","audio/x-mpeg-3"].includes(audioFile.type)){status.textContent="Please choose an MP3 audio file.";return;}
+          publish.disabled=true;publish.textContent="PREPARING…";
+          try{
+            const signed=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_upload_url",password,request_id:request.id}});
+            if(signed.error||!signed.data?.success||!signed.data.path||!signed.data.token)throw new Error(signed.data?.error||"Could not prepare audio upload.");
+            publish.textContent="UPLOADING…";
+            const upload=await heavensSupabase.storage.from("book-narrations").uploadToSignedUrl(signed.data.path,signed.data.token,audioFile,{contentType:"audio/mpeg",upsert:false});
+            if(upload.error)throw upload.error;
+            publish.textContent="PUBLISHING…";
+            const final=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"authority_publish",password,request_id:request.id,audio_path:signed.data.path,authority_notes:notes.value}});
+            if(final.error||!final.data?.success)throw new Error(final.data?.error||"Could not publish narration.");
+            request.status="published";state.textContent="STATUS: PUBLISHED";status.textContent="Narration published for "+request.book_title+".";
+            publish.textContent="AUDIO PUBLISHED";file.disabled=true;publish.disabled=true;
+          }catch(e){status.textContent=e.message||"Audio upload/publication failed.";publish.disabled=false;publish.textContent="UPLOAD & PUBLISH AUDIO";}
+        };
+        audioLabel.appendChild(file);
+        card.append(heading,state,insight,notes,actions,audioLabel,publish);
+        list.appendChild(card);
+      });
+    }catch(e){status.textContent=e.message||"Could not load narration requests.";}
+    finally{if(refresh){refresh.disabled=false;refresh.textContent="REFRESH REQUESTS";}}
+  }
+  document.addEventListener("click",event=>{if(event.target&&event.target.id==="authorityNarrationRefresh")loadAuthorityNarrationRequests();});
+
   async function openAuthorityPanel(){
     const panel=document.getElementById("authorityPressPanel");
     if(!panel)return;
     panel.style.display="block";
     panel.setAttribute("aria-hidden","false");
+    loadAuthorityNarrationRequests();
     const status=document.getElementById("authorityPriceStatus");
     if(status)status.textContent="Loading…";
     try{
@@ -2021,6 +2086,12 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 .hb-card-title{font-weight:800;font-size:16px;line-height:1.25;color:#fff;min-height:40px}
 .hb-price{display:inline-block;margin:7px 0 9px;padding:6px 10px;border-radius:9px;border:1px solid rgba(0,255,255,.5);background:rgba(0,255,255,.08);color:#00ffff;font-weight:900;font-size:15px}
 .hb-meta{font-size:11px;color:#7f9198;margin:6px 0 10px}
+.hb-author{font-size:11px;color:#b5c9ce;margin:5px 0 8px}
+.hb-insight{position:relative;min-height:58px;max-height:96px;overflow:hidden;padding:10px;border:1px solid rgba(0,255,255,.18);border-radius:10px;background:rgba(0,255,255,.035);color:#d5e5e8;font-size:12px;line-height:1.5;cursor:pointer}
+.hb-insight-text{opacity:1;transition:opacity .55s ease}
+.hb-insight-text.is-fading{opacity:0}
+.hb-audio-btn{width:100%;margin-top:8px;min-height:38px;border-radius:10px;border:1px solid #00c995;background:#10251f;color:#7fffd2;font-weight:800}
+.hb-audio-btn:disabled{opacity:.5}
 .hb-actions{display:flex;gap:7px}
 .hb-btn{flex:1;min-height:42px;border-radius:11px;border:1px solid #00ffff;background:#111;color:#00ffff;font-weight:800}
 .hb-btn.pay{background:#00ffff;color:#001015}
@@ -2798,6 +2869,16 @@ function getMedia(id){
 
       <button type="button" id="authoritySavePrices" class="authority-save-button">SAVE PRICES</button>
       <div id="authoritySaveStatus" class="authority-save-status"></div>
+    <div class="authority-panel-section" id="authorityNarrationSection">
+      <div class="authority-section-kicker">BOOK INSIGHT & NARRATION</div>
+      <h3>BOOK NARRATION REQUESTS</h3>
+      <p class="authority-section-note">Review the author, book title and written insight. Update the request, upload the checked narration audio, then publish it to that book.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;">
+        <button type="button" id="authorityNarrationRefresh" class="authority-save-button">REFRESH REQUESTS</button>
+        <span id="authorityNarrationStatus" role="status" style="font-size:12px;align-self:center;color:#bfe8d7;">Requests have not been loaded.</span>
+      </div>
+      <div id="authorityNarrationList" style="display:grid;gap:12px;"></div>
+    </div>
     <div class="authority-panel-section">
       <div class="authority-section-kicker">I|ONE COMMUNICATION</div>
       <h3>SCROLLING BANNERS</h3>
@@ -6187,6 +6268,10 @@ bookScreen.innerHTML = `
         data-placeholder="Enter book title"
         class="book-title-editor"
       ></div>
+      <label for="bookAuthorName" class="book-section-title" style="display:block;margin-top:14px;">AUTHOR NAME</label>
+      <input id="bookAuthorName" class="book-input" maxlength="160" placeholder="Name of the person who wrote this book" style="width:100%;box-sizing:border-box;">
+      <label for="bookInsight" class="book-section-title" style="display:block;margin-top:14px;">BOOK INSIGHT / INTRODUCTION</label>
+      <textarea id="bookInsight" class="book-input" maxlength="12000" rows="5" placeholder="Write a short introduction explaining what readers will discover in this book." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
       <select id="bookCategory" class="book-input" style="margin-top:10px;">
         <option value="SERMONS">SERMONS</option>
         <option value="BIBLE">BIBLE</option>
@@ -7017,12 +7102,18 @@ async function compressBookCover(dataUrl){
   }catch(e){ return ""; }
 }
 
+const authorName = document.getElementById("bookAuthorName")?.value.trim() || "";
+const bookInsight = document.getElementById("bookInsight")?.value.trim() || "";
+if (!authorName) { alert("Enter the author's name before publishing."); document.getElementById("bookAuthorName")?.focus(); return; }
+if (!bookInsight) { alert("Write a short book insight before publishing."); document.getElementById("bookInsight")?.focus(); return; }
 const libraryCover = await compressBookCover(coverImage);
 const libraryBackCover = await compressBookCover(backCoverImage);
 
 const newBook = {
   id: "HB-" + Date.now() + "-" + Math.random().toString(36).slice(2,8),
   title: bookTitle || "Untitled Book",
+  authorName,
+  bookInsight,
   category: bookCategory || "SERMONS",
   price: bookPrice,
   currency: "TZS",
@@ -8035,6 +8126,8 @@ async function publishBookToHeavensServer(book){
     back_cover: book.backCover || null,
     contents: String(book.contents || ""),
     chapters: Array.isArray(book.chapters) ? book.chapters : [],
+    author_name: String(book.authorName || ""),
+    book_insight: String(book.bookInsight || ""),
     author_id: session.user.id,
     active: true
   };
@@ -8064,7 +8157,7 @@ async function loadHeavensServerBooks(){
     const session = await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,narration_path,narration_published_at,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
@@ -8087,6 +8180,10 @@ async function loadHeavensServerBooks(){
       isPurchased: purchasedIds.has(String(b.id)),
       paymentRequired: b.payment_required !== false,
       title: b.title,
+      authorName: b.author_name || "",
+      bookInsight: b.book_insight || "",
+      narrationPath: b.narration_path || "",
+      narrationPublishedAt: b.narration_published_at || "",
       category: b.category || "SERMONS",
       price: Number(b.price || 0),
       currency: b.currency || "TZS",
@@ -8187,7 +8284,36 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "FREE" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-author">${book.authorName ? "By " + escapeBookHtml(book.authorName) : "Author details not added"}</div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insight preview"><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book introduction yet.")}</div></div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION NOT PUBLISHED'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      const insightBox=card.querySelector(".hb-insight");
+      const insightText=card.querySelector(".hb-insight-text");
+      const insightSource=String(book.bookInsight||"The author has not added a book introduction yet.").trim();
+      const insightChunks=[];
+      const insightWords=insightSource.split(/\s+/).filter(Boolean);
+      let insightChunk="";
+      insightWords.forEach(word=>{if((insightChunk+" "+word).trim().length>190&&insightChunk){insightChunks.push(insightChunk);insightChunk=word;}else insightChunk=(insightChunk+" "+word).trim();});
+      if(insightChunk)insightChunks.push(insightChunk);
+      if(!insightChunks.length)insightChunks.push("The author has not added a book introduction yet.");
+      let insightIndex=0, insightTimer=null, insightPaused=false;
+      const stopInsightTimer=()=>{if(insightTimer)clearInterval(insightTimer);insightTimer=null;};
+      const startInsightTimer=()=>{stopInsightTimer();if(insightChunks.length<2||insightPaused)return;insightTimer=setInterval(()=>{insightText.classList.add("is-fading");setTimeout(()=>{if(!insightPaused){insightIndex=(insightIndex+1)%insightChunks.length;insightText.textContent=insightChunks[insightIndex];}insightText.classList.remove("is-fading");},560);},5000);};
+      insightBox.addEventListener("click",()=>{insightPaused=!insightPaused;insightBox.setAttribute("aria-label",insightPaused?"Book insight preview paused. Tap to resume":"Book insight preview playing. Tap to pause");if(insightPaused)stopInsightTimer();else startInsightTimer();});
+      insightBox.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();insightBox.click();}});
+      startInsightTimer();
+      const audioButton=card.querySelector(".hb-audio-btn");
+      audioButton.onclick=async()=>{
+        if(!book.narrationPath)return;
+        audioButton.disabled=true;audioButton.textContent="LOADING AUDIO…";
+        try{
+          if(window.ioneBookNarrationAudio){window.ioneBookNarrationAudio.pause();window.ioneBookNarrationAudio=null;}
+          const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"audio_url",book_id:String(book.supabaseId||"")}});
+          if(result.error||!result.data?.success||!result.data.url)throw new Error(result.data?.error||"Narration could not be opened.");
+          const audio=new Audio(result.data.url);audio.preload="none";window.ioneBookNarrationAudio=audio;
+          audio.onended=()=>{audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";};
+          audio.onerror=()=>{audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";};
+          await audio.play();audioButton.textContent="Ⅱ PLAYING NARRATION";
+        }catch(e){audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";alert(e.message||"Narration could not be played.");}
+      };
       const coverImg=card.querySelector('.hb-cover img');
       if(coverImg){
         coverImg.onerror=()=>{
