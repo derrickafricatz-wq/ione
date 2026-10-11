@@ -1,5 +1,5 @@
 {
-  "version": "1.0.93",
-  "message": "Detect PDF cover pages before publishing",
+  "version": "1.0.94",
+  "message": "Public bookstore labels and persistent access",
   "force": true
 }
