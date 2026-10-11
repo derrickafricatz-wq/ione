@@ -3750,7 +3750,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=124", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=125", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -8043,7 +8043,7 @@ let licenseData = null;
 
 async function checkForUpdate() {
   try {
-    const res = await fetch("https://derrickafricatz-wq.github.io/AFYA-CARE/version.json?time=" + Date.now());
+    const res = await fetch("./version.json?time=" + Date.now(), { cache: "no-store" });
     const data = await res.json();
 
     if (data.version !== currentVersion) {
