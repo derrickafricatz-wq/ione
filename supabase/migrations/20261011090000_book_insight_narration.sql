@@ -1,5 +1,10 @@
 -- I|ONE Book Insight & Narration
 -- Additive only: existing book/PDF/payment fields and policies remain unchanged.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('book-narrations', 'book-narrations', false, 52428800, array['audio/mpeg','audio/mp3','audio/mpeg3','audio/x-mpeg-3'])
+on conflict (id) do update set public = false, file_size_limit = 52428800,
+  allowed_mime_types = excluded.allowed_mime_types;
+
 alter table public.heavens_books
   add column if not exists author_name text,
   add column if not exists book_insight text,
