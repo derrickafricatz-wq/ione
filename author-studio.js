@@ -14,7 +14,7 @@ if(profile.package_status==="active"){msg.textContent="Publishing access is acti
 else{body.insertAdjacentHTML("beforeend",payment);msg.textContent="Access remains locked until Authority Press confirms your package payment.";btn.textContent="CHECK ACCESS";btn.onclick=refresh;}
 }
 async function refresh(){if(busy)return;busy=true;msg.textContent="Checking saved access…";try{render(await api("my_status"));}catch(e){msg.textContent=e.message||"Could not check access.";}finally{busy=false;}}
-const msg=layer.querySelector("#as-message");refresh();}
+refresh();}
 function install(){const trigger=document.getElementById("openTranscript");if(trigger)trigger.onclick=()=>open("transcript");if(typeof window.openBookToPdfPanel==="function"&&!window.__ioneOriginalOpenBookToPdfPanel){window.__ioneOriginalOpenBookToPdfPanel=window.openBookToPdfPanel;window.openBookToPdfPanel=async function(){try{const d=await api("my_status");if(!d.registered||d.profile.package_status!=="active"){open("publisher","Register or contact support to activate publishing.");return;}return window.__ioneOriginalOpenBookToPdfPanel.apply(this,arguments);}catch(e){open("publisher",e.message||"Please register to continue.");}};}}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
 })();
