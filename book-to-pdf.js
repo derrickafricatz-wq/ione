@@ -1,4 +1,5 @@
 /* I|ONE Book to PDF — isolated feature module. Requires the matching Supabase migration and book-pdf-access function. */
+/* PDF cover selection: prefer a detected cover page; request an uploaded cover for dense content pages. */
 (function () {
   "use strict";
 
