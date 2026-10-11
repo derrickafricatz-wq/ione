@@ -1,5 +1,5 @@
 {
-  "version": "1.0.114",
-  "message": "Save opened books for offline reading",
+  "version": "1.0.115",
+  "message": "Improve offline launch and save homepage communications",
   "force": true
 }
