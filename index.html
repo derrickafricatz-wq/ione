@@ -4163,7 +4163,7 @@ async function openAuthorAccessForm(){
     if(authorAccessRequest){
       authorNameInput.value=authorAccessRequest.real_name||"";
       authorPhoneInput.value=authorAccessRequest.phone||"";
-      authorTermsInput.checked=authorAccessRequest.terms_accepted===true;
+      authorTermsInput.checked=false;
       authorSaved.style.display="block";
       authorSaved.innerHTML="<strong>YOUR SAVED AUTHOR PROFILE</strong><br>Status: "+String(authorAccessRequest.status||"").replace(/</g,"&lt;").toUpperCase()+"<br>Package: "+Number(authorAccessRequest.package_number||0)+" • Published in this package: "+Number(authorAccessRequest.books_used||0)+"/3";
       if(authorAccessRequest.status==="active"){
