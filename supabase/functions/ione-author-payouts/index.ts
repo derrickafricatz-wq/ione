@@ -34,7 +34,7 @@ Deno.serve(async (req: Request) => {
     }
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const action = safeText(body?.action || "list", 40).toLowerCase();
-    const blmOrigin = "https://xbemkmvvbkxknuduthsg.supabase.co";
+    const blmOrigin = "https://intoione.space";
     const apiHeaders = { Authorization: "Bearer " + apiKey, "X-BLMPay-Origin": blmOrigin, "Content-Type": "application/json" };
 
     const quoteFee = async (amount: number) => {
