@@ -44,8 +44,8 @@ assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
 
-assert.match(sw, /ione-app-v160/);
-assert.equal(version.version, "1.0.93");
+assert.match(sw, /ione-app-v161/);
+assert.equal(version.version, "1.0.94");
 assert.match(feature, /id="b2pCover"/);
 assert.match(feature, /front_cover: frontCover/);
 assert.match(feature, /frontCover = coverFile \? await compressFrontCover\(coverFile\) : await coverFromPdfFirstPage\(file\)/);
@@ -61,7 +61,7 @@ assert.match(html, /book\?\.isAuthor === true \|\| book\?\.isPurchased === true/
 assert.match(html, /book\?\.paymentRequired === false/);
 assert.match(html, /action: "my_access"/);
 assert.match(html, /openMyPublishedBooksPanel/);
-assert.match(html, /Call now • Read inside the app/);
+assert.match(html, /<div class=\\"hb-sub\\">Call now<\\/div>/);
 assert.match(html, /Find words that move you/);
 assert.match(html, /PUBLIC BOOKS/);
 assert.match(feature, /coverFromPdfFirstPage\(file\)/);
