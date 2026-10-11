@@ -56,6 +56,8 @@
   async function openGift(){
     const o=overlay("ioneGiftOverlay","GIFT • BRAND INVITE",'<p style="color:#b9c7cc;font:13px/1.5 Arial">Invite a company or brand to join I|ONE Marketing. One referral number is used once only. A maximum of 10 referral numbers are shared each day.</p><label>YOUR NAME</label><input id="ioneGiftName" class="ione-feature-field" maxlength="120" placeholder="Your name"><label>YOUR PHONE</label><input id="ioneGiftPhone" class="ione-feature-field" maxlength="30" inputmode="tel" placeholder="07XXXXXXXX"><div id="ioneGiftNumber" class="ione-gift-number"><div class="ione-gift-code">LOADING…</div><div class="ione-gift-limit">ONE-TIME REFERRAL NUMBER</div></div><button id="ioneGiftShare" class="ione-feature-btn" type="button">SHARE REFERRAL</button><div id="ioneGiftStatus" class="ione-feature-status"></div>');
     const name=document.getElementById("ioneGiftName"),phone=document.getElementById("ioneGiftPhone"),code=document.querySelector("#ioneGiftNumber .ione-gift-code"),status=document.getElementById("ioneGiftStatus"),share=document.getElementById("ioneGiftShare");
+    // Give the form one paint before the referral/session request begins.
+    await new Promise(resolve=>requestAnimationFrame(resolve));
     try{
       const old=JSON.parse(localStorage.getItem("ioneGiftIdentity")||"{}");if(old.name)name.value=old.name;if(old.phone)phone.value=old.phone;
       const r=await api({action:"prepare_referral",name:name.value,phone:phone.value});code.textContent=r.token.token;
