@@ -53,7 +53,7 @@ serve(async (req) => {
     if (!book?.pdf_path) return json({ success: false, error: "This book has no uploaded PDF." }, 404);
 
     // Authors may preview their own PDF. Buyers need a server-side paid order/access record.
-    let allowed = book.author_id === user.id || book.payment_required === false;
+    let allowed = book.payment_required === false;
     if (!allowed) {
       const { data: access, error: accessError } = await admin
         .from("book_access")
