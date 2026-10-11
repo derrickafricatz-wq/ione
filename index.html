@@ -1849,6 +1849,52 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 .ministry-cancel{border:1px solid #334a50;background:#111;color:#fff}
 .ministry-access-status{min-height:20px;margin-top:13px;text-align:center;color:#9eb0b5;font:700 12px/1.4 Arial,sans-serif}
 
+/* I|ONE Author Studio: readable terms, persistent consent, and support contacts */
+.ministry-access-card{
+  max-height:92dvh!important;overflow-y:auto!important;overscroll-behavior:contain!important;
+  scrollbar-width:thin;scrollbar-color:#26717a #071013;
+}
+.ministry-access-card #ioneAuthorTermsPanel{
+  padding:13px!important;border:1px solid rgba(0,255,255,.28)!important;border-radius:14px!important;
+  background:linear-gradient(155deg,rgba(8,32,37,.98),rgba(5,12,15,.98))!important;
+}
+#ioneAuthorTermsPanel .ione-terms-heading{display:block;color:#82f3db;font:900 13px/1.4 Arial,sans-serif;letter-spacing:.4px;margin-bottom:8px}
+#ioneAuthorTermsPanel .ione-terms-scroll{
+  max-height:178px;overflow-y:auto;overscroll-behavior:contain;padding:0 5px 0 0;
+  color:#d8e6eb;font:13px/1.6 Arial,sans-serif;scrollbar-width:thin;scrollbar-color:#26717a #071013;
+}
+#ioneAuthorTermsPanel ol{margin:0;padding-left:20px}
+#ioneAuthorTermsPanel li{padding:0 0 7px 2px}
+#ioneAuthorConsentRow{
+  position:sticky!important;bottom:0!important;z-index:12!important;box-shadow:0 -5px 14px rgba(0,0,0,.42)!important;
+  display:flex!important;align-items:flex-start!important;gap:11px!important;margin:0!important;
+  padding:13px!important;border:1px solid #58d9c0!important;border-radius:13px!important;
+  background:rgba(12,66,58,.36)!important;color:#f0fffb!important;
+  font:700 13px/1.55 Arial,sans-serif!important;cursor:pointer!important;
+}
+#ioneAuthorTermsAccepted{
+  appearance:auto!important;-webkit-appearance:checkbox!important;display:block!important;
+  visibility:visible!important;opacity:1!important;position:relative!important;flex:0 0 24px!important;
+  width:24px!important;min-width:24px!important;height:24px!important;min-height:24px!important;
+  margin:1px 0 0!important;accent-color:#00d6ad!important;cursor:pointer!important;
+}
+#ioneAuthorSupportPanel{display:grid;gap:8px;padding:12px;border:1px solid #29474e;border-radius:14px;background:rgba(4,13,16,.8)}
+#ioneAuthorSupportPanel .ione-support-title{color:#dffaff;font:900 12px/1.4 Arial,sans-serif;letter-spacing:.7px}
+#ioneAuthorSupportPanel .ione-support-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#ioneAuthorSupportPanel a{
+  display:flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;
+  padding:9px 10px;border:1px solid #2d6670;border-radius:11px;background:#0b2429;
+  color:#dfffff;text-decoration:none;text-align:center;font:900 11px/1.35 Arial,sans-serif;
+}
+#ioneAuthorSupportPanel a.ione-whatsapp{border-color:#168e62;background:#0c3528;color:#e1fff0}
+#ioneAuthorSupportPanel .ione-support-note{color:#a9c1c8;font:12px/1.5 Arial,sans-serif}
+@media(max-width:380px){
+ .ministry-access-overlay{padding:8px!important}
+ .ministry-access-card{padding:17px 13px 15px!important;border-radius:18px!important}
+ #ioneAuthorSupportPanel .ione-support-actions{grid-template-columns:1fr}
+ #ioneAuthorTermsPanel .ione-terms-scroll{max-height:155px}
+}
+
 /* ---------- I|ONE 3D BILLBOARD WORLD ---------- */
 #afrilinkOverlay{
   position:fixed;inset:0;z-index:100400;display:none;flex-direction:column;
@@ -2926,10 +2972,31 @@ Install App
         Network: <strong>Airtel Money</strong><br>Merchant number: <strong>140001788</strong><br>
         One confirmed package covers up to <strong>3 published books</strong>. When all three are published, Author Studio locks until the next package payment is confirmed by Authority Press.
       </div>
-      <label style="display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.55;color:#d4e3e8">
-        <input id="ioneAuthorTermsAccepted" type="checkbox" required style="margin-top:3px;flex:0 0 18px;width:18px;height:18px">
-        <span>I accept the Author Studio terms: I submit my own or properly authorized work; I am responsible for rights and accuracy; I|ONE may review submissions; the TSh 10,000 fee covers a three-published-book package; publishing access stays locked until payment is confirmed; my saved form details are reused for renewals; and payouts to authors are normally monthly, with exceptional payouts possible for serious documented issues.</span>
+      <section id="ioneAuthorTermsPanel" aria-labelledby="ioneAuthorTermsHeading">
+        <strong id="ioneAuthorTermsHeading" class="ione-terms-heading">AUTHOR STUDIO • TERMS &amp; CONDITIONS</strong>
+        <div class="ione-terms-scroll" tabindex="0" aria-label="Scrollable Author Studio terms">
+          <ol>
+            <li><strong>Original work and rights:</strong> You must submit work you own or are authorized to publish. You are responsible for the accuracy of your information and for respecting other people's rights.</li>
+            <li><strong>Review and publishing:</strong> I|ONE / Authority Press may review your details and book submissions before approving publication.</li>
+            <li><strong>Package fee:</strong> The TSh 10,000 package covers up to three published books. Payment is made outside the app to the merchant details shown above. Publishing access is activated only after Authority Press confirms payment.</li>
+            <li><strong>Renewal:</strong> After three books have been published, the package locks. A new package payment must be confirmed before publishing more books. Your saved details may be reused for renewal.</li>
+            <li><strong>Author payouts:</strong> Author earnings are normally paid monthly through the available payout process. An exceptional payout may be considered when an author has a serious issue; Authority Press reviews and decides each request.</li>
+            <li><strong>Responsible use:</strong> Submit truthful details, keep your contact number current, and contact I|ONE support if you need help with access, payment confirmation, or an author payout.</li>
+          </ol>
+        </div>
+      </section>
+      <label id="ioneAuthorConsentRow" for="ioneAuthorTermsAccepted">
+        <input id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true">
+        <span>I have read and agree to the Author Studio Terms &amp; Conditions above.</span>
       </label>
+      <section id="ioneAuthorSupportPanel" aria-label="Contact I|ONE support">
+        <div class="ione-support-title">NEED HELP? CONTACT I|ONE</div>
+        <div class="ione-support-actions">
+          <a href="tel:+255742097868" aria-label="Call I|ONE support">CALL I|ONE</a>
+          <a class="ione-whatsapp" href="https://wa.me/255742097868" target="_blank" rel="noopener noreferrer" aria-label="Chat with I|ONE on WhatsApp">CHAT ON WHATSAPP</a>
+        </div>
+        <div class="ione-support-note">For in-app support chat, close this form, return to the I|ONE homepage, and tap the existing I|ONE Support chat button.</div>
+      </section>
       <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap">
         <button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button>
         <button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">SAVE FORM &amp; REQUEST ACCESS</button>
@@ -4096,7 +4163,7 @@ async function openAuthorAccessForm(){
     if(authorAccessRequest){
       authorNameInput.value=authorAccessRequest.real_name||"";
       authorPhoneInput.value=authorAccessRequest.phone||"";
-      authorTermsInput.checked=authorAccessRequest.terms_accepted===true;
+      authorTermsInput.checked=false;
       authorSaved.style.display="block";
       authorSaved.innerHTML="<strong>YOUR SAVED AUTHOR PROFILE</strong><br>Status: "+String(authorAccessRequest.status||"").replace(/</g,"&lt;").toUpperCase()+"<br>Package: "+Number(authorAccessRequest.package_number||0)+" • Published in this package: "+Number(authorAccessRequest.books_used||0)+"/3";
       if(authorAccessRequest.status==="active"){
