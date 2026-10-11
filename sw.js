@@ -1,4 +1,9 @@
-const CACHE_NAME = "ione-app-v180";
+const CACHE_NAME = "ione-app-v181";
+const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
+const PDFJS_OFFLINE_ASSETS = new Set([
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
+]);
 
 const APP_FILES = [
   "./",
@@ -8,6 +13,7 @@ const APP_FILES = [
   "./ads-data.js",
   "./special-ads.js",
   "./book-to-pdf.js",
+  "./ione-offline-books.js",
   "./hints.js",
   "./ione-gift-support.js",
   "./chapchap.js",
@@ -41,7 +47,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME)
+            .filter((key) => key !== CACHE_NAME && key !== PDFJS_CACHE_NAME)
             .map((key) => caches.delete(key))
         )
       )
@@ -78,6 +84,24 @@ self.addEventListener("fetch", (event) => {
 
   // Only cache small same-origin application assets. Never grow the app cache
   // with remote fonts, large media, videos, or arbitrary API responses.
+  if (PDFJS_OFFLINE_ASSETS.has(url.href)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(PDFJS_CACHE_NAME);
+      try {
+        const response = await fetch(event.request);
+        if (response && (response.ok || response.type === "opaque")) {
+          try { await cache.put(event.request, response.clone()); } catch (error) {
+            console.warn("PDF.js offline cache skipped:", error);
+          }
+        }
+        return response;
+      } catch (_) {
+        return (await cache.match(event.request)) || Response.error();
+      }
+    })());
+    return;
+  }
+
   const sameOrigin = url.origin === self.location.origin;
   const cacheableDestination = ["script","style","manifest","worker","document"].includes(event.request.destination);
   if (!sameOrigin || !cacheableDestination) {

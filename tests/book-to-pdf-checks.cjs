@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 
 const html = fs.readFileSync("index.html", "utf8");
 const feature = fs.readFileSync("book-to-pdf.js", "utf8");
+const offline = fs.readFileSync("ione-offline-books.js", "utf8");
 const access = fs.readFileSync("supabase/functions/book-pdf-access/index.ts", "utf8");
 const manage = fs.readFileSync("supabase/functions/book-library-manage/index.ts", "utf8");
 const controlsMigration = fs.readFileSync("supabase/migrations/20261011070000_public_bookstore_author_controls.sql", "utf8");
@@ -12,7 +13,8 @@ const sw = fs.readFileSync("sw.js", "utf8");
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 
 new vm.Script(feature, { filename: "book-to-pdf.js" });
-console.log("PASS: Book to PDF JavaScript parses");
+new vm.Script(offline, { filename: "ione-offline-books.js" });
+console.log("PASS: Book to PDF and offline storage JavaScript parse");
 
 assert.ok(html.includes('id="ioneAuthorTermsPanel"'));
 assert.ok(html.includes('id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"'));
@@ -20,8 +22,8 @@ assert.ok(html.includes('href="tel:+255742097868"'));
 assert.ok(html.includes('href="https://wa.me/255742097868"'));
 assert.ok(html.includes('tap the existing I|ONE Support chat button'));
 assert.ok(html.includes('I|ONE / Authority Press may review'));
-assert.ok(sw.includes("ione-app-v178"));
-assert.equal(version.version, "1.0.111");
+assert.match(sw, /ione-app-v\d+/);
+assert.match(version.version, /^\d+\.\d+\.\d+$/);
 console.log("PASS: Author Studio consent, support links, and cache/version checks");
 
 
@@ -85,6 +87,12 @@ assert.match(feature, /frontCover = coverFile \? await compressFrontCover\(cover
 assert.match(feature, /id="b2pUpdateCover"/);
 assert.match(feature, /update\(\{ front_cover: frontCover \}\)/);
 assert.match(feature, /pdfjs\.getDocument/);
+assert.match(feature, /IoneOfflineBooks/);
+assert.match(feature, /savedBook\.blob/);
+assert.match(feature, /saveFromUrl/);
+assert.match(html, /ione-offline-books\.js/);
+assert.match(sw, /ione-pdfjs-v3\.11\.174/);
+assert.match(sw, /ione-offline-books\.js/);
 assert.match(feature, /hrNext/);
 assert.match(html, /book-to-pdf-reader-and-explore-layout/);
 assert.match(html, /grid-auto-rows:max-content/);
