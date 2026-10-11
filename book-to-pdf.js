@@ -181,10 +181,14 @@
       if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) { status.textContent = "Only PDF files are accepted."; return; }
       if (file.size > 50 * 1024 * 1024) { status.textContent = "This PDF is over the 50 MB limit."; return; }
 
-      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing secure upload…";
+      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing the front cover…";
       let path = "";
+      let frontCover = "";
       let published = false;
       try {
+        frontCover = await compressFrontCover(coverFile);
+        if (!frontCover) throw new Error("Could not process the front cover image. Please choose another image.");
+        status.textContent = "Preparing secure upload…";
         const session = await ensureHeavensAnonymousSession();
         if (!session || !session.user || !session.user.id) throw new Error("Please reconnect before publishing.");
         const random = window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(16).slice(2);
