@@ -1,5 +1,5 @@
 {
-  "version": "1.0.105",
-  "message": "Staged Author Studio registration, package gate and ledger backend for review",
+  "version": "1.0.106",
+  "message": "Staged Author Studio registration, authority ledger and payout controls for review",
   "force": true
 }
