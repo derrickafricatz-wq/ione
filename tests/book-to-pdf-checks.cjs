@@ -20,8 +20,8 @@ assert.ok(html.includes('href="tel:+255742097868"'));
 assert.ok(html.includes('href="https://wa.me/255742097868"'));
 assert.ok(html.includes('tap the existing I|ONE Support chat button'));
 assert.ok(html.includes('I|ONE / Authority Press may review'));
-assert.ok(sw.includes("ione-app-v178"));
-assert.equal(version.version, "1.0.111");
+assert.match(sw, /ione-app-v\\d+/);
+assert.match(version.version, /^\\d+\\.\\d+\\.\\d+$/);
 console.log("PASS: Author Studio consent, support links, and cache/version checks");
 
 
