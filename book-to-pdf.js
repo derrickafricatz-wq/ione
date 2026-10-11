@@ -50,7 +50,7 @@
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">BOOK TITLE</label><input id="b2pTitle" maxlength="160" placeholder="Enter book title" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">CATEGORY</label><select id="b2pCategory" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;"><option>SERMONS</option><option>BIBLE</option><option>PRAYER</option><option>TEACHING</option><option>WORSHIP</option><option>PROPHECY</option><option>SPIRITUAL GROWTH</option></select>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PRICE (TZS)</label><input id="b2pPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 2500" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
-        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
+        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><div style="margin-top:15px;padding:12px;border:1px solid #31594c;border-radius:12px;background:#0e211b;"><label style="display:block;font-size:12px;color:#b9d7cc;margin:0 0 7px;">UPDATE COVER FOR AN EXISTING PDF BOOK</label><select id="b2pExistingBook" style="width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #31594c;background:#10231d;color:#fff;"><option value="">Loading your published PDF books…</option></select><button id="b2pUpdateCover" type="button" style="width:100%;margin-top:9px;padding:11px;border:1px solid #2a6b54;border-radius:9px;background:#163c2f;color:#dffff2;font-weight:800;">UPDATE COVER ONLY</button><div style="font-size:11px;color:#9dbdaf;line-height:1.45;margin-top:7px;">Choose a book you already published and upload its new front cover above. Its PDF, title, price, and payment records will stay unchanged.</div></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
         <div id="b2pFileInfo" style="font-size:12px;color:#a9c9bd;min-height:18px;margin-top:7px;">Choose a finished PDF from your device.</div><div id="b2pStatus" role="status" style="font-size:13px;color:#bfe8d7;margin-top:12px;line-height:1.5;"></div>
         <button id="b2pPublish" type="button" style="width:100%;margin-top:16px;padding:13px;border:0;border-radius:11px;background:#00c995;color:#04251b;font-weight:800;font-size:15px;">PUBLISH BOOK</button>
       </section>`;
@@ -62,9 +62,75 @@
     const fileInput = panel.querySelector("#b2pFile");
     const coverInput = panel.querySelector("#b2pCover");
     const coverPreview = panel.querySelector("#b2pCoverPreview");
+    const existingBookSelect = panel.querySelector("#b2pExistingBook");
+    const updateCoverButton = panel.querySelector("#b2pUpdateCover");
     const info = panel.querySelector("#b2pFileInfo");
     const status = panel.querySelector("#b2pStatus");
     const publish = panel.querySelector("#b2pPublish");
+
+    (async () => {
+      try {
+        const session = await ensureHeavensAnonymousSession();
+        if (!session || !session.user) throw new Error("Please reconnect to load your published books.");
+        const { data, error } = await heavensSupabase
+          .from("heavens_books")
+          .select("id,title,pdf_path,created_at")
+          .eq("author_id", session.user.id)
+          .eq("active", true)
+          .not("pdf_path", "is", null)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        existingBookSelect.innerHTML = '<option value="">Choose an existing PDF book…</option>';
+        (data || []).forEach(item => {
+          const option = document.createElement("option");
+          option.value = String(item.id);
+          option.textContent = String(item.title || "Untitled PDF book");
+          existingBookSelect.appendChild(option);
+        });
+        if (!data || !data.length) {
+          existingBookSelect.innerHTML = '<option value="">No existing PDF books found for this publisher</option>';
+        }
+      } catch (error) {
+        console.warn("Could not load existing PDF books for cover updates:", error);
+        existingBookSelect.innerHTML = '<option value="">Could not load existing PDF books</option>';
+      }
+    })();
+
+    updateCoverButton.onclick = async () => {
+      const bookId = existingBookSelect.value;
+      const coverFile = coverInput.files && coverInput.files[0];
+      if (!bookId) { status.textContent = "Choose one of your existing PDF books first."; return; }
+      if (!coverFile) { status.textContent = "Upload the new front cover image above first."; coverInput.focus(); return; }
+      if (!coverFile.type || !coverFile.type.startsWith("image/")) { status.textContent = "Please choose a valid front cover image."; return; }
+      if (coverFile.size > 15 * 1024 * 1024) { status.textContent = "The cover image must be 15 MB or smaller."; return; }
+      updateCoverButton.disabled = true;
+      updateCoverButton.style.opacity = ".65";
+      try {
+        status.textContent = "Preparing the new cover…";
+        const frontCover = await compressFrontCover(coverFile);
+        if (!frontCover) throw new Error("Could not process the cover image. Please choose another image.");
+        const session = await ensureHeavensAnonymousSession();
+        if (!session || !session.user) throw new Error("Please reconnect before updating the cover.");
+        status.textContent = "Updating the existing book cover…";
+        const { data, error } = await heavensSupabase
+          .from("heavens_books")
+          .update({ front_cover: frontCover })
+          .eq("id", bookId)
+          .eq("author_id", session.user.id)
+          .not("pdf_path", "is", null)
+          .select("id")
+          .single();
+        if (error) throw error;
+        if (!data) throw new Error("No matching book was updated. Please choose one of your own PDF books.");
+        status.textContent = "Front cover updated. The book's PDF, price, and payment records are unchanged.";
+        updateCoverButton.textContent = "COVER UPDATED";
+      } catch (error) {
+        console.error("Existing PDF cover update failed:", error);
+        status.textContent = error && error.message ? error.message : "Could not update this cover. Please try again.";
+        updateCoverButton.disabled = false;
+        updateCoverButton.style.opacity = "1";
+      }
+    };
 
     coverInput.onchange = () => {
       const cover = coverInput.files && coverInput.files[0];
