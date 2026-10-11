@@ -458,6 +458,7 @@
     pdfJsLoadPromise = new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      script.crossOrigin = "anonymous";
       script.async = true;
       script.onload = () => {
         if (!window.pdfjsLib) return reject(new Error("The book reader library did not load."));
@@ -476,15 +477,34 @@
     let reader = null;
     let resizeHandler = null;
     let closed = false;
+    let pdfSource = null;
+    let bookId = "";
     try {
-      const session = await ensureHeavensAnonymousSession();
-      if (!session || !session.access_token) throw new Error("Please reconnect before opening this book.");
-      const result = await heavensSupabase.functions.invoke("book-pdf-access", {
-        body: { book_id: String(book.supabaseId || book.id || "") }
-      });
-      if (result.error || !result.data || !result.data.success || !result.data.url) {
-        console.error("Protected PDF access failed:", result.error || result.data);
-        throw new Error((result.data && result.data.error) || "Payment must be confirmed by the server before this book can open.");
+      bookId = String(book.supabaseId || book.id || "");
+      if (!bookId) throw new Error("This book is missing its library ID.");
+
+      if (!navigator.onLine) {
+        const savedBook = window.IoneOfflineBooks && await window.IoneOfflineBooks.get(bookId);
+        if (!savedBook || !savedBook.blob) {
+          throw new Error("This book is not saved for offline reading yet. Connect to the internet and open it once to save it.");
+        }
+        pdfSource = { blob: savedBook.blob, offline: true };
+      } else {
+        const session = await ensureHeavensAnonymousSession();
+        if (!session || !session.access_token) throw new Error("Please reconnect before opening this book.");
+        const result = await heavensSupabase.functions.invoke("book-pdf-access", {
+          body: { book_id: bookId }
+        });
+        if (result.error || !result.data || !result.data.success || !result.data.url) {
+          console.error("Protected PDF access failed:", result.error || result.data);
+          throw new Error((result.data && result.data.error) || "Payment must be confirmed by the server before this book can open.");
+        }
+        pdfSource = { url: result.data.url, offline: false };
+        if (window.IoneOfflineBooks && typeof window.IoneOfflineBooks.saveFromUrl === "function") {
+          window.IoneOfflineBooks.saveFromUrl(bookId, result.data.url, { title: book.title })
+            .then(saved => console.info("I|ONE book saved for offline reading:", saved.title))
+            .catch(error => console.warn("I|ONE could not save this book offline yet; it can retry the next time it is opened online.", error));
+        }
       }
 
       const pdfjs = await loadPdfJs();
@@ -651,7 +671,9 @@
       loadingPage.textContent = "Opening your book…";
       bookEl.appendChild(loadingPage);
       try {
-        const task = pdfjs.getDocument({ url: result.data.url, withCredentials: false });
+        const task = pdfSource.blob
+          ? pdfjs.getDocument({ data: await pdfSource.blob.arrayBuffer() })
+          : pdfjs.getDocument({ url: pdfSource.url, withCredentials: false });
         pdfDocument = await task.promise;
       } finally {
         loadingPage.remove();
