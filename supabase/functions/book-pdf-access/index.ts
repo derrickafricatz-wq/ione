@@ -84,13 +84,13 @@ serve(async (req) => {
 
     const { data: signed, error: signedError } = await admin.storage
       .from("paid-book-pdfs")
-      .createSignedUrl(book.pdf_path, 300);
+      .createSignedUrl(book.pdf_path, 3600);
 
     if (signedError || !signed?.signedUrl) {
       return json({ success: false, error: "Could not open the protected PDF." }, 500);
     }
 
-    return json({ success: true, url: signed.signedUrl, expires_in: 300 });
+    return json({ success: true, url: signed.signedUrl, expires_in: 3600 });
   } catch (error) {
     console.error("book-pdf-access error:", error);
     return json({ success: false, error: "Unexpected server error." }, 500);
