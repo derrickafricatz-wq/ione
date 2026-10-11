@@ -192,10 +192,10 @@
         const books = Array.isArray(result.data.books) ? result.data.books : [];
         if (books.length) {
           try {
-            const meta = await heavensSupabase.from("heavens_books").select("id,author_name,book_insight").in("id", books.map(book => String(book.id)));
+            const meta = await heavensSupabase.from("heavens_books").select("id,author_name,book_insight,book_insight_2,book_insight_3").in("id", books.map(book => String(book.id)));
             if (!meta.error && Array.isArray(meta.data)) {
               const byId = new Map(meta.data.map(row => [String(row.id), row]));
-              books.forEach(book => { const row = byId.get(String(book.id)); if (row) { book.author_name = row.author_name || ""; book.book_insight = row.book_insight || ""; } });
+              books.forEach(book => { const row = byId.get(String(book.id)); if (row) { book.author_name = row.author_name || ""; book.book_insight = row.book_insight || ""; book.book_insight_2 = row.book_insight_2 || ""; book.book_insight_3 = row.book_insight_3 || ""; } });
             }
           } catch (metaError) { console.warn("Book insight metadata could not be loaded:", metaError); }
         }
