@@ -1,1 +1,5 @@
-{"version":"1.0.108","message":"Complete Author Studio saved form, Authority approval and three-book package enforcement","force":true}
+{
+  "version": "1.0.109",
+  "message": "Refresh app scripts from network first and fix referral token lookup",
+  "force": true
+}
