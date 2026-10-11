@@ -45,6 +45,8 @@ assert.match(sw, /ione-app-v157/);
 assert.equal(version.version, "1.0.90");
 assert.match(feature, /id="b2pCover"/);
 assert.match(feature, /front_cover: frontCover/);
+assert.match(feature, /id="b2pUpdateCover"/);
+assert.match(feature, /update\(\{ front_cover: frontCover \}\)/);
 assert.match(feature, /pdfjs\.getDocument/);
 assert.match(feature, /hrNext/);
 assert.match(html, /book-to-pdf-reader-and-explore-layout/);
