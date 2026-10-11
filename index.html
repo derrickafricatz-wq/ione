@@ -8289,7 +8289,7 @@ async function openHeavensBookstore(){
       const insightText=card.querySelector(".hb-insight-text");
       const insightSource=String(book.bookInsight||"The author has not added a book introduction yet.").trim();
       const insightChunks=[];
-      const insightWords=insightSource.split(/\\s+/).filter(Boolean);
+      const insightWords=insightSource.split(/\s+/).filter(Boolean);
       let insightChunk="";
       insightWords.forEach(word=>{if((insightChunk+" "+word).trim().length>190&&insightChunk){insightChunks.push(insightChunk);insightChunk=word;}else insightChunk=(insightChunk+" "+word).trim();});
       if(insightChunk)insightChunks.push(insightChunk);
