@@ -41,6 +41,13 @@ assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
 
-assert.match(sw, /ione-app-v156/);
-assert.equal(version.version, "1.0.89");
-console.log("PASS: service worker cache and app version are updated");
+assert.match(sw, /ione-app-v157/);
+assert.equal(version.version, "1.0.90");
+assert.match(feature, /id="b2pCover"/);
+assert.match(feature, /front_cover: frontCover/);
+assert.match(feature, /pdfjs\.getDocument/);
+assert.match(feature, /hrNext/);
+assert.match(html, /book-to-pdf-reader-and-explore-layout/);
+assert.match(html, /grid-auto-rows:max-content/);
+assert.match(html, /overflow-y:auto/);
+console.log("PASS: cache/version bumped; front-cover upload persists; PDF books use interactive page-turn reader; Explore panels scroll and fit");
