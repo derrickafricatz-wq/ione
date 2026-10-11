@@ -423,6 +423,7 @@
     window.addEventListener("offline", restoreMarketBillboards);
   }
 
+  installDocumentaryOfflineHook();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startOfflineMediaManager, { once: true });
   else startOfflineMediaManager();
 
