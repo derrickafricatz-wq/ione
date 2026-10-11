@@ -1,7 +1,8 @@
-const CACHE_NAME = "ione-app-v182";
+const CACHE_NAME = "ione-app-v183";
 const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
 const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const SUPABASE_JS_CACHE_NAME = "ione-supabase-js-v2";
+const OFFLINE_MEDIA_CACHE_NAME = "ione-offline-media-v1";
 const PDFJS_OFFLINE_ASSETS = new Set([
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
@@ -50,7 +51,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME && key !== PDFJS_CACHE_NAME && key !== SUPABASE_JS_CACHE_NAME)
+            .filter((key) => key !== CACHE_NAME && key !== PDFJS_CACHE_NAME && key !== SUPABASE_JS_CACHE_NAME && key !== OFFLINE_MEDIA_CACHE_NAME)
             .map((key) => caches.delete(key))
         )
       )
@@ -122,7 +123,41 @@ self.addEventListener("fetch", (event) => {
 
   const sameOrigin = url.origin === self.location.origin;
   const cacheableDestination = ["script","style","manifest","worker","document"].includes(event.request.destination);
-  if (!sameOrigin || !cacheableDestination) {
+  if (!sameOrigin) {
+    // Only media explicitly saved by the offline manager is served from this cache.
+    if (["image", "video", "audio"].includes(event.request.destination)) {
+      event.respondWith((async () => {
+        const cache = await caches.open(OFFLINE_MEDIA_CACHE_NAME);
+        try {
+          const response = await fetch(event.request);
+          if (response && response.ok) return response;
+        } catch (_) {}
+        const saved = await cache.match(event.request.url);
+        if (!saved) return Response.error();
+        const range = event.request.headers.get("range");
+        if (range && event.request.destination === "video") {
+          const match = /^bytes=(\\d*)-(\\d*)$/i.exec(range.trim());
+          if (match) {
+            const blob = await saved.clone().blob();
+            const start = match[1] ? Number(match[1]) : 0;
+            const end = match[2] ? Math.min(Number(match[2]), blob.size - 1) : blob.size - 1;
+            if (Number.isFinite(start) && start >= 0 && start < blob.size && end >= start) {
+              const headers = new Headers(saved.headers);
+              headers.set("Accept-Ranges", "bytes");
+              headers.set("Content-Range", "bytes " + start + "-" + end + "/" + blob.size);
+              headers.set("Content-Length", String(end - start + 1));
+              return new Response(blob.slice(start, end + 1), { status: 206, statusText: "Partial Content", headers });
+            }
+          }
+        }
+        return saved;
+      })());
+      return;
+    }
+    event.respondWith(fetch(event.request).catch(() => Response.error()));
+    return;
+  }
+  if (!cacheableDestination && event.request.destination !== "image" && event.request.destination !== "video" && event.request.destination !== "audio") {
     event.respondWith(fetch(event.request).catch(() => Response.error()));
     return;
   }
