@@ -1,5 +1,5 @@
 {
-  "version": "1.0.115",
-  "message": "Improve offline launch and save homepage communications",
+  "version": "1.0.116",
+  "message": "Add offline market billboards, documentaries and download alert",
   "force": true
 }
