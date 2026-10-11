@@ -1490,11 +1490,11 @@
           btn.disabled=true;result.textContent="Calculating verified BLMPay fee…";
           try{
             var q=await authorPayoutCall({action:"quote",author_id:card.getAttribute("data-author-payout"),recipient_phone:phone,recipient_network:network,payout_reason:reason,reason_details:details});
-            result.innerHTML='Balance: <b>'+ccMoney(q.balance_tzs)+'</b> • Payout: <b>'+ccMoney(q.amount_tzs)+'</b> • Provider fee: '+ccMoney(q.provider_fee_tzs)+' • Total debit: '+ccMoney(q.total_debit_tzs);
+            result.innerHTML='Verified recipient: <b>'+ccEsc(q.recipient_name||"Name verified")+'</b> ('+ccEsc(q.recipient_phone)+') • Balance: <b>'+ccMoney(q.balance_tzs)+'</b> • Payout: <b>'+ccMoney(q.amount_tzs)+'</b> • Provider fee: '+ccMoney(q.provider_fee_tzs)+' • Total debit: '+ccMoney(q.total_debit_tzs);
             var send=document.createElement("button");send.type="button";send.textContent="CONFIRM & SEND PAYOUT";send.style.cssText="margin:8px 0 0 8px;border:0;border-radius:9px;padding:10px 12px;background:#70d6b3;color:#082019;font-weight:900";
             result.appendChild(send);
             send.addEventListener("click",async function(){
-              if(!confirm("Send "+ccMoney(q.amount_tzs)+" to "+q.recipient_phone+" on "+q.recipient_network+"?"))return;
+              if(!confirm("Send "+ccMoney(q.amount_tzs)+" to "+q.recipient_name+" ("+q.recipient_phone+") on "+q.recipient_network+"?\nProvider fee: "+ccMoney(q.provider_fee_tzs)+"\nTotal merchant debit: "+ccMoney(q.total_debit_tzs)))return;
               send.disabled=true;result.appendChild(document.createTextNode(" Submitting to BLMPay…"));
               try{
                 var sent=await authorPayoutCall({action:"send",author_id:q.author_id,recipient_phone:q.recipient_phone,recipient_network:q.recipient_network,payout_reason:q.payout_reason,reason_details:q.reason_details,amount_tzs:q.amount_tzs});
