@@ -41,8 +41,8 @@ assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
 
-assert.match(sw, /ione-app-v157/);
-assert.equal(version.version, "1.0.90");
+assert.match(sw, /ione-app-v158/);
+assert.equal(version.version, "1.0.91");
 assert.match(feature, /id="b2pCover"/);
 assert.match(feature, /front_cover: frontCover/);
 assert.match(feature, /frontCover = await compressFrontCover\(coverFile\)/);
