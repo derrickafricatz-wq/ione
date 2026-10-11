@@ -635,6 +635,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
     try{
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body:{action:"get"}});
       if(r.error||!r.data?.success)throw new Error("Could not load I|ONE communication data.");
+      try{localStorage.setItem("ioneOfflineCommunications",JSON.stringify({banners:Array.isArray(r.data.banners)?r.data.banners:[],word_of_day:String(r.data.word_of_day||""),word_of_day_style:String(r.data.word_of_day_style||"modern"),top_trending:String(r.data.top_trending||""),new_books:String(r.data.new_books||""),ione_update:String(r.data.ione_update||""),important_notice:String(r.data.important_notice||""),savedAt:Date.now()}));}catch(cacheError){console.warn("I|ONE offline communications cache:",cacheError);}
       const banners=Array.isArray(r.data.banners)?r.data.banners:[];
       ioneTopTrendingCache=String(r.data.top_trending||"").trim();
       ioneNewBooksCache=String(r.data.new_books||"").trim();
@@ -649,7 +650,25 @@ window.ioneEnsureBookPdfLibraries = async function(){
       const notice=document.getElementById("authorityImportantNotice");if(notice)notice.value=ioneImportantNoticeCache;
       applyWordOfDayStyle(r.data.word_of_day_style||"modern");
       if(status)status.textContent="CONNECTED • LIVE";
-    }catch(e){if(status)status.textContent="BANNER LOAD FAILED";console.warn("I|ONE communication:",e);}
+    }catch(e){
+      let restored=false;
+      try{
+        const saved=JSON.parse(localStorage.getItem("ioneOfflineCommunications")||"null");
+        if(saved){
+          const banners=Array.isArray(saved.banners)?saved.banners:[];
+          ioneTopTrendingCache=String(saved.top_trending||"").trim();
+          ioneNewBooksCache=String(saved.new_books||"").trim();
+          ioneUpdateCache=String(saved.ione_update||"").trim();
+          ioneImportantNoticeCache=String(saved.important_notice||"").trim();
+          renderIoneBanners(banners);
+          renderWordOfDay(saved.word_of_day||"",saved.word_of_day_style||"modern");
+          applyWordOfDayStyle(saved.word_of_day_style||"modern");
+          restored=true;
+        }
+      }catch(cacheError){console.warn("I|ONE offline communications restore:",cacheError);}
+      if(status)status.textContent=restored?"OFFLINE • SAVED CONTENT":"BANNER LOAD FAILED";
+      console.warn("I|ONE communication:",e);
+    }
   }
   async function saveIoneBanners(){
     const status=document.getElementById("authorityBannersSaveStatus"),button=document.getElementById("authoritySaveBanners");
@@ -3824,7 +3843,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=125", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=126", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
