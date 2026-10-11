@@ -166,3 +166,28 @@ drop trigger if exists author_studio_publish_guard on public.heavens_books;
 create trigger author_studio_publish_guard
 before insert or update of active on public.heavens_books
 for each row execute function public.author_studio_guard_publish();
+
+-- Reconcile already-confirmed book sales when an author registers after
+-- historical orders exist. The order_id uniqueness makes this idempotent.
+create or replace function public.author_studio_backfill_sales_for_profile()
+returns trigger language plpgsql security invoker set search_path = public
+as $$
+begin
+  insert into public.author_studio_sales
+    (order_id,book_id,author_id,gross_tzs,billonpay_fee_tzs,platform_fee_tzs,author_net_tzs,payment_reference,confirmed_at)
+  select o.id,b.id,new.id,greatest(0,coalesce(o.amount,0)),
+    round(greatest(0,coalesce(o.amount,0))*0.03,2),
+    round(greatest(0,coalesce(o.amount,0))*0.02,2),
+    greatest(0,coalesce(o.amount,0))-round(greatest(0,coalesce(o.amount,0))*0.03,2)-round(greatest(0,coalesce(o.amount,0))*0.02,2),
+    o.blmpay_reference,coalesce(o.paid_at,now())
+  from public.book_orders o
+  join public.heavens_books b on b.id=o.book_id
+  where b.author_id=new.user_id and lower(coalesce(o.status,'')) in ('paid','completed','received')
+  on conflict (order_id) do nothing;
+  return new;
+end;
+$$;
+drop trigger if exists author_studio_backfill_sales on public.author_studio_profiles;
+create trigger author_studio_backfill_sales
+after insert on public.author_studio_profiles
+for each row execute function public.author_studio_backfill_sales_for_profile();
