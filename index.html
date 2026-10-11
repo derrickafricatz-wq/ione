@@ -2910,17 +2910,34 @@ Install App
 
 <!-- MINISTRY AUTHOR ACCESS -->
 <div id="ministryAccessOverlay" class="ministry-access-overlay" aria-hidden="true">
-  <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle">
+  <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle" style="max-height:92dvh;overflow:auto">
     <div class="ministry-kicker">I|ONE • AUTHOR STUDIO</div>
-    <h2 id="ministryAccessTitle">AUTHOR'S CREATIVE STUDIO</h2>
-    <p>Your creative workspace to speak, record transcripts, and shape your words into books.</p>
-    <label class="ministry-access-label" for="ministryAccessKey">AUTHOR ACCESS KEY</label>
-    <input id="ministryAccessKey" class="ministry-access-input" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter your author access key">
-    <div class="ministry-access-actions">
-      <button id="ministryAccessCancel" class="ministry-cancel" type="button">CANCEL</button>
-      <button id="ministryAccessUnlock" class="ministry-unlock" type="button">UNLOCK</button>
-    </div>
-    <div id="ministryAccessStatus" class="ministry-access-status"></div>
+    <h2 id="ministryAccessTitle">AUTHOR STUDIO ACCESS FORM</h2>
+    <p>Complete this form once. Your details are saved for future three-book packages. No separate author password is required.</p>
+    <div id="ioneAuthorAccessSaved" style="display:none;margin:10px 0;padding:12px;border:1px solid #32766d;border-radius:12px;background:#0a2826;color:#dffff7;line-height:1.5"></div>
+    <form id="ioneAuthorAccessForm" style="display:grid;gap:10px;text-align:left">
+      <label class="ministry-access-label" for="ioneAuthorRealName">FULL REAL NAME</label>
+      <input id="ioneAuthorRealName" class="ministry-access-input" maxlength="120" autocomplete="name" required placeholder="Enter your real name">
+      <label class="ministry-access-label" for="ioneAuthorPhone">MOBILE NUMBER</label>
+      <input id="ioneAuthorPhone" class="ministry-access-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" required placeholder="e.g. 07XXXXXXXX">
+      <div style="padding:12px;border:1px solid #365f67;border-radius:12px;background:#0a1820;color:#d6e9ef;font-size:13px;line-height:1.6">
+        <strong style="color:#82f3db">AUTHOR PACKAGE • TSh 10,000</strong><br>
+        Payment is made outside the app. Merchant: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
+        Network: <strong>Airtel Money</strong><br>Merchant number: <strong>140001788</strong><br>
+        One confirmed package covers up to <strong>3 published books</strong>. When all three are published, Author Studio locks until the next package payment is confirmed by Authority Press.
+      </div>
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.55;color:#d4e3e8">
+        <input id="ioneAuthorTermsAccepted" type="checkbox" required style="margin-top:3px;flex:0 0 18px;width:18px;height:18px">
+        <span>I accept the Author Studio terms: I submit my own or properly authorized work; I am responsible for rights and accuracy; I|ONE may review submissions; the TSh 10,000 fee covers a three-published-book package; publishing access stays locked until payment is confirmed; my saved form details are reused for renewals; and payouts to authors are normally monthly, with exceptional payouts possible for serious documented issues.</span>
+      </label>
+      <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button>
+        <button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">SAVE FORM &amp; REQUEST ACCESS</button>
+        <button id="ioneAuthorRenew" class="ministry-unlock" type="button" style="display:none">RENEW 3-BOOK PACKAGE</button>
+        <button id="ioneAuthorEnterStudio" class="ministry-unlock" type="button" style="display:none">ENTER AUTHOR STUDIO</button>
+      </div>
+      <div id="ministryAccessStatus" class="ministry-access-status" role="status"></div>
+    </form>
   </div>
 </div>
 
@@ -3273,6 +3290,16 @@ function getMedia(id){
 
       <button type="button" id="authoritySavePrices" class="authority-save-button">SAVE PRICES</button>
       <div id="authoritySaveStatus" class="authority-save-status"></div>
+    <div class="authority-panel-section" id="ioneAuthorAccessAuthoritySection">
+      <div class="authority-section-kicker">AUTHOR STUDIO • PAYMENT & ACCESS CONTROL</div>
+      <h3>AUTHOR ACCESS FORMS</h3>
+      <p class="authority-section-note">Review saved author forms. Confirm payment only after checking the merchant transaction. Activation unlocks the next three-book package; locking does not delete the author's saved details.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0">
+        <button type="button" id="ioneAuthorAccessRefresh" class="authority-save-button">REFRESH AUTHOR FORMS</button>
+        <span id="ioneAuthorAccessAuthorityStatus" role="status" style="font-size:12px;color:#bfe8d7">Not loaded.</span>
+      </div>
+      <div id="ioneAuthorAccessAuthorityList" style="display:grid;gap:10px"></div>
+    </div>
     <div class="authority-panel-section" id="authorityNarrationSection">
       <div class="authority-section-kicker">BOOK INSIGHT & NARRATION</div>
       <h3>BOOK NARRATION REQUESTS</h3>
@@ -3723,7 +3750,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=124", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=125", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -4033,58 +4060,95 @@ const rew = document.getElementById("rew");
 const ff = document.getElementById("ff");
 const playPause = document.getElementById("playPause");
 
-async function verifyMinistryAccess(key){
-  const session=await ensureHeavensAnonymousSession();
-  if(!session || !session.access_token) throw new Error("Could not create a secure app session.");
-  const {data,error}=await heavensSupabase.functions.invoke("heavens-ministry-access",{body:{key:String(key||"")}});
-  if(error) throw error;
-  if(!data || !data.success) throw new Error(data?.error || "Access denied.");
-  return true;
+async function authorAccessCall(payload){
+  await ensureHeavensAnonymousSession();
+  const result=await heavensSupabase.functions.invoke("ione-author-access",{body:payload});
+  if(result.error||!result.data?.success) throw new Error(result.data?.error||result.error?.message||"Author Studio request failed.");
+  return result.data;
 }
-
 function openTranscriptAfterAuthorization(){
   ioneSetHomeControls(false);
   settingsBtn.style.display="none";
   transcriptPanel.style.display="block";
   transcriptText.scrollTop=0;
 }
-
 const ministryAccessOverlay=document.getElementById("ministryAccessOverlay");
-const ministryAccessKey=document.getElementById("ministryAccessKey");
 const ministryAccessStatus=document.getElementById("ministryAccessStatus");
+const authorForm=document.getElementById("ioneAuthorAccessForm");
+const authorSaved=document.getElementById("ioneAuthorAccessSaved");
+const authorNameInput=document.getElementById("ioneAuthorRealName");
+const authorPhoneInput=document.getElementById("ioneAuthorPhone");
+const authorTermsInput=document.getElementById("ioneAuthorTermsAccepted");
+const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit");
+const authorRenewButton=document.getElementById("ioneAuthorRenew");
+const authorEnterButton=document.getElementById("ioneAuthorEnterStudio");
+let authorAccessRequest=null;
 const ministryAccessClose=()=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
-
+function showAuthorAccessStatus(message,bad=false){ministryAccessStatus.textContent=message||"";ministryAccessStatus.style.color=bad?"#ff9f9f":"#8ffcff";}
+async function openAuthorAccessForm(){
+  ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
+  showAuthorAccessStatus("Loading your saved Author Studio form…");
+  authorSubmitButton.style.display="";authorRenewButton.style.display="none";authorEnterButton.style.display="none";
+  authorSaved.style.display="none";
+  try{
+    const data=await authorAccessCall({action:"my_status"});
+    authorAccessRequest=data.request||null;
+    if(authorAccessRequest){
+      authorNameInput.value=authorAccessRequest.real_name||"";
+      authorPhoneInput.value=authorAccessRequest.phone||"";
+      authorTermsInput.checked=authorAccessRequest.terms_accepted===true;
+      authorSaved.style.display="block";
+      authorSaved.innerHTML="<strong>YOUR SAVED AUTHOR PROFILE</strong><br>Status: "+String(authorAccessRequest.status||"").replace(/</g,"&lt;").toUpperCase()+"<br>Package: "+Number(authorAccessRequest.package_number||0)+" • Published in this package: "+Number(authorAccessRequest.books_used||0)+"/3";
+      if(authorAccessRequest.status==="active"){
+        authorSubmitButton.style.display="none";authorEnterButton.style.display="";
+        showAuthorAccessStatus("Your Author Studio access is active.");
+      }else if(authorAccessRequest.status==="locked"){
+        authorSubmitButton.style.display="none";authorRenewButton.style.display="";
+        showAuthorAccessStatus("This package is complete. Renew for the next three books.");
+      }else if(authorAccessRequest.status==="pending_payment"){
+        authorSubmitButton.style.display="";
+        authorSubmitButton.textContent="UPDATE SAVED FORM";
+        showAuthorAccessStatus("Your form is saved. Pay TSh 10,000 to the merchant shown above, then wait for Authority Press to confirm payment.");
+      }else{
+        showAuthorAccessStatus("Review your details and submit your Author Studio access request.");
+      }
+    }else{
+      showAuthorAccessStatus("Complete the form and accept the terms to request Author Studio access.");
+    }
+  }catch(err){showAuthorAccessStatus(err.message||"Could not load your saved form.",true);}
+}
 openTranscript.onclick=async()=>{
   smartPanel.classList.remove("show");
-  const unlockedUntil=Number(sessionStorage.getItem("mbinguMinistryAccessUntil")||0);
-  if(unlockedUntil>Date.now()){openTranscriptAfterAuthorization();return;}
-  ministryAccessKey.value="";
-  ministryAccessStatus.textContent="";
-  ministryAccessOverlay.style.display="flex";
-  ministryAccessOverlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>ministryAccessKey.focus(),80);
+  try{
+    await ensureHeavensAnonymousSession();
+    const d=await authorAccessCall({action:"my_status"});
+    if(d.request?.status==="active"){openTranscriptAfterAuthorization();return;}
+  }catch(err){console.warn("Author Studio access status:",err);}
+  openAuthorAccessForm();
 };
-
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
 ministryAccessOverlay.addEventListener("click",e=>{if(e.target===ministryAccessOverlay)ministryAccessClose();});
-document.getElementById("ministryAccessUnlock").onclick=async()=>{
-  const btn=document.getElementById("ministryAccessUnlock");
-  const key=ministryAccessKey.value.trim();
-  if(!key){ministryAccessStatus.textContent="Enter your author access key.";ministryAccessKey.focus();return;}
-  btn.disabled=true;btn.textContent="CHECKING…";ministryAccessStatus.textContent="Verifying author access…";
+authorForm.addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!authorForm.reportValidity())return;
+  authorSubmitButton.disabled=true;showAuthorAccessStatus("Saving your form securely…");
   try{
-    await verifyMinistryAccess(key);
-    sessionStorage.setItem("mbinguMinistryAccessUntil",String(Date.now()+8*60*60*1000));
-    ministryAccessStatus.textContent="AUTHOR STUDIO ACCESS GRANTED ✓";
-    setTimeout(()=>{ministryAccessClose();openTranscriptAfterAuthorization();},350);
-  }catch(err){
-    console.warn("Ministry access denied:",err);
-    ministryAccessStatus.textContent="ACCESS DENIED — AUTHORIZED AUTHORS ONLY";
-    ministryAccessKey.select();
-  }finally{btn.disabled=false;btn.textContent="UNLOCK";}
-};
-ministryAccessKey.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("ministryAccessUnlock").click();});
-
+    const d=await authorAccessCall({action:"submit",real_name:authorNameInput.value.trim(),phone:authorPhoneInput.value.trim(),terms_accepted:authorTermsInput.checked});
+    authorAccessRequest=d.request;
+    authorSaved.style.display="block";
+    authorSaved.textContent="Your form is saved. Your details will be reused for future packages.";
+    showAuthorAccessStatus(d.message||"Form saved. Awaiting Authority Press payment confirmation.");
+    authorSubmitButton.textContent="UPDATE SAVED FORM";
+  }catch(err){showAuthorAccessStatus(err.message||"Could not save your form.",true);}
+  finally{authorSubmitButton.disabled=false;}
+});
+authorRenewButton.addEventListener("click",async()=>{
+  authorRenewButton.disabled=true;showAuthorAccessStatus("Saving your renewal request…");
+  try{const d=await authorAccessCall({action:"renew"});authorAccessRequest=d.request;authorRenewButton.style.display="none";authorSaved.style.display="block";authorSaved.textContent="Renewal request saved. Your existing details have been reused.";showAuthorAccessStatus(d.message||"Renewal requested. Await payment confirmation.");}
+  catch(err){showAuthorAccessStatus(err.message||"Renewal request failed.",true);}
+  finally{authorRenewButton.disabled=false;}
+});
+authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must activate your package first.",true);return;}ministryAccessClose();openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
 
   document.getElementById("saveTranscript").onclick = (event) => {
@@ -7979,7 +8043,7 @@ let licenseData = null;
 
 async function checkForUpdate() {
   try {
-    const res = await fetch("https://derrickafricatz-wq.github.io/AFYA-CARE/version.json?time=" + Date.now());
+    const res = await fetch("./version.json?time=" + Date.now(), { cache: "no-store" });
     const data = await res.json();
 
     if (data.version !== currentVersion) {
@@ -7992,6 +8056,10 @@ async function checkForUpdate() {
     console.log("Update check failed");
   }
 }
+
+  // Check immediately on startup and periodically so installed PWAs receive fixes.
+  checkForUpdate();
+  setInterval(checkForUpdate, 60000);
 
 // check every 1 minute
 setInterval(checkForUpdate, 60000);
@@ -8396,6 +8464,8 @@ printBtn.onclick = () => {
     });
 
     // Footer
+    html += "<hr><p>Heaven On Earth</p>";
+
     html += "<hr><p>Heaven On Earth</p>";
 
     html += "</body></html>";
@@ -10658,6 +10728,63 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @media(max-width:440px){#ioneDocumentaryEditorV1Mount .ione-doc-grid{grid-template-columns:minmax(0,1fr)!important;gap:9px!important}#ioneDocumentaryEditorV1Mount .ione-doc-permission-grid{grid-template-columns:minmax(0,1fr)!important}}
 </style>
 <script src="./book-to-pdf.js?v=1"></script>
+
+<script id="ioneAuthorAccessAuthorityUI">
+(function(){
+  "use strict";
+  if(window.__ioneAuthorAccessAuthorityUI)return;window.__ioneAuthorAccessAuthorityUI=true;
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+  async function call(body){
+    const password=String($("authorityPasswordInput")?.value||"").trim();
+    const result=await heavensSupabase.functions.invoke("ione-author-access",{body:Object.assign({password},body)});
+    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Author access request failed.");
+    return result.data;
+  }
+  async function refresh(){
+    const status=$("ioneAuthorAccessAuthorityStatus"),list=$("ioneAuthorAccessAuthorityList");
+    if(!list||!status)return;
+    status.textContent="Loading saved author forms…";list.innerHTML="";
+    try{
+      const data=await call({action:"authority_list"});
+      if(!data.requests?.length){list.innerHTML='<div class="authority-section-note">No Author Studio forms have been submitted yet.</div>';status.textContent="0 forms";return;}
+      list.innerHTML=data.requests.map(r=>{
+        const canActivate=r.status==="pending_payment";
+        return '<article data-ione-author-user="'+esc(r.user_id)+'" style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:13px;display:grid;gap:7px">'+
+          '<strong style="font-size:15px">'+esc(r.real_name)+'</strong>'+
+          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Phone: '+esc(r.phone)+'<br>State: <b>'+esc(String(r.status).toUpperCase())+'</b> • Package: '+Number(r.package_number||0)+' • Books used: '+Number(r.books_used||0)+'/3'+(r.renewal_requested?' • RENEWAL':'')+'<br>Fee: TSh '+Number(r.fee_tzs||10000).toLocaleString("en-US")+'<br>Merchant: '+esc(r.merchant_name)+' • '+esc(r.merchant_network)+' • '+esc(r.merchant_number)+'<br>Terms accepted: '+(r.terms_accepted?"YES":"NO")+' • Last submitted: '+esc(r.submitted_at||"—")+'</div>'+
+          '<textarea class="ione-author-authority-notes" rows="2" maxlength="1000" placeholder="Authority note (optional)" style="width:100%;box-sizing:border-box;border-radius:8px;padding:9px;background:#081113;color:#fff;border:1px solid #34534d">'+esc(r.authority_notes||"")+'</textarea>'+
+          '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
+          (canActivate?'<button type="button" data-ione-author-action="active" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • ACTIVATE 3 BOOKS</button>':'')+
+          (r.status!=="locked"?'<button type="button" data-ione-author-action="locked" style="border:1px solid #b68b53;border-radius:8px;padding:10px;background:#302313;color:#ffe4b7;font-weight:800">LOCK ACCESS</button>':'')+
+          (r.status==="pending_payment"?'<button type="button" data-ione-author-action="rejected" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT REQUEST</button>':'')+
+          '</div></article>';
+      }).join("");
+      status.textContent=data.requests.length+" saved form(s)";
+    }catch(e){status.textContent=e.message||"Could not load forms.";status.style.color="#ff9f9f";}
+  }
+  document.addEventListener("click",async event=>{
+    const refreshBtn=event.target.closest("#ioneAuthorAccessRefresh");
+    if(refreshBtn){refresh();return;}
+    const btn=event.target.closest("[data-ione-author-action]");
+    if(!btn)return;
+    const card=btn.closest("[data-ione-author-user]");if(!card)return;
+    const next=btn.getAttribute("data-ione-author-action");
+    const userId=card.getAttribute("data-ione-author-user");
+    const note=card.querySelector(".ione-author-authority-notes")?.value||"";
+    if(next==="active"&&!confirm("Confirm you personally verified the TSh 10,000 payment to DERRICK KIPAJI OF AFRIKA & CO, Airtel Money 140001788? This activates the next three-book package."))return;
+    if(next==="locked"&&!confirm("Lock this author's publishing access? The saved form and book records will remain."))return;
+    btn.disabled=true;
+    try{await call({action:"authority_set_status",user_id:userId,status:next,payment_confirmed:next==="active",authority_notes:note});await refresh();}
+    catch(e){alert(e.message||"Could not update author access.");btn.disabled=false;}
+  });
+  document.addEventListener("click",event=>{
+    if(event.target.closest("#authorityPasswordUnlock"))setTimeout(()=>{const p=$("authorityPressPanel");if(p&&p.getAttribute("aria-hidden")==="false")refresh();},350);
+  });
+  document.addEventListener("click",event=>{if(event.target.closest("#authorityNarrationRefresh"))setTimeout(refresh,250);});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{}, {once:true});
+})()
+</script>
 </body>
 </html>
 <script>
