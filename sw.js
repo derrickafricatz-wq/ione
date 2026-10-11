@@ -1,5 +1,7 @@
-const CACHE_NAME = "ione-app-v181";
+const CACHE_NAME = "ione-app-v182";
 const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
+const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+const SUPABASE_JS_CACHE_NAME = "ione-supabase-js-v2";
 const PDFJS_OFFLINE_ASSETS = new Set([
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
@@ -7,6 +9,7 @@ const PDFJS_OFFLINE_ASSETS = new Set([
 
 const APP_FILES = [
   "./",
+  "./index.html",
   "./manifest.json",
   "./health-data.js",
   "./lesson-data.js",
@@ -30,7 +33,7 @@ self.addEventListener("install", (event) => {
         // Cache files individually so one missing optional asset cannot
         // prevent the service worker from installing.
         await Promise.all(
-          APP_FILES.map((url) =>
+          [...APP_FILES, SUPABASE_JS_URL].map((url) =>
             cache.add(url).catch((err) => {
               console.warn("Optional cache skipped:", url, err);
             })
@@ -47,7 +50,7 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((key) => key !== CACHE_NAME && key !== PDFJS_CACHE_NAME)
+            .filter((key) => key !== CACHE_NAME && key !== PDFJS_CACHE_NAME && key !== SUPABASE_JS_CACHE_NAME)
             .map((key) => caches.delete(key))
         )
       )
@@ -72,13 +75,28 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", clone));
         }
         return response;
-      }).catch(() => caches.match("./index.html"))
+      }).catch(async () => (await caches.match("./index.html")) || (await caches.match("./")) || Response.error())
     );
     return;
   }
 
   if (url.pathname.endsWith("/sw.js")) {
     event.respondWith(fetch(event.request, {cache:"no-store"}));
+    return;
+  }
+
+  // Keep the external Supabase client available after it has loaded once online.
+  if (url.href === SUPABASE_JS_URL || url.href.startsWith("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(SUPABASE_JS_CACHE_NAME);
+      try {
+        const response = await fetch(event.request);
+        if (response && response.ok) await cache.put(event.request, response.clone());
+        return response;
+      } catch (_) {
+        return (await cache.match(event.request)) || Response.error();
+      }
+    })());
     return;
   }
 
@@ -121,7 +139,7 @@ self.addEventListener("fetch", (event) => {
         }
         return networkResponse;
       }).catch(async () => {
-        const cachedResponse = await caches.match(event.request);
+        const cachedResponse = await caches.match(event.request) || await caches.match(new URL(url.pathname, self.location.origin).href);
         return cachedResponse || Response.error();
       })
     );
