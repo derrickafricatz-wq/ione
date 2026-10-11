@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v175";
+const CACHE_NAME = "ione-app-v176";
 
 const APP_FILES = [
   "./",
@@ -9,6 +9,7 @@ const APP_FILES = [
   "./special-ads.js",
   "./book-to-pdf.js",
   "./hints.js",
+  "./ione-gift-support.js",
   "./chapchap.js",
   "./images/1.jpg",
   "./images/2.jpg",
@@ -81,6 +82,25 @@ self.addEventListener("fetch", (event) => {
   const cacheableDestination = ["script","style","manifest","worker","document"].includes(event.request.destination);
   if (!sameOrigin || !cacheableDestination) {
     event.respondWith(fetch(event.request).catch(() => Response.error()));
+    return;
+  }
+
+  // Prefer current app scripts/styles from the network to avoid stale JS
+  // paired with a newer HTML shell. Keep cached copies as offline fallbacks.
+  const networkFirst = ["script", "style", "worker", "manifest"].includes(event.request.destination);
+  if (networkFirst) {
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      }).catch(async () => {
+        const cachedResponse = await caches.match(event.request);
+        return cachedResponse || Response.error();
+      })
+    );
     return;
   }
 
