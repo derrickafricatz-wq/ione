@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v171";
+const CACHE_NAME = "ione-app-v175";
 
 const APP_FILES = [
   "./",
@@ -8,6 +8,8 @@ const APP_FILES = [
   "./ads-data.js",
   "./special-ads.js",
   "./book-to-pdf.js",
+  "./author-studio.js",
+  "./author-studio-authority.js",
   "./hints.js",
   "./chapchap.js",
   "./images/1.jpg",
