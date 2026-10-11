@@ -2824,6 +2824,7 @@ function getMedia(id){
   <button id="saveTranscript">SAVE</button>
   <button id="savedSermons">SAVED SERMONS</button>
   <button id="clearTranscript">NEW</button>
+  <button id="bookToPdfButton" type="button" onclick="openBookToPdfPanel()" style="border:1px solid #00d7a8;background:#102b25;color:#eafff8;border-radius:9px;padding:8px 11px;font-weight:700;">BOOK TO PDF</button>
 </div>
 
 <div id="transcriptText" contenteditable="true">
@@ -8029,7 +8030,7 @@ async function loadHeavensServerBooks(){
     await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
@@ -8043,6 +8044,7 @@ async function loadHeavensServerBooks(){
       contents: b.contents || "",
       frontCover: b.front_cover || "",
       backCover: b.back_cover || "",
+      pdfPath: b.pdf_path || "",
       chapters: Array.isArray(b.chapters) ? b.chapters : [],
       date: b.created_at ? new Date(b.created_at).toLocaleDateString() : ""
     }));
@@ -8470,7 +8472,7 @@ async function watchHeavensPayment(book,store,reference){
   const poll=async()=>{
     try{
       console.log("Heaven's Books: checking BLMPay reference",ref);
-      const result=await checkHeavensPaymentStatus(ref);
+      const result=await checkHeavensPaymentStatus(ref, book.supabaseId || book.id);
       console.log("Heaven's Books BLMPay status response:",result);
 
       // BLMPay can use a top-level "success" as an API response envelope.
@@ -8663,6 +8665,7 @@ async function startBookPayment(book,store){
 function openBookReader(book,store){
   const existing=document.getElementById("heavensReader");
   if(existing) existing.remove();
+  if(book.pdfPath){openPaidPdfReader(book);return;}
   if(!isBookPaid(book)){startBookPayment(book,store);return;}
 
   const reader=document.createElement("div");
@@ -10046,6 +10049,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 #ioneDocumentaryEditorV1Mount .ione-doc-permission-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;min-width:0!important}
 @media(max-width:440px){#ioneDocumentaryEditorV1Mount .ione-doc-grid{grid-template-columns:minmax(0,1fr)!important;gap:9px!important}#ioneDocumentaryEditorV1Mount .ione-doc-permission-grid{grid-template-columns:minmax(0,1fr)!important}}
 </style>
+<script src="./book-to-pdf.js?v=1"></script>
 </body>
 </html>
 <script>
