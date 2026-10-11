@@ -4107,6 +4107,7 @@ async function openAuthorAccessForm(){
         showAuthorAccessStatus("This package is complete. Renew for the next three books.");
       }else if(authorAccessRequest.status==="pending_payment"){
         authorSubmitButton.style.display="";
+        authorSubmitButton.textContent="UPDATE SAVED FORM";
         showAuthorAccessStatus("Your form is saved. Pay TSh 10,000 to the merchant shown above, then wait for Authority Press to confirm payment.");
       }else{
         showAuthorAccessStatus("Review your details and submit your Author Studio access request.");
@@ -4137,7 +4138,7 @@ authorForm.addEventListener("submit",async event=>{
     authorSaved.style.display="block";
     authorSaved.textContent="Your form is saved. Your details will be reused for future packages.";
     showAuthorAccessStatus(d.message||"Form saved. Awaiting Authority Press payment confirmation.");
-    authorSubmitButton.style.display="none";
+    authorSubmitButton.textContent="UPDATE SAVED FORM";
   }catch(err){showAuthorAccessStatus(err.message||"Could not save your form.",true);}
   finally{authorSubmitButton.disabled=false;}
 });
