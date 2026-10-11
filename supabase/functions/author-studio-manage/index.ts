@@ -37,7 +37,7 @@ Deno.serve(async(req:Request)=>{
       const password=String(body?.password||"");
       if(!password) return false;
       // Reuse I|ONE's existing server-side authority verifier.
-      const verify=await fetch(url.replace(/\\/$/,"")+"/functions/v1/ione-subscription-plans",{
+      const verify=await fetch(url.replace(/\/$/,"")+"/functions/v1/ione-subscription-plans",{
         method:"POST",
         headers:{"Content-Type":"application/json","apikey":service,"Authorization":"Bearer "+service},
         body:JSON.stringify({action:"verify",password})
