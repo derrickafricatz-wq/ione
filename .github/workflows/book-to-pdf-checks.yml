@@ -10,6 +10,7 @@ on:
       - "book-to-pdf.js"
       - "supabase/functions/book-pdf-access/**"
       - "supabase/migrations/*book_to_pdf*"
+      - "supabase/migrations/*book_insight*"
       - "sw.js"
       - "version.json"
       - "tests/book-to-pdf-checks.cjs"
