@@ -5,13 +5,7 @@ const $=id=>document.getElementById(id), esc=v=>String(v??"").replace(/[&<>"']/g
 const cash=v=>"TSh "+Number(v||0).toLocaleString("en-US");
 function password(){return String($("authorityPasswordInput")?.value||"");}
 async function call(action,extra={}){const p=password();if(!p)throw new Error("Unlock Authority Press first.");const r=await heavensSupabase.functions.invoke("author-studio-manage",{body:{action,password:p,...extra}});if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Author ledger request failed.");return r.data;}
-function mount(){
- const panel=$("authorityPressPanel");if(!panel||$("ioneAuthorLedgerSection"))return;
- const section=document.createElement("section");section.id="ioneAuthorLedgerSection";section.className="authority-panel-section";
- section.innerHTML=`<div class="authority-section-kicker">AUTHOR ECONOMY</div><h3>AUTHOR REGISTRATIONS, SALES & PAYOUTS</h3><p class="authority-section-note">Verify TSh 10,000 payments manually, unlock up to three published books, review confirmed sales and issue BLMPay payouts. Standard payouts are monthly; serious-issue early requests are reviewed case by case. I|ONE pays payout fees.</p><button id="ioneAuthorLedgerRefresh" type="button" style="padding:11px 14px;border:1px solid #2a6b54;border-radius:10px;background:#102a20;color:#bffff0;font-weight:900">LOAD AUTHOR LEDGER</button><div id="ioneAuthorLedgerStatus" role="status" style="margin:10px 0;font-size:12px;line-height:1.6;color:#b8d5ca"></div><div id="ioneAuthorLedgerRows" style="display:grid;gap:12px"></div>`;
- const head=panel.querySelector(".authority-panel-head");if(head)head.insertAdjacentElement("afterend",section);else panel.prepend(section);
- $("ioneAuthorLedgerRefresh").onclick=load;
-}
+function mount(){const panel=$("authorityPressPanel");if(!panel)return;const btn=$("ioneAuthorLedgerRefresh");if(btn&&btn.dataset.bound!=="1"){btn.dataset.bound="1";btn.onclick=load;}}
 async function load(){
  const status=$("ioneAuthorLedgerStatus"),rows=$("ioneAuthorLedgerRows"),btn=$("ioneAuthorLedgerRefresh");if(!status||!rows)return;
  btn.disabled=true;status.textContent="Loading registrations, books, confirmed sales and payout history…";rows.replaceChildren();
