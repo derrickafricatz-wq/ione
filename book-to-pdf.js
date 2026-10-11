@@ -179,6 +179,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;"><div style="font-size:20px;font-weight:800;">Book to PDF</div><button type="button" onclick="openMyPublishedBooksPanel()" style="border:1px solid #31594c;background:#173529;color:#eafff8;border-radius:9px;padding:8px;font-size:11px;font-weight:800;">MY BOOKS</button><button type="button" id="b2pClose" aria-label="Close" style="border:0;background:#19342c;color:#fff;border-radius:10px;width:36px;height:36px;font-size:22px;">×</button></div>
         <p style="margin:0 0 16px;color:#a9c9bd;font-size:13px;line-height:1.5;">Publish a finished PDF in the existing Explore bookstore. The PDF is stored privately.</p>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">BOOK TITLE</label><input id="b2pTitle" maxlength="160" placeholder="Enter book title" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
+        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">AUTHOR NAME</label><input id="b2pAuthorName" maxlength="160" placeholder="Name of the person who wrote this book" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
+        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">BOOK INSIGHT / INTRODUCTION</label><textarea id="b2pInsight" maxlength="12000" rows="4" placeholder="Explain what readers will discover in this book." style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;resize:vertical;"></textarea>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">CATEGORY</label><select id="b2pCategory" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;"><option>SERMONS</option><option>BIBLE</option><option>PRAYER</option><option>TEACHING</option><option>WORSHIP</option><option>PROPHECY</option><option>SPIRITUAL GROWTH</option></select>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PRICE (TZS)</label><input id="b2pPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 2500" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE (OPTIONAL)</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><div style="margin-top:15px;padding:12px;border:1px solid #31594c;border-radius:12px;background:#0e211b;"><label style="display:block;font-size:12px;color:#b9d7cc;margin:0 0 7px;">UPDATE COVER FOR AN EXISTING PDF BOOK</label><select id="b2pExistingBook" style="width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #31594c;background:#10231d;color:#fff;"><option value="">Loading your published PDF books…</option></select><button id="b2pUpdateCover" type="button" style="width:100%;margin-top:9px;padding:11px;border:1px solid #2a6b54;border-radius:9px;background:#163c2f;color:#dffff2;font-weight:800;">UPDATE COVER ONLY</button><div style="font-size:11px;color:#9dbdaf;line-height:1.45;margin-top:7px;">Choose a book you already published and upload its new front cover above. Its PDF, title, price, and payment records will stay unchanged.</div></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
@@ -300,9 +302,13 @@
     publish.onclick = async () => {
       const title = panel.querySelector("#b2pTitle").value.trim();
       const category = panel.querySelector("#b2pCategory").value;
+      const authorName = panel.querySelector("#b2pAuthorName").value.trim();
+      const bookInsight = panel.querySelector("#b2pInsight").value.trim();
       const price = Number(panel.querySelector("#b2pPrice").value.trim());
       const file = fileInput.files && fileInput.files[0];
       const coverFile = coverInput.files && coverInput.files[0];
+      if (!authorName) { status.textContent = "Enter the author's name."; panel.querySelector("#b2pAuthorName").focus(); return; }
+      if (!bookInsight) { status.textContent = "Write a short book insight before publishing."; panel.querySelector("#b2pInsight").focus(); return; }
       if (!title) { status.textContent = "Enter the book title."; panel.querySelector("#b2pTitle").focus(); return; }
       if (!Number.isInteger(price) || price <= 0) { status.textContent = "Enter a whole-number price in TZS."; panel.querySelector("#b2pPrice").focus(); return; }
       if (coverFile && (!coverFile.type || !coverFile.type.startsWith("image/"))) { status.textContent = "Please choose a valid front cover image."; return; }
@@ -331,8 +337,8 @@
         status.textContent = "File uploaded securely. Publishing bookstore listing…";
         const inserted = await heavensSupabase.from("heavens_books").insert({
           title, category, price, currency: "TZS", front_cover: frontCover, back_cover: null,
-          contents: "", chapters: [], author_id: session.user.id, active: true, payment_required: true, pdf_path: path, pdf_cover_page: pdfCoverPage
-        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,pdf_cover_page,created_at").single();
+          contents: "", chapters: [], author_id: session.user.id, author_name: authorName, book_insight: bookInsight, active: true, payment_required: true, pdf_path: path, pdf_cover_page: pdfCoverPage
+        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,pdf_cover_page,author_name,book_insight,created_at").single();
         if (inserted.error) throw inserted.error;
         published = true;
 
@@ -340,7 +346,7 @@
         const book = {
           id: "HB-SERVER-" + row.id, supabaseId: row.id, title: row.title,
           category: row.category, price: Number(row.price), currency: row.currency || "TZS",
-          contents: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
+          contents: "", authorName: row.author_name || authorName, bookInsight: row.book_insight || bookInsight, narrationPath: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
           pdfCoverPage: row.pdf_cover_page === true, chapters: [], paymentRequired: row.payment_required !== false, isAuthor: true,
           date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
