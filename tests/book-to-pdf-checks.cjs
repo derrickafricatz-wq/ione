@@ -4,6 +4,7 @@ const assert = require("node:assert/strict");
 
 const html = fs.readFileSync("index.html", "utf8");
 const feature = fs.readFileSync("book-to-pdf.js", "utf8");
+const offline = fs.readFileSync("ione-offline-books.js", "utf8");
 const access = fs.readFileSync("supabase/functions/book-pdf-access/index.ts", "utf8");
 const manage = fs.readFileSync("supabase/functions/book-library-manage/index.ts", "utf8");
 const controlsMigration = fs.readFileSync("supabase/migrations/20261011070000_public_bookstore_author_controls.sql", "utf8");
@@ -12,7 +13,8 @@ const sw = fs.readFileSync("sw.js", "utf8");
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 
 new vm.Script(feature, { filename: "book-to-pdf.js" });
-console.log("PASS: Book to PDF JavaScript parses");
+new vm.Script(offline, { filename: "ione-offline-books.js" });
+console.log("PASS: Book to PDF and offline storage JavaScript parse");
 
 assert.ok(html.includes('id="ioneAuthorTermsPanel"'));
 assert.ok(html.includes('id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"'));
