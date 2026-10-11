@@ -2910,17 +2910,34 @@ Install App
 
 <!-- MINISTRY AUTHOR ACCESS -->
 <div id="ministryAccessOverlay" class="ministry-access-overlay" aria-hidden="true">
-  <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle">
+  <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle" style="max-height:92dvh;overflow:auto">
     <div class="ministry-kicker">I|ONE • AUTHOR STUDIO</div>
-    <h2 id="ministryAccessTitle">AUTHOR'S CREATIVE STUDIO</h2>
-    <p>Your creative workspace to speak, record transcripts, and shape your words into books.</p>
-    <label class="ministry-access-label" for="ministryAccessKey">AUTHOR ACCESS KEY</label>
-    <input id="ministryAccessKey" class="ministry-access-input" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter your author access key">
-    <div class="ministry-access-actions">
-      <button id="ministryAccessCancel" class="ministry-cancel" type="button">CANCEL</button>
-      <button id="ministryAccessUnlock" class="ministry-unlock" type="button">UNLOCK</button>
-    </div>
-    <div id="ministryAccessStatus" class="ministry-access-status"></div>
+    <h2 id="ministryAccessTitle">AUTHOR STUDIO ACCESS FORM</h2>
+    <p>Complete this form once. Your details are saved for future three-book packages. No separate author password is required.</p>
+    <div id="ioneAuthorAccessSaved" style="display:none;margin:10px 0;padding:12px;border:1px solid #32766d;border-radius:12px;background:#0a2826;color:#dffff7;line-height:1.5"></div>
+    <form id="ioneAuthorAccessForm" style="display:grid;gap:10px;text-align:left">
+      <label class="ministry-access-label" for="ioneAuthorRealName">FULL REAL NAME</label>
+      <input id="ioneAuthorRealName" class="ministry-access-input" maxlength="120" autocomplete="name" required placeholder="Enter your real name">
+      <label class="ministry-access-label" for="ioneAuthorPhone">MOBILE NUMBER</label>
+      <input id="ioneAuthorPhone" class="ministry-access-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" required placeholder="e.g. 07XXXXXXXX">
+      <div style="padding:12px;border:1px solid #365f67;border-radius:12px;background:#0a1820;color:#d6e9ef;font-size:13px;line-height:1.6">
+        <strong style="color:#82f3db">AUTHOR PACKAGE • TSh 10,000</strong><br>
+        Payment is made outside the app. Merchant: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
+        Network: <strong>Airtel Money</strong><br>Merchant number: <strong>140001788</strong><br>
+        One confirmed package covers up to <strong>3 published books</strong>. When all three are published, Author Studio locks until the next package payment is confirmed by Authority Press.
+      </div>
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:12px;line-height:1.55;color:#d4e3e8">
+        <input id="ioneAuthorTermsAccepted" type="checkbox" required style="margin-top:3px;flex:0 0 18px;width:18px;height:18px">
+        <span>I accept the Author Studio terms: I submit my own or properly authorized work; I am responsible for rights and accuracy; I|ONE may review submissions; the TSh 10,000 fee covers a three-published-book package; publishing access stays locked until payment is confirmed; my saved form details are reused for renewals; and payouts to authors are normally monthly, with exceptional payouts possible for serious documented issues.</span>
+      </label>
+      <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button>
+        <button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">SAVE FORM &amp; REQUEST ACCESS</button>
+        <button id="ioneAuthorRenew" class="ministry-unlock" type="button" style="display:none">RENEW 3-BOOK PACKAGE</button>
+        <button id="ioneAuthorEnterStudio" class="ministry-unlock" type="button" style="display:none">ENTER AUTHOR STUDIO</button>
+      </div>
+      <div id="ministryAccessStatus" class="ministry-access-status" role="status"></div>
+    </form>
   </div>
 </div>
 
@@ -4033,58 +4050,94 @@ const rew = document.getElementById("rew");
 const ff = document.getElementById("ff");
 const playPause = document.getElementById("playPause");
 
-async function verifyMinistryAccess(key){
-  const session=await ensureHeavensAnonymousSession();
-  if(!session || !session.access_token) throw new Error("Could not create a secure app session.");
-  const {data,error}=await heavensSupabase.functions.invoke("heavens-ministry-access",{body:{key:String(key||"")}});
-  if(error) throw error;
-  if(!data || !data.success) throw new Error(data?.error || "Access denied.");
-  return true;
+async function authorAccessCall(payload){
+  await ensureHeavensAnonymousSession();
+  const result=await heavensSupabase.functions.invoke("ione-author-access",{body:payload});
+  if(result.error||!result.data?.success) throw new Error(result.data?.error||result.error?.message||"Author Studio request failed.");
+  return result.data;
 }
-
 function openTranscriptAfterAuthorization(){
   ioneSetHomeControls(false);
   settingsBtn.style.display="none";
   transcriptPanel.style.display="block";
   transcriptText.scrollTop=0;
 }
-
 const ministryAccessOverlay=document.getElementById("ministryAccessOverlay");
-const ministryAccessKey=document.getElementById("ministryAccessKey");
 const ministryAccessStatus=document.getElementById("ministryAccessStatus");
+const authorForm=document.getElementById("ioneAuthorAccessForm");
+const authorSaved=document.getElementById("ioneAuthorAccessSaved");
+const authorNameInput=document.getElementById("ioneAuthorRealName");
+const authorPhoneInput=document.getElementById("ioneAuthorPhone");
+const authorTermsInput=document.getElementById("ioneAuthorTermsAccepted");
+const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit");
+const authorRenewButton=document.getElementById("ioneAuthorRenew");
+const authorEnterButton=document.getElementById("ioneAuthorEnterStudio");
+let authorAccessRequest=null;
 const ministryAccessClose=()=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
-
+function showAuthorAccessStatus(message,bad=false){ministryAccessStatus.textContent=message||"";ministryAccessStatus.style.color=bad?"#ff9f9f":"#8ffcff";}
+async function openAuthorAccessForm(){
+  ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
+  showAuthorAccessStatus("Loading your saved Author Studio form…");
+  authorSubmitButton.style.display="";authorRenewButton.style.display="none";authorEnterButton.style.display="none";
+  authorSaved.style.display="none";
+  try{
+    const data=await authorAccessCall({action:"my_status"});
+    authorAccessRequest=data.request||null;
+    if(authorAccessRequest){
+      authorNameInput.value=authorAccessRequest.real_name||"";
+      authorPhoneInput.value=authorAccessRequest.phone||"";
+      authorTermsInput.checked=authorAccessRequest.terms_accepted===true;
+      authorSaved.style.display="block";
+      authorSaved.innerHTML="<strong>YOUR SAVED AUTHOR PROFILE</strong><br>Status: "+String(authorAccessRequest.status||"").replace(/</g,"&lt;").toUpperCase()+"<br>Package: "+Number(authorAccessRequest.package_number||0)+" • Published in this package: "+Number(authorAccessRequest.books_used||0)+"/3";
+      if(authorAccessRequest.status==="active"){
+        authorSubmitButton.style.display="none";authorEnterButton.style.display="";
+        showAuthorAccessStatus("Your Author Studio access is active.");
+      }else if(authorAccessRequest.status==="locked"){
+        authorSubmitButton.style.display="none";authorRenewButton.style.display="";
+        showAuthorAccessStatus("This package is complete. Renew for the next three books.");
+      }else if(authorAccessRequest.status==="pending_payment"){
+        authorSubmitButton.style.display="";
+        showAuthorAccessStatus("Your form is saved. Pay TSh 10,000 to the merchant shown above, then wait for Authority Press to confirm payment.");
+      }else{
+        showAuthorAccessStatus("Review your details and submit your Author Studio access request.");
+      }
+    }else{
+      showAuthorAccessStatus("Complete the form and accept the terms to request Author Studio access.");
+    }
+  }catch(err){showAuthorAccessStatus(err.message||"Could not load your saved form.",true);}
+}
 openTranscript.onclick=async()=>{
   smartPanel.classList.remove("show");
-  const unlockedUntil=Number(sessionStorage.getItem("mbinguMinistryAccessUntil")||0);
-  if(unlockedUntil>Date.now()){openTranscriptAfterAuthorization();return;}
-  ministryAccessKey.value="";
-  ministryAccessStatus.textContent="";
-  ministryAccessOverlay.style.display="flex";
-  ministryAccessOverlay.setAttribute("aria-hidden","false");
-  setTimeout(()=>ministryAccessKey.focus(),80);
+  try{
+    await ensureHeavensAnonymousSession();
+    const d=await authorAccessCall({action:"my_status"});
+    if(d.request?.status==="active"){openTranscriptAfterAuthorization();return;}
+  }catch(err){console.warn("Author Studio access status:",err);}
+  openAuthorAccessForm();
 };
-
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
 ministryAccessOverlay.addEventListener("click",e=>{if(e.target===ministryAccessOverlay)ministryAccessClose();});
-document.getElementById("ministryAccessUnlock").onclick=async()=>{
-  const btn=document.getElementById("ministryAccessUnlock");
-  const key=ministryAccessKey.value.trim();
-  if(!key){ministryAccessStatus.textContent="Enter your author access key.";ministryAccessKey.focus();return;}
-  btn.disabled=true;btn.textContent="CHECKING…";ministryAccessStatus.textContent="Verifying author access…";
+authorForm.addEventListener("submit",async event=>{
+  event.preventDefault();
+  if(!authorForm.reportValidity())return;
+  authorSubmitButton.disabled=true;showAuthorAccessStatus("Saving your form securely…");
   try{
-    await verifyMinistryAccess(key);
-    sessionStorage.setItem("mbinguMinistryAccessUntil",String(Date.now()+8*60*60*1000));
-    ministryAccessStatus.textContent="AUTHOR STUDIO ACCESS GRANTED ✓";
-    setTimeout(()=>{ministryAccessClose();openTranscriptAfterAuthorization();},350);
-  }catch(err){
-    console.warn("Ministry access denied:",err);
-    ministryAccessStatus.textContent="ACCESS DENIED — AUTHORIZED AUTHORS ONLY";
-    ministryAccessKey.select();
-  }finally{btn.disabled=false;btn.textContent="UNLOCK";}
-};
-ministryAccessKey.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("ministryAccessUnlock").click();});
-
+    const d=await authorAccessCall({action:"submit",real_name:authorNameInput.value.trim(),phone:authorPhoneInput.value.trim(),terms_accepted:authorTermsInput.checked});
+    authorAccessRequest=d.request;
+    authorSaved.style.display="block";
+    authorSaved.textContent="Your form is saved. Your details will be reused for future packages.";
+    showAuthorAccessStatus(d.message||"Form saved. Awaiting Authority Press payment confirmation.");
+    authorSubmitButton.style.display="none";
+  }catch(err){showAuthorAccessStatus(err.message||"Could not save your form.",true);}
+  finally{authorSubmitButton.disabled=false;}
+});
+authorRenewButton.addEventListener("click",async()=>{
+  authorRenewButton.disabled=true;showAuthorAccessStatus("Saving your renewal request…");
+  try{const d=await authorAccessCall({action:"renew"});authorAccessRequest=d.request;authorRenewButton.style.display="none";authorSaved.style.display="block";authorSaved.textContent="Renewal request saved. Your existing details have been reused.";showAuthorAccessStatus(d.message||"Renewal requested. Await payment confirmation.");}
+  catch(err){showAuthorAccessStatus(err.message||"Renewal request failed.",true);}
+  finally{authorRenewButton.disabled=false;}
+});
+authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must activate your package first.",true);return;}ministryAccessClose();openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
 
   document.getElementById("saveTranscript").onclick = (event) => {
