@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
     const url = Deno.env.get("SUPABASE_URL")?.trim();
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
     const authorityPassword = Deno.env.get("IONE_AUTHORITY_PASSWORD")?.trim();
-    const apiKey = Deno.env.get("BLM_PAY_PAYOUT_API_KEY")?.trim();
+    const apiKey = (Deno.env.get("BLM_PAY_PAYOUT_API_KEY") || Deno.env.get("BLM_PAY_API_KEY_HEAVENS"))?.trim();
     if (!url || !serviceKey || !authorityPassword || !apiKey) {
       return json({ success: false, error: "Server configuration is missing. Verify IONE_AUTHORITY_PASSWORD and BLMPay payout credentials." }, 500);
     }
@@ -34,11 +34,12 @@ Deno.serve(async (req: Request) => {
     }
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const action = safeText(body?.action || "list", 40).toLowerCase();
-    const apiHeaders = { Authorization: "Bearer " + apiKey, "X-BLMPay-Origin": url, "Content-Type": "application/json" };
+    const blmOrigin = "https://xbemkmvvbkxknuduthsg.supabase.co";
+    const apiHeaders = { Authorization: "Bearer " + apiKey, "X-BLMPay-Origin": blmOrigin, "Content-Type": "application/json" };
 
     const quoteFee = async (amount: number) => {
       const res = await fetch("https://pay.blmtec.co.tz/api/v1/payouts/fee?amount=" + encodeURIComponent(String(amount)) + "&channel=mobile", {
-        headers: { Authorization: "Bearer " + apiKey, "X-BLMPay-Origin": url, Accept: "application/json" },
+        headers: { Authorization: "Bearer " + apiKey, "X-BLMPay-Origin": blmOrigin, Accept: "application/json" },
       });
       const raw = await res.text(); let payload: any = {}; try { payload = raw ? JSON.parse(raw) : {}; } catch {}
       if (!res.ok) throw new Error("BLMPay fee quote failed.");
