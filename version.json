@@ -1,5 +1,5 @@
 {
-  "version": "1.0.92",
-  "message": "Public bookstore author controls and saved access",
+  "version": "1.0.93",
+  "message": "Detect PDF cover pages before publishing",
   "force": true
 }
