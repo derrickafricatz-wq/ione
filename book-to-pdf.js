@@ -88,6 +88,20 @@
       paidToggle.onchange = () => { paidText.textContent = paidToggle.checked ? "PAYMENT ON" : "FREE TO READ"; };
       paidLabel.append(paidToggle, paidText); controls.append(price, priceLabel, paidLabel);
       const actions = document.createElement("div"); actions.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+      const requestAudio = document.createElement("button"); requestAudio.type = "button"; requestAudio.textContent = "REQUEST NARRATION";
+      requestAudio.style.cssText = "padding:10px 12px;border:1px solid #2a6b54;border-radius:9px;background:#102a20;color:#bffff0;font-weight:900;font-size:11px;";
+      requestAudio.onclick = async () => {
+        requestAudio.disabled = true; requestAudio.textContent = "SENDING…";
+        try {
+          const result = await heavensSupabase.functions.invoke("book-narration-manage", { body: { action: "request", book_id: String(book.id), author_name: String(book.author_name || ""), book_insight: String(book.book_insight || "") } });
+          if (result.error || !result.data || !result.data.success) throw new Error((result.data && result.data.error) || "Could not request narration.");
+          requestAudio.textContent = result.data.already_requested ? "REQUEST ALREADY SENT" : "REQUEST SENT";
+          status.textContent = "Narration request submitted for “" + String(book.title || "your book") + "”. Authority Press will review the author name and insight.";
+        } catch (error) {
+          status.textContent = error && error.message ? error.message : "Could not request narration.";
+          requestAudio.disabled = false; requestAudio.textContent = "REQUEST NARRATION";
+        }
+      };
       const save = document.createElement("button"); save.type = "button"; save.textContent = "SAVE PRICE & ACCESS";
       save.style.cssText = "padding:10px 12px;border:0;border-radius:9px;background:#00c995;color:#05251b;font-weight:900;font-size:11px;";
       const revoke = document.createElement("button"); revoke.type = "button"; revoke.textContent = "REVOKE & DELETE";
@@ -134,7 +148,7 @@
           revoke.disabled = false; revoke.textContent = "REVOKE & DELETE";
         }
       };
-      actions.append(save, revoke); details.append(title, kind, controls, actions); card.append(cover, details);
+      actions.append(save, revoke); details.append(title, kind, controls, actions, requestAudio); card.append(cover, details);
       return card;
     };
 
