@@ -2798,6 +2798,93 @@ body.ione-gentle-boot #ioneTopActions{
 }
 </style>
 
+
+<style id="ione-explore-unified-teal-business-v7">
+/* One signature I|ONE color: polished teal with restrained soft highlights. */
+#heavensBookstore{
+ --ione-signature:#18b6a4;
+ --ione-signature-deep:#073e3c;
+ --ione-signature-soft:#a6f0df;
+}
+#heavensBookstore .hb-head{
+ background:linear-gradient(145deg,#0b4542 0%,#083633 58%,#062a2d 100%)!important;
+ border-bottom:1px solid rgba(166,240,223,.36)!important;
+ box-shadow:0 7px 22px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.10)!important;
+}
+#heavensBookstore .hb-title{
+ color:#d8fff5!important;text-shadow:0 2px 14px rgba(24,182,164,.28)!important;
+ letter-spacing:1.8px!important;
+}
+#heavensBookstore .hb-sub{
+ display:block!important;color:#a6f0df!important;font-weight:800!important;
+ letter-spacing:.25px!important;text-shadow:0 1px 8px rgba(24,182,164,.18)!important;
+}
+#heavensBookstore .hb-search input{
+ border:1px solid rgba(166,240,223,.36)!important;
+ background:rgba(2,24,27,.72)!important;color:#f0fffb!important;
+ border-radius:11px!important;box-shadow:inset 0 1px 3px rgba(0,0,0,.22)!important;
+}
+#heavensBookstore .hb-search input::placeholder{color:rgba(220,255,247,.68)!important}
+#heavensBookstore .hb-search button,
+#heavensBookstore .hb-cat{
+ border:1px solid rgba(166,240,223,.25)!important;
+ background:rgba(17,117,105,.32)!important;color:#dffff7!important;
+ border-radius:10px!important;
+}
+#heavensBookstore .hb-cat.active{
+ background:linear-gradient(135deg,#a6f0df,#43d6bd)!important;
+ color:#073e3c!important;border-color:#c9fff2!important;
+ box-shadow:0 3px 12px rgba(24,182,164,.22)!important;
+}
+#heavensBookstore .hb-card{
+ --hb-accent:#8ce7d5!important;
+ --hb-accent-border:rgba(140,231,213,.32)!important;
+ --hb-card-bg:linear-gradient(145deg,#123f3d 0%,#0c302f 62%,#092625 100%)!important;
+ border:1px solid rgba(140,231,213,.31)!important;
+ background:linear-gradient(115deg,rgba(255,255,255,.065),transparent 42%),linear-gradient(145deg,#123f3d 0%,#0c302f 62%,#092625 100%)!important;
+ box-shadow:0 6px 18px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#heavensBookstore .hb-card:before{
+ background:linear-gradient(90deg,transparent,#6fe0ca,#d6fff5,#6fe0ca,transparent)!important;
+ opacity:.92!important;
+}
+#heavensBookstore .hb-card:after{
+ background:linear-gradient(112deg,transparent 18%,rgba(188,255,241,.065) 35%,transparent 52%)!important;
+}
+#heavensBookstore .hb-author-label,
+#heavensBookstore .hb-insight-kicker{color:#a6f0df!important}
+#heavensBookstore .hb-author{border-color:rgba(140,231,213,.27)!important;background:rgba(2,24,27,.28)!important}
+#heavensBookstore .hb-insight{border-color:rgba(140,231,213,.26)!important;background:linear-gradient(135deg,rgba(140,231,213,.07),rgba(0,0,0,.16))!important}
+#heavensBookstore .hb-price{border-color:rgba(140,231,213,.35)!important}
+#heavensBookstore .hb-btn,
+#heavensBookstore .hb-audio-btn{
+ border-radius:10px!important;
+}
+#heavensBookstore .hb-btn.pay,
+#heavensBookstore .hb-btn.read,
+#heavensBookstore .hb-audio-btn:not(:disabled){
+ background:linear-gradient(135deg,#18b6a4,#087b70)!important;
+ color:#f2fffc!important;border:1px solid rgba(166,240,223,.42)!important;
+ box-shadow:0 3px 9px rgba(0,0,0,.17),inset 0 1px 0 rgba(255,255,255,.14)!important;
+}
+#heavensBookstore .hb-btn:disabled,
+#heavensBookstore .hb-audio-btn:disabled{filter:saturate(.35)!important}
+#heavensBookstore .hb-close{
+ background:rgba(24,182,164,.17)!important;color:#e0fff8!important;
+ border:1px solid rgba(166,240,223,.35)!important;border-radius:10px!important;
+}
+@media(hover:hover){
+ #heavensBookstore .hb-card:hover{
+  border-color:#8ce7d5!important;
+  box-shadow:0 9px 23px rgba(0,0,0,.29),0 0 13px rgba(24,182,164,.13),inset 0 1px 0 rgba(255,255,255,.12)!important;
+ }
+ #heavensBookstore .hb-cat:hover,#heavensBookstore .hb-search button:hover{filter:brightness(1.13)}
+}
+@media(prefers-reduced-motion:reduce){
+ #heavensBookstore *{scroll-behavior:auto!important}
+}
+</style>
+
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true"><div class="ione-network-mark"><strong>I|ONE</strong><span>intoione.space</span><i></i></div></div>
@@ -8577,7 +8664,7 @@ async function openHeavensBookstore(){
     <div class="hb-head">
       <button class="hb-close" id="hbClose">×</button>
       <div class="hb-title">I1 LIB</div>
-      <div class="hb-sub">Call now</div>
+      <div class="hb-sub">Do your best. Work smart.</div>
       <div class="hb-search"><input id="hbSearch" placeholder="Find words that move you..." autocomplete="off"><button id="hbSearchBtn">⌕</button></div>
       <div class="hb-cats" id="hbCats"></div>
     </div>
