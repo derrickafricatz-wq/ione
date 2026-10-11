@@ -174,14 +174,22 @@ Deno.serve(async(req:Request)=>{
       if(!/^[A-Za-z0-9._:-]{12,100}$/.test(idempotency)) return json({success:false,error:"A valid unique idempotency key is required."},400);
       const {data:existing}=await admin.from("author_studio_payouts").select("id,status,provider_reference").eq("idempotency_key",idempotency).maybeSingle();
       if(existing) return json({success:true,duplicate:true,payout:existing});
-      const {data:record,error:insertError}=await admin.from("author_studio_payouts").insert({author_id:authorId,amount_tzs:amount,payout_phone:p, payout_network:network,recipient_name:recipientName,idempotency_key:idempotency,provider_fee_tzs:Number(payload(quote.data).fee||payload(quote.data).fee_tzs||0),status:"initiated",initiated_by:"Authority Press",early_payout_reason:clean(body?.early_payout_reason,500)||null}).select("*").single();
-      if(insertError) return json({success:false,error:"Could not reserve payout record; no payout was sent."},409);
+      const reservation=await admin.rpc("author_studio_reserve_payout",{
+        p_author_id:authorId,p_amount_tzs:amount,p_phone:p,p_network:network,
+        p_recipient_name:recipientName,p_idempotency_key:idempotency,
+        p_provider_fee_tzs:Number(payload(quote.data).fee||payload(quote.data).fee_tzs||0),
+        p_early_payout_reason:clean(body?.early_payout_reason,500)||null,
+        p_initiated_by:"Authority Press"
+      });
+      if(reservation.error) return json({success:false,error:reservation.error.message||"Could not reserve payout balance; no payout was sent."},409);
+      const record=Array.isArray(reservation.data)?reservation.data[0]:reservation.data;
+      if(!record?.id) return json({success:false,error:"Payout reservation returned no record; no payout was sent."},409);
       const sent=await provider("/payouts/send",apiKey,"POST",{amount,currency:"TZS",channel:"mobile",recipient_phone:p,network,narration:"I|ONE author book earnings",metadata:{author_id:authorId,payout_id:record.id},},idempotency);
       const out=payload(sent.data);
       const providerStatus=String(out.status||"pending").toLowerCase();
       const status=sent.ok?(["completed","failed","reversed","processing","pending"].includes(providerStatus)?providerStatus:"pending"):"pending";
       const reference=out.reference||out.payout_reference||out.id||null;
-      const {data:updated}=await admin.from("author_studio_payouts").update({status,provider_reference:reference,provider_response:{http_status:sent.status,data:out},updated_at:new Date().toISOString(),completed_at:status==="completed"?new Date().toISOString():null}).eq("id",record.id).select("*").single();
+      const {data:updated}=await admin.from("author_studio_payouts").update({status,provider_reference:reference,provider_response:{http_status:sent.status,data:out,request_accepted:sent.ok},updated_at:new Date().toISOString(),completed_at:status==="completed"?new Date().toISOString():null}).eq("id",record.id).select("*").single();
       return json({success:sent.ok,payout:updated||record,fee_paid_by:"I|ONE",error:sent.ok?undefined:"BLMPay rejected the payout request; check the provider reference before retrying."},sent.ok?200:502);
     }
     if(action==="payout_status"){
