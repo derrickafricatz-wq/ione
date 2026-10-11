@@ -2021,6 +2021,12 @@ body.ione-heaven-open #scrollBanner{display:none!important}
 .hb-card-title{font-weight:800;font-size:16px;line-height:1.25;color:#fff;min-height:40px}
 .hb-price{display:inline-block;margin:7px 0 9px;padding:6px 10px;border-radius:9px;border:1px solid rgba(0,255,255,.5);background:rgba(0,255,255,.08);color:#00ffff;font-weight:900;font-size:15px}
 .hb-meta{font-size:11px;color:#7f9198;margin:6px 0 10px}
+.hb-author{font-size:11px;color:#b5c9ce;margin:5px 0 8px}
+.hb-insight{position:relative;min-height:58px;max-height:96px;overflow:hidden;padding:10px;border:1px solid rgba(0,255,255,.18);border-radius:10px;background:rgba(0,255,255,.035);color:#d5e5e8;font-size:12px;line-height:1.5;cursor:pointer}
+.hb-insight-text{opacity:1;transition:opacity .55s ease}
+.hb-insight-text.is-fading{opacity:0}
+.hb-audio-btn{width:100%;margin-top:8px;min-height:38px;border-radius:10px;border:1px solid #00c995;background:#10251f;color:#7fffd2;font-weight:800}
+.hb-audio-btn:disabled{opacity:.5}
 .hb-actions{display:flex;gap:7px}
 .hb-btn{flex:1;min-height:42px;border-radius:11px;border:1px solid #00ffff;background:#111;color:#00ffff;font-weight:800}
 .hb-btn.pay{background:#00ffff;color:#001015}
@@ -8187,7 +8193,36 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "FREE" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"SERMONS")} • ${escapeBookHtml(book.date||"")}</div><div class="hb-author">${book.authorName ? "By " + escapeBookHtml(book.authorName) : "Author details not added"}</div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insight preview"><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book introduction yet.")}</div></div><div class="hb-price">${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment" style="margin-left:6px">CHECK</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION NOT PUBLISHED'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'Free to read':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      const insightBox=card.querySelector(".hb-insight");
+      const insightText=card.querySelector(".hb-insight-text");
+      const insightSource=String(book.bookInsight||"The author has not added a book introduction yet.").trim();
+      const insightChunks=[];
+      const sentences=insightSource.split(/(?<=[.!?])\\s+/).filter(Boolean);
+      let insightChunk="";
+      sentences.forEach(sentence=>{if((insightChunk+" "+sentence).trim().length>190&&insightChunk){insightChunks.push(insightChunk);insightChunk=sentence;}else insightChunk=(insightChunk+" "+sentence).trim();});
+      if(insightChunk)insightChunks.push(insightChunk);
+      if(!insightChunks.length)insightChunks.push("The author has not added a book introduction yet.");
+      let insightIndex=0, insightTimer=null, insightPaused=false;
+      const stopInsightTimer=()=>{if(insightTimer)clearInterval(insightTimer);insightTimer=null;};
+      const startInsightTimer=()=>{stopInsightTimer();if(insightChunks.length<2||insightPaused)return;insightTimer=setInterval(()=>{insightText.classList.add("is-fading");setTimeout(()=>{if(!insightPaused){insightIndex=(insightIndex+1)%insightChunks.length;insightText.textContent=insightChunks[insightIndex];}insightText.classList.remove("is-fading");},560);},5000);};
+      insightBox.addEventListener("click",()=>{insightPaused=!insightPaused;insightBox.setAttribute("aria-label",insightPaused?"Book insight preview paused. Tap to resume":"Book insight preview playing. Tap to pause");if(insightPaused)stopInsightTimer();else startInsightTimer();});
+      insightBox.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();insightBox.click();}});
+      startInsightTimer();
+      const audioButton=card.querySelector(".hb-audio-btn");
+      audioButton.onclick=async()=>{
+        if(!book.narrationPath)return;
+        audioButton.disabled=true;audioButton.textContent="LOADING AUDIO…";
+        try{
+          if(window.ioneBookNarrationAudio){window.ioneBookNarrationAudio.pause();window.ioneBookNarrationAudio=null;}
+          const result=await heavensSupabase.functions.invoke("book-narration-manage",{body:{action:"audio_url",book_id:String(book.supabaseId||"")}});
+          if(result.error||!result.data?.success||!result.data.url)throw new Error(result.data?.error||"Narration could not be opened.");
+          const audio=new Audio(result.data.url);audio.preload="none";window.ioneBookNarrationAudio=audio;
+          audio.onended=()=>{audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";};
+          audio.onerror=()=>{audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";};
+          await audio.play();audioButton.textContent="Ⅱ PLAYING NARRATION";
+        }catch(e){audioButton.disabled=false;audioButton.textContent="▶ LISTEN TO NARRATION";alert(e.message||"Narration could not be played.");}
+      };
       const coverImg=card.querySelector('.hb-cover img');
       if(coverImg){
         coverImg.onerror=()=>{
