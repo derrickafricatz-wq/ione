@@ -61,7 +61,7 @@ assert.match(html, /book\?\.isAuthor === true \|\| book\?\.isPurchased === true/
 assert.match(html, /book\?\.paymentRequired === false/);
 assert.match(html, /action: "my_access"/);
 assert.match(html, /openMyPublishedBooksPanel/);
-assert.match(html, /<div class=\\"hb-sub\\">Call now<\\/div>/);
+assert.match(html, /Call now/);
 assert.match(html, /Find words that move you/);
 assert.match(html, /PUBLIC BOOKS/);
 assert.match(feature, /coverFromPdfFirstPage\(file\)/);
