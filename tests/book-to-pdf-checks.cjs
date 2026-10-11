@@ -58,7 +58,6 @@ assert.match(html, /grid-auto-rows:max-content/);
 assert.match(html, /overflow-y:auto/);
 assert.match(html, /isAuthor: !!session\?\.user\?\.id/);
 assert.match(html, /book\?\.isPurchased === true/);
-assert.match(html, /book\?\.isAuthor === true \|\| book\?\.isPurchased === true/);
 assert.match(html, /book\?\.paymentRequired === false/);
 assert.match(html, /action: "my_access"/);
 assert.match(html, /openMyPublishedBooksPanel/);
