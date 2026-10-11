@@ -1,5 +1,5 @@
 {
-  "version": "1.0.112",
-  "message": "Fix Author Studio opening and home controls",
+  "version": "1.0.113",
+  "message": "Render feature screens before loading content",
   "force": true
 }
