@@ -8466,63 +8466,9 @@ printBtn.onclick = () => {
     // Footer
     html += "<hr><p>Heaven On Earth</p>";
 
-    html += "<script id="ioneAuthorAccessAuthorityUI">
-(function(){
-  "use strict";
-  if(window.__ioneAuthorAccessAuthorityUI)return;window.__ioneAuthorAccessAuthorityUI=true;
-  const $=id=>document.getElementById(id);
-  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
-  async function call(body){
-    const password=String($("authorityPasswordInput")?.value||"").trim();
-    const result=await heavensSupabase.functions.invoke("ione-author-access",{body:Object.assign({password},body)});
-    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Author access request failed.");
-    return result.data;
-  }
-  async function refresh(){
-    const status=$("ioneAuthorAccessAuthorityStatus"),list=$("ioneAuthorAccessAuthorityList");
-    if(!list||!status)return;
-    status.textContent="Loading saved author forms…";list.innerHTML="";
-    try{
-      const data=await call({action:"authority_list"});
-      if(!data.requests?.length){list.innerHTML='<div class="authority-section-note">No Author Studio forms have been submitted yet.</div>';status.textContent="0 forms";return;}
-      list.innerHTML=data.requests.map(r=>{
-        const canActivate=r.status==="pending_payment";
-        return '<article data-ione-author-user="'+esc(r.user_id)+'" style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:13px;display:grid;gap:7px">'+
-          '<strong style="font-size:15px">'+esc(r.real_name)+'</strong>'+
-          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Phone: '+esc(r.phone)+'<br>State: <b>'+esc(String(r.status).toUpperCase())+'</b> • Package: '+Number(r.package_number||0)+' • Books used: '+Number(r.books_used||0)+'/3'+(r.renewal_requested?' • RENEWAL':'')+'<br>Fee: TSh '+Number(r.fee_tzs||10000).toLocaleString("en-US")+'<br>Merchant: '+esc(r.merchant_name)+' • '+esc(r.merchant_network)+' • '+esc(r.merchant_number)+'<br>Terms accepted: '+(r.terms_accepted?"YES":"NO")+' • Last submitted: '+esc(r.submitted_at||"—")+'</div>'+
-          '<textarea class="ione-author-authority-notes" rows="2" maxlength="1000" placeholder="Authority note (optional)" style="width:100%;box-sizing:border-box;border-radius:8px;padding:9px;background:#081113;color:#fff;border:1px solid #34534d">'+esc(r.authority_notes||"")+'</textarea>'+
-          '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-          (canActivate?'<button type="button" data-ione-author-action="active" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • ACTIVATE 3 BOOKS</button>':'')+
-          (r.status!=="locked"?'<button type="button" data-ione-author-action="locked" style="border:1px solid #b68b53;border-radius:8px;padding:10px;background:#302313;color:#ffe4b7;font-weight:800">LOCK ACCESS</button>':'')+
-          (r.status==="pending_payment"?'<button type="button" data-ione-author-action="rejected" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT REQUEST</button>':'')+
-          '</div></article>';
-      }).join("");
-      status.textContent=data.requests.length+" saved form(s)";
-    }catch(e){status.textContent=e.message||"Could not load forms.";status.style.color="#ff9f9f";}
-  }
-  document.addEventListener("click",async event=>{
-    const refreshBtn=event.target.closest("#ioneAuthorAccessRefresh");
-    if(refreshBtn){refresh();return;}
-    const btn=event.target.closest("[data-ione-author-action]");
-    if(!btn)return;
-    const card=btn.closest("[data-ione-author-user]");if(!card)return;
-    const next=btn.getAttribute("data-ione-author-action");
-    const userId=card.getAttribute("data-ione-author-user");
-    const note=card.querySelector(".ione-author-authority-notes")?.value||"";
-    if(next==="active"&&!confirm("Confirm you personally verified the TSh 10,000 payment to DERRICK KIPAJI OF AFRIKA & CO, Airtel Money 140001788? This activates the next three-book package."))return;
-    if(next==="locked"&&!confirm("Lock this author's publishing access? The saved form and book records will remain."))return;
-    btn.disabled=true;
-    try{await call({action:"authority_set_status",user_id:userId,status:next,payment_confirmed:next==="active",authority_notes:note});await refresh();}
-    catch(e){alert(e.message||"Could not update author access.");btn.disabled=false;}
-  });
-  document.addEventListener("click",event=>{
-    if(event.target.closest("#authorityPasswordUnlock"))setTimeout(()=>{const p=$("authorityPressPanel");if(p&&p.getAttribute("aria-hidden")==="false")refresh();},350);
-  });
-  document.addEventListener("click",event=>{if(event.target.closest("#authorityNarrationRefresh"))setTimeout(refresh,250);});
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{}, {once:true});
-})();
-</script>
-</body></html>";
+    html += "<hr><p>Heaven On Earth</p>";
+
+    html += "</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
@@ -10782,6 +10728,63 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @media(max-width:440px){#ioneDocumentaryEditorV1Mount .ione-doc-grid{grid-template-columns:minmax(0,1fr)!important;gap:9px!important}#ioneDocumentaryEditorV1Mount .ione-doc-permission-grid{grid-template-columns:minmax(0,1fr)!important}}
 </style>
 <script src="./book-to-pdf.js?v=1"></script>
+
+<script id="ioneAuthorAccessAuthorityUI">
+(function(){
+  "use strict";
+  if(window.__ioneAuthorAccessAuthorityUI)return;window.__ioneAuthorAccessAuthorityUI=true;
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+  async function call(body){
+    const password=String($("authorityPasswordInput")?.value||"").trim();
+    const result=await heavensSupabase.functions.invoke("ione-author-access",{body:Object.assign({password},body)});
+    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Author access request failed.");
+    return result.data;
+  }
+  async function refresh(){
+    const status=$("ioneAuthorAccessAuthorityStatus"),list=$("ioneAuthorAccessAuthorityList");
+    if(!list||!status)return;
+    status.textContent="Loading saved author forms…";list.innerHTML="";
+    try{
+      const data=await call({action:"authority_list"});
+      if(!data.requests?.length){list.innerHTML='<div class="authority-section-note">No Author Studio forms have been submitted yet.</div>';status.textContent="0 forms";return;}
+      list.innerHTML=data.requests.map(r=>{
+        const canActivate=r.status==="pending_payment";
+        return '<article data-ione-author-user="'+esc(r.user_id)+'" style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:13px;display:grid;gap:7px">'+
+          '<strong style="font-size:15px">'+esc(r.real_name)+'</strong>'+
+          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Phone: '+esc(r.phone)+'<br>State: <b>'+esc(String(r.status).toUpperCase())+'</b> • Package: '+Number(r.package_number||0)+' • Books used: '+Number(r.books_used||0)+'/3'+(r.renewal_requested?' • RENEWAL':'')+'<br>Fee: TSh '+Number(r.fee_tzs||10000).toLocaleString("en-US")+'<br>Merchant: '+esc(r.merchant_name)+' • '+esc(r.merchant_network)+' • '+esc(r.merchant_number)+'<br>Terms accepted: '+(r.terms_accepted?"YES":"NO")+' • Last submitted: '+esc(r.submitted_at||"—")+'</div>'+
+          '<textarea class="ione-author-authority-notes" rows="2" maxlength="1000" placeholder="Authority note (optional)" style="width:100%;box-sizing:border-box;border-radius:8px;padding:9px;background:#081113;color:#fff;border:1px solid #34534d">'+esc(r.authority_notes||"")+'</textarea>'+
+          '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
+          (canActivate?'<button type="button" data-ione-author-action="active" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • ACTIVATE 3 BOOKS</button>':'')+
+          (r.status!=="locked"?'<button type="button" data-ione-author-action="locked" style="border:1px solid #b68b53;border-radius:8px;padding:10px;background:#302313;color:#ffe4b7;font-weight:800">LOCK ACCESS</button>':'')+
+          (r.status==="pending_payment"?'<button type="button" data-ione-author-action="rejected" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT REQUEST</button>':'')+
+          '</div></article>';
+      }).join("");
+      status.textContent=data.requests.length+" saved form(s)";
+    }catch(e){status.textContent=e.message||"Could not load forms.";status.style.color="#ff9f9f";}
+  }
+  document.addEventListener("click",async event=>{
+    const refreshBtn=event.target.closest("#ioneAuthorAccessRefresh");
+    if(refreshBtn){refresh();return;}
+    const btn=event.target.closest("[data-ione-author-action]");
+    if(!btn)return;
+    const card=btn.closest("[data-ione-author-user]");if(!card)return;
+    const next=btn.getAttribute("data-ione-author-action");
+    const userId=card.getAttribute("data-ione-author-user");
+    const note=card.querySelector(".ione-author-authority-notes")?.value||"";
+    if(next==="active"&&!confirm("Confirm you personally verified the TSh 10,000 payment to DERRICK KIPAJI OF AFRIKA & CO, Airtel Money 140001788? This activates the next three-book package."))return;
+    if(next==="locked"&&!confirm("Lock this author's publishing access? The saved form and book records will remain."))return;
+    btn.disabled=true;
+    try{await call({action:"authority_set_status",user_id:userId,status:next,payment_confirmed:next==="active",authority_notes:note});await refresh();}
+    catch(e){alert(e.message||"Could not update author access.");btn.disabled=false;}
+  });
+  document.addEventListener("click",event=>{
+    if(event.target.closest("#authorityPasswordUnlock"))setTimeout(()=>{const p=$("authorityPressPanel");if(p&&p.getAttribute("aria-hidden")==="false")refresh();},350);
+  });
+  document.addEventListener("click",event=>{if(event.target.closest("#authorityNarrationRefresh"))setTimeout(refresh,250);});
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{}, {once:true});
+})()
+</script>
 </body>
 </html>
 <script>
