@@ -39,6 +39,7 @@ assert.match(access, /auth\.getUser\(\)/);
 assert.match(access, /author_id/);
 assert.match(access, /book_access/);
 assert.match(access, /book_orders/);
+assert.match(access, /in\("status", \["paid", "completed"\]\)/);
 assert.match(access, /status/);
 assert.match(access, /createSignedUrl\(book\.pdf_path, 300\)/);
 console.log("PASS: access function includes authentication, author/access/order checks, and five-minute signed links");
