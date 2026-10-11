@@ -1423,14 +1423,14 @@
       var data=await ccInvoke({action:"list",password:password});
       var groups=data.seller_groups||[];
       if(!groups.length){
-        list.innerHTML='<div class="authority-chapchap-order"><strong>NO SELLER PAYOUTS READY</strong><div class="cc-mini">There are no unpaid seller balances currently eligible for payout.</div>'+historyHtml(data.recent_seller_payouts||[])+'</div>';
+        list.innerHTML=authorPayoutButton()+'<div class="authority-chapchap-order"><strong>NO SELLER PAYOUTS READY</strong><div class="cc-mini">There are no unpaid seller balances currently eligible for payout.</div>'+historyHtml(data.recent_seller_payouts||[])+'</div>'; bindAuthorPayoutButton(list);
         ccStatus("CONNECTED • NO UNPAID SELLER BALANCES");
         return;
       }
-      list.innerHTML=
+      list.innerHTML=authorPayoutButton()+
         '<div class="authority-chapchap-order"><strong>SELLER-LEVEL PAYOUTS</strong><div class="cc-mini">Each seller is grouped once. All unpaid products belonging to that seller are combined into one payout. Each sale remains a separate receipt.</div></div>'+
         groups.map(sellerCard).join("")+
-        historyHtml(data.recent_seller_payouts||[]);
+        historyHtml(data.recent_seller_payouts||[]); bindAuthorPayoutButton(list);
       list.querySelectorAll(".ione-seller-payout").forEach(function(card){
         var sid=card.getAttribute("data-seller-payout");
         var group=groups.find(function(x){return String(x.seller_id)===String(sid);});
@@ -1444,6 +1444,70 @@
       list.innerHTML='<div class="authority-chapchap-order"><strong>PAYOUT ERROR</strong><div class="cc-mini">'+ccEsc(e?.message||"Could not load seller payouts.")+'</div></div>';
       ccStatus(e?.message||"Could not load seller payouts.");
     }
+  }
+
+
+  function authorPayoutButton(){
+    return '<div class="authority-chapchap-order" style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><strong>I|ONE AUTHOR EARNINGS</strong><div class="cc-mini">Monthly author payouts, approved urgent exceptions, and payout history.</div></div><button type="button" id="ioneOpenAuthorPayouts" style="border:0;border-radius:10px;padding:10px 13px;background:#b8f36a;color:#14220b;font-weight:900">OPEN AUTHOR PAYOUTS</button></div>';
+  }
+  function bindAuthorPayoutButton(root){
+    var b=root&&root.querySelector("#ioneOpenAuthorPayouts");
+    if(b)b.addEventListener("click",renderAuthorPayouts);
+  }
+  async function authorPayoutCall(body){
+    var r=await heavensSupabase.functions.invoke("ione-author-payouts",{body:Object.assign({password:ccPassword()},body)});
+    if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Author payout request failed.");
+    return r.data;
+  }
+  function authorPayoutCard(a){
+    return '<div class="authority-chapchap-order" data-author-payout="'+ccEsc(a.author_id)+'" style="border:1px solid #31545a;border-radius:14px;padding:13px;margin:9px 0;background:#071719;color:#fff">'+
+      '<strong>'+ccEsc(a.author_name||"AUTHOR")+'</strong><div class="cc-mini">Sales: '+Number(a.sale_count||0)+' • Gross: '+ccMoney(a.sales_tzs)+' • Author share (95%): '+ccMoney(a.author_earnings_tzs)+'</div>'+
+      '<div class="cc-mini">Eligible now: <b>'+ccMoney(a.eligible_tzs)+'</b> • Pending monthly: '+ccMoney(a.pending_tzs)+' • Processing: '+ccMoney(a.processing_tzs)+' • Paid: '+ccMoney(a.paid_tzs)+'</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:10px">'+
+      '<input class="iap-phone" inputmode="tel" placeholder="Author mobile number" style="min-width:0;padding:10px;border-radius:8px;border:1px solid #38535a;background:#0b1418;color:#fff">'+
+      '<select class="iap-network" style="min-width:0;padding:10px;border-radius:8px;border:1px solid #38535a;background:#0b1418;color:#fff"><option value="AIRTEL">Airtel Money</option><option value="MPESA">M-Pesa</option><option value="TIGO">Mixx by Yas</option><option value="HALOTEL">HaloPesa</option></select>'+
+      '<select class="iap-reason" style="min-width:0;padding:10px;border-radius:8px;border:1px solid #38535a;background:#0b1418;color:#fff"><option value="monthly">Monthly payout</option><option value="urgent_exception">Urgent exception</option></select>'+
+      '</div><textarea class="iap-details" placeholder="Required explanation for urgent exception" rows="2" style="box-sizing:border-box;width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid #38535a;background:#0b1418;color:#fff"></textarea>'+
+      '<div class="iap-result cc-mini" style="margin-top:8px"></div><button class="iap-quote" type="button" style="margin-top:8px;border:0;border-radius:9px;padding:10px 12px;background:#b8f36a;color:#14220b;font-weight:900">CALCULATE PAYOUT</button></div>';
+  }
+  async function renderAuthorPayouts(){
+    var list=document.getElementById("authorityChapChapOrders");
+    var password=ccPassword();
+    if(!list||!password){ccStatus("Unlock Authority Press first.");return;}
+    list.innerHTML='<div class="authority-chapchap-order"><strong>LOADING AUTHOR EARNINGS…</strong></div>';
+    try{
+      var d=await authorPayoutCall({action:"list"});
+      var html='<div class="authority-chapchap-order"><button type="button" id="ioneBackSellerPayouts" style="border:1px solid #496168;border-radius:9px;padding:8px 11px;background:#101c24;color:#fff;font-weight:800">← SELLER PAYOUTS</button><strong style="display:block;margin-top:10px">AUTHOR EARNINGS & PAYOUTS</strong><div class="cc-mini">Merchant: DERRICK KIPAJI OF AFRIKA & CO • Airtel Money • 140001788</div><div class="cc-mini">Allocation per paid book sale: author 95%, provider fee share 3%, I|ONE 2%. Standard payouts are monthly; urgent payouts require a documented serious reason.</div></div>'+
+        (d.authors||[]).map(authorPayoutCard).join("")+
+        '<div class="authority-chapchap-order"><strong>RECENT AUTHOR PAYOUTS</strong>'+
+        (d.recent_payouts||[]).slice(0,20).map(function(p){return '<div class="cc-list-item"><strong>'+ccEsc(p.author_name)+' • '+ccEsc(String(p.status||"").toUpperCase())+'</strong><span>RECEIVES: '+ccMoney(p.amount_tzs)+' • FEE: '+ccMoney(p.provider_fee_tzs)+' • DEBIT: '+ccMoney(p.total_debit_tzs)+'<br>NUMBER: '+ccEsc(p.recipient_phone)+' • '+ccEsc(p.recipient_network)+'<br>REFERENCE: '+ccEsc(p.payout_reference||"PROCESSING")+' • '+ccEsc(p.payout_reason)+'</span></div>';}).join("")+'</div>';
+      list.innerHTML=html;
+      document.getElementById("ioneBackSellerPayouts")?.addEventListener("click",renderSellerPayouts);
+      list.querySelectorAll("[data-author-payout]").forEach(function(card){
+        var btn=card.querySelector(".iap-quote");
+        btn?.addEventListener("click",async function(){
+          var result=card.querySelector(".iap-result"), phone=card.querySelector(".iap-phone").value.trim(), network=card.querySelector(".iap-network").value, reason=card.querySelector(".iap-reason").value, details=card.querySelector(".iap-details").value.trim();
+          btn.disabled=true;result.textContent="Calculating verified BLMPay fee…";
+          try{
+            var q=await authorPayoutCall({action:"quote",author_id:card.getAttribute("data-author-payout"),recipient_phone:phone,recipient_network:network,payout_reason:reason,reason_details:details});
+            result.innerHTML='Balance: <b>'+ccMoney(q.balance_tzs)+'</b> • Payout: <b>'+ccMoney(q.amount_tzs)+'</b> • Provider fee: '+ccMoney(q.provider_fee_tzs)+' • Total debit: '+ccMoney(q.total_debit_tzs);
+            var send=document.createElement("button");send.type="button";send.textContent="CONFIRM & SEND PAYOUT";send.style.cssText="margin:8px 0 0 8px;border:0;border-radius:9px;padding:10px 12px;background:#70d6b3;color:#082019;font-weight:900";
+            result.appendChild(send);
+            send.addEventListener("click",async function(){
+              if(!confirm("Send "+ccMoney(q.amount_tzs)+" to "+q.recipient_phone+" on "+q.recipient_network+"?"))return;
+              send.disabled=true;result.appendChild(document.createTextNode(" Submitting to BLMPay…"));
+              try{
+                var sent=await authorPayoutCall({action:"send",author_id:q.author_id,recipient_phone:q.recipient_phone,recipient_network:q.recipient_network,payout_reason:q.payout_reason,reason_details:q.reason_details,amount_tzs:q.amount_tzs});
+                result.appendChild(document.createTextNode(" "+(sent.message||"Payout submitted.")+" Reference: "+(sent.payout_reference||"pending verification")));
+                setTimeout(renderAuthorPayouts,1200);
+              }catch(e){send.disabled=false;result.appendChild(document.createTextNode(" "+e.message));}
+            });
+          }catch(e){result.textContent=e.message;}
+          finally{btn.disabled=false;}
+        });
+      });
+      ccStatus("AUTHOR EARNINGS CONNECTED • PAYOUTS REQUIRE AUTHORITY CONFIRMATION");
+    }catch(e){list.innerHTML='<div class="authority-chapchap-order"><strong>AUTHOR PAYOUT ERROR</strong><div class="cc-mini">'+ccEsc(e.message||"Could not load author earnings.")+'</div><button id="ioneBackSellerPayouts" type="button">BACK</button></div>';document.getElementById("ioneBackSellerPayouts")?.addEventListener("click",renderSellerPayouts);ccStatus(e.message||"Author payout error.");}
   }
 
   async function calculateSellerPayout(card,group){
