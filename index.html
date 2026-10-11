@@ -8472,7 +8472,7 @@ async function watchHeavensPayment(book,store,reference){
   const poll=async()=>{
     try{
       console.log("Heaven's Books: checking BLMPay reference",ref);
-      const result=await checkHeavensPaymentStatus(ref);
+      const result=await checkHeavensPaymentStatus(ref, book.supabaseId || book.id);
       console.log("Heaven's Books BLMPay status response:",result);
 
       // BLMPay can use a top-level "success" as an API response envelope.
