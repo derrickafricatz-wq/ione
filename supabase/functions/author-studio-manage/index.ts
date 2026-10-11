@@ -84,7 +84,11 @@ Deno.serve(async(req:Request)=>{
       const {data:profile,error:lookupError}=await admin.from("author_studio_profiles").select("*").eq("id",authorId).maybeSingle();
       if(lookupError||!profile) return json({success:false,error:"Author record not found."},404);
       if(approve){
-        const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:"active",package_paid_at:new Date().toISOString(),package_unlocked_by:"Authority Press",published_books_used:0,updated_at:new Date().toISOString()}).eq("id",authorId).select("*").single();
+        const {count:publishedCount,error:countError}=await admin.from("heavens_books").select("id",{count:"exact",head:true}).eq("author_id",profile.user_id).eq("active",true);
+        if(countError) return json({success:false,error:"Could not verify the author's published-book count."},500);
+        const used=Math.min(Number(publishedCount||0),3);
+        const nextStatus=used>=3?"locked":"active";
+        const {data:updated,error}=await admin.from("author_studio_profiles").update({package_status:nextStatus,package_paid_at:new Date().toISOString(),package_unlocked_by:"Authority Press",published_books_used:used,updated_at:new Date().toISOString()}).eq("id",authorId).select("*").single();
         if(error) return json({success:false,error:"Could not unlock publishing access."},500);
         await admin.from("author_studio_package_requests").update({status:"approved",reviewed_by:"Authority Press",reviewed_at:new Date().toISOString()}).eq("author_id",authorId).eq("status","pending");
         return json({success:true,profile:updated});
