@@ -6268,6 +6268,10 @@ bookScreen.innerHTML = `
         data-placeholder="Enter book title"
         class="book-title-editor"
       ></div>
+      <label for="bookAuthorName" class="book-section-title" style="display:block;margin-top:14px;">AUTHOR NAME</label>
+      <input id="bookAuthorName" class="book-input" maxlength="160" placeholder="Name of the person who wrote this book" style="width:100%;box-sizing:border-box;">
+      <label for="bookInsight" class="book-section-title" style="display:block;margin-top:14px;">BOOK INSIGHT / INTRODUCTION</label>
+      <textarea id="bookInsight" class="book-input" maxlength="12000" rows="5" placeholder="Write a short introduction explaining what readers will discover in this book." style="width:100%;box-sizing:border-box;resize:vertical;"></textarea>
       <select id="bookCategory" class="book-input" style="margin-top:10px;">
         <option value="SERMONS">SERMONS</option>
         <option value="BIBLE">BIBLE</option>
@@ -8122,6 +8126,8 @@ async function publishBookToHeavensServer(book){
     back_cover: book.backCover || null,
     contents: String(book.contents || ""),
     chapters: Array.isArray(book.chapters) ? book.chapters : [],
+    author_name: String(book.authorName || ""),
+    book_insight: String(book.bookInsight || ""),
     author_id: session.user.id,
     active: true
   };
@@ -8151,7 +8157,7 @@ async function loadHeavensServerBooks(){
     const session = await ensureHeavensAnonymousSession();
     const {data,error} = await heavensSupabase
       .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,created_at")
+      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,narration_path,narration_published_at,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
     if(error) throw error;
@@ -8174,6 +8180,10 @@ async function loadHeavensServerBooks(){
       isPurchased: purchasedIds.has(String(b.id)),
       paymentRequired: b.payment_required !== false,
       title: b.title,
+      authorName: b.author_name || "",
+      bookInsight: b.book_insight || "",
+      narrationPath: b.narration_path || "",
+      narrationPublishedAt: b.narration_published_at || "",
       category: b.category || "SERMONS",
       price: Number(b.price || 0),
       currency: b.currency || "TZS",
