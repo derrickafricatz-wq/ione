@@ -67,7 +67,7 @@ Deno.serve(async(req:Request)=>{
       const reserved=(payouts||[]).filter((x:any)=>["initiated","pending","processing"].includes(x.status)).reduce((n:any,x:any)=>n+Number(x.amount_tzs||0),0);
       return json({success:true,registered:true,profile,books:books||[],ledger:{confirmed_sales:(sales||[]).length,gross_tzs:money(gross),fees_tzs:money(fees),author_earnings_tzs:money(earned),paid_out_tzs:money(paid),pending_payout_tzs:money(reserved),available_tzs:money(earned-paid-reserved)},payouts:payouts||[]});
     }
-    if(["admin_list","admin_unlock","payout_quote","payout_send","payout_status"].includes(action)){
+    if(["admin_list","admin_ledger","admin_unlock","payout_quote","payout_send","payout_status"].includes(action)){
       if(!(await isAuthority())) return json({success:false,error:"Unauthorized Authority Press access."},401);
     }
     if(action==="admin_list"||action==="admin_ledger"){
