@@ -1,5 +1,5 @@
 {
-  "version": "1.0.113",
-  "message": "Render feature screens before loading content",
+  "version": "1.0.114",
+  "message": "Save opened books for offline reading",
   "force": true
 }
