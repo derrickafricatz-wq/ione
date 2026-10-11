@@ -36,6 +36,122 @@
     }
   }
 
+
+  window.openMyPublishedBooksPanel = function openMyPublishedBooksPanel() {
+    const old = document.getElementById("ioneMyPublishedBooks");
+    if (old) old.remove();
+    const panel = document.createElement("div");
+    panel.id = "ioneMyPublishedBooks";
+    panel.style.cssText = "position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;";
+    panel.innerHTML = "<section style=\"width:min(760px,100%);max-height:92dvh;overflow:auto;background:#071711;border:1px solid #2a604b;border-radius:18px;padding:16px;box-sizing:border-box;color:#eafff4;font-family:Arial,sans-serif;\"><div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;\"><div><div style=\"font-size:20px;font-weight:900;\">MY PUBLISHED BOOKS</div><div style=\"font-size:12px;color:#9dbdaf;margin-top:5px;\">Manage your books, prices and free/paid access.</div></div><button id=\"ioneBooksManagerClose\" type=\"button\" style=\"border:0;background:#173529;color:#fff;border-radius:10px;width:38px;height:38px;font-size:22px;\">×</button></div><div id=\"ioneBooksManagerStatus\" role=\"status\" style=\"font-size:13px;line-height:1.5;margin:12px 0;color:#bfe8d7;\">Loading your published books…</div><div id=\"ioneBooksManagerList\" style=\"display:grid;gap:10px;\"></div></section>";
+    document.body.appendChild(panel);
+    const status = panel.querySelector("#ioneBooksManagerStatus");
+    const list = panel.querySelector("#ioneBooksManagerList");
+    const close = () => panel.remove();
+    panel.querySelector("#ioneBooksManagerClose").onclick = close;
+    panel.addEventListener("click", event => { if (event.target === panel) close(); });
+
+    const removeExploreCard = id => {
+      const store = document.getElementById("heavensBookstore");
+      if (store) store.querySelectorAll(".hb-card").forEach(card => {
+        const key = String(card.dataset.bookId || "");
+        if (key === String(id) || key === "HB-SERVER-" + String(id)) card.remove();
+      });
+      try {
+        const local = JSON.parse(localStorage.getItem("savedBooks") || "[]");
+        localStorage.setItem("savedBooks", JSON.stringify(local.filter(book => String(book.supabaseId || book.id) !== String(id))));
+      } catch (_) {}
+    };
+
+    const createBookCard = book => {
+      const card = document.createElement("article");
+      card.style.cssText = "display:grid;grid-template-columns:76px minmax(0,1fr);gap:12px;padding:12px;border:1px solid #244b3b;border-radius:13px;background:#0b2118;min-width:0;";
+      const cover = document.createElement("div");
+      cover.style.cssText = "width:76px;height:100px;border-radius:7px;overflow:hidden;background:#102c22;display:flex;align-items:center;justify-content:center;color:#bfe8d7;text-align:center;font-size:11px;overflow-wrap:anywhere;";
+      if (book.front_cover) {
+        const img = document.createElement("img"); img.src = book.front_cover; img.alt = "Book cover";
+        img.style.cssText = "width:100%;height:100%;object-fit:cover;"; cover.appendChild(img);
+      } else cover.textContent = String(book.title || "BOOK");
+      const details = document.createElement("div"); details.style.cssText = "min-width:0;display:grid;gap:8px;align-content:start;";
+      const title = document.createElement("div"); title.textContent = String(book.title || "Untitled book");
+      title.style.cssText = "font-size:15px;font-weight:900;overflow-wrap:anywhere;";
+      const kind = document.createElement("div"); kind.textContent = (book.pdf_path ? "PDF book" : "Created in I|ONE") + " • " + (book.active ? "Published" : "Revoked");
+      kind.style.cssText = "font-size:11px;color:#9dbdaf;";
+      const controls = document.createElement("div"); controls.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;align-items:center;";
+      const price = document.createElement("input"); price.type = "number"; price.min = "0"; price.step = "1"; price.inputMode = "numeric"; price.value = String(Number(book.price || 0));
+      price.setAttribute("aria-label", "Price in TZS"); price.style.cssText = "width:125px;max-width:42%;padding:10px;border-radius:9px;border:1px solid #31594c;background:#07140f;color:#fff;box-sizing:border-box;";
+      const priceLabel = document.createElement("span"); priceLabel.textContent = "TZS"; priceLabel.style.cssText = "font-size:11px;color:#9dbdaf;margin-left:-3px;";
+      const paidLabel = document.createElement("label"); paidLabel.style.cssText = "display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;";
+      const paidToggle = document.createElement("input"); paidToggle.type = "checkbox"; paidToggle.checked = book.payment_required !== false; paidToggle.style.cssText = "width:18px;height:18px;accent-color:#00c995;";
+      const paidText = document.createElement("span"); paidText.textContent = paidToggle.checked ? "PAYMENT ON" : "FREE TO READ";
+      paidToggle.onchange = () => { paidText.textContent = paidToggle.checked ? "PAYMENT ON" : "FREE TO READ"; };
+      paidLabel.append(paidToggle, paidText); controls.append(price, priceLabel, paidLabel);
+      const actions = document.createElement("div"); actions.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+      const save = document.createElement("button"); save.type = "button"; save.textContent = "SAVE PRICE & ACCESS";
+      save.style.cssText = "padding:10px 12px;border:0;border-radius:9px;background:#00c995;color:#05251b;font-weight:900;font-size:11px;";
+      const revoke = document.createElement("button"); revoke.type = "button"; revoke.textContent = "REVOKE & DELETE";
+      revoke.style.cssText = "padding:10px 12px;border:1px solid #a84444;border-radius:9px;background:#321515;color:#ffe4e4;font-weight:900;font-size:11px;";
+      save.onclick = async () => {
+        const nextPrice = Number(price.value);
+        if (!Number.isInteger(nextPrice) || nextPrice < 0) { status.textContent = "Enter a whole-number price of 0 TZS or more."; price.focus(); return; }
+        if (paidToggle.checked && nextPrice <= 0) { status.textContent = "Set a price above 0 TZS before turning payment on."; price.focus(); return; }
+        save.disabled = true; save.textContent = "SAVING…";
+        try {
+          const result = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "update", book_id: String(book.id), price: nextPrice, payment_required: paidToggle.checked } });
+          if (result.error || !result.data || !result.data.success) throw new Error((result.data && result.data.error) || "Could not save the book settings.");
+          book.price = nextPrice; book.payment_required = paidToggle.checked;
+          status.textContent = "Saved. Existing purchases remain saved.";
+          const liveStore = document.getElementById("heavensBookstore");
+          if (liveStore) {
+            liveStore.querySelectorAll(".hb-card").forEach(liveCard => {
+              if (String(liveCard.dataset.bookId || "") !== "HB-SERVER-" + String(book.id)) return;
+              const priceNode = liveCard.querySelector(".hb-price");
+              if (priceNode) priceNode.textContent = nextPrice > 0 ? "TZS " + nextPrice.toLocaleString() : "FREE";
+              const lock = liveCard.querySelector(".hb-lock");
+              if (lock && !paidToggle.checked) lock.textContent = "Free to read";
+              const button = liveCard.querySelector(".hb-btn:not(.hb-check-payment)");
+              if (button && !paidToggle.checked) { button.textContent = "READ"; button.classList.remove("pay"); button.classList.add("read"); }
+            });
+          }
+          save.textContent = "SAVED";
+        } catch (error) {
+          status.textContent = error && error.message ? error.message : "Could not save this book.";
+          save.textContent = "SAVE PRICE & ACCESS";
+        } finally { save.disabled = false; }
+      };
+      revoke.onclick = async () => {
+        if (!confirm("Permanently delete " + String(book.title || "this book") + " from Explore and Supabase? Payment and access records will also be deleted. This cannot be undone.")) return;
+        revoke.disabled = true; revoke.textContent = "DELETING…";
+        try {
+          const result = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "delete", book_id: String(book.id) } });
+          if (result.error || !result.data || !result.data.success) throw new Error((result.data && result.data.error) || "Could not delete this book.");
+          removeExploreCard(book.id); card.remove();
+          status.textContent = result.data.warning || "Book permanently deleted from the public library and database.";
+          if (!list.children.length) { const empty = document.createElement("div"); empty.textContent = "You have no published books in this author account."; empty.style.color = "#9dbdaf"; list.appendChild(empty); }
+        } catch (error) {
+          status.textContent = error && error.message ? error.message : "Could not delete this book.";
+          revoke.disabled = false; revoke.textContent = "REVOKE & DELETE";
+        }
+      };
+      actions.append(save, revoke); details.append(title, kind, controls, actions); card.append(cover, details);
+      return card;
+    };
+
+    (async () => {
+      try {
+        const result = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "my_books" } });
+        if (result.error || !result.data || !result.data.success) throw new Error((result.data && result.data.error) || "Could not load your published books.");
+        const books = Array.isArray(result.data.books) ? result.data.books : [];
+        list.replaceChildren();
+        if (!books.length) { status.textContent = "No books are published under this author account yet."; return; }
+        status.textContent = books.length + " published book" + (books.length === 1 ? "" : "s") + ". Change prices, switch between paid and free, or revoke a book.";
+        books.forEach(book => list.appendChild(createBookCard(book)));
+      } catch (error) {
+        status.textContent = error && error.message ? error.message : "Could not load your published books. Reopen the panel and try again.";
+      }
+    })();
+  };
+
   window.openBookToPdfPanel = function openBookToPdfPanel() {
     const old = document.getElementById("bookToPdfPanel");
     if (old) { old.remove(); return; }
@@ -45,12 +161,12 @@
     panel.style.cssText = "position:fixed;inset:0;z-index:1000001;background:rgba(0,0,0,.76);display:flex;align-items:center;justify-content:center;padding:16px;";
     panel.innerHTML = `
       <section style="width:min(100%,440px);max-height:90dvh;overflow:auto;background:#0b1714;color:#f2fff9;border:1px solid #285447;border-radius:18px;padding:20px;box-shadow:0 20px 70px #0009;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;"><div style="font-size:20px;font-weight:800;">Book to PDF</div><button type="button" id="b2pClose" aria-label="Close" style="border:0;background:#19342c;color:#fff;border-radius:10px;width:36px;height:36px;font-size:22px;">×</button></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;"><div style="font-size:20px;font-weight:800;">Book to PDF</div><button type="button" onclick="openMyPublishedBooksPanel()" style="border:1px solid #31594c;background:#173529;color:#eafff8;border-radius:9px;padding:8px;font-size:11px;font-weight:800;">MY BOOKS</button><button type="button" id="b2pClose" aria-label="Close" style="border:0;background:#19342c;color:#fff;border-radius:10px;width:36px;height:36px;font-size:22px;">×</button></div>
         <p style="margin:0 0 16px;color:#a9c9bd;font-size:13px;line-height:1.5;">Publish a finished PDF in the existing Explore bookstore. The PDF is stored privately.</p>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">BOOK TITLE</label><input id="b2pTitle" maxlength="160" placeholder="Enter book title" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">CATEGORY</label><select id="b2pCategory" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;"><option>SERMONS</option><option>BIBLE</option><option>PRAYER</option><option>TEACHING</option><option>WORSHIP</option><option>PROPHECY</option><option>SPIRITUAL GROWTH</option></select>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PRICE (TZS)</label><input id="b2pPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 2500" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
-        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><div style="margin-top:15px;padding:12px;border:1px solid #31594c;border-radius:12px;background:#0e211b;"><label style="display:block;font-size:12px;color:#b9d7cc;margin:0 0 7px;">UPDATE COVER FOR AN EXISTING PDF BOOK</label><select id="b2pExistingBook" style="width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #31594c;background:#10231d;color:#fff;"><option value="">Loading your published PDF books…</option></select><button id="b2pUpdateCover" type="button" style="width:100%;margin-top:9px;padding:11px;border:1px solid #2a6b54;border-radius:9px;background:#163c2f;color:#dffff2;font-weight:800;">UPDATE COVER ONLY</button><div style="font-size:11px;color:#9dbdaf;line-height:1.45;margin-top:7px;">Choose a book you already published and upload its new front cover above. Its PDF, title, price, and payment records will stay unchanged.</div></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
+        <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE (OPTIONAL)</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><div style="margin-top:15px;padding:12px;border:1px solid #31594c;border-radius:12px;background:#0e211b;"><label style="display:block;font-size:12px;color:#b9d7cc;margin:0 0 7px;">UPDATE COVER FOR AN EXISTING PDF BOOK</label><select id="b2pExistingBook" style="width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #31594c;background:#10231d;color:#fff;"><option value="">Loading your published PDF books…</option></select><button id="b2pUpdateCover" type="button" style="width:100%;margin-top:9px;padding:11px;border:1px solid #2a6b54;border-radius:9px;background:#163c2f;color:#dffff2;font-weight:800;">UPDATE COVER ONLY</button><div style="font-size:11px;color:#9dbdaf;line-height:1.45;margin-top:7px;">Choose a book you already published and upload its new front cover above. Its PDF, title, price, and payment records will stay unchanged.</div></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
         <div id="b2pFileInfo" style="font-size:12px;color:#a9c9bd;min-height:18px;margin-top:7px;">Choose a finished PDF from your device.</div><div id="b2pStatus" role="status" style="font-size:13px;color:#bfe8d7;margin-top:12px;line-height:1.5;"></div>
         <button id="b2pPublish" type="button" style="width:100%;margin-top:16px;padding:13px;border:0;border-radius:11px;background:#00c995;color:#04251b;font-weight:800;font-size:15px;">PUBLISH BOOK</button>
       </section>`;
@@ -174,20 +290,19 @@
       const coverFile = coverInput.files && coverInput.files[0];
       if (!title) { status.textContent = "Enter the book title."; panel.querySelector("#b2pTitle").focus(); return; }
       if (!Number.isInteger(price) || price <= 0) { status.textContent = "Enter a whole-number price in TZS."; panel.querySelector("#b2pPrice").focus(); return; }
-      if (!coverFile) { status.textContent = "Upload a front cover image so your book appears properly in Explore."; return; }
-      if (!coverFile.type || !coverFile.type.startsWith("image/")) { status.textContent = "Please choose a valid front cover image."; return; }
-      if (coverFile.size > 15 * 1024 * 1024) { status.textContent = "The cover image must be 15 MB or smaller."; return; }
+      if (coverFile && (!coverFile.type || !coverFile.type.startsWith("image/"))) { status.textContent = "Please choose a valid front cover image."; return; }
+      if (coverFile && coverFile.size > 15 * 1024 * 1024) { status.textContent = "The cover image must be 15 MB or smaller."; return; }
       if (!file) { status.textContent = "Choose a PDF file first."; return; }
       if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) { status.textContent = "Only PDF files are accepted."; return; }
       if (file.size > 50 * 1024 * 1024) { status.textContent = "This PDF is over the 50 MB limit."; return; }
 
-      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = "Preparing the front cover…";
+      publish.disabled = true; publish.style.opacity = ".65"; status.textContent = coverFile ? "Preparing the front cover…" : "Using the first page of your PDF as the book cover…";
       let path = "";
       let frontCover = "";
       let published = false;
       try {
-        frontCover = await compressFrontCover(coverFile);
-        if (!frontCover) throw new Error("Could not process the front cover image. Please choose another image.");
+        frontCover = coverFile ? await compressFrontCover(coverFile) : await coverFromPdfFirstPage(file);
+        if (!frontCover) throw new Error("Could not create the book cover from this PDF. Please upload a separate front-cover image.");
         status.textContent = "Preparing secure upload…";
         const session = await ensureHeavensAnonymousSession();
         if (!session || !session.user || !session.user.id) throw new Error("Please reconnect before publishing.");
@@ -199,8 +314,8 @@
         status.textContent = "File uploaded securely. Publishing bookstore listing…";
         const inserted = await heavensSupabase.from("heavens_books").insert({
           title, category, price, currency: "TZS", front_cover: frontCover, back_cover: null,
-          contents: "", chapters: [], author_id: session.user.id, active: true, pdf_path: path
-        }).select("id,title,category,price,currency,front_cover,pdf_path,created_at").single();
+          contents: "", chapters: [], author_id: session.user.id, active: true, payment_required: true, pdf_path: path
+        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,created_at").single();
         if (inserted.error) throw inserted.error;
         published = true;
 
@@ -209,7 +324,8 @@
           id: "HB-SERVER-" + row.id, supabaseId: row.id, title: row.title,
           category: row.category, price: Number(row.price), currency: row.currency || "TZS",
           contents: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
-          chapters: [], date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
+          chapters: [], paymentRequired: row.payment_required !== false, isAuthor: true,
+          date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
         if (typeof markBookPaid === "function") {
           try { markBookPaid(book); } catch (storageError) { console.warn("Could not cache author preview state:", storageError); }
@@ -228,6 +344,30 @@
       }
     };
   };
+
+
+  async function coverFromPdfFirstPage(file) {
+    const pdfjs = await loadPdfJs();
+    const buffer = await file.arrayBuffer();
+    const doc = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+    try {
+      const page = await doc.getPage(1);
+      const original = page.getViewport({ scale: 1 });
+      const scale = Math.min(1.25, 900 / Math.max(1, original.width));
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.ceil(viewport.width));
+      canvas.height = Math.max(1, Math.ceil(viewport.height));
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) throw new Error("Cover image processing is unavailable.");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      return canvas.toDataURL("image/jpeg", 0.82);
+    } finally {
+      try { await doc.destroy(); } catch (_) {}
+    }
+  }
 
   let pdfJsLoadPromise = null;
   function loadPdfJs() {

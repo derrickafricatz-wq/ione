@@ -1,5 +1,5 @@
 {
-  "version": "1.0.91",
-  "message": "Fix PDF cover publishing and author access",
+  "version": "1.0.92",
+  "message": "Public bookstore author controls and saved access",
   "force": true
 }
