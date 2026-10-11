@@ -53,7 +53,7 @@ assert.match(html, /book_insight_3/);
 assert.match(html, /INSIDE THE BOOK/);
 assert.match(html, /15000/);
 assert.match(html, /fadeStopBookNarration/);
-assert.match(html, /CURATED AUTHOR/);
+assert.match(html, /AUTHOR SPOTLIGHT/);
 assert.match(feature, /id="b2pInsight2"/);
 assert.match(feature, /id="b2pInsight3"/);
 assert.match(feature, /book_insight_2/);
