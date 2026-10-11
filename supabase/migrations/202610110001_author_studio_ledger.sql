@@ -4,7 +4,7 @@ create table if not exists public.author_studio_profiles (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null unique,
   full_name text not null check (length(trim(full_name)) between 2 and 160),
-  phone text not null check (length(regexp_replace(phone, '\\D', '', 'g')) between 9 and 15),
+  phone text not null check (length(regexp_replace(phone, '[^0-9]', '', 'g')) between 9 and 15),
   payout_network text not null default 'AIRTEL_MONEY'
     check (payout_network in ('AIRTEL_MONEY','MPESA','TIGOPESA','HALOPESA','OTHER')),
   package_status text not null default 'pending_payment'
