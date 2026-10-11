@@ -184,3 +184,63 @@ drop trigger if exists author_studio_backfill_sales on public.author_studio_prof
 create trigger author_studio_backfill_sales
 after insert on public.author_studio_profiles
 for each row execute function public.author_studio_backfill_sales_for_profile();
+
+-- Atomically reserve payout balance to prevent two Authority sessions from
+-- spending the same earnings at the same time.
+create or replace function public.author_studio_reserve_payout(
+  p_author_id uuid,
+  p_amount_tzs numeric,
+  p_phone text,
+  p_network text,
+  p_recipient_name text,
+  p_idempotency_key text,
+  p_provider_fee_tzs numeric,
+  p_early_payout_reason text,
+  p_initiated_by text
+) returns jsonb
+language plpgsql security definer set search_path = public
+as $$
+declare
+  v_profile public.author_studio_profiles%rowtype;
+  v_earned numeric(14,2);
+  v_used numeric(14,2);
+  v_payout public.author_studio_payouts%rowtype;
+begin
+  select * into v_profile from public.author_studio_profiles
+    where id = p_author_id for update;
+  if not found then raise exception 'Author not found.'; end if;
+  if p_amount_tzs <= 0 or p_amount_tzs <> trunc(p_amount_tzs) then
+    raise exception 'Payout amount must be a positive whole TZS amount.';
+  end if;
+  if p_network not in ('AIRTEL_MONEY','MPESA','TIGOPESA','HALOPESA') then
+    raise exception 'Unsupported payout network.';
+  end if;
+  select coalesce(sum(author_net_tzs),0) into v_earned
+    from public.author_studio_sales where author_id = p_author_id;
+  select coalesce(sum(amount_tzs),0) into v_used
+    from public.author_studio_payouts
+    where author_id = p_author_id
+      and status in ('initiated','pending','processing','completed');
+  if p_amount_tzs > v_earned - v_used then
+    raise exception 'Payout exceeds the available author balance.';
+  end if;
+  insert into public.author_studio_payouts
+    (author_id,amount_tzs,payout_phone,payout_network,recipient_name,idempotency_key,
+     provider_fee_tzs,status,initiated_by,early_payout_reason)
+  values
+    (p_author_id,p_amount_tzs,p_phone,p_network,p_recipient_name,p_idempotency_key,
+     greatest(0,coalesce(p_provider_fee_tzs,0)),'initiated',p_initiated_by,p_early_payout_reason)
+  on conflict (idempotency_key) do nothing
+  returning * into v_payout;
+  if not found then
+    select * into v_payout from public.author_studio_payouts
+      where idempotency_key = p_idempotency_key;
+    if v_payout.author_id <> p_author_id or v_payout.amount_tzs <> p_amount_tzs then
+      raise exception 'Idempotency key already belongs to a different payout.';
+    end if;
+  end if;
+  return to_jsonb(v_payout);
+end;
+$$;
+revoke all on function public.author_studio_reserve_payout(uuid,numeric,text,text,text,text,numeric,text,text) from public, anon, authenticated;
+grant execute on function public.author_studio_reserve_payout(uuid,numeric,text,text,text,text,numeric,text,text) to service_role;
