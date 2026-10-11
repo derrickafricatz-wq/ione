@@ -1,0 +1,31 @@
+name: Book to PDF safe checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "book-to-pdf.js"
+      - "supabase/functions/book-pdf-access/**"
+      - "supabase/migrations/*book_to_pdf*"
+      - "sw.js"
+      - "version.json"
+      - "tests/book-to-pdf-checks.cjs"
+      - ".github/workflows/book-to-pdf-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run isolated Book to PDF checks
+        run: node tests/book-to-pdf-checks.cjs
