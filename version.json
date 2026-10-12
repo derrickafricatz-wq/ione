@@ -1,5 +1,5 @@
 {
-  "version": "1.0.122",
-  "message": "Fix billboard loading on existing database schema",
+  "version": "1.0.123",
+  "message": "Show Explore books immediately from safe metadata cache",
   "force": true
 }
