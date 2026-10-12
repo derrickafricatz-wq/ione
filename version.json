@@ -1,5 +1,5 @@
 {
-  "version": "1.0.118",
-  "message": "Keep Supabase live requests outside offline interception",
+  "version": "1.0.119",
+  "message": "Keep offline persistence limited to saved books",
   "force": true
 }

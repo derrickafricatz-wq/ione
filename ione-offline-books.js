@@ -1,14 +1,15 @@
-/* I|ONE Offline Books — persistent PDF copies kept outside the rotating app cache. */
+/* I|ONE Offline Books — the only persistent user content is books deliberately opened online. */
 (function () {
   "use strict";
 
   const DB_NAME = "ione-offline-books";
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   const STORE = "books";
-  const DOCS_STORE = "documentaries";
-  const MEDIA_CACHE_NAME = "ione-offline-media-v1";
-  const DOCS_RECORD_ID = "home-documentaries";
   let dbPromise;
+  let statusElement = null;
+  let saveCount = 0;
+  let failedSaveCount = 0;
+  let audioContext = null;
 
   function openDb() {
     if (!("indexedDB" in window)) return Promise.reject(new Error("Offline book storage is not supported by this browser."));
@@ -18,7 +19,8 @@
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: "id" });
-        if (!db.objectStoreNames.contains(DOCS_STORE)) db.createObjectStore(DOCS_STORE, { keyPath: "id" });
+        // Older versions created a documentary store. Keep it for migration compatibility,
+        // but this version never reads, writes, or restores documentary data.
       };
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => reject(request.error || new Error("Could not open offline book storage."));
@@ -31,9 +33,8 @@
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE, mode);
-      const store = tx.objectStore(STORE);
       let request;
-      try { request = operation(store); }
+      try { request = operation(tx.objectStore(STORE)); }
       catch (error) { reject(error); return; }
       let result;
       if (request) {
@@ -65,403 +66,208 @@
       id: key,
       blob,
       title: String((metadata && metadata.title) || "Untitled Book"),
+      frontCover: String((metadata && metadata.frontCover) || ""),
+      pdfCoverPage: !!(metadata && metadata.pdfCoverPage),
       savedAt: Date.now(),
       size: blob.size,
       mimeType: blob.type || "application/pdf"
     };
     await requestStore("readwrite", store => store.put(record));
+    updateDot();
     return { id: record.id, title: record.title, savedAt: record.savedAt, size: record.size };
   }
 
   async function saveFromUrl(id, url, metadata) {
-    const endActivity = beginOfflineActivity("BOOK");
+    beginSave();
     let success = false;
     try {
       const response = await fetch(url, { method: "GET", cache: "no-store", credentials: "omit" });
       if (!response.ok) throw new Error("Book download failed (" + response.status + ").");
-      const blob = await response.blob();
-      const result = await save(id, blob, metadata);
+      const result = await save(id, await response.blob(), metadata);
       success = true;
       return result;
     } finally {
-      endActivity(success);
+      endSave(success);
     }
   }
 
   async function list() {
     const records = await requestStore("readonly", store => store.getAll());
     return (records || []).map(record => ({
-      id: record.id, title: record.title, savedAt: record.savedAt, size: record.size
-    }));
+      id: record.id, title: record.title, savedAt: record.savedAt, size: record.size,
+      frontCover: record.frontCover || "", pdfCoverPage: !!record.pdfCoverPage
+    })).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
   }
 
   async function remove(id) {
     await requestStore("readwrite", store => store.delete(normalizeId(id)));
+    updateDot();
     return true;
   }
-
-
-  /* ================= I|ONE OFFLINE MEDIA + DOWNLOAD ALERT ================= */
-  let activeDownloads = 0;
-  let failedDownloads = 0;
-  let statusElement = null;
-  let beepTimer = 0;
-  let audioContext = null;
-  let hideStatusTimer = 0;
-  let supabaseHooked = false;
-  let billboardTimer = 0;
-  const MAX_MEDIA_BYTES = 52 * 1024 * 1024;
-  const BILLBOARD_STORAGE_KEY = "ioneOfflineMarketBillboards";
 
   function ensureStatusElement() {
     if (statusElement && statusElement.isConnected) return statusElement;
     if (!document.body) return null;
-    if (!document.getElementById("ioneOfflineDownloadAlertStyle")) {
+    if (!document.getElementById("ioneOfflineBookDotStyle")) {
       const style = document.createElement("style");
-      style.id = "ioneOfflineDownloadAlertStyle";
-      style.textContent = "@keyframes ioneOfflineAlertShake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-2px) rotate(-3deg)}40%{transform:translateX(2px) rotate(3deg)}60%{transform:translateX(-2px) rotate(-2deg)}80%{transform:translateX(2px) rotate(2deg)}}@keyframes ioneOfflineAlertPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,30,50,.35);opacity:1}50%{box-shadow:0 0 0 6px rgba(255,30,50,0);opacity:.72}}#ioneOfflineDownloadAlert{position:fixed;top:calc(7px + env(safe-area-inset-top));right:8px;z-index:2147483647;display:flex;align-items:center;gap:7px;max-width:min(78vw,260px);padding:8px 11px;border:1px solid #ff6674;border-radius:999px;background:rgba(55,5,12,.96);color:#fff;font:900 9px/1.2 Arial,sans-serif;letter-spacing:.7px;box-shadow:0 5px 18px rgba(0,0,0,.38);pointer-events:none}#ioneOfflineDownloadAlert .ione-offline-alert-light{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#ff263d;box-shadow:0 0 9px #ff263d;animation:ioneOfflineAlertShake .42s linear infinite,ioneOfflineAlertPulse .8s ease-in-out infinite}#ioneOfflineDownloadAlert .ione-offline-alert-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#ioneOfflineDownloadAlert.is-complete{border-color:#50e6a0;background:rgba(4,43,28,.96)}#ioneOfflineDownloadAlert.is-complete .ione-offline-alert-light{background:#50e6a0;box-shadow:0 0 9px #50e6a0;animation:none}";
+      style.id = "ioneOfflineBookDotStyle";
+      style.textContent = `
+        #ioneOfflineBookDot{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px;width:26px;height:30px;min-width:26px;margin:0;padding:0;border:0;background:transparent;cursor:pointer;z-index:30}
+        #ioneOfflineBookDot .ione-offline-dot{display:block;width:10px;height:10px;border-radius:50%;background:#89939a;box-shadow:0 0 0 2px rgba(137,147,154,.13);transition:background .18s ease,box-shadow .18s ease}
+        #ioneOfflineBookDot.is-saving .ione-offline-dot{background:#ff3048;box-shadow:0 0 0 3px rgba(255,48,72,.16)}
+        #ioneOfflineBookDot.is-ready .ione-offline-dot{background:#35df8c;box-shadow:0 0 0 3px rgba(53,223,140,.14)}
+        #ioneOfflineBooksPanel{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;background:rgba(0,0,0,.78);font-family:Arial,sans-serif;color:#f2fff8}
+        #ioneOfflineBooksPanel .ione-offline-books-card{width:min(520px,100%);max-height:84dvh;overflow:auto;box-sizing:border-box;padding:16px;border:1px solid #285747;border-radius:16px;background:#071711;box-shadow:0 18px 60px #0009}
+        #ioneOfflineBooksPanel .ione-offline-book-row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;box-sizing:border-box;padding:9px;margin-top:8px;border:1px solid #244b3b;border-radius:11px;background:#0b2118;color:#effff7;text-align:left}
+        #ioneOfflineBooksPanel .ione-offline-book-cover{width:56px;height:72px;object-fit:cover;border-radius:5px;background:#173529}
+        #ioneOfflineBooksPanel .ione-offline-book-title{font-size:13px;font-weight:800;overflow-wrap:anywhere}
+        #ioneOfflineBooksPanel .ione-offline-book-meta{margin-top:5px;color:#9dbdaf;font-size:10px}
+        #ioneOfflineBooksPanel .ione-offline-book-remove{border:1px solid #526b61;border-radius:7px;background:#132a20;color:#d5f6e5;padding:7px;font-size:10px}
+      `;
       document.head.appendChild(style);
     }
-    statusElement = document.getElementById("ioneOfflineDownloadAlert");
+    statusElement = document.getElementById("ioneOfflineBookDot");
     if (!statusElement) {
-      statusElement = document.createElement("div");
-      statusElement.id = "ioneOfflineDownloadAlert";
-      statusElement.setAttribute("role", "status");
-      statusElement.setAttribute("aria-live", "polite");
-      statusElement.innerHTML = '<span class="ione-offline-alert-light" aria-hidden="true"></span><span class="ione-offline-alert-text">SAVING FOR OFFLINE</span>';
-      document.body.appendChild(statusElement);
+      statusElement = document.createElement("button");
+      statusElement.id = "ioneOfflineBookDot";
+      statusElement.type = "button";
+      statusElement.setAttribute("aria-label", "Open saved offline books");
+      statusElement.title = "Saved books";
+      statusElement.innerHTML = '<span class="ione-offline-dot" aria-hidden="true"></span>';
+      statusElement.addEventListener("click", openSavedBooksPanel);
     }
-    /* Keep the alert in the home controls row beside ACCESS and GUIDE, never floating over them. */
     const homeControls = document.getElementById("ioneTopActions");
-    if (homeControls && statusElement.parentElement !== homeControls) {
-      homeControls.appendChild(statusElement);
-    } else if (!statusElement.isConnected) {
-      document.body.appendChild(statusElement);
-    }
-    Object.assign(statusElement.style, {
-      position: homeControls ? "relative" : "fixed",
-      top: "auto",
-      right: "auto",
-      margin: "0",
-      maxWidth: "min(32vw, 180px)",
-      width: "fit-content",
-      flex: "0 1 auto",
-      alignSelf: "center",
-      zIndex: "20"
-    });
+    if (homeControls && statusElement.parentElement !== homeControls) homeControls.appendChild(statusElement);
+    else if (!statusElement.isConnected) document.body.appendChild(statusElement);
+    updateDot();
     return statusElement;
   }
 
-  function tryResumeAudio() {
+  function playShortBeep() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       if (!audioContext) audioContext = new AudioCtx();
       if (audioContext.state === "suspended") audioContext.resume().catch(() => {});
-      if (activeDownloads && !beepTimer && audioContext.state !== "closed") {
-        beepTimer = window.setInterval(() => {
-          if (!activeDownloads || !audioContext || audioContext.state !== "running") return;
-          try {
-            const oscillator = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            oscillator.type = "sine";
-            oscillator.frequency.value = 880;
-            gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.045, audioContext.currentTime + 0.015);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.11);
-            oscillator.connect(gain);
-            gain.connect(audioContext.destination);
-            oscillator.start();
-            oscillator.stop(audioContext.currentTime + 0.12);
-            oscillator.onended = () => { try { oscillator.disconnect(); gain.disconnect(); } catch (_) {} };
-          } catch (_) {}
-        }, 1250);
-      }
+      if (audioContext.state !== "running") return;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.035, audioContext.currentTime + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.09);
+      oscillator.connect(gain); gain.connect(audioContext.destination);
+      oscillator.start(); oscillator.stop(audioContext.currentTime + 0.1);
+      oscillator.onended = () => { try { oscillator.disconnect(); gain.disconnect(); } catch (_) {} };
     } catch (_) {}
   }
 
-  document.addEventListener("pointerdown", tryResumeAudio, { passive: true });
-  document.addEventListener("keydown", tryResumeAudio);
-  function beginOfflineActivity(label) {
-    activeDownloads += 1;
-    if (hideStatusTimer) { clearTimeout(hideStatusTimer); hideStatusTimer = 0; }
-    const el = ensureStatusElement();
-    if (el) {
-      el.classList.remove("is-complete");
-      el.style.display = "flex";
-      const text = el.querySelector(".ione-offline-alert-text");
-      if (text) text.textContent = "SAVING " + String(label || "MEDIA").toUpperCase() + " • " + activeDownloads;
+  function beginSave() {
+    saveCount += 1;
+    const dot = ensureStatusElement();
+    if (dot) { dot.classList.add("is-saving"); dot.classList.remove("is-ready"); dot.title = "Saving book for offline reading"; }
+    if (saveCount === 1) playShortBeep();
+  }
+
+  function endSave(success) {
+    saveCount = Math.max(0, saveCount - 1);
+    if (!success) failedSaveCount += 1;
+    updateDot();
+    if (saveCount === 0) {
+      const dot = ensureStatusElement();
+      if (dot) dot.title = failedSaveCount ? "Some books could not be saved. Tap to view saved books." : "Saved offline books";
+      failedSaveCount = 0;
     }
-    tryResumeAudio();
-    let ended = false;
-    return function endOfflineActivity(success) {
-      if (ended) return;
-      ended = true;
-      if (success === false) failedDownloads += 1;
-      activeDownloads = Math.max(0, activeDownloads - 1);
-      const current = ensureStatusElement();
-      if (activeDownloads > 0) {
-        const text = current && current.querySelector(".ione-offline-alert-text");
-        if (text) text.textContent = "SAVING FOR OFFLINE • " + activeDownloads;
-        return;
-      }
-      if (beepTimer) { clearInterval(beepTimer); beepTimer = 0; }
-      if (current) {
-        const failed = failedDownloads > 0;
-        failedDownloads = 0;
-        current.classList.toggle("is-complete", !failed);
-        const text = current.querySelector(".ione-offline-alert-text");
-        if (text) text.textContent = failed ? "OFFLINE READY • SOME ITEMS SKIPPED" : "OFFLINE READY • SAVED CONTENT";
-        /* Keep this home-screen status visible after saving finishes. */
-        current.style.display = "flex";
-        if (failed) {
-          hideStatusTimer = window.setTimeout(() => {
-            if (current && !activeDownloads) {
-              const text = current.querySelector(".ione-offline-alert-text");
-              if (text) text.textContent = "OFFLINE READY • CHECK CONNECTION";
-            }
-            hideStatusTimer = 0;
-          }, 3200);
+  }
+
+  async function updateDot() {
+    const dot = statusElement;
+    if (!dot || !dot.isConnected) return;
+    if (saveCount > 0) {
+      dot.classList.add("is-saving"); dot.classList.remove("is-ready");
+      return;
+    }
+    try {
+      const books = await list();
+      if (!dot.isConnected) return;
+      dot.classList.remove("is-saving");
+      dot.classList.toggle("is-ready", books.length > 0);
+      dot.title = books.length ? books.length + " saved book" + (books.length === 1 ? "" : "s") : "No saved books yet";
+    } catch (_) {
+      dot.classList.remove("is-saving", "is-ready");
+    }
+  }
+
+  function closePanel(panel) { if (panel && panel.isConnected) panel.remove(); }
+
+  async function openSavedBooksPanel() {
+    const old = document.getElementById("ioneOfflineBooksPanel");
+    if (old) { old.remove(); return; }
+    const panel = document.createElement("div");
+    panel.id = "ioneOfflineBooksPanel";
+    panel.innerHTML = '<section class="ione-offline-books-card" role="dialog" aria-modal="true" aria-label="Saved offline books"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-size:18px;font-weight:900">SAVED BOOKS</div><div style="margin-top:4px;color:#9dbdaf;font-size:11px">Available even when your internet is off</div></div><button type="button" data-close style="width:34px;height:34px;border:0;border-radius:9px;background:#173529;color:#fff;font-size:21px">×</button></div><div data-status style="padding:14px 0;color:#bfe8d7;font-size:12px">Loading saved books…</div><div data-list></div></section>';
+    document.body.appendChild(panel);
+    panel.querySelector("[data-close]").addEventListener("click", () => closePanel(panel));
+    panel.addEventListener("click", event => { if (event.target === panel) closePanel(panel); });
+    const status = panel.querySelector("[data-status]");
+    const listEl = panel.querySelector("[data-list]");
+    try {
+      const books = await list();
+      status.textContent = books.length ? books.length + " book" + (books.length === 1 ? "" : "s") + " saved on this device." : "No books saved yet. Open a book while online and it will be saved here.";
+      books.forEach(book => {
+        const row = document.createElement("div");
+        row.className = "ione-offline-book-row";
+        const cover = document.createElement("div");
+        if (book.frontCover) {
+          const img = document.createElement("img"); img.className = "ione-offline-book-cover"; img.src = book.frontCover; img.alt = "";
+          cover.appendChild(img);
+        } else {
+          cover.className = "ione-offline-book-cover";
+          cover.style.display = "flex"; cover.style.alignItems = "center"; cover.style.justifyContent = "center";
+          cover.style.padding = "3px"; cover.style.boxSizing = "border-box"; cover.style.fontSize = "8px"; cover.style.textAlign = "center";
+          cover.textContent = book.title || "BOOK";
         }
-      }
-    };
-  }
-
-  function dbStore(storeName, mode, operation) {
-    return openDb().then(db => new Promise((resolve, reject) => {
-      const tx = db.transaction(storeName, mode);
-      const store = tx.objectStore(storeName);
-      let request;
-      try { request = operation(store); } catch (error) { reject(error); return; }
-      let result;
-      if (request) {
-        request.onsuccess = () => { result = request.result; };
-        request.onerror = () => reject(request.error || new Error("Offline media storage request failed."));
-      }
-      tx.oncomplete = () => resolve(result);
-      tx.onerror = () => reject(tx.error || new Error("Offline media storage transaction failed."));
-      tx.onabort = () => reject(tx.error || new Error("Offline media storage transaction was cancelled."));
-    }));
-  }
-
-  function validMediaUrl(value) {
-    const raw = String(value || "").trim();
-    if (!raw || raw.startsWith("blob:") || raw.startsWith("data:")) return "";
-    try {
-      const url = new URL(raw, location.href);
-      return url.protocol === "https:" || url.origin === location.origin ? url.href : "";
-    } catch (_) { return ""; }
-  }
-
-  async function cacheMediaUrl(value) {
-    const url = validMediaUrl(value);
-    if (!url || !("caches" in window)) return false;
-    try {
-      const cache = await caches.open(MEDIA_CACHE_NAME);
-      if (await cache.match(url)) return true;
-      const endActivity = beginOfflineActivity("MEDIA");
-      let success = false;
-      try {
-        const response = await fetch(url, { method: "GET", cache: "no-store", credentials: "omit", mode: "cors" });
-      if (!response.ok || (response.type !== "basic" && response.type !== "cors" && response.type !== "default")) return false;
-      const length = Number(response.headers.get("content-length") || 0);
-      if (length > MAX_MEDIA_BYTES) return false;
-      const clone = response.clone();
-      if (!length) {
-        const blob = await clone.blob();
-        if (!blob.size || blob.size > MAX_MEDIA_BYTES) return false;
-        await cache.put(url, new Response(blob, { status: 200, headers: response.headers }));
-      } else {
-        await cache.put(url, response.clone());
-      }
-        success = true;
-        return true;
-      } catch (error) {
-        console.warn("I|ONE offline media cache skipped:", url, error);
-        return false;
-      } finally {
-        endActivity(success);
-      }
+        const details = document.createElement("button");
+        details.type = "button"; details.style.cssText = "min-width:0;border:0;background:transparent;color:inherit;text-align:left;padding:0";
+        const title = document.createElement("div"); title.className = "ione-offline-book-title"; title.textContent = book.title || "Untitled book";
+        const meta = document.createElement("div"); meta.className = "ione-offline-book-meta";
+        meta.textContent = "Saved " + (book.savedAt ? new Date(book.savedAt).toLocaleDateString() : "offline") + " · " + (book.size ? (book.size / (1024 * 1024)).toFixed(1) + " MB" : "PDF");
+        details.append(title, meta);
+        details.addEventListener("click", async () => {
+          const saved = await get(book.id);
+          if (!saved || !saved.blob) { status.textContent = "This saved book is unavailable. Open it online to save it again."; return; }
+          closePanel(panel);
+          if (typeof window.openPaidPdfReader !== "function") { alert("The book reader is not ready. Reopen I|ONE and try again."); return; }
+          window.openPaidPdfReader({
+            id: saved.id, supabaseId: saved.id, title: saved.title,
+            frontCover: saved.frontCover || "", pdfCoverPage: !!saved.pdfCoverPage,
+            offlineSaved: true
+          });
+        });
+        const removeButton = document.createElement("button");
+        removeButton.type = "button"; removeButton.className = "ione-offline-book-remove"; removeButton.textContent = "REMOVE";
+        removeButton.addEventListener("click", async () => {
+          removeButton.disabled = true;
+          try { await remove(book.id); row.remove(); status.textContent = "Book removed from this device."; }
+          catch (_) { removeButton.disabled = false; status.textContent = "Could not remove this book."; }
+        });
+        row.append(cover, details, removeButton);
+        listEl.appendChild(row);
+      });
     } catch (error) {
-      console.warn("I|ONE offline media cache skipped:", url, error);
-      return false;
+      status.textContent = error && error.message ? error.message : "Could not load saved books.";
     }
   }
 
-  function collectDocumentaryMedia(doc) {
-    const urls = [];
-    const add = value => { const url = validMediaUrl(value); if (url && !urls.includes(url)) urls.push(url); };
-    add(doc && doc.cover_image_url);
-    (Array.isArray(doc && doc.content) ? doc.content : []).forEach(block => {
-      if (block && ["image", "video", "audio"].includes(String(block.type || "").toLowerCase())) add(block.url);
-    });
-    return urls;
+  function start() {
+    ensureStatusElement();
+    // Deliberately no documentary caching, billboard capture, media downloads,
+    // Supabase interception, polling, or offline restoration of other features.
+    window.addEventListener("online", updateDot);
   }
 
-  async function saveDocumentaryShelf(docs) {
-    const selected = (Array.isArray(docs) ? docs : []).filter(doc => doc && typeof doc === "object").slice(0, 2);
-    if (!selected.length) return;
-    const record = { id: DOCS_RECORD_ID, docs: selected, savedAt: Date.now() };
-    await dbStore(DOCS_STORE, "readwrite", store => store.put(record));
-    const urls = [];
-    selected.forEach(doc => collectDocumentaryMedia(doc).forEach(url => { if (!urls.includes(url)) urls.push(url); }));
-    for (const url of urls) await cacheMediaUrl(url);
-    console.info("I|ONE offline shelf saved:", selected.length, "documentaries;", urls.length, "media assets");
-  }
-
-  async function getSavedDocumentaries() {
-    try {
-      const record = await dbStore(DOCS_STORE, "readonly", store => store.get(DOCS_RECORD_ID));
-      return record && Array.isArray(record.docs) ? record.docs.slice(0, 2) : [];
-    } catch (_) { return []; }
-  }
-
-  function getSupabaseClient() {
-    try { if (typeof heavensSupabase !== "undefined" && heavensSupabase) return heavensSupabase; } catch (_) {}
-    return window.heavensSupabase || null;
-  }
-
-  function installDocumentaryOfflineHook() {
-    const client = getSupabaseClient();
-    const functions = client && client.functions;
-    if (!functions || typeof functions.invoke !== "function" || functions.__ioneOfflineMediaHook) return !!(functions && functions.__ioneOfflineMediaHook);
-    const originalInvoke = functions.invoke.bind(functions);
-    functions.__ioneOfflineMediaHook = true;
-    functions.invoke = async function (name, options) {
-      const isShelf = name === "ione-documentaries" && options && options.body && options.body.action === "list";
-      if (!isShelf) return originalInvoke(name, options);
-      /* Always try the live endpoint first; navigator.onLine can be stale on mobile. */
-      try {
-        const result = await originalInvoke(name, options);
-        const docs = Array.isArray(result && result.data && result.data.documentaries) ? result.data.documentaries : [];
-        if (!result.error && docs.length) saveDocumentaryShelf(docs).catch(error => console.warn("I|ONE offline documentary save failed:", error));
-        if (result.error) {
-          const saved = await getSavedDocumentaries();
-          if (saved.length) return { data: { documentaries: saved }, error: null };
-        }
-        return result;
-      } catch (error) {
-        const saved = await getSavedDocumentaries();
-        if (saved.length) return { data: { documentaries: saved }, error: null };
-        throw error;
-      }
-    };
-    return true;
-  }
-
-  function billboardExcluded(element) {
-    let node = element;
-    while (node && node !== document.body) {
-      const label = String((node.id || "") + " " + (typeof node.className === "string" ? node.className : ""));
-      if (/(authority|press|editor|admin|dashboard|ione-doc-editor)/i.test(label)) return true;
-      node = node.parentElement;
-    }
-    return false;
-  }
-
-  function readSavedBillboards() {
-    try {
-      const value = JSON.parse(localStorage.getItem(BILLBOARD_STORAGE_KEY) || "[]");
-      return Array.isArray(value) ? value.slice(0, 2) : [];
-    } catch (_) { return []; }
-  }
-
-  function saveBillboardMetadata(items) {
-    try { localStorage.setItem(BILLBOARD_STORAGE_KEY, JSON.stringify(items.slice(0, 2))); } catch (_) {}
-  }
-
-  function captureMarketBillboards() {
-    if (navigator.onLine === false || !document.body) return;
-    const selector = '[data-billboard], [id*="billboard" i], [class*="billboard" i], [id*="banner" i], [class*="banner" i], .afl-screen, [class*="signage" i]';
-    const candidates = Array.from(document.querySelectorAll(selector)).filter(el => !billboardExcluded(el) && el.getClientRects().length && (el.querySelector("img,video") || el.matches("img,video")));
-    const stored = readSavedBillboards();
-    const seen = new Set(stored.map(item => item.mediaUrl).filter(Boolean));
-    const next = stored.slice(0, 2);
-    for (const element of candidates) {
-      const media = element.matches("img,video") ? element : element.querySelector("video[src],img[src],video[poster]");
-      if (!media) continue;
-      const mediaUrl = validMediaUrl(media.currentSrc || media.src || media.poster);
-      if (!mediaUrl || seen.has(mediaUrl)) continue;
-      const titleNode = element.querySelector("h1,h2,h3,strong,[class*='title' i]") || element;
-      const descriptionNode = element.querySelector("p,[class*='description' i],[class*='desc' i]");
-      const parent = element.parentElement;
-      const item = {
-        mediaUrl,
-        type: media.tagName.toLowerCase() === "video" ? "video" : "image",
-        title: String(titleNode.textContent || media.alt || "Market billboard").trim().slice(0, 180),
-        description: String(descriptionNode ? descriptionNode.textContent : "").trim().slice(0, 320),
-        parentId: parent && parent.id ? parent.id : "",
-        parentClass: parent && typeof parent.className === "string" ? parent.className.split(/\s+/).slice(0, 3).join(" ") : ""
-      };
-      next.push(item);
-      seen.add(mediaUrl);
-      cacheMediaUrl(mediaUrl).catch(() => {});
-      if (next.length >= 2) break;
-    }
-    if (next.length) saveBillboardMetadata(next.slice(0, 2));
-  }
-
-  function restoreMarketBillboards() {
-    if (navigator.onLine !== false) return;
-    const saved = readSavedBillboards();
-    if (!saved.length) return;
-    saved.forEach(item => {
-      let parent = item.parentId ? document.getElementById(item.parentId) : null;
-      if (!parent && item.parentClass) {
-        const className = item.parentClass.split(/\s+/).filter(Boolean)[0];
-        if (className) {
-          try { parent = document.querySelector("." + CSS.escape(className)); } catch (_) {}
-        }
-      }
-      if (!parent || billboardExcluded(parent) || parent.querySelector(".ione-offline-billboard-card")) return;
-      const card = document.createElement("div");
-      card.className = "ione-offline-billboard-card";
-      card.style.cssText = "display:flex;align-items:center;gap:10px;box-sizing:border-box;margin:6px;padding:8px;border:1px solid rgba(255,70,85,.28);border-radius:12px;background:#10191d;color:#fff";
-      if (item.type === "video") {
-        const video = document.createElement("video");
-        video.src = item.mediaUrl; video.muted = true; video.loop = true; video.playsInline = true; video.preload = "metadata";
-        video.style.cssText = "width:88px;height:66px;object-fit:cover;border-radius:8px;background:#000";
-        card.appendChild(video);
-      } else {
-        const image = document.createElement("img");
-        image.src = item.mediaUrl; image.alt = ""; image.loading = "eager";
-        image.style.cssText = "width:88px;height:66px;object-fit:contain;border-radius:8px;background:#000";
-        card.appendChild(image);
-      }
-      const copy = document.createElement("div");
-      const title = document.createElement("strong"); title.textContent = item.title || "Market billboard";
-      title.style.cssText = "display:block;font:800 12px/1.4 Arial,sans-serif";
-      const desc = document.createElement("span"); desc.textContent = item.description || "Saved for offline viewing";
-      desc.style.cssText = "display:block;margin-top:4px;color:#9bb0b5;font:11px/1.4 Arial,sans-serif";
-      copy.append(title, desc); card.appendChild(copy); parent.appendChild(card);
-    });
-  }
-
-  function startOfflineMediaManager() {
-    installDocumentaryOfflineHook();
-    if (!supabaseHooked) {
-      let attempts = 0;
-      const retry = window.setInterval(() => {
-        attempts += 1;
-        if (installDocumentaryOfflineHook() || attempts >= 40) {
-          window.clearInterval(retry);
-          supabaseHooked = true;
-        }
-      }, 500);
-    }
-    if (navigator.onLine === false) restoreMarketBillboards();
-    else captureMarketBillboards();
-    if (!billboardTimer) billboardTimer = window.setInterval(() => {
-      if (navigator.onLine === false) restoreMarketBillboards();
-      else captureMarketBillboards();
-    }, 2500);
-    window.addEventListener("online", () => { captureMarketBillboards(); installDocumentaryOfflineHook(); });
-    window.addEventListener("offline", restoreMarketBillboards);
-  }
-
-  installDocumentaryOfflineHook();
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startOfflineMediaManager, { once: true });
-  else startOfflineMediaManager();
-
-  window.IoneOfflineBooks = Object.freeze({ get, save, saveFromUrl, list, remove });
+  window.IoneOfflineBooks = Object.freeze({ get, save, saveFromUrl, list, remove, openSavedBooksPanel });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+  else start();
 })();

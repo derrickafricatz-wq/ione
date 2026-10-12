@@ -483,11 +483,13 @@
       bookId = String(book.supabaseId || book.id || "");
       if (!bookId) throw new Error("This book is missing its library ID.");
 
-      if (!navigator.onLine) {
+      if (book.offlineSaved || !navigator.onLine) {
         const savedBook = window.IoneOfflineBooks && await window.IoneOfflineBooks.get(bookId);
         if (!savedBook || !savedBook.blob) {
           throw new Error("This book is not saved for offline reading yet. Connect to the internet and open it once to save it.");
         }
+        if (savedBook.frontCover) book.frontCover = savedBook.frontCover;
+        if (savedBook.pdfCoverPage) book.pdfCoverPage = true;
         pdfSource = { blob: savedBook.blob, offline: true };
       } else {
         const session = await ensureHeavensAnonymousSession();
@@ -501,7 +503,7 @@
         }
         pdfSource = { url: result.data.url, offline: false };
         if (window.IoneOfflineBooks && typeof window.IoneOfflineBooks.saveFromUrl === "function") {
-          window.IoneOfflineBooks.saveFromUrl(bookId, result.data.url, { title: book.title })
+          window.IoneOfflineBooks.saveFromUrl(bookId, result.data.url, { title: book.title, frontCover: book.frontCover || "", pdfCoverPage: book.pdfCoverPage === true })
             .then(saved => console.info("I|ONE book saved for offline reading:", saved.title))
             .catch(error => console.warn("I|ONE could not save this book offline yet; it can retry the next time it is opened online.", error));
         }
