@@ -41,7 +41,7 @@ assert.match(offline, /home-documentaries/);
 assert.match(offline, /BILLBOARD_STORAGE_KEY/);
 assert.match(offline, /SAVING FOR OFFLINE/);
 assert.match(offline, /OFFLINE READY • SAVED CONTENT/);
-assert.match(offline, /label.includes\("trending"\)/);
+assert.match(offline, /homeControls\.appendChild\(statusElement\)/);
 assert.match(sw, /Do not wrap Supabase API\/REST\/function GET requests/);
 console.log("PASS: offline shell, media cache/range fallback, auto-saved documentaries and market billboards, download alert");
 console.log("PASS: offline shell, Supabase CDN fallback, query-string asset fallback, and saved homepage communications");
