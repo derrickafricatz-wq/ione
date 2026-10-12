@@ -134,13 +134,13 @@
     /* Keep the status visible and place it after Access Trending when that control exists. */
     const accessTrending = Array.from(document.querySelectorAll("button,a,[role=button]")).find(node => {
       const label = String(node.innerText || node.getAttribute("aria-label") || node.title || "").toLowerCase().replace(/\s+/g, " ");
-      return label.includes("access") && label.includes("trending") && node !== statusElement;
+      return label.includes("trending") && node !== statusElement && node.getClientRects().length > 0 && !billboardExcluded(node);
     });
     if (accessTrending && statusElement.previousElementSibling !== accessTrending) {
       accessTrending.insertAdjacentElement("afterend", statusElement);
       Object.assign(statusElement.style, { position:"relative", top:"auto", right:"auto", margin:"5px 8px", maxWidth:"min(88vw,260px)", width:"fit-content" });
-    } else if (!accessTrending && statusElement.parentElement !== document.body) {
-      document.body.appendChild(statusElement);
+    } else if (!accessTrending) {
+      if (statusElement.parentElement !== document.body) document.body.appendChild(statusElement);
       Object.assign(statusElement.style, { position:"fixed", top:"calc(7px + env(safe-area-inset-top))", right:"8px", margin:"0" });
     }
     return statusElement;
