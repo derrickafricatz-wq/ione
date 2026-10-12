@@ -3843,7 +3843,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=127", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=128", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -5318,7 +5318,7 @@ async function aflPublish(){
 async function aflLoadFeed(){
   try{
     const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id||null;
-    const {data:billboards,error}=await heavensSupabase.from("afrilink_billboards").select("id,owner_id,brand_name,content,address,business_type,category,brand_color,content_color,address_color,end_at,end_date,created_at,video_url,billboard_video_url,video_overlay_words").order("created_at",{ascending:false});
+    const {data:billboards,error}=await heavensSupabase.from("afrilink_billboards").select("*").order("created_at",{ascending:false});
     if(error)throw error;
     const visible=(billboards||[]).filter(b=>aflEndAtActive(b.end_at || (b.end_date?`${b.end_date}T23:59:59`:"")));
     const expiredMine=(billboards||[]).find(b=>uid&&String(b.owner_id)===String(uid)&&!aflEndAtActive(b.end_at || (b.end_date?`${b.end_date}T23:59:59`:"")));
