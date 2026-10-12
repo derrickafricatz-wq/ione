@@ -5318,7 +5318,7 @@ async function aflPublish(){
 async function aflLoadFeed(){
   try{
     const session=await ensureHeavensAnonymousSession();const uid=session?.user?.id||null;
-    const {data:billboards,error}=await heavensSupabase.from("afrilink_billboards").select("*").order("created_at",{ascending:false});
+    const {data:billboards,error}=await heavensSupabase.from("afrilink_billboards").select("id,owner_id,brand_name,content,address,business_type,category,brand_color,content_color,address_color,end_at,end_date,created_at,video_url,billboard_video_url,video_overlay_words").order("created_at",{ascending:false});
     if(error)throw error;
     const visible=(billboards||[]).filter(b=>aflEndAtActive(b.end_at || (b.end_date?`${b.end_date}T23:59:59`:"")));
     const expiredMine=(billboards||[]).find(b=>uid&&String(b.owner_id)===String(uid)&&!aflEndAtActive(b.end_at || (b.end_date?`${b.end_date}T23:59:59`:"")));
@@ -5331,7 +5331,7 @@ async function aflLoadFeed(){
     // Read every active image in pages so large billboards are never silently truncated.
     let items=[];
     for(let from=0;;from+=500){
-      const {data:chunk,error:itemError}=await heavensSupabase.from("afrilink_billboard_items").select("*").in("billboard_id",ids).eq("active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true}).order("id",{ascending:true}).range(from,from+499);
+      const {data:chunk,error:itemError}=await heavensSupabase.from("afrilink_billboard_items").select("id,billboard_id,active,sort_order,created_at,image_url,title,overlay_text,overlay_color,display_ms").in("billboard_id",ids).eq("active",true).order("sort_order",{ascending:true}).order("created_at",{ascending:true}).order("id",{ascending:true}).range(from,from+499);
       if(itemError)throw itemError;
       items.push(...(chunk||[]));
       if(!chunk || chunk.length<500)break;
@@ -8758,22 +8758,26 @@ async function publishBookToHeavensServer(book){
 async function loadHeavensServerBooks(){
   try{
     const session = await ensureHeavensAnonymousSession();
-    const {data,error} = await heavensSupabase
+    // Start the independent access lookup before waiting for the books query.
+    // Previously these two network requests ran one after another.
+    const accessPromise = heavensSupabase.functions
+      .invoke("book-library-manage", { body: { action: "my_access" } })
+      .catch(accessError => {
+        console.warn("Saved book access lookup failed:", accessError);
+        return { error: accessError, data: null };
+      });
+    const booksPromise = heavensSupabase
       .from("heavens_books")
       .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,book_insight_2,book_insight_3,narration_path,narration_published_at,created_at")
       .eq("active",true)
       .order("created_at",{ascending:false});
+    const [{data,error},accessResult] = await Promise.all([booksPromise,accessPromise]);
     if(error) throw error;
     let purchasedIds = new Set();
-    try {
-      const accessResult = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "my_access" } });
-      if (!accessResult.error && accessResult.data?.success && Array.isArray(accessResult.data.book_ids)) {
-        purchasedIds = new Set(accessResult.data.book_ids.map(String));
-      } else if (accessResult.error) {
-        console.warn("Saved book access could not be refreshed:", accessResult.error);
-      }
-    } catch (accessError) {
-      console.warn("Saved book access lookup failed:", accessError);
+    if (!accessResult?.error && accessResult?.data?.success && Array.isArray(accessResult.data.book_ids)) {
+      purchasedIds = new Set(accessResult.data.book_ids.map(String));
+    } else if (accessResult?.error) {
+      console.warn("Saved book access could not be refreshed:", accessResult.error);
     }
     return (data || []).map(b => ({
       id: "HB-SERVER-" + b.id,
@@ -9029,32 +9033,49 @@ async function openHeavensBookstore(){
 }
 
 
+let ioneHomeDocumentaryCache = null;
+let ioneHomeDocumentaryFetch = null;
+
 function loadIoneHomeDocumentaries(list){
   if(!list)return;
-  list.replaceChildren();
-  const loading=document.createElement("div");loading.className="ione-home-doc-empty";loading.textContent="Loading documentaries…";list.appendChild(loading);
-  Promise.resolve().then(async()=>{
-    try{
-      const result=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"list"}});
+  const renderDocs=(docs)=>{
+    if(!list.isConnected)return;
+    list.replaceChildren();
+    if(!docs.length){const empty=document.createElement("div");empty.className="ione-home-doc-empty";empty.textContent="No published documentaries yet. New stories will appear here when they are published.";list.appendChild(empty);return;}
+    docs.forEach((d,index)=>{
+      const blocks=Array.isArray(d.content)?d.content:[];
+      const first=blocks.find(x=>x&&x.type==="image"&&x.url);
+      const cover=String(first?.url||d.cover_image_url||"").trim();if(!cover)return;
+      const card=document.createElement("button");card.type="button";card.className="ione-home-doc-card";card.setAttribute("aria-label","Read documentary: "+String(d.title||"Documentary"));
+      const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading=index===0?"eager":"lazy";img.decoding="async";if(index===0)img.fetchPriority="high";
+      const copy=document.createElement("span");copy.className="ione-home-doc-copy";
+      const kicker=document.createElement("span");kicker.className="ione-home-doc-kicker";kicker.textContent="DOCUMENTARY";
+      const title=document.createElement("strong");title.className="ione-home-doc-title";title.textContent=String(d.title||"Untitled documentary");copy.append(kicker,title);
+      const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("span");p.className="ione-home-doc-desc";p.textContent=desc;copy.appendChild(p);}
+      img.onerror=()=>{card.remove();if(!list.querySelector(".ione-home-doc-card")){list.replaceChildren();const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="Documentary covers could not be loaded. Please try again.";list.appendChild(e);}};
+      card.append(img,copy);card.addEventListener("click",()=>openIonePublicDocumentary(d));list.appendChild(card);
+    });
+    if(!list.children.length){const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="No documentary covers are available yet.";list.appendChild(e);}
+  };
+
+  // Reopening the library paints the last successful list immediately while
+  // a background refresh keeps published stories current.
+  if(Array.isArray(ioneHomeDocumentaryCache))renderDocs(ioneHomeDocumentaryCache);
+  else{list.replaceChildren();const loading=document.createElement("div");loading.className="ione-home-doc-empty";loading.textContent="Loading documentaries…";list.appendChild(loading);}
+
+  if(ioneHomeDocumentaryFetch)return ioneHomeDocumentaryFetch.then(docs=>{if(list.isConnected)renderDocs(docs);}).catch(()=>{});
+  ioneHomeDocumentaryFetch=heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"list"}})
+    .then(result=>{
       if(result.error)throw result.error;
       const docs=Array.isArray(result.data?.documentaries)?result.data.documentaries:[];
-      list.replaceChildren();
-      if(!docs.length){const empty=document.createElement("div");empty.className="ione-home-doc-empty";empty.textContent="No published documentaries yet. New stories will appear here when they are published.";list.appendChild(empty);return;}
-      docs.forEach(d=>{
-        const blocks=Array.isArray(d.content)?d.content:[];
-        const first=blocks.find(x=>x&&x.type==="image"&&x.url);
-        const cover=String(first?.url||d.cover_image_url||"").trim();if(!cover)return;
-        const card=document.createElement("button");card.type="button";card.className="ione-home-doc-card";card.setAttribute("aria-label","Read documentary: "+String(d.title||"Documentary"));
-        const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading="lazy";
-        const copy=document.createElement("span");copy.className="ione-home-doc-copy";
-        const kicker=document.createElement("span");kicker.className="ione-home-doc-kicker";kicker.textContent="DOCUMENTARY";
-        const title=document.createElement("strong");title.className="ione-home-doc-title";title.textContent=String(d.title||"Untitled documentary");copy.append(kicker,title);
-        const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("span");p.className="ione-home-doc-desc";p.textContent=desc;copy.appendChild(p);}
-        img.onerror=()=>{card.remove();if(!list.querySelector(".ione-home-doc-card")){list.replaceChildren();const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="Documentary covers could not be loaded. Please try again.";list.appendChild(e);}};
-        card.append(img,copy);card.addEventListener("click",()=>openIonePublicDocumentary(d));list.appendChild(card);
-      });
-      if(!list.children.length){const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="No documentary covers are available yet.";list.appendChild(e);}
-    }catch(error){list.replaceChildren();const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="Documentaries could not load right now. Check your connection and try again.";list.appendChild(e);console.warn("I|ONE home documentaries could not load:",error);}
+      ioneHomeDocumentaryCache=docs;
+      return docs;
+    })
+    .catch(error=>{console.warn("I|ONE home documentaries could not load:",error);throw error;})
+    .finally(()=>{ioneHomeDocumentaryFetch=null;});
+  return ioneHomeDocumentaryFetch.then(docs=>{if(list.isConnected)renderDocs(docs);}).catch(error=>{
+    if(!list.isConnected||Array.isArray(ioneHomeDocumentaryCache))return;
+    list.replaceChildren();const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="Documentaries could not load right now. Check your connection and try again.";list.appendChild(e);
   });
 }
 
@@ -9170,11 +9191,15 @@ function openIonePublicDocumentary(d){
       video._ioneFadeRaf=requestAnimationFrame(fadeFrame);
     }
     const videoVisibilityObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
-      entries.forEach(entry=>{const video=entry.target;if(!entry.isIntersecting||entry.intersectionRatio<0.25)fadeMuteDocumentaryVideo(video);});
+      entries.forEach(entry=>{
+        const video=entry.target;
+        if(!entry.isIntersecting||entry.intersectionRatio<0.25){fadeMuteDocumentaryVideo(video);video.pause();}
+        else if(video.paused){video.play().catch(()=>{});}
+      });
     },{root:scroll,threshold:[0,0.25,0.6]}):null;
     d.content.forEach((x,i)=>{
       if(x?.type==="audio"||x?.type==="ione_authority_settings")return;
-      if(x?.type==="video"&&x.url){const wrap=document.createElement("figure");wrap.className="ione-doc-reader-block ione-doc-reader-video-wrap";const video=document.createElement("video");video.className="ione-doc-reader-video";video.src=String(x.url);video.muted=true;video.defaultMuted=true;video.autoplay=true;video.loop=true;video.playsInline=true;video.preload="auto";video.setAttribute("muted","");video.setAttribute("autoplay","");video.setAttribute("playsinline","");video.removeAttribute("controls");video.addEventListener("contextmenu",e=>e.preventDefault());video.addEventListener("loadedmetadata",()=>{if(video.videoWidth>0&&video.videoHeight>0){video.style.aspectRatio=video.videoWidth+" / "+video.videoHeight;video.style.height="auto";}});video.addEventListener("click",()=>{if(!documentaryVideoSoundAllowed)return;const rect=video.getBoundingClientRect(),sr=scroll.getBoundingClientRect();if(rect.bottom<=sr.top||rect.top>=sr.bottom)return;documentaryVideos.forEach(other=>{if(other!==video)fadeMuteDocumentaryVideo(other);});if(video._ioneFadeRaf){cancelAnimationFrame(video._ioneFadeRaf);video._ioneFadeRaf=0;}try{video.volume=1;}catch(_){}video.muted=false;video.defaultMuted=false;video.removeAttribute("muted");video.setAttribute("data-audio-active","true");activeDocumentaryVideo=video;video.play().catch(()=>{video.muted=true;video.defaultMuted=true;activeDocumentaryVideo=null;});});documentaryVideos.push(video);if(videoVisibilityObserver)videoVisibilityObserver.observe(video);wrap.appendChild(video);scroll.appendChild(wrap);video.play().catch(()=>{});}
+      if(x?.type==="video"&&x.url){const wrap=document.createElement("figure");wrap.className="ione-doc-reader-block ione-doc-reader-video-wrap";const video=document.createElement("video");video.className="ione-doc-reader-video";video.src=String(x.url);video.muted=true;video.defaultMuted=true;video.loop=true;video.playsInline=true;video.preload="metadata";video.setAttribute("muted","");video.setAttribute("playsinline","");video.removeAttribute("autoplay");video.removeAttribute("controls");video.addEventListener("contextmenu",e=>e.preventDefault());video.addEventListener("loadedmetadata",()=>{if(video.videoWidth>0&&video.videoHeight>0){video.style.aspectRatio=video.videoWidth+" / "+video.videoHeight;video.style.height="auto";}});video.addEventListener("click",()=>{if(!documentaryVideoSoundAllowed)return;const rect=video.getBoundingClientRect(),sr=scroll.getBoundingClientRect();if(rect.bottom<=sr.top||rect.top>=sr.bottom)return;documentaryVideos.forEach(other=>{if(other!==video)fadeMuteDocumentaryVideo(other);});if(video._ioneFadeRaf){cancelAnimationFrame(video._ioneFadeRaf);video._ioneFadeRaf=0;}try{video.volume=1;}catch(_){}video.muted=false;video.defaultMuted=false;video.removeAttribute("muted");video.setAttribute("data-audio-active","true");activeDocumentaryVideo=video;video.play().catch(()=>{video.muted=true;video.defaultMuted=true;activeDocumentaryVideo=null;});});documentaryVideos.push(video);wrap.appendChild(video);scroll.appendChild(wrap);if(videoVisibilityObserver)videoVisibilityObserver.observe(video);else video.play().catch(()=>{});}
       else if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";markPrintable(fig,i);const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";markPrintable(section,i);const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
