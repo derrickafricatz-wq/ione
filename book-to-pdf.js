@@ -44,10 +44,12 @@
     const panel = document.createElement("div");
     panel.id = "ioneMyPublishedBooks";
     panel.style.cssText = "position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;";
-    panel.innerHTML = "<section style=\"width:min(760px,100%);max-height:92dvh;overflow:auto;background:#071711;border:1px solid #2a604b;border-radius:18px;padding:16px;box-sizing:border-box;color:#eafff4;font-family:Arial,sans-serif;\"><div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;\"><div><div style=\"font-size:20px;font-weight:900;\">MY PUBLISHED BOOKS</div><div style=\"font-size:12px;color:#9dbdaf;margin-top:5px;\">Manage your books, prices and free/paid access.</div></div><button id=\"ioneBooksManagerClose\" type=\"button\" style=\"border:0;background:#173529;color:#fff;border-radius:10px;width:38px;height:38px;font-size:22px;\">×</button></div><div id=\"ioneBooksManagerStatus\" role=\"status\" style=\"font-size:13px;line-height:1.5;margin:12px 0;color:#bfe8d7;\">Loading your published books…</div><div id=\"ioneBooksManagerList\" style=\"display:grid;gap:10px;\"></div></section>";
+    panel.innerHTML = "<section style=\"width:min(760px,100%);max-height:92dvh;overflow:auto;background:#071711;border:1px solid #2a604b;border-radius:18px;padding:16px;box-sizing:border-box;color:#eafff4;font-family:Arial,sans-serif;\"><div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;\"><div><div style=\"font-size:20px;font-weight:900;\">MY PUBLISHED BOOKS</div><div style=\"font-size:12px;color:#9dbdaf;margin-top:5px;\">Manage your books, prices and free/paid access.</div></div><button id=\"ioneBooksManagerClose\" type=\"button\" style=\"border:0;background:#173529;color:#fff;border-radius:10px;width:38px;height:38px;font-size:22px;\">×</button></div><div id=\"ioneBooksManagerStatus\" role=\"status\" style=\"font-size:13px;line-height:1.5;margin:12px 0;color:#bfe8d7;\">Loading your books and confirmed sales…</div><div id=\"ioneBooksManagerSummary\" style=\"display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 14px;\"></div><div id=\"ioneBooksManagerList\" style=\"display:grid;gap:10px;\"></div></section>";
     document.body.appendChild(panel);
     const status = panel.querySelector("#ioneBooksManagerStatus");
     const list = panel.querySelector("#ioneBooksManagerList");
+    const summary = panel.querySelector("#ioneBooksManagerSummary");
+    const formatTzs = value => "TSh " + Math.round(Number(value || 0)).toLocaleString("en-US");
     const close = () => panel.remove();
     panel.querySelector("#ioneBooksManagerClose").onclick = close;
     panel.addEventListener("click", event => { if (event.target === panel) close(); });
@@ -78,6 +80,10 @@
       title.style.cssText = "font-size:15px;font-weight:900;overflow-wrap:anywhere;";
       const kind = document.createElement("div"); kind.textContent = (book.pdf_path ? "PDF book" : "Created in I|ONE") + " • " + (book.active ? "Published" : "Revoked");
       kind.style.cssText = "font-size:11px;color:#9dbdaf;";
+      const sales = document.createElement("div");
+      sales.style.cssText = "display:grid;gap:4px;padding:10px;border:1px solid #285342;border-radius:10px;background:#071a13;font-size:11px;line-height:1.45;color:#c8e9db;";
+      const salesCount = Number(book.sales_count || 0);
+      sales.innerHTML = "<strong style='font-size:12px;color:#8df2c0'>" + salesCount.toLocaleString("en-US") + " confirmed sale" + (salesCount === 1 ? "" : "s") + "</strong><span>Gross sales: " + formatTzs(book.sales_gross_tzs) + "</span><span>Author share: " + formatTzs(book.author_earnings_tzs) + "</span>";
       const authorNameInput = document.createElement("input"); authorNameInput.type = "text"; authorNameInput.maxLength = 160; authorNameInput.value = String(book.author_name || ""); authorNameInput.placeholder = "Author name";
       authorNameInput.style.cssText = "width:100%;box-sizing:border-box;padding:10px;border:1px solid #31594c;border-radius:9px;background:#07140f;color:#fff;";
       const insightInput = document.createElement("textarea"); insightInput.maxLength = 12000; insightInput.rows = 3; insightInput.value = String(book.book_insight || ""); insightInput.placeholder = "Insight 01 — first takeaway";
@@ -181,7 +187,7 @@
       const insightOneLabel=document.createElement("label");insightOneLabel.textContent="INSIGHT 01";insightOneLabel.style.cssText="display:block;font-size:10px;color:#9dbdaf;font-weight:800;margin-top:8px;";
       const insightTwoLabel=document.createElement("label");insightTwoLabel.textContent="INSIGHT 02 (OPTIONAL)";insightTwoLabel.style.cssText=insightOneLabel.style.cssText;
       const insightThreeLabel=document.createElement("label");insightThreeLabel.textContent="INSIGHT 03 (OPTIONAL)";insightThreeLabel.style.cssText=insightOneLabel.style.cssText;
-      details.append(title, kind, authorNameInput, insightOneLabel, insightInput, insightTwoLabel, insight2Input, insightThreeLabel, insight3Input, saveInsight, controls, actions, requestAudio); card.append(cover, details);
+      details.append(title, kind, sales, authorNameInput, insightOneLabel, insightInput, insightTwoLabel, insight2Input, insightThreeLabel, insight3Input, saveInsight, controls, actions, requestAudio); card.append(cover, details);
       return card;
     };
 
@@ -190,6 +196,14 @@
         const result = await heavensSupabase.functions.invoke("book-library-manage", { body: { action: "my_books" } });
         if (result.error || !result.data || !result.data.success) throw new Error((result.data && result.data.error) || "Could not load your published books.");
         const books = Array.isArray(result.data.books) ? result.data.books : [];
+        const totals = result.data.sales_summary || {};
+        const lifetimeBooks = Math.max(Number(result.data.lifetime_books_published || 0), books.length);
+        summary.style.display = "grid";
+        summary.innerHTML = [
+          ["LIFETIME BOOKS", lifetimeBooks.toLocaleString("en-US")],
+          ["CONFIRMED SALES", Number(totals.sales_count || 0).toLocaleString("en-US")],
+          ["AUTHOR EARNINGS", formatTzs(totals.author_earnings_tzs)]
+        ].map(([label, value]) => "<div style='min-width:0;padding:10px 8px;border:1px solid #285342;border-radius:10px;background:#0b2118;text-align:center'><div style='font-size:9px;font-weight:800;letter-spacing:.4px;color:#9dbdaf'>" + label + "</div><div style='margin-top:5px;font-size:13px;font-weight:900;color:#8df2c0;overflow-wrap:anywhere'>" + value + "</div></div>").join("");
         if (books.length) {
           try {
             const meta = await heavensSupabase.from("heavens_books").select("id,author_name,book_insight,book_insight_2,book_insight_3").in("id", books.map(book => String(book.id)));
@@ -200,8 +214,13 @@
           } catch (metaError) { console.warn("Book insight metadata could not be loaded:", metaError); }
         }
         list.replaceChildren();
-        if (!books.length) { status.textContent = "No books are published under this author account yet."; return; }
-        status.textContent = books.length + " published book" + (books.length === 1 ? "" : "s") + ". Change prices, switch between paid and free, or revoke a book.";
+        if (!books.length) {
+          status.textContent = lifetimeBooks
+            ? "Your lifetime record shows " + lifetimeBooks + " previously published book" + (lifetimeBooks === 1 ? "" : "s") + ". No current book listings are available."
+            : "No books are published under this author account yet.";
+          return;
+        }
+        status.textContent = lifetimeBooks + " book" + (lifetimeBooks === 1 ? "" : "s") + " in your lifetime publishing record • " + Number(totals.sales_count || 0).toLocaleString("en-US") + " confirmed sales across all recorded books. Sales and earnings remain recorded across package renewals.";
         books.forEach(book => list.appendChild(createBookCard(book)));
       } catch (error) {
         status.textContent = error && error.message ? error.message : "Could not load your published books. Reopen the panel and try again.";
