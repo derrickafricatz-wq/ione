@@ -1,5 +1,5 @@
 {
-  "version": "1.0.119",
-  "message": "Keep offline persistence limited to saved books",
+  "version": "1.0.120",
+  "message": "Show author lifetime book and confirmed sales records",
   "force": true
 }
