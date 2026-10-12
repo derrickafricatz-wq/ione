@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v184";
+const CACHE_NAME = "ione-app-v185";
 const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
 const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const SUPABASE_JS_CACHE_NAME = "ione-supabase-js-v2";
@@ -154,6 +154,10 @@ self.addEventListener("fetch", (event) => {
       })());
       return;
     }
+    // Do not wrap Supabase API/REST/function GET requests in the service worker.
+    // Let the browser perform them directly; only explicitly saved media above
+    // is eligible for offline fallback. This keeps live data/auth requests untouched.
+    if (/(^|\.)supabase\.co$/i.test(url.hostname)) return;
     event.respondWith(fetch(event.request).catch(() => Response.error()));
     return;
   }
