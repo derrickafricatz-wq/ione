@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v183";
+const CACHE_NAME = "ione-app-v184";
 const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
 const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const SUPABASE_JS_CACHE_NAME = "ione-supabase-js-v2";
@@ -181,15 +181,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Online always wins: refresh same-origin images/media/assets first, and
+  // consult saved cache only when the request genuinely fails. This keeps
+  // cached offline copies from masking current products and live content.
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-      return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200) return networkResponse;
+    fetch(event.request, { cache: "no-store" }).then((networkResponse) => {
+      if (networkResponse && networkResponse.status === 200) {
         const clone = networkResponse.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return networkResponse;
-      }).catch(() => Response.error());
+      }
+      return networkResponse;
+    }).catch(async () => {
+      const cachedResponse = await caches.match(event.request);
+      return cachedResponse || Response.error();
     })
   );
 });
