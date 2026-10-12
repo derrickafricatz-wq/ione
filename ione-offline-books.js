@@ -131,18 +131,24 @@
       statusElement.innerHTML = '<span class="ione-offline-alert-light" aria-hidden="true"></span><span class="ione-offline-alert-text">SAVING FOR OFFLINE</span>';
       document.body.appendChild(statusElement);
     }
-    /* Keep the status visible and place it after Access Trending when that control exists. */
-    const accessTrending = Array.from(document.querySelectorAll("button,a,[role=button]")).find(node => {
-      const label = String(node.innerText || node.getAttribute("aria-label") || node.title || "").toLowerCase().replace(/\s+/g, " ");
-      return label.includes("trending") && node !== statusElement && node.getClientRects().length > 0 && !billboardExcluded(node);
-    });
-    if (accessTrending && statusElement.previousElementSibling !== accessTrending) {
-      accessTrending.insertAdjacentElement("afterend", statusElement);
-      Object.assign(statusElement.style, { position:"relative", top:"auto", right:"auto", margin:"5px 8px", maxWidth:"min(88vw,260px)", width:"fit-content" });
-    } else if (!accessTrending) {
-      if (statusElement.parentElement !== document.body) document.body.appendChild(statusElement);
-      Object.assign(statusElement.style, { position:"fixed", top:"calc(7px + env(safe-area-inset-top))", right:"8px", margin:"0" });
+    /* Keep the alert in the home controls row beside ACCESS and GUIDE, never floating over them. */
+    const homeControls = document.getElementById("ioneTopActions");
+    if (homeControls && statusElement.parentElement !== homeControls) {
+      homeControls.appendChild(statusElement);
+    } else if (!statusElement.isConnected) {
+      document.body.appendChild(statusElement);
     }
+    Object.assign(statusElement.style, {
+      position: homeControls ? "relative" : "fixed",
+      top: "auto",
+      right: "auto",
+      margin: "0",
+      maxWidth: "min(32vw, 180px)",
+      width: "fit-content",
+      flex: "0 1 auto",
+      alignSelf: "center",
+      zIndex: "20"
+    });
     return statusElement;
   }
 
@@ -324,10 +330,7 @@
     functions.invoke = async function (name, options) {
       const isShelf = name === "ione-documentaries" && options && options.body && options.body.action === "list";
       if (!isShelf) return originalInvoke(name, options);
-      if (navigator.onLine === false) {
-        const saved = await getSavedDocumentaries();
-        if (saved.length) return { data: { documentaries: saved }, error: null };
-      }
+      /* Always try the live endpoint first; navigator.onLine can be stale on mobile. */
       try {
         const result = await originalInvoke(name, options);
         const docs = Array.isArray(result && result.data && result.data.documentaries) ? result.data.documentaries : [];
