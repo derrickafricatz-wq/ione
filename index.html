@@ -3843,7 +3843,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=129", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=130", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -8755,62 +8755,68 @@ async function publishBookToHeavensServer(book){
   return data;
 }
 
-async function loadHeavensServerBooks(){
+const IONE_BOOK_CARD_CACHE_KEY = "ioneBookCardMetadataV1";
+let ioneBookStorefrontFetch = null;
+let ioneBookAccessRefreshPromise = Promise.resolve({});
+
+function readIoneBookCardCache(){
   try{
-    const session = await ensureHeavensAnonymousSession();
-    // Start the independent access lookup before waiting for the books query.
-    // Previously these two network requests ran one after another.
-    const accessPromise = heavensSupabase.functions
-      .invoke("book-library-manage", { body: { action: "my_access" } })
-      .catch(accessError => {
-        console.warn("Saved book access lookup failed:", accessError);
-        return { error: accessError, data: null };
-      });
-    const booksPromise = heavensSupabase
-      .from("heavens_books")
-      .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,book_insight_2,book_insight_3,narration_path,narration_published_at,created_at")
-      .eq("active",true)
-      .order("created_at",{ascending:false});
-    const [{data,error},accessResult] = await Promise.all([booksPromise,accessPromise]);
-    if(error) throw error;
-    let purchasedIds = new Set();
-    if (!accessResult?.error && accessResult?.data?.success && Array.isArray(accessResult.data.book_ids)) {
-      purchasedIds = new Set(accessResult.data.book_ids.map(String));
-    } else if (accessResult?.error) {
-      console.warn("Saved book access could not be refreshed:", accessResult.error);
-    }
-    return (data || []).map(b => ({
-      id: "HB-SERVER-" + b.id,
-      supabaseId: b.id,
-      authorId: b.author_id || "",
-      isAuthor: !!session?.user?.id && String(b.author_id) === String(session.user.id),
-      isPurchased: purchasedIds.has(String(b.id)),
-      paymentRequired: b.payment_required !== false,
-      title: b.title,
-      authorName: b.author_name || "",
-      bookInsight: b.book_insight || "",
-      bookInsight2: b.book_insight_2 || "",
-      bookInsight3: b.book_insight_3 || "",
-      narrationPath: b.narration_path || "",
-      narrationPublishedAt: b.narration_published_at || "",
-      category: b.category || "SERMONS",
-      price: Number(b.price || 0),
-      currency: b.currency || "TZS",
-      contents: b.contents || "",
-      frontCover: b.front_cover || "",
-      backCover: b.back_cover || "",
-      pdfPath: b.pdf_path || "",
-      pdfCoverPage: b.pdf_cover_page === true,
-      chapters: Array.isArray(b.chapters) ? b.chapters : [],
-      date: b.created_at ? new Date(b.created_at).toLocaleDateString() : ""
+    const rows=JSON.parse(localStorage.getItem(IONE_BOOK_CARD_CACHE_KEY)||"[]");
+    if(!Array.isArray(rows))return [];
+    return rows.filter(b=>b&&b.supabaseId&&b.title).map(b=>({...b,_metadataOnly:true,isPurchased:false,isAuthor:false,contents:"",chapters:[],pdfPath:"",pdfCoverPage:false,narrationPath:""}));
+  }catch(_){return [];}
+}
+function saveIoneBookCardCache(books){
+  try{
+    const safe=(books||[]).map(b=>({
+      id:b.id,supabaseId:b.supabaseId,title:b.title,category:b.category,price:b.price,currency:b.currency,
+      frontCover:b.frontCover,authorName:b.authorName,bookInsight:b.bookInsight,bookInsight2:b.bookInsight2,
+      bookInsight3:b.bookInsight3,paymentRequired:b.paymentRequired,date:b.date
     }));
-  }catch(err){
-    console.warn("Heaven's Books server library could not load:",err);
-    return [];
-  }
+    localStorage.setItem(IONE_BOOK_CARD_CACHE_KEY,JSON.stringify(safe));
+  }catch(e){console.warn("I|ONE book card cache unavailable:",e);}
 }
 
+async function loadHeavensServerBooks(){
+  if(ioneBookStorefrontFetch)return ioneBookStorefrontFetch;
+  const sessionPromise=ensureHeavensAnonymousSession().catch(sessionError=>{
+    console.warn("Bookstore session refresh failed:",sessionError);return null;
+  });
+  const booksPromise=heavensSupabase
+    .from("heavens_books")
+    .select("id,title,category,price,currency,front_cover,back_cover,contents,chapters,pdf_path,pdf_cover_page,author_id,payment_required,author_name,book_insight,book_insight_2,book_insight_3,narration_path,narration_published_at,created_at")
+    .eq("active",true)
+    .order("created_at",{ascending:false});
+  ioneBookStorefrontFetch=booksPromise.then(({data,error})=>{
+    if(error)throw error;
+    const mapped=(data||[]).map(b=>({
+      id:"HB-SERVER-"+b.id,supabaseId:b.id,authorId:b.author_id||"",isAuthor:false,isPurchased:false,
+      _metadataOnly:false,paymentRequired:b.payment_required!==false,title:b.title,authorName:b.author_name||"",
+      bookInsight:b.book_insight||"",bookInsight2:b.book_insight_2||"",bookInsight3:b.book_insight_3||"",
+      narrationPath:b.narration_path||"",narrationPublishedAt:b.narration_published_at||"",
+      category:b.category||"SERMONS",price:Number(b.price||0),currency:b.currency||"TZS",
+      contents:b.contents||"",frontCover:b.front_cover||"",backCover:b.back_cover||"",pdfPath:b.pdf_path||"",
+      pdfCoverPage:b.pdf_cover_page===true,chapters:Array.isArray(b.chapters)?b.chapters:[],
+      date:b.created_at?new Date(b.created_at).toLocaleDateString():""
+    }));
+    saveIoneBookCardCache(mapped);
+    ioneBookAccessRefreshPromise=sessionPromise.then(session=>{
+      if(!session?.user?.id)return {};
+      return heavensSupabase.functions.invoke("book-library-manage",{body:{action:"my_access"}}).then(result=>{
+        if(result.error||!result.data?.success)throw result.error||new Error(result.data?.error||"Book access lookup failed");
+        return {purchased:new Set(Array.isArray(result.data.book_ids)?result.data.book_ids.map(String):[]),authorId:String(session.user.id)};
+      });
+    }).catch(accessError=>{console.warn("Saved book access lookup failed:",accessError);return {};});
+    return mapped;
+  }).catch(err=>{
+    console.warn("Heaven's Books server library could not load:",err);return [];
+  }).finally(()=>{ioneBookStorefrontFetch=null;});
+  return ioneBookStorefrontFetch;
+}
 /* ================= HEAVEN'S BOOKSTORE ================= */
+// Warm the public catalogue in the background so Explore can reuse it.
+setTimeout(()=>{if(!window.ioneBookStorefrontWarmStarted){window.ioneBookStorefrontWarmStarted=true;loadHeavensServerBooks();}},900);
+
 const HEAVENS_PAYMENT_LINK = "https://pay.blmtec.co.tz/pay/book-apos-s-payies-wggry8";
 const HEAVENS_PAID_KEY = "heavensPaidBooks";
 
@@ -8852,6 +8858,14 @@ async function openHeavensBookstore(){
   const existing=document.getElementById("heavensBookstore"); if(existing) existing.remove();
   const store=document.createElement("div"); store.id="heavensBookstore";
   let books=JSON.parse(localStorage.getItem("savedBooks")||"[]");
+  // Paint previously seen public book cards immediately using display-only metadata.
+  const cachedCards=readIoneBookCardCache();
+  if(cachedCards.length){
+    const initial=new Map();
+    books.forEach(b=>initial.set(String(b.supabaseId||b.id),b));
+    cachedCards.forEach(b=>{const key=String(b.supabaseId||b.id);if(!initial.has(key))initial.set(key,b);});
+    books=Array.from(initial.values());
+  }
   const cats=["ALL","SERMONS","BIBLE","PRAYER","TEACHING","WORSHIP","PROPHECY","SPIRITUAL GROWTH"];
   store.innerHTML=`
     <div class="hb-head">
@@ -8893,7 +8907,7 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${paid?'read':'pay'}">${paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
       const insightBox=card.querySelector(".hb-insight"), insightText=card.querySelector(".hb-insight-text");
       const insightItems=[book.bookInsight,book.bookInsight2,book.bookInsight3].map(v=>String(v||"").trim()).filter(Boolean);
       if(!insightItems.length)insightItems.push("The author has not added a book insight yet.");
@@ -8936,7 +8950,7 @@ async function openHeavensBookstore(){
           holder.innerHTML=`<div class="hb-cover-empty">${escapeBookHtml(book.title||'BOOK')}</div>`;
         };
       }
-      card.querySelector(".hb-btn:not(.hb-check-payment)").onclick=()=> isBookPaid(book) ? openBookReader(book,store) : startBookPayment(book,store);
+      card.querySelector(".hb-btn:not(.hb-check-payment)").onclick=()=>{if(book._metadataOnly)return;isBookPaid(book)?openBookReader(book,store):startBookPayment(book,store);};
       const checkBtn=card.querySelector('.hb-check-payment');
       if(checkBtn){
         checkBtn.onclick=async()=>{
@@ -9011,15 +9025,15 @@ async function openHeavensBookstore(){
   };
   render();
 
-  // Refresh the storefront from the server, while keeping local editor books visible.
-  const serverBooks = await loadHeavensServerBooks();
-  if(serverBooks.length){
+  // Fetch the catalogue without waiting for access/ownership checks.
+  loadHeavensServerBooks().then(serverBooks=>{
+    if(!store.isConnected||!serverBooks.length)return;
     const merged = new Map();
     books.forEach(b => merged.set(String(b.supabaseId || b.id), {...b}));
     serverBooks.forEach(b => {
       const key=String(b.supabaseId || b.id);
       const local=merged.get(key) || {};
-      merged.set(key,{...local,...b,
+      merged.set(key,{...local,...b,_metadataOnly:false,
         contents:b.contents || local.contents || "",
         frontCover:b.frontCover || local.frontCover || "",
         backCover:b.backCover || local.backCover || "",
@@ -9028,7 +9042,12 @@ async function openHeavensBookstore(){
     });
     books = Array.from(merged.values());
     render();
-  }
+    ioneBookAccessRefreshPromise.then(access=>{
+      if(!store.isConnected||!access?.purchased)return;
+      books=books.map(b=>({...b,isPurchased:access.purchased.has(String(b.supabaseId||"")),isAuthor:!!access.authorId&&String(b.authorId||"")===access.authorId}));
+      render();
+    });
+  });
   resumeHeavensPendingPayment(store, books);
 }
 
