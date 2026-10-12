@@ -119,7 +119,7 @@
     if (!document.getElementById("ioneOfflineDownloadAlertStyle")) {
       const style = document.createElement("style");
       style.id = "ioneOfflineDownloadAlertStyle";
-      style.textContent = "@keyframes ioneOfflineAlertShake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-2px) rotate(-3deg)}40%{transform:translateX(2px) rotate(3deg)}60%{transform:translateX(-2px) rotate(-2deg)}80%{transform:translateX(2px) rotate(2deg)}}@keyframes ioneOfflineAlertPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,30,50,.35);opacity:1}50%{box-shadow:0 0 0 6px rgba(255,30,50,0);opacity:.72}}#ioneOfflineDownloadAlert{position:fixed;top:calc(7px + env(safe-area-inset-top));right:8px;z-index:2147483647;display:none;align-items:center;gap:7px;max-width:min(78vw,260px);padding:8px 11px;border:1px solid #ff6674;border-radius:999px;background:rgba(55,5,12,.96);color:#fff;font:900 9px/1.2 Arial,sans-serif;letter-spacing:.7px;box-shadow:0 5px 18px rgba(0,0,0,.38);pointer-events:none}#ioneOfflineDownloadAlert .ione-offline-alert-light{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#ff263d;box-shadow:0 0 9px #ff263d;animation:ioneOfflineAlertShake .42s linear infinite,ioneOfflineAlertPulse .8s ease-in-out infinite}#ioneOfflineDownloadAlert .ione-offline-alert-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#ioneOfflineDownloadAlert.is-complete{border-color:#50e6a0;background:rgba(4,43,28,.96)}#ioneOfflineDownloadAlert.is-complete .ione-offline-alert-light{background:#50e6a0;box-shadow:0 0 9px #50e6a0;animation:none}";
+      style.textContent = "@keyframes ioneOfflineAlertShake{0%,100%{transform:translateX(0) rotate(0)}20%{transform:translateX(-2px) rotate(-3deg)}40%{transform:translateX(2px) rotate(3deg)}60%{transform:translateX(-2px) rotate(-2deg)}80%{transform:translateX(2px) rotate(2deg)}}@keyframes ioneOfflineAlertPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,30,50,.35);opacity:1}50%{box-shadow:0 0 0 6px rgba(255,30,50,0);opacity:.72}}#ioneOfflineDownloadAlert{position:fixed;top:calc(7px + env(safe-area-inset-top));right:8px;z-index:2147483647;display:flex;align-items:center;gap:7px;max-width:min(78vw,260px);padding:8px 11px;border:1px solid #ff6674;border-radius:999px;background:rgba(55,5,12,.96);color:#fff;font:900 9px/1.2 Arial,sans-serif;letter-spacing:.7px;box-shadow:0 5px 18px rgba(0,0,0,.38);pointer-events:none}#ioneOfflineDownloadAlert .ione-offline-alert-light{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#ff263d;box-shadow:0 0 9px #ff263d;animation:ioneOfflineAlertShake .42s linear infinite,ioneOfflineAlertPulse .8s ease-in-out infinite}#ioneOfflineDownloadAlert .ione-offline-alert-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#ioneOfflineDownloadAlert.is-complete{border-color:#50e6a0;background:rgba(4,43,28,.96)}#ioneOfflineDownloadAlert.is-complete .ione-offline-alert-light{background:#50e6a0;box-shadow:0 0 9px #50e6a0;animation:none}";
       document.head.appendChild(style);
     }
     statusElement = document.getElementById("ioneOfflineDownloadAlert");
@@ -130,6 +130,18 @@
       statusElement.setAttribute("aria-live", "polite");
       statusElement.innerHTML = '<span class="ione-offline-alert-light" aria-hidden="true"></span><span class="ione-offline-alert-text">SAVING FOR OFFLINE</span>';
       document.body.appendChild(statusElement);
+    }
+    /* Keep the status visible and place it after Access Trending when that control exists. */
+    const accessTrending = Array.from(document.querySelectorAll("button,a,[role=button]")).find(node => {
+      const label = String(node.innerText || node.getAttribute("aria-label") || node.title || "").toLowerCase().replace(/\s+/g, " ");
+      return label.includes("trending") && node !== statusElement && node.getClientRects().length > 0 && !billboardExcluded(node);
+    });
+    if (accessTrending && statusElement.previousElementSibling !== accessTrending) {
+      accessTrending.insertAdjacentElement("afterend", statusElement);
+      Object.assign(statusElement.style, { position:"relative", top:"auto", right:"auto", margin:"5px 8px", maxWidth:"min(88vw,260px)", width:"fit-content" });
+    } else if (!accessTrending) {
+      if (statusElement.parentElement !== document.body) document.body.appendChild(statusElement);
+      Object.assign(statusElement.style, { position:"fixed", top:"calc(7px + env(safe-area-inset-top))", right:"8px", margin:"0" });
     }
     return statusElement;
   }
@@ -193,11 +205,18 @@
         failedDownloads = 0;
         current.classList.toggle("is-complete", !failed);
         const text = current.querySelector(".ione-offline-alert-text");
-        if (text) text.textContent = failed ? "SOME ITEMS NOT SAVED" : "OFFLINE SAVED";
-        hideStatusTimer = window.setTimeout(() => {
-          if (current && !activeDownloads) current.style.display = "none";
-          hideStatusTimer = 0;
-        }, failed ? 3200 : 1800);
+        if (text) text.textContent = failed ? "OFFLINE READY • SOME ITEMS SKIPPED" : "OFFLINE READY • SAVED CONTENT";
+        /* Keep this home-screen status visible after saving finishes. */
+        current.style.display = "flex";
+        if (failed) {
+          hideStatusTimer = window.setTimeout(() => {
+            if (current && !activeDownloads) {
+              const text = current.querySelector(".ione-offline-alert-text");
+              if (text) text.textContent = "OFFLINE READY • CHECK CONNECTION";
+            }
+            hideStatusTimer = 0;
+          }, 3200);
+        }
       }
     };
   }

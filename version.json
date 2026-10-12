@@ -1,5 +1,5 @@
 {
-  "version": "1.0.116",
-  "message": "Add offline market billboards, documentaries and download alert",
+  "version": "1.0.117",
+  "message": "Keep online content first and persistent offline status",
   "force": true
 }
