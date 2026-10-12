@@ -169,5 +169,6 @@ assert.match(html, /IONE_BOOK_CARD_CACHE_KEY/);
 assert.match(html, /_metadataOnly:true/);
 assert.match(html, /ioneBookAccessRefreshPromise/);
 assert.match(html, /loadHeavensServerBooks\(\)\.then\(serverBooks/);
-console.log("PASS: cached Explore cards render before live catalogue/access refresh");\nconsole.log("PASS: documentary list memory cache, parallel bookstore requests, deferred video loading, and schema-compatible billboard item queries");
+console.log("PASS: cached Explore cards render before live catalogue/access refresh");
+console.log("PASS: documentary list memory cache, parallel bookstore requests, deferred video loading, and schema-compatible billboard item queries");
 console.log("PASS: cache/version bumped; front-cover upload persists; PDF books use interactive page-turn reader; Explore panels scroll and fit");
