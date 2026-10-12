@@ -131,6 +131,13 @@ serve(async (req) => {
       if (lookupError) return json({ success: false, error: "Could not verify book ownership." }, 500);
       if (!book) return json({ success: false, error: "This book is not owned by your current author account." }, 404);
 
+      const { count: recordedSales, error: salesCheckError } = await admin.from("ione_author_earnings")
+        .select("id", { count: "exact", head: true }).eq("book_id", bookId).eq("author_id", user.id);
+      if (salesCheckError) return json({ success: false, error: "Could not verify this book's sales history. Nothing was deleted." }, 500);
+      if (Number(recordedSales || 0) > 0) {
+        return json({ success: false, error: "This book has confirmed sales. Its sales and payout history must be preserved, so it cannot be permanently deleted." }, 409);
+      }
+
       const { error: deleteError } = await admin.from("heavens_books").delete().eq("id", bookId).eq("author_id", user.id);
       if (deleteError) return json({ success: false, error: "Could not delete the book record." }, 500);
 
