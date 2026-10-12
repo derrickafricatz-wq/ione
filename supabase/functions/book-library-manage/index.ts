@@ -34,11 +34,52 @@ serve(async (req) => {
     const action = String(body?.action || "");
 
     if (action === "my_books") {
-      const { data, error } = await admin.from("heavens_books")
+      const { data: books, error: booksError } = await admin.from("heavens_books")
         .select("id,title,category,price,currency,front_cover,pdf_path,payment_required,active,created_at")
         .eq("author_id", user.id).order("created_at", { ascending: false });
-      if (error) return json({ success: false, error: "Could not load your published books." }, 500);
-      return json({ success: true, books: data || [] });
+      if (booksError) return json({ success: false, error: "Could not load your published books." }, 500);
+
+      const earnings: Array<{ order_id: string; book_id: string; sale_amount_tzs: number | string; author_share_tzs: number | string }> = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data: rows, error: earningsError } = await admin.from("ione_author_earnings")
+          .select("order_id,book_id,sale_amount_tzs,author_share_tzs")
+          .eq("author_id", user.id).order("earned_at", { ascending: true }).range(offset, offset + 999);
+        if (earningsError) return json({ success: false, error: "Could not load your confirmed book sales history." }, 500);
+        const page = rows || [];
+        earnings.push(...page);
+        if (page.length < 1000) break;
+      }
+
+      const byBook = new Map<string, { sales_count: number; sales_gross_tzs: number; author_earnings_tzs: number }>();
+      const totals = { sales_count: 0, sales_gross_tzs: 0, author_earnings_tzs: 0 };
+      for (const earning of earnings) {
+        const key = String(earning.book_id);
+        const sale = Number(earning.sale_amount_tzs || 0);
+        const authorShare = Number(earning.author_share_tzs || 0);
+        if (!byBook.has(key)) byBook.set(key, { sales_count: 0, sales_gross_tzs: 0, author_earnings_tzs: 0 });
+        const row = byBook.get(key)!;
+        row.sales_count += 1;
+        row.sales_gross_tzs += sale;
+        row.author_earnings_tzs += authorShare;
+        totals.sales_count += 1;
+        totals.sales_gross_tzs += sale;
+        totals.author_earnings_tzs += authorShare;
+      }
+
+      const { data: access, error: accessError } = await admin.from("ione_author_access")
+        .select("package_number,books_used").eq("user_id", user.id).maybeSingle();
+      if (accessError) return json({ success: false, error: "Could not load your lifetime publishing count." }, 500);
+      const packageNumber = Math.max(0, Number(access?.package_number || 0));
+      const booksUsed = Math.max(0, Number(access?.books_used || 0));
+      const lifetimeByPackages = Math.max(0, packageNumber - 1) * 3 + booksUsed;
+      const lifetimeBooksPublished = Math.max(lifetimeByPackages, (books || []).length);
+      const enrichedBooks = (books || []).map((book: any) => ({
+        ...book,
+        sales_count: byBook.get(String(book.id))?.sales_count || 0,
+        sales_gross_tzs: byBook.get(String(book.id))?.sales_gross_tzs || 0,
+        author_earnings_tzs: byBook.get(String(book.id))?.author_earnings_tzs || 0
+      }));
+      return json({ success: true, books: enrichedBooks, lifetime_books_published: lifetimeBooksPublished, sales_summary: totals });
     }
 
     if (action === "my_access") {
