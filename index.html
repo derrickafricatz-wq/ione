@@ -8815,7 +8815,7 @@ async function loadHeavensServerBooks(){
 }
 /* ================= HEAVEN'S BOOKSTORE ================= */
 // Warm the public catalogue in the background so Explore can reuse it.
-setTimeout(()=>{if(!window.ioneBookStorefrontWarmStarted){window.ioneBookStorefrontWarmStarted=true;loadHeavensServerBooks();}},900);
+Promise.resolve().then(()=>{if(!window.ioneBookStorefrontWarmStarted){window.ioneBookStorefrontWarmStarted=true;loadHeavensServerBooks();}});
 
 const HEAVENS_PAYMENT_LINK = "https://pay.blmtec.co.tz/pay/book-apos-s-payies-wggry8";
 const HEAVENS_PAID_KEY = "heavensPaidBooks";
