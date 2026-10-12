@@ -1,5 +1,5 @@
 {
-  "version": "1.0.121",
-  "message": "Faster documentary, bookstore, and billboard loading",
+  "version": "1.0.122",
+  "message": "Fix billboard loading on existing database schema",
   "force": true
 }
