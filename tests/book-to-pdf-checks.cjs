@@ -24,7 +24,7 @@ assert.ok(html.includes('tap the existing I|ONE Support chat button'));
 assert.ok(html.includes('I|ONE / Authority Press may review'));
 assert.match(sw, /ione-app-v\d+/);
 assert.match(version.version, /^\d+\.\d+\.\d+$/);
-assert.match(sw, /ione-app-v186/);
+assert.match(sw, /ione-app-v187/);
 assert.doesNotMatch(sw, /OFFLINE_MEDIA_CACHE_NAME/);
 assert.doesNotMatch(sw, /saved\.clone\(\)\.blob\(\)/);
 assert.match(sw, /SUPABASE_JS_CACHE_NAME/);
@@ -143,4 +143,18 @@ assert.match(manage, /action === "delete"/);
 assert.match(manage, /action === "update"/);
 assert.match(controlsMigration, /payment_required boolean not null default true/);
 console.log("PASS: public bookstore labels, PDF first-page cover, saved access, author price/free-paid controls, and revoke flow");
+
+assert.match(manage, /lifetime_books_published/);
+assert.match(manage, /sales_summary/);
+assert.match(manage, /sales_count/);
+assert.match(manage, /author_earnings_tzs/);
+assert.match(manage, /This book has confirmed sales/);
+assert.match(feature, /LIFETIME BOOKS/);
+assert.match(feature, /CONFIRMED SALES/);
+assert.match(feature, /Author share:/);
+assert.match(html, /data-ione-author-books/);
+assert.match(html, /MY BOOKS &amp; SALES/);
+assert.match(html, /renderAuthorSavedProfile/);
+console.log("PASS: author lifetime book count, per-book confirmed sales/earnings, saved-form My Books access, and sold-book history protection");
+
 console.log("PASS: cache/version bumped; front-cover upload persists; PDF books use interactive page-turn reader; Explore panels scroll and fit");
