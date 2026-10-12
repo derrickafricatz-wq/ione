@@ -1,5 +1,5 @@
 {
-  "version": "1.0.117",
-  "message": "Keep online content first and persistent offline status",
+  "version": "1.0.118",
+  "message": "Keep Supabase live requests outside offline interception",
   "force": true
 }
