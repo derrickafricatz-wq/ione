@@ -13,6 +13,15 @@ const normalizePhone = (value: unknown) => {
   if ((digits.startsWith("6") || digits.startsWith("7")) && digits.length === 9) return "255" + digits;
   return "";
 };
+async function validAuthoritySession(admin: any, rawToken: unknown): Promise<boolean> {
+  const token = String(rawToken || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(token)) return false;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await admin.from("ione_authority_sessions").select("token_hash").eq("token_hash", tokenHash).gt("expires_at", new Date().toISOString()).is("revoked_at", null).maybeSingle();
+  return !error && !!data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ success: false, error: "POST required." }, 405);
@@ -27,7 +36,7 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
 
     if (action.startsWith("authority_")) {
-      if (!authorityPassword || String(body?.password || "") !== authorityPassword) return json({ success: false, error: "Unauthorized Authority Press access." }, 401);
+      if (!(await validAuthoritySession(admin, body?.authority_session))) return json({ success: false, error: "Authority Press session expired. Unlock again." }, 401);
       if (action === "authority_list") {
         const { data, error } = await admin.from("ione_author_access").select("user_id,real_name,phone,terms_accepted,fee_tzs,merchant_name,merchant_number,merchant_network,status,package_number,books_used,renewal_requested,payment_confirmed_at,payment_confirmed_by,authority_notes,submitted_at,updated_at").order("submitted_at", { ascending: false }).limit(200);
         if (error) return json({ success: false, error: "Could not load Author Studio applications." }, 500);
