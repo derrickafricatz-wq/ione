@@ -1,5 +1,5 @@
 {
-  "version": "1.0.123",
-  "message": "Show Explore books immediately from safe metadata cache",
+  "version": "1.0.124",
+  "message": "Secure Authority Press image verification and expiring sessions",
   "force": true
 }
