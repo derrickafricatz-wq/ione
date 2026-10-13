@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-ione-authority-session","Access-Control-Allow-Methods":"POST, OPTIONS"};
 function json(data:unknown,status=200){return new Response(JSON.stringify(data),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});}
 function cleanText(v:unknown,max:number){return String(v??"").trim().slice(0,max);}
 function normalizeContent(raw:unknown){if(!Array.isArray(raw))return[];return raw.slice(0,300).map((item:any)=>{const type=String(item?.type||"").toLowerCase();if(type==="ione_authority_settings")return{type:"ione_authority_settings",start_date:String(item?.start_date||"").slice(0,10),expiry_date:String(item?.expiry_date||"").slice(0,10),video_sound_allowed:item?.video_sound_allowed!==false,allow_copy:item?.allow_copy!==false,allow_download:item?.allow_download!==false,allow_print:item?.allow_print!==false};if(type==="image")return{type:"image",url:cleanText(item?.url,2000),alt:cleanText(item?.alt,200)};if(type==="audio")return{type:"audio",url:cleanText(item?.url,2000),title:cleanText(item?.title,160)||"Instrumental soundtrack"};if(type==="video")return{type:"video",url:cleanText(item?.url,2000),title:cleanText(item?.title,160)||"Muted documentary video"};return{type:"text",text:cleanText(item?.text,12000)};}).filter((x:any)=>x.type==="ione_authority_settings"||((x.type==="image"||x.type==="audio"||x.type==="video")?/^https?:\/\//i.test(x.url):!!x.text));}
@@ -27,16 +27,16 @@ Deno.serve(async(req:Request)=>{
 
   if(action==="list"||action==="get"){
    let query=admin.from("ione_documentaries").select("id,title,short_description,cover_image_url,content,sort_order,published,created_at,updated_at");
-   if(action==="list"){const authorityView=await validAuthoritySession(admin,body?.authority_session);if(!authorityView)query=query.eq("published",true);query=query.order("sort_order",{ascending:true}).order("created_at",{ascending:true});}
+   if(action==="list"){const authorityView=await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"));if(!authorityView)query=query.eq("published",true);query=query.order("sort_order",{ascending:true}).order("created_at",{ascending:true});}
    else {const id=cleanText(body?.id,100);if(!id)return json({success:false,error:"Documentary id is required."},400);query=query.eq("id",id).maybeSingle();}
    const {data,error}=await query;if(error)return json({success:false,error:"Could not load the documentary."},500);
    if(action==="get"&&!data)return json({success:false,error:"Documentary not found."},404);
-    if(action==="get"&&data?.published!==true&&!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Documentary not found."},404);
+    if(action==="get"&&data?.published!==true&&!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Documentary not found."},404);
    return json(action==="list"?{success:true,documentaries:data||[]}:{success:true,documentary:data});
   }
 
   if(action==="prepare_video_upload"){
-   if(!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+   if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
    const mime=String(body?.mime_type||"").toLowerCase().split(";")[0].trim();
    const size=Number(body?.file_size);
    const isVideo=["video/mp4","video/webm","video/quicktime"].includes(mime);
@@ -50,7 +50,7 @@ Deno.serve(async(req:Request)=>{
   }
 
   if(action==="upload"){
-   if(!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+   if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
    const dataUrl=String(body?.data_url||"");const mime=String(body?.mime_type||"image/jpeg").toLowerCase().split(";")[0].trim();
    const isImage=/^image\/(jpeg|jpg|png|webp|gif)$/.test(mime),isAudio=/^audio\/(mpeg|mp3|mp4|aac|ogg|wav|x-wav|webm|x-m4a|3gpp)$/.test(mime),isVideo=/^video\/(mp4|webm|quicktime)$/.test(mime);
    if(isImage?!/^data:image\/(jpeg|jpg|png|webp|gif);base64,/i.test(dataUrl):isAudio?!/^data:audio\/[a-z0-9.+-]+;base64,/i.test(dataUrl):isVideo?!/^data:video\/(mp4|webm|quicktime);base64,/i.test(dataUrl):true)return json({success:false,error:"Choose a supported image, instrumental audio or video file."},400);
@@ -65,7 +65,7 @@ Deno.serve(async(req:Request)=>{
   }
 
   if(action==="save"||action==="delete"){
-   if(!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+   if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
    if(action==="delete"){const id=cleanText(body?.id,100);if(!id)return json({success:false,error:"Documentary id is required."},400);const {error}=await admin.from("ione_documentaries").delete().eq("id",id);if(error)return json({success:false,error:"Could not delete the documentary."},500);return json({success:true});}
    const id=cleanText(body?.id,100),title=cleanText(body?.title,120),short_description=cleanText(body?.short_description,500),content=normalizeContent(body?.content),published=Boolean(body?.published),sort_order=Number.isFinite(Number(body?.sort_order))?Math.max(0,Math.floor(Number(body?.sort_order))):0;
    if(!title)return json({success:false,error:"Documentary title is required."},400);
