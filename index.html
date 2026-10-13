@@ -8691,10 +8691,21 @@ const SUPABASE_URL = "https://xbemkmvvbkxknuduthsg.supabase.co";
 const HEAVENS_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiZW1rbXZ2Ymt4a251ZHV0aHNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTUyOTgsImV4cCI6MjA5NTA3MTI5OH0.tKtlJ89jdPyeFSAaQs02Vet3SOl2LVatl4psSG9RxPI";
 const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPABASE_ANON_KEY);
 
-// Install Authority Press session injection immediately after creating the shared
-// Supabase client. Installing this only after unlock can miss calls whose invoke
-// reference was captured earlier by a feature panel, causing valid sessions to
-// be rejected by protected Edge Functions.
+// Authority sessions belong only on protected admin endpoints. Sending a custom
+// header to public Gift/Support functions triggers a CORS preflight those endpoints
+// intentionally do not allow, which breaks the live inbox even though client chat works.
+const IONE_AUTHORITY_BODY_FUNCTIONS = new Set([
+  "ione-app-banners", "ione-documentaries", "ione-author-access",
+  "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage",
+  "ione-author-payouts"
+]);
+const IONE_AUTHORITY_HEADER_FUNCTIONS = new Set([
+  "ione-app-banners", "ione-documentaries", "ione-author-access",
+  "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage"
+]);
+
+// Install session injection immediately after creating the shared Supabase client,
+// including calls whose invoke reference was captured before Authority Press unlock.
 {
   const functions = heavensSupabase?.functions;
   if (functions && !functions.__ioneAuthoritySessionWrapped) {
@@ -8708,20 +8719,23 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
           sessionStorage.removeItem("ioneAuthoritySession");
           sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");
           activeToken = "";
-          if (typeof window.ioneRelockAuthoritySession === "function") {
-            window.ioneRelockAuthoritySession();
-          }
+          if (typeof window.ioneRelockAuthoritySession === "function") window.ioneRelockAuthoritySession();
         }
-      } catch (sessionError) {
-        activeToken = "";
-      }
-      if (activeToken && options && options.body && typeof options.body === "object") {
-        const headers = { ...(options.headers || {}), "x-ione-authority-session": activeToken };
+      } catch (sessionError) { activeToken = ""; }
+      const fnName = String(name || "");
+      if (activeToken && options && options.body && typeof options.body === "object" &&
+          IONE_AUTHORITY_BODY_FUNCTIONS.has(fnName)) {
         if (options.body instanceof FormData) {
-          // Preserve multipart upload body and boundary while attaching Authority Press authorization.
-          options = { ...options, headers };
+          if (IONE_AUTHORITY_HEADER_FUNCTIONS.has(fnName)) {
+            const headers = { ...(options.headers || {}), "x-ione-authority-session": activeToken };
+            options = { ...options, headers };
+          }
         } else {
-          options = { ...options, headers, body: { ...options.body, authority_session: activeToken } };
+          const nextOptions = { ...options, body: { ...options.body, authority_session: activeToken } };
+          if (IONE_AUTHORITY_HEADER_FUNCTIONS.has(fnName)) {
+            nextOptions.headers = { ...(options.headers || {}), "x-ione-authority-session": activeToken };
+          }
+          options = nextOptions;
         }
       }
       return originalInvoke(name, options);
@@ -8730,9 +8744,8 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
   }
 }
 
-// Last-mile Authority Press authorization: attach the session at fetch time as well,
-// so any feature that retained an earlier Supabase invoke reference still receives
-// the same server-validated session. Never attach it to the unlock endpoint.
+// Last-mile fallback is limited to protected functions whose CORS policy explicitly
+// allows this header. Gift and private-support endpoints receive their session in JSON.
 if (!window.__ioneAuthorityFetchSessionWrapped && typeof window.fetch === "function") {
   const originalFetch = window.fetch.bind(window);
   window.fetch = function(input, init = {}) {
@@ -8740,8 +8753,9 @@ if (!window.__ioneAuthorityFetchSessionWrapped && typeof window.fetch === "funct
       const requestUrl = typeof input === "string" || input instanceof URL
         ? String(input)
         : (input && typeof input.url === "string" ? input.url : "");
-      if (requestUrl.includes("/functions/v1/") &&
-          !requestUrl.includes("/functions/v1/ione-authority-image-auth")) {
+      const match = requestUrl.match(/\/functions\/v1\/([^/?#]+)/);
+      const functionName = match ? match[1] : "";
+      if (IONE_AUTHORITY_HEADER_FUNCTIONS.has(functionName)) {
         const token = sessionStorage.getItem("ioneAuthoritySession") || "";
         if (token) {
           const inheritedHeaders = input instanceof Request ? input.headers : undefined;
@@ -8751,7 +8765,7 @@ if (!window.__ioneAuthorityFetchSessionWrapped && typeof window.fetch === "funct
         }
       }
     } catch (sessionHeaderError) {
-      // Authorization remains enforced by the Edge Function; never bypass server checks.
+      // Server-side session validation remains authoritative.
     }
     return originalFetch(input, init);
   };
