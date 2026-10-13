@@ -1,5 +1,5 @@
 {
-  "version": "1.0.124",
-  "message": "Secure Authority Press image verification and expiring sessions",
+  "version": "1.0.125",
+  "message": "Secure Authority Press support inbox sessions",
   "force": true
 }
