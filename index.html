@@ -8715,8 +8715,14 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
       } catch (sessionError) {
         activeToken = "";
       }
-      if (activeToken && options && options.body && typeof options.body === "object" && !(options.body instanceof FormData)) {
-        options = { ...options, headers: { ...(options.headers || {}), "x-ione-authority-session": activeToken }, body: { ...options.body, authority_session: activeToken } };
+      if (activeToken && options && options.body && typeof options.body === "object") {
+        const headers = { ...(options.headers || {}), "x-ione-authority-session": activeToken };
+        if (options.body instanceof FormData) {
+          // Preserve multipart upload body and boundary while attaching Authority Press authorization.
+          options = { ...options, headers };
+        } else {
+          options = { ...options, headers, body: { ...options.body, authority_session: activeToken } };
+        }
       }
       return originalInvoke(name, options);
     };
