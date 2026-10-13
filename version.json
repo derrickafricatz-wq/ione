@@ -1,5 +1,5 @@
 {
-  "version": "1.0.125",
-  "message": "Secure Authority Press support inbox sessions",
+  "version": "1.0.126",
+  "message": "Automatic Authority Press session relock and secure support files",
   "force": true
 }
