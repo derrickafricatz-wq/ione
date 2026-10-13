@@ -3330,8 +3330,10 @@ function getMedia(id){
   <div class="authority-password-card">
     <div class="authority-password-kicker">AUTHORIZED ACCESS</div>
     <h2>AUTHORITY PRESS</h2>
-    <p>Enter the authority password to continue.</p>
+    <p>Enter the authority password, then select the authorized security image.</p>
     <input id="authorityPasswordInput" type="password" inputmode="text" autocomplete="off" placeholder="PASSWORD">
+    <label for="authoritySecurityImageInput" style="display:block;margin-top:14px;color:#b9c7cc;font:800 11px/1.4 Arial,sans-serif;letter-spacing:1px">SECURITY IMAGE · space.png</label>
+    <input id="authoritySecurityImageInput" type="file" accept="image/png,.png" style="display:block;width:100%;box-sizing:border-box;margin-top:8px;padding:12px;border:1px solid #31545a;border-radius:12px;background:#05090a;color:#fff">
     <div class="authority-password-actions">
       <button type="button" id="authorityPasswordUnlock">UNLOCK</button>
       <button type="button" id="authorityPasswordCancel">CANCEL</button>
@@ -9998,6 +10000,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     return {
       overlay:document.getElementById("authorityPasswordOverlay"),
       input:document.getElementById("authorityPasswordInput"),
+      image:document.getElementById("authoritySecurityImageInput"),
       status:document.getElementById("authorityPasswordStatus"),
       panel:document.getElementById("authorityPressPanel"),
       unlock:document.getElementById("authorityPasswordUnlock")
@@ -10013,6 +10016,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const e=els();
     closeChapChap();
     if(e.panel){e.panel.style.display="none";e.panel.setAttribute("aria-hidden","true");e.panel.scrollTop=0;}
+    sessionStorage.removeItem("ioneAuthoritySession");
+    sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");
     window.ioneRestoreHome?.();
   }
   function openPasswordGate(){
@@ -10022,24 +10027,50 @@ function ioneRunBackgroundMediaPreload(){ return; }
     e.overlay.style.display="flex";
     e.overlay.setAttribute("aria-hidden","false");
     if(e.status)e.status.textContent="";
-    if(e.input){e.input.value="";setTimeout(()=>e.input.focus(),50);}
+    if(e.input)e.input.value="";
+    if(e.image)e.image.value="";
+    if(e.input)setTimeout(()=>e.input.focus(),50);
   }
   async function unlockAuthority(){
     const e=els();
     if(!e.input||!e.unlock)return;
     const password=String(e.input.value||"");
+    const imageFile=e.image?.files?.[0];
     if(!password){if(e.status)e.status.textContent="ENTER PASSWORD.";e.input.focus();return;}
+    if(!imageFile){if(e.status)e.status.textContent="SELECT space.png TO CONTINUE.";e.image?.focus();return;}
+    if(imageFile.name!=="space.png"||imageFile.type!=="image/png"){if(e.status)e.status.textContent="SELECT THE EXACT space.png FILE.";e.image.value="";e.image.focus();return;}
+    if(imageFile.size>5*1024*1024){if(e.status)e.status.textContent="IMAGE MUST BE UNDER 5 MB.";e.image.value="";e.image.focus();return;}
     e.unlock.disabled=true;
-    if(e.status)e.status.textContent="VERIFYING…";
+    if(e.status)e.status.textContent="VERIFYING PASSWORD + SECURITY IMAGE…";
     try{
-      const result=await heavensSupabase.functions.invoke("ione-subscription-plans",{body:{action:"verify",password}});
-      if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Incorrect password.");
+      const form=new FormData();
+      form.append("password",password);
+      form.append("image",imageFile,imageFile.name);
+      const result=await heavensSupabase.functions.invoke("ione-authority-image-auth",{body:form});
+      if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Verification failed.");
+      if(!result.data.token)throw new Error("Secure session was not issued. Please try again.");
+      sessionStorage.setItem("ioneAuthoritySession",result.data.token);
+      sessionStorage.setItem("ioneAuthoritySessionExpiresAt",result.data.expires_at||"");
+      const functions=heavensSupabase?.functions;
+      if(functions&&!functions.__ioneAuthoritySessionWrapped){
+        const originalInvoke=functions.invoke.bind(functions);
+        functions.invoke=function(name,options={}){
+          const token=sessionStorage.getItem("ioneAuthoritySession");
+          if(token&&options&&options.body&&typeof options.body==="object"&&!(options.body instanceof FormData)){
+            options={...options,body:{...options.body,authority_session:token}};
+          }
+          return originalInvoke(name,options);
+        };
+        functions.__ioneAuthoritySessionWrapped=true;
+      }
       if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}
       if(e.panel){e.panel.style.display="block";e.panel.setAttribute("aria-hidden","false");e.panel.scrollTop=0;}
       if(typeof window.ioneRefreshLivePlans==="function")window.ioneRefreshLivePlans().catch(()=>{});
     }catch(error){
-      if(e.status)e.status.textContent=error?.message||"INCORRECT PASSWORD.";
-      e.input.value="";e.input.focus();
+      if(e.status)e.status.textContent=error?.message||"VERIFICATION FAILED.";
+      e.input.value="";
+      if(e.image)e.image.value="";
+      e.input.focus();
     }finally{e.unlock.disabled=false;}
   }
 
@@ -10047,7 +10078,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const target=event.target;
     if(!target||!target.closest)return;
     if(target.closest("#openAuthority")){event.preventDefault();event.stopPropagation();openPasswordGate();return;}
-    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}window.ioneRestoreHome?.();return;}
+    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}if(e.image)e.image.value="";if(e.input)e.input.value="";sessionStorage.removeItem("ioneAuthoritySession");sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");window.ioneRestoreHome?.();return;}
     if(target.closest("#authorityPasswordUnlock")){event.preventDefault();unlockAuthority();return;}
     if(target.closest("#authorityPressClose")){event.preventDefault();closeAuthorityPanel();return;}
   },true);
