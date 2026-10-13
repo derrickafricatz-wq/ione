@@ -10056,8 +10056,15 @@ function ioneRunBackgroundMediaPreload(){ return; }
         const originalInvoke=functions.invoke.bind(functions);
         functions.invoke=function(name,options={}){
           const token=sessionStorage.getItem("ioneAuthoritySession");
-          if(token&&options&&options.body&&typeof options.body==="object"&&!(options.body instanceof FormData)){
-            options={...options,body:{...options.body,authority_session:token}};
+          const expiresAt=Date.parse(sessionStorage.getItem("ioneAuthoritySessionExpiresAt")||"");
+          if(token&&(!Number.isFinite(expiresAt)||Date.now()>=expiresAt)){
+            sessionStorage.removeItem("ioneAuthoritySession");
+            sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");
+            if(typeof closeAuthorityPanel==="function")closeAuthorityPanel();
+          }
+          const activeToken=sessionStorage.getItem("ioneAuthoritySession");
+          if(activeToken&&options&&options.body&&typeof options.body==="object"&&!(options.body instanceof FormData)){
+            options={...options,body:{...options.body,authority_session:activeToken}};
           }
           return originalInvoke(name,options);
         };
