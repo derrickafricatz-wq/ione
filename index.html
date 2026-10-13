@@ -10050,14 +10050,26 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const imageFile=e.image?.files?.[0];
     if(!password){if(e.status)e.status.textContent="ENTER PASSWORD.";e.input.focus();return;}
     if(!imageFile){if(e.status)e.status.textContent="SELECT space.png TO CONTINUE.";e.image?.focus();return;}
-    if(imageFile.name!=="space.png"||imageFile.type!=="image/png"){if(e.status)e.status.textContent="SELECT THE EXACT space.png FILE.";e.image.value="";e.image.focus();return;}
     if(imageFile.size>5*1024*1024){if(e.status)e.status.textContent="IMAGE MUST BE UNDER 5 MB.";e.image.value="";e.image.focus();return;}
+    let verificationImage;
+    try{
+      const signature=new Uint8Array(await imageFile.slice(0,8).arrayBuffer());
+      const isPng=signature.length===8&&signature[0]===0x89&&signature[1]===0x50&&signature[2]===0x4e&&signature[3]===0x47&&signature[4]===0x0d&&signature[5]===0x0a&&signature[6]===0x1a&&signature[7]===0x0a;
+      if(!isPng)throw new Error("Choose the original space.png security image (PNG).");
+      // Android document providers may expose a generated filename such as
+      // 1000044798.png. The backend authenticates the bytes, not the filename.
+      // Normalize the upload name and MIME type while preserving the exact bytes.
+      verificationImage=new File([imageFile],"space.png",{type:"image/png",lastModified:imageFile.lastModified});
+    }catch(error){
+      if(e.status)e.status.textContent=error?.message||"Choose the original space.png security image (PNG).";
+      e.image.value="";e.image.focus();return;
+    }
     e.unlock.disabled=true;
     if(e.status)e.status.textContent="VERIFYING PASSWORD + SECURITY IMAGE…";
     try{
       const form=new FormData();
       form.append("password",password);
-      form.append("image",imageFile,imageFile.name);
+      form.append("image",verificationImage,"space.png");
       const result=await heavensSupabase.functions.invoke("ione-authority-image-auth",{body:form});
       if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Verification failed.");
       if(!result.data.token)throw new Error("Secure session was not issued. Please try again.");
