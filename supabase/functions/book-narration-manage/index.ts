@@ -8,6 +8,15 @@ const corsHeaders = {
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
+async function validAuthoritySession(admin: any, rawToken: unknown): Promise<boolean> {
+  const token = String(rawToken || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(token)) return false;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await admin.from("ione_authority_sessions").select("token_hash").eq("token_hash", tokenHash).gt("expires_at", new Date().toISOString()).is("revoked_at", null).maybeSingle();
+  return !error && !!data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ success: false, error: "Method not allowed." }, 405);
@@ -30,21 +39,10 @@ Deno.serve(async (req: Request) => {
     let body: Record<string, unknown> = {};
     try { body = await req.json(); } catch { body = {}; }
     const action = String(body.action || "").trim().toLowerCase();
-    const password = String(body.password || "");
     const isAuthorityAction = ["authority_list", "authority_status", "authority_upload_url", "authority_publish", "authority_unpublish"].includes(action);
 
-    if (isAuthorityAction) {
-      // Reuse the existing Authority Press verifier rather than introducing a second password.
-      const verifyResponse = await fetch(url + "/functions/v1/ione-subscription-plans", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "apikey": anonKey, "Authorization": "Bearer " + anonKey },
-        body: JSON.stringify({ action: "verify", password }),
-      });
-      let verified: Record<string, unknown> = {};
-      try { verified = await verifyResponse.json(); } catch { verified = {}; }
-      if (!verifyResponse.ok || verified.success !== true) {
-        return json({ success: false, error: "Unauthorized Authority Press access." }, 401);
-      }
+    if (isAuthorityAction && !(await validAuthoritySession(admin, body.authority_session))) {
+      return json({ success: false, error: "Authority Press session expired. Unlock again." }, 401);
     }
 
     if (action === "request") {

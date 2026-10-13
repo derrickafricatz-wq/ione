@@ -17,6 +17,18 @@ const normPhone = (v: unknown) => {
 const parseApi = (v: any) => v?.data?.payout || v?.data || v?.payout || v || {};
 const safeText = (v: unknown, max = 300) => String(v || "").trim().slice(0, max);
 
+
+async function validAuthoritySession(admin: any, rawToken: unknown): Promise<boolean> {
+  const token = String(rawToken || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(token)) return false;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await admin.from("ione_authority_sessions").select("token_hash")
+    .eq("token_hash", tokenHash).gt("expires_at", new Date().toISOString())
+    .is("revoked_at", null).maybeSingle();
+  return !error && !!data;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ success: false, error: "POST required." }, 405);
@@ -29,10 +41,10 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, error: "Server configuration is missing. Verify IONE_AUTHORITY_PASSWORD and BLMPay payout credentials." }, 500);
     }
     const body = await req.json().catch(() => ({}));
-    if (String(body?.password || "") !== authorityPassword) {
-      return json({ success: false, error: "Unauthorized Authority Press access." }, 401);
-    }
     const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    if (!(await validAuthoritySession(admin, body?.authority_session))) {
+      return json({ success: false, error: "Authority Press session expired. Unlock again." }, 401);
+    }
     const action = safeText(body?.action || "list", 40).toLowerCase();
     const blmOrigin = "https://intoione.space";
     const apiHeaders = { Authorization: "Bearer " + apiKey, "X-BLMPay-Origin": blmOrigin, "Content-Type": "application/json" };
