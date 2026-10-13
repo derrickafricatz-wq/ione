@@ -31,7 +31,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const forwarded = req.headers.get("x-forwarded-for") || "";
-    const clientIp = forwarded.split(",")[0].trim() || req.headers.get("cf-connecting-ip") || "unknown";
+    // Prefer proxy-provided client IP headers. If using the forwarded chain, use its
+    // final hop rather than a client-supplied first value.
+    const clientIp = req.headers.get("cf-connecting-ip")?.trim()
+      || req.headers.get("x-real-ip")?.trim()
+      || forwarded.split(",").map(value => value.trim()).filter(Boolean).at(-1)
+      || "unknown";
     const attemptKey = await digest(clientIp);
     const now = new Date();
     const { data: attempt, error: attemptReadError } = await admin
