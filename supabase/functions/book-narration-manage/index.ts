@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ione-authority-session",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (data: unknown, status = 200) =>
@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
     const action = String(body.action || "").trim().toLowerCase();
     const isAuthorityAction = ["authority_list", "authority_status", "authority_upload_url", "authority_publish", "authority_unpublish"].includes(action);
 
-    if (isAuthorityAction && !(await validAuthoritySession(admin, body.authority_session))) {
+    if (isAuthorityAction && !(await validAuthoritySession(admin, body.authority_session || req.headers.get("x-ione-authority-session")))) {
       return json({ success: false, error: "Authority Press session expired. Unlock again." }, 401);
     }
 
