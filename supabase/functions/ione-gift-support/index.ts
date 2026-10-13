@@ -40,6 +40,15 @@ async function qualify(admin:any,refId:string,userId:string){const isUuid=/^[0-9
  if(!was){await pushAuthority(admin,{title:"I|ONE • BRAND PUBLISHED",body:(String(b.brand_name||"New brand")+" published through "+String(r.referrer_name||"I|ONE user")+" • "+String(r.referrer_phone||"")+" • $1 reward ready for review").slice(0,220),url:"./?ioneAuthorityReferral="+encodeURIComponent(r.id),tag:"ione-referral-"+r.id});}
  return u;
 }
+async function validAuthoritySession(admin: any, rawToken: unknown): Promise<boolean> {
+  const token = String(rawToken || "").trim();
+  if (!/^[0-9a-f]{64}$/i.test(token)) return false;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+  const { data, error } = await admin.from("ione_authority_sessions").select("token_hash").eq("token_hash", tokenHash).gt("expires_at", new Date().toISOString()).is("revoked_at", null).maybeSingle();
+  return !error && !!data;
+}
+
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
  try{
@@ -61,7 +70,7 @@ Deno.serve(async(req)=>{
     if(action==="client_messages"){const cid=String(body.conversation_id||"");const {data:c,error:ce}=await admin.from("ione_support_conversations").select("*").eq("id",cid).eq("client_user_id",user.id).maybeSingle();if(ce)throw ce;if(!c)return json({success:false,error:"Conversation not found."},404);const {data:m,error:me}=await admin.from("ione_support_messages").select("*").eq("conversation_id",cid).order("created_at",{ascending:true});if(me)throw me;await admin.from("ione_support_conversations").update({unread_client:0}).eq("id",cid).eq("client_user_id",user.id);await admin.from("ione_support_messages").update({read_at:new Date().toISOString()}).eq("conversation_id",cid).eq("sender_role","authority").is("read_at",null);return json({success:true,conversation:c,messages:m||[]});}
   }
 
-  if(!authorityPassword||String(body.password||"")!==authorityPassword)return json({success:false,error:"Unauthorized Authority Press access."},401);
+  if(!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
 
   if(action==="authority_register_device"){const sub=body.subscription||{};if(!sub.endpoint||!sub.keys?.p256dh||!sub.keys?.auth)return json({success:false,error:"Invalid push subscription."},400);const {data,error}=await admin.from("ione_support_authority_devices").upsert({endpoint:String(sub.endpoint),p256dh:String(sub.keys.p256dh),auth:String(sub.keys.auth),active:true,updated_at:new Date().toISOString()},{onConflict:"endpoint"}).select("*").single();if(error)throw error;return json({success:true,device:data});}
   if(action==="authority_list"){const {data:refs,error:refError}=await admin.from("ione_referral_tokens").select("*").in("status",["shared","qualified","payout_pending","paid"]).order("created_at",{ascending:false}).limit(100);if(refError)throw refError;const referredIds=[...new Set((refs||[]).map((r:any)=>r.referred_user_id).filter(Boolean))];let boards:any[]=[];if(referredIds.length){const {data,error}=await admin.from("afrilink_billboards").select("id,owner_id,brand_name,address,category,business_type,content,created_at,end_at").in("owner_id",referredIds);if(error)throw error;boards=data||[];}const byOwner=new Map(boards.map((b:any)=>[String(b.owner_id),b]));const enriched=(refs||[]).map((r:any)=>({...r,billboard:r.referred_user_id?byOwner.get(String(r.referred_user_id))||null:null}));const {data:cs,error:chatError}=await admin.from("ione_support_conversations").select("*").order("updated_at",{ascending:false}).limit(100);if(chatError)throw chatError;return json({success:true,referrals:enriched,conversations:cs||[]});}
