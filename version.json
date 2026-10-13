@@ -1,5 +1,5 @@
 {
-  "version": "1.0.133",
-  "message": "Fix Gift and private support inbox CORS",
+  "version": "1.0.134",
+  "message": "Fix Market receipt button and Gift referral identity",
   "force": true
 }
