@@ -1,5 +1,5 @@
 {
-  "version": "1.0.132",
-  "message": "Fix Authority Press session forwarding across all protected requests",
+  "version": "1.0.133",
+  "message": "Fix Gift and private support inbox CORS",
   "force": true
 }
