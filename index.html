@@ -8729,6 +8729,34 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
     functions.__ioneAuthoritySessionWrapped = true;
   }
 }
+
+// Last-mile Authority Press authorization: attach the session at fetch time as well,
+// so any feature that retained an earlier Supabase invoke reference still receives
+// the same server-validated session. Never attach it to the unlock endpoint.
+if (!window.__ioneAuthorityFetchSessionWrapped && typeof window.fetch === "function") {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function(input, init = {}) {
+    try {
+      const requestUrl = typeof input === "string" || input instanceof URL
+        ? String(input)
+        : (input && typeof input.url === "string" ? input.url : "");
+      if (requestUrl.includes("/functions/v1/") &&
+          !requestUrl.includes("/functions/v1/ione-authority-image-auth")) {
+        const token = sessionStorage.getItem("ioneAuthoritySession") || "";
+        if (token) {
+          const inheritedHeaders = input instanceof Request ? input.headers : undefined;
+          const headers = new Headers(init.headers || inheritedHeaders || undefined);
+          headers.set("x-ione-authority-session", token);
+          init = { ...init, headers };
+        }
+      }
+    } catch (sessionHeaderError) {
+      // Authorization remains enforced by the Edge Function; never bypass server checks.
+    }
+    return originalFetch(input, init);
+  };
+  window.__ioneAuthorityFetchSessionWrapped = true;
+}
 // Push startup handshake: once the Supabase client exists, immediately let the proven push engine restore the real subscription.
 setTimeout(()=>{ try{ window.ioneSyncPushNow?.(); }catch(e){ console.warn("I|ONE push startup handshake:",e); } },0);
 
