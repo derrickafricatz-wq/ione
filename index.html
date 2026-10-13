@@ -8690,6 +8690,39 @@ const SUPABASE_URL = "https://xbemkmvvbkxknuduthsg.supabase.co";
 // The full public anon key is initialized below. Keep BLMPay secrets server-side only.
 const HEAVENS_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhiZW1rbXZ2Ymt4a251ZHV0aHNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0OTUyOTgsImV4cCI6MjA5NTA3MTI5OH0.tKtlJ89jdPyeFSAaQs02Vet3SOl2LVatl4psSG9RxPI";
 const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPABASE_ANON_KEY);
+
+// Install Authority Press session injection immediately after creating the shared
+// Supabase client. Installing this only after unlock can miss calls whose invoke
+// reference was captured earlier by a feature panel, causing valid sessions to
+// be rejected by protected Edge Functions.
+{
+  const functions = heavensSupabase?.functions;
+  if (functions && !functions.__ioneAuthoritySessionWrapped) {
+    const originalInvoke = functions.invoke.bind(functions);
+    functions.invoke = function(name, options = {}) {
+      let activeToken = "";
+      try {
+        activeToken = sessionStorage.getItem("ioneAuthoritySession") || "";
+        const expiresAt = Date.parse(sessionStorage.getItem("ioneAuthoritySessionExpiresAt") || "");
+        if (activeToken && (!Number.isFinite(expiresAt) || Date.now() >= expiresAt)) {
+          sessionStorage.removeItem("ioneAuthoritySession");
+          sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");
+          activeToken = "";
+          if (typeof window.ioneRelockAuthoritySession === "function") {
+            window.ioneRelockAuthoritySession();
+          }
+        }
+      } catch (sessionError) {
+        activeToken = "";
+      }
+      if (activeToken && options && options.body && typeof options.body === "object" && !(options.body instanceof FormData)) {
+        options = { ...options, body: { ...options.body, authority_session: activeToken } };
+      }
+      return originalInvoke(name, options);
+    };
+    functions.__ioneAuthoritySessionWrapped = true;
+  }
+}
 // Push startup handshake: once the Supabase client exists, immediately let the proven push engine restore the real subscription.
 setTimeout(()=>{ try{ window.ioneSyncPushNow?.(); }catch(e){ console.warn("I|ONE push startup handshake:",e); } },0);
 
