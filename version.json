@@ -1,5 +1,5 @@
 {
-  "version": "1.0.130",
-  "message": "Fix Authority Press multipart session authentication",
+  "version": "1.0.131",
+  "message": "Fix Authority Press session handling and extend unlock period",
   "force": true
 }
