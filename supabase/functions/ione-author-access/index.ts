@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ione-authority-session",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -36,7 +36,7 @@ Deno.serve(async (req: Request) => {
     const admin = createClient(url, service, { auth: { autoRefreshToken: false, persistSession: false } });
 
     if (action.startsWith("authority_")) {
-      if (!(await validAuthoritySession(admin, body?.authority_session))) return json({ success: false, error: "Authority Press session expired. Unlock again." }, 401);
+      if (!(await validAuthoritySession(admin, body?.authority_session || req.headers.get("x-ione-authority-session")))) return json({ success: false, error: "Authority Press session expired. Unlock again." }, 401);
       if (action === "authority_list") {
         const { data, error } = await admin.from("ione_author_access").select("user_id,real_name,phone,terms_accepted,fee_tzs,merchant_name,merchant_number,merchant_network,status,package_number,books_used,renewal_requested,payment_confirmed_at,payment_confirmed_by,authority_notes,submitted_at,updated_at").order("submitted_at", { ascending: false }).limit(200);
         if (error) return json({ success: false, error: "Could not load Author Studio applications." }, 500);

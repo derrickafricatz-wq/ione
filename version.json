@@ -1,5 +1,5 @@
 {
-  "version": "1.0.128",
-  "message": "Initialize Authority Press session injection before panels",
+  "version": "1.0.129",
+  "message": "Pass Authority Press session securely to protected functions",
   "force": true
 }

@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ione-authority-session",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -77,7 +77,7 @@ Deno.serve(async (req: Request) => {
 
     if(action==="update"){
       const password=String(body?.password||"");
-      if(!(await validAuthoritySession(admin,body?.authority_session))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+      if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session")))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
       const raw=Array.isArray(body?.banners)?body.banners:[];
       const banners=raw.map((x:unknown)=>String(x??"").trim()).filter(Boolean).slice(0,10);
       if(!banners.length)return json({success:false,error:"Add at least one banner before saving."},400);

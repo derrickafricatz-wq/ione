@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-ione-authority-session","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:{...corsHeaders,"Content-Type":"application/json"}});
 const normPhone=(v:string)=>{const p=String(v||"").replace(/\D/g,"");return p.startsWith("255")?p:p.startsWith("0")?"255"+p.slice(1):p.startsWith("6")||p.startsWith("7")?"255"+p:p};
 const parseApi=(x:any)=>x?.data||x?.result||x||{};
@@ -68,7 +68,7 @@ Deno.serve(async(req:Request)=>{
   const admin=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
   let body:any={};try{body=await req.json()}catch{}
   const action=String(body?.action||"list").trim().toLowerCase();
-  if(!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+  if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
 
   if(action==="list"){
    /* Before building Authority counts, reconcile pending BLMPay attempts against the provider. Webhooks remain the primary path; this is a safe recovery check for missed callbacks. */

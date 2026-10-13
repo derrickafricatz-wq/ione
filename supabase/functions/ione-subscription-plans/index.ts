@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ione-authority-session",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -73,12 +73,12 @@ Deno.serve(async (req) => {
     }
 
     if (action === "verify") {
-      if (!(await validAuthoritySession(admin, body?.authority_session))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+      if (!(await validAuthoritySession(admin, body?.authority_session || req.headers.get("x-ione-authority-session")))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
       return json({success:true});
     }
 
     if (action === "list_subscriptions") {
-      if (!(await validAuthoritySession(admin, body?.authority_session))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+      if (!(await validAuthoritySession(admin, body?.authority_session || req.headers.get("x-ione-authority-session")))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
       const { data: subs, error: subsError } = await admin
         .from("ione_upload_subscriptions")
         .select("id,customer_id,phone_number,plan_name,amount,currency,status,starts_at,expires_at,blmpay_reference,blmpay_transaction_id,created_at,updated_at")
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "update") {
-      if (!(await validAuthoritySession(admin, body?.authority_session))) {
+      if (!(await validAuthoritySession(admin, body?.authority_session || req.headers.get("x-ione-authority-session")))) {
         return json({success:false,error:"Unauthorized authority access."},401);
       }
 
