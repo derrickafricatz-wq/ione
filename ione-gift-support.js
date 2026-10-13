@@ -58,10 +58,42 @@
     const name=document.getElementById("ioneGiftName"),phone=document.getElementById("ioneGiftPhone"),code=document.querySelector("#ioneGiftNumber .ione-gift-code"),status=document.getElementById("ioneGiftStatus"),share=document.getElementById("ioneGiftShare");
     // Give the form one paint before the referral/session request begins.
     await new Promise(resolve=>requestAnimationFrame(resolve));
+    let r=null,prepareTimer=null,preparing=false,prepareAgain=false;
+    const prepareToken=async()=>{
+      if(preparing){prepareAgain=true;return}
+      preparing=true;
+      try{
+        do{
+          prepareAgain=false;
+          const nm=name.value.trim(),ph=phone.value.trim();
+          if(!nm||!ph){r=null;code.textContent="ADD DETAILS";share.disabled=true;status.textContent="ENTER YOUR NAME AND PHONE TO GENERATE YOUR REFERRAL.";break}
+          const result=await api({action:"prepare_referral",name:nm,phone:ph});
+          if(nm!==name.value.trim()||ph!==phone.value.trim()){prepareAgain=true;continue}
+          r=result.token;code.textContent=r.token;share.disabled=false;status.textContent="";
+        }while(prepareAgain);
+      }catch(e){r=null;share.disabled=true;status.textContent=e.message||"Could not prepare referral."}
+      finally{preparing=false}
+    };
+    const schedulePrepare=()=>{clearTimeout(prepareTimer);prepareTimer=setTimeout(()=>prepareToken(),350)};
     try{
       const old=JSON.parse(localStorage.getItem("ioneGiftIdentity")||"{}");if(old.name)name.value=old.name;if(old.phone)phone.value=old.phone;
-      const r=await api({action:"prepare_referral",name:name.value,phone:phone.value});code.textContent=r.token.token;
-      share.onclick=async()=>{share.disabled=true;status.textContent="PREPARING YOUR PRIVATE REFERRAL…";try{localStorage.setItem("ioneGiftIdentity",JSON.stringify({name:name.value.trim(),phone:phone.value.trim()}));const x=await api({action:"share_referral",token_id:r.token.id,base_url:APP});const inviteText="You are invited to grow your brand with I|ONE Market. Open the Market, tap POST, add your business details and publish your billboard.";if(navigator.share){try{await navigator.share({title:"Your Brand on I|ONE Market",text:inviteText,url:x.url})}catch(shareError){if(shareError?.name==="AbortError"){share.disabled=false;status.textContent="SHARING CANCELLED. YOUR LINK IS READY TO SHARE.";return}await navigator.clipboard?.writeText(inviteText+"\n"+x.url);status.textContent="INVITATION COPIED. SHARE IT WITH THE BRAND.";return}}else{await navigator.clipboard?.writeText(inviteText+"\n"+x.url);status.textContent="INVITATION COPIED. SHARE IT WITH THE BRAND.";return}status.textContent="INVITATION SHARED. YOUR REFERRAL IS NOW TRACKED.";code.textContent="USED";setTimeout(()=>{o.remove();openGift()},900)}catch(e){share.disabled=false;status.textContent=e.message}}
+      share.disabled=true;code.textContent="ADD DETAILS";
+      name.addEventListener("input",schedulePrepare);phone.addEventListener("input",schedulePrepare);
+      await prepareToken();
+      share.onclick=async()=>{
+        share.disabled=true;status.textContent="PREPARING YOUR PRIVATE REFERRAL…";
+        try{
+          const nm=name.value.trim(),ph=phone.value.trim();
+          if(!nm||!ph)throw new Error("Enter your name and phone number first.");
+          localStorage.setItem("ioneGiftIdentity",JSON.stringify({name:nm,phone:ph}));
+          const prepared=await api({action:"prepare_referral",name:nm,phone:ph});r=prepared.token;code.textContent=r.token;
+          const x=await api({action:"share_referral",token_id:r.id,base_url:APP});
+          const inviteText="You are invited to grow your brand with I|ONE Market. Open the Market, tap POST, add your business details and publish your billboard.";
+          if(navigator.share){try{await navigator.share({title:"Your Brand on I|ONE Market",text:inviteText,url:x.url})}catch(shareError){if(shareError?.name==="AbortError"){share.disabled=false;status.textContent="SHARING CANCELLED. YOUR LINK IS READY TO SHARE.";return}await navigator.clipboard?.writeText(inviteText+"\n"+x.url);status.textContent="INVITATION COPIED. SHARE IT WITH THE BRAND.";return}}
+          else{await navigator.clipboard?.writeText(inviteText+"\n"+x.url);status.textContent="INVITATION COPIED. SHARE IT WITH THE BRAND.";return}
+          status.textContent="INVITATION SHARED. YOUR REFERRAL IS NOW TRACKED.";code.textContent="USED";setTimeout(()=>{o.remove();openGift()},900)
+        }catch(e){share.disabled=false;status.textContent=e.message}
+      };
     }catch(e){status.textContent=e.message;share.disabled=true}
   }
   async function ensureIoneClientPush(){try{if(!("Notification"in window)||!("serviceWorker"in navigator)||!("PushManager"in window))return;if(Notification.permission==="default")await Notification.requestPermission();if(Notification.permission!=="granted")return;const reg=await navigator.serviceWorker.ready;let sub=await reg.pushManager.getSubscription();if(!sub){const cfg=await fetch(SUPABASE_URL+"/functions/v1/ione-push",{method:"POST",headers:{"Content-Type":"application/json","apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify({action:"config"})}).then(x=>x.json());if(!cfg.publicKey)return;let b=cfg.publicKey.replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:Uint8Array.from(atob(b),c=>c.charCodeAt(0))});}const s=await ensureHeavensAnonymousSession();await fetch(SUPABASE_URL+"/functions/v1/ione-push",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+s.access_token,"apikey":HEAVENS_SUPABASE_ANON_KEY},body:JSON.stringify({action:"subscribe",user_id:s.user.id,subscription:sub.toJSON(),user_agent:navigator.userAgent})});}catch(e){console.warn("I1 client push:",e)}}
