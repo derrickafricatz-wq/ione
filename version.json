@@ -1,5 +1,5 @@
 {
-  "version": "1.0.126",
-  "message": "Automatic Authority Press session relock and secure support files",
+  "version": "1.0.127",
+  "message": "Accept Android-renamed Authority Press security image",
   "force": true
 }
