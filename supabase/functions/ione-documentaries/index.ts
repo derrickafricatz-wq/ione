@@ -31,6 +31,7 @@ Deno.serve(async(req:Request)=>{
    else {const id=cleanText(body?.id,100);if(!id)return json({success:false,error:"Documentary id is required."},400);query=query.eq("id",id).maybeSingle();}
    const {data,error}=await query;if(error)return json({success:false,error:"Could not load the documentary."},500);
    if(action==="get"&&!data)return json({success:false,error:"Documentary not found."},404);
+    if(action==="get"&&data?.published!==true&&!(await validAuthoritySession(admin,body?.authority_session)))return json({success:false,error:"Documentary not found."},404);
    return json(action==="list"?{success:true,documentaries:data||[]}:{success:true,documentary:data});
   }
 
