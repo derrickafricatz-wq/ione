@@ -1,5 +1,5 @@
 {
-  "version": "1.0.131",
-  "message": "Fix Authority Press session handling and extend unlock period",
+  "version": "1.0.132",
+  "message": "Fix Authority Press session forwarding across all protected requests",
   "force": true
 }
