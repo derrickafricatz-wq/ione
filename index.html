@@ -1313,6 +1313,21 @@ html, body {
   border-color:#00ffff;
   box-shadow:0 0 0 3px rgba(0,255,255,.10);
 }
+.authority-security-image-row{
+  display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;min-height:42px;
+}
+.authority-security-image-dot{
+  appearance:none;-webkit-appearance:none;flex:0 0 22px;width:22px;height:22px;min-width:22px;min-height:22px;
+  padding:0;border:0;border-radius:50%;background:#dc2626;cursor:pointer;touch-action:manipulation;
+  box-shadow:0 0 0 4px rgba(220,38,38,.12),inset 0 1px 2px rgba(255,255,255,.25);
+  transition:background-color .18s ease,box-shadow .18s ease,transform .12s ease;
+}
+.authority-security-image-dot:active{transform:scale(.92)}
+.authority-security-image-dot.is-selected{
+  background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.15),inset 0 1px 2px rgba(255,255,255,.28);
+}
+.authority-security-image-dot:focus-visible{outline:2px solid #86efac;outline-offset:5px}
+.authority-security-image-hint{color:#84969c;font:800 10px/1.2 Arial,sans-serif;letter-spacing:1.5px}
 .authority-password-actions{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -3330,12 +3345,15 @@ function getMedia(id){
   <div class="authority-password-card">
     <div class="authority-password-kicker">AUTHORIZED ACCESS</div>
     <h2>AUTHORITY PRESS</h2>
-    <p>Enter the authority password, then select the authorized security image.</p>
+    <p>Enter your authority password and select your security image.</p>
     <input id="authorityPasswordInput" type="password" inputmode="text" autocomplete="off" placeholder="PASSWORD">
-    <label for="authoritySecurityImageInput" style="display:block;margin-top:14px;color:#b9c7cc;font:800 11px/1.4 Arial,sans-serif;letter-spacing:1px">SECURITY IMAGE · space.png</label>
-    <input id="authoritySecurityImageInput" type="file" accept="image/png,.png" style="display:block;width:100%;box-sizing:border-box;margin-top:8px;padding:12px;border:1px solid #31545a;border-radius:12px;background:#05090a;color:#fff">
+    <div class="authority-security-image-row">
+      <button type="button" id="authoritySecurityImageDot" class="authority-security-image-dot" aria-label="Choose security image" title="Choose security image"></button>
+      <span class="authority-security-image-hint">SECURITY IMAGE</span>
+      <input id="authoritySecurityImageInput" type="file" accept="image/png,.png" hidden>
+    </div>
     <div class="authority-password-actions">
-      <button type="button" id="authorityPasswordUnlock">UNLOCK</button>
+      <button type="button" id="authorityPasswordUnlock">VERIFY</button>
       <button type="button" id="authorityPasswordCancel">CANCEL</button>
     </div>
     <div id="authorityPasswordStatus"></div>
@@ -10108,11 +10126,19 @@ function ioneRunBackgroundMediaPreload(){ return; }
     closeAuthorityPanel();
     const e=els();
     if(e.overlay){e.overlay.style.display="flex";e.overlay.setAttribute("aria-hidden","false");}
-    if(e.status)e.status.textContent="SESSION EXPIRED • ENTER PASSWORD + space.png TO CONTINUE.";
+    if(e.status)e.status.textContent="SESSION EXPIRED • ENTER PASSWORD + SELECT THE SECURITY IMAGE.";
     if(e.input)e.input.value="";
     if(e.image)e.image.value="";
+    setSecurityDot(false);
   }
   window.ioneRelockAuthoritySession=relockAuthoritySession;
+  function setSecurityDot(selected){
+    const dot=document.getElementById("authoritySecurityImageDot");
+    if(!dot)return;
+    dot.classList.toggle("is-selected",Boolean(selected));
+    dot.setAttribute("aria-label",selected?"Security image selected. Tap to change image":"Choose security image");
+    dot.title=selected?"Security image selected. Tap to change image":"Choose security image";
+  }
   function openPasswordGate(){
     const e=els();
     closeAuthorityPanel();
@@ -10122,6 +10148,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(e.status)e.status.textContent="";
     if(e.input)e.input.value="";
     if(e.image)e.image.value="";
+    setSecurityDot(false);
     if(e.input)setTimeout(()=>e.input.focus(),50);
   }
   async function unlockAuthority(){
@@ -10130,20 +10157,20 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const password=String(e.input.value||"");
     const imageFile=e.image?.files?.[0];
     if(!password){if(e.status)e.status.textContent="ENTER PASSWORD.";e.input.focus();return;}
-    if(!imageFile){if(e.status)e.status.textContent="SELECT space.png TO CONTINUE.";e.image?.focus();return;}
+    if(!imageFile){if(e.status)e.status.textContent="SELECT THE SECURITY IMAGE TO CONTINUE.";return;}
     if(imageFile.size>5*1024*1024){if(e.status)e.status.textContent="IMAGE MUST BE UNDER 5 MB.";e.image.value="";e.image.focus();return;}
     let verificationImage;
     try{
       const signature=new Uint8Array(await imageFile.slice(0,8).arrayBuffer());
       const isPng=signature.length===8&&signature[0]===0x89&&signature[1]===0x50&&signature[2]===0x4e&&signature[3]===0x47&&signature[4]===0x0d&&signature[5]===0x0a&&signature[6]===0x1a&&signature[7]===0x0a;
-      if(!isPng)throw new Error("Choose the original space.png security image (PNG).");
+      if(!isPng)throw new Error("Choose the authorized security image in PNG format.");
       // Android document providers may expose a generated filename such as
       // 1000044798.png. The backend authenticates the bytes, not the filename.
       // Normalize the upload name and MIME type while preserving the exact bytes.
       verificationImage=new File([imageFile],"space.png",{type:"image/png",lastModified:imageFile.lastModified});
     }catch(error){
-      if(e.status)e.status.textContent=error?.message||"Choose the original space.png security image (PNG).";
-      e.image.value="";e.image.focus();return;
+      if(e.status)e.status.textContent=error?.message||"Choose the authorized security image in PNG format.";
+      e.image.value="";setSecurityDot(false);e.image.focus();return;
     }
     e.unlock.disabled=true;
     if(e.status)e.status.textContent="VERIFYING PASSWORD + SECURITY IMAGE…";
@@ -10185,15 +10212,25 @@ function ioneRunBackgroundMediaPreload(){ return; }
       if(e.status)e.status.textContent=error?.message||"VERIFICATION FAILED.";
       e.input.value="";
       if(e.image)e.image.value="";
+      setSecurityDot(false);
       e.input.focus();
     }finally{e.unlock.disabled=false;}
   }
+
+  document.addEventListener("change",function(event){
+    if(event.target?.id!=="authoritySecurityImageInput")return;
+    const file=event.target.files?.[0];
+    setSecurityDot(Boolean(file));
+    const e=els();
+    if(e.status)e.status.textContent="";
+  },true);
 
   document.addEventListener("click",function(event){
     const target=event.target;
     if(!target||!target.closest)return;
     if(target.closest("#openAuthority")){event.preventDefault();event.stopPropagation();openPasswordGate();return;}
-    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}if(e.image)e.image.value="";if(e.input)e.input.value="";sessionStorage.removeItem("ioneAuthoritySession");sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");window.ioneRestoreHome?.();return;}
+    if(target.closest("#authoritySecurityImageDot")){event.preventDefault();const e=els();e.image?.click();return;}
+    if(target.closest("#authorityPasswordCancel")){event.preventDefault();const e=els();if(e.overlay){e.overlay.style.display="none";e.overlay.setAttribute("aria-hidden","true");}if(e.image)e.image.value="";setSecurityDot(false);if(e.input)e.input.value="";sessionStorage.removeItem("ioneAuthoritySession");sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");window.ioneRestoreHome?.();return;}
     if(target.closest("#authorityPasswordUnlock")){event.preventDefault();unlockAuthority();return;}
     if(target.closest("#authorityPressClose")){event.preventDefault();closeAuthorityPanel();return;}
   },true);
