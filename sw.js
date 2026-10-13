@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v201";
+const CACHE_NAME = "ione-app-v202";
 const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
 const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const SUPABASE_JS_CACHE_NAME = "ione-supabase-js-v2";
@@ -20,6 +20,7 @@ const APP_FILES = [
   "./hints.js",
   "./ione-gift-support.js",
   "./chapchap.js",
+  "./chapchap-receipts.js",
   "./images/1.jpg",
   "./images/2.jpg",
   "./images/ad3.png",
