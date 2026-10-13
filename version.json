@@ -1,5 +1,5 @@
 {
-  "version": "1.0.134",
-  "message": "Fix Market receipt button and Gift referral identity",
+  "version": "1.0.135",
+  "message": "Reliable Market receipt button and referral identity capture",
   "force": true
 }
