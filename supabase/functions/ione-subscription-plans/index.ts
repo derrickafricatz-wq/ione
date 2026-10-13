@@ -73,8 +73,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === "verify") {
-      const password = String(body?.password || "");
-      if (password !== authorityPassword) return json({success:false,error:"Incorrect password."},401);
+      if (!(await validAuthoritySession(admin, body?.authority_session))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
       return json({success:true});
     }
 
