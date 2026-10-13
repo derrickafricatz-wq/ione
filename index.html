@@ -10014,12 +10014,24 @@ function ioneRunBackgroundMediaPreload(){ return; }
   }
   function closeAuthorityPanel(){
     const e=els();
+    if(window.__ioneAuthorityRelockTimer){clearTimeout(window.__ioneAuthorityRelockTimer);window.__ioneAuthorityRelockTimer=null;}
     closeChapChap();
     if(e.panel){e.panel.style.display="none";e.panel.setAttribute("aria-hidden","true");e.panel.scrollTop=0;}
     sessionStorage.removeItem("ioneAuthoritySession");
     sessionStorage.removeItem("ioneAuthoritySessionExpiresAt");
     window.ioneRestoreHome?.();
   }
+  function relockAuthoritySession(){
+    if(window.__ioneAuthorityRelockTimer){clearTimeout(window.__ioneAuthorityRelockTimer);window.__ioneAuthorityRelockTimer=null;}
+    const chat=document.getElementById("ioneAuthorityChatOverlay");if(chat)chat.remove();
+    closeAuthorityPanel();
+    const e=els();
+    if(e.overlay){e.overlay.style.display="flex";e.overlay.setAttribute("aria-hidden","false");}
+    if(e.status)e.status.textContent="SESSION EXPIRED • ENTER PASSWORD + space.png TO CONTINUE.";
+    if(e.input)e.input.value="";
+    if(e.image)e.image.value="";
+  }
+  window.ioneRelockAuthoritySession=relockAuthoritySession;
   function openPasswordGate(){
     const e=els();
     closeAuthorityPanel();
@@ -10051,6 +10063,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
       if(!result.data.token)throw new Error("Secure session was not issued. Please try again.");
       sessionStorage.setItem("ioneAuthoritySession",result.data.token);
       sessionStorage.setItem("ioneAuthoritySessionExpiresAt",result.data.expires_at||"");
+      if(window.__ioneAuthorityRelockTimer)clearTimeout(window.__ioneAuthorityRelockTimer);
+      const expiresAt=Date.parse(result.data.expires_at||"");
+      window.__ioneAuthorityRelockTimer=setTimeout(relockAuthoritySession,Number.isFinite(expiresAt)?Math.max(0,expiresAt-Date.now()):30*60*1000);
       const functions=heavensSupabase?.functions;
       if(functions&&!functions.__ioneAuthoritySessionWrapped){
         const originalInvoke=functions.invoke.bind(functions);
