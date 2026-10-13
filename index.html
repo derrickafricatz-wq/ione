@@ -10116,7 +10116,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       sessionStorage.setItem("ioneAuthoritySessionExpiresAt",result.data.expires_at||"");
       if(window.__ioneAuthorityRelockTimer)clearTimeout(window.__ioneAuthorityRelockTimer);
       const expiresAt=Date.parse(result.data.expires_at||"");
-      window.__ioneAuthorityRelockTimer=setTimeout(relockAuthoritySession,Number.isFinite(expiresAt)?Math.max(0,expiresAt-Date.now()):30*60*1000);
+      window.__ioneAuthorityRelockTimer=setTimeout(relockAuthoritySession,Number.isFinite(expiresAt)?Math.max(0,expiresAt-Date.now()):24*60*60*1000);
       const functions=heavensSupabase?.functions;
       if(functions&&!functions.__ioneAuthoritySessionWrapped){
         const originalInvoke=functions.invoke.bind(functions);
