@@ -12,7 +12,7 @@ create table if not exists public.ione_manual_subscription_requests (
   brand_name text null,
   terms_accepted boolean not null default false check (terms_accepted = true),
   terms_version text not null default 'ione-manual-subscription-v1',
-  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  status text not null default 'pending' check (status in ('pending','processing','approved','rejected')),
   subscription_id uuid null references public.ione_upload_subscriptions(id) on delete set null,
   approved_at timestamptz null,
   approved_by text null,
