@@ -3005,9 +3005,66 @@ body.ione-gentle-boot #ioneTopActions{
 }
 </style>
 
+
+<style id="ioneConnectivityIntroV1">
+/* I|ONE silent connectivity intro: self-contained vector motion, no media download. */
+#ioneNetworkBoot{background:radial-gradient(ellipse at 50% 48%,#10353c 0%,#071a20 42%,#040b0e 100%);opacity:1;transform:scale(1);transition:opacity .38s cubic-bezier(.22,.8,.24,1),transform .52s cubic-bezier(.22,.8,.24,1);overflow:hidden}
+#ioneNetworkBoot::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(0,255,255,.09),transparent 42%);animation:ioneIntroAtmosphere 1s ease-out both}
+#ioneNetworkBoot .ione-connectivity-scene{position:relative;display:block;width:min(92vw,430px);height:auto;overflow:visible;filter:drop-shadow(0 0 14px rgba(0,255,255,.1))}
+#ioneNetworkBoot .ione-network-links{stroke-dasharray:600;stroke-dashoffset:600;animation:ioneIntroLinkDraw .78s cubic-bezier(.22,.8,.24,1) .04s both}
+#ioneNetworkBoot .ione-network-orbits{transform-origin:180px 110px;animation:ioneIntroOrbit 1.3s linear infinite}
+#ioneNetworkBoot .ione-network-nodes circle{opacity:0;animation:ioneIntroNode .32s ease-out both}
+#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n+1){animation-delay:.12s}
+#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n+2){animation-delay:.22s}
+#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n){animation-delay:.32s}
+#ioneNetworkBoot .ione-network-core-glow{opacity:0;animation:ioneIntroCore .7s ease-out .34s both}
+#ioneNetworkBoot .ione-network-core-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:ioneIntroRing .58s cubic-bezier(.16,1,.3,1) .28s both}
+#ioneNetworkBoot .ione-network-core-text{fill:#f4ffff;font:900 16px Arial,sans-serif;letter-spacing:1.1px;opacity:0;animation:ioneIntroWord .32s ease-out .48s both}
+#ioneNetworkBoot .ione-service-symbols{opacity:0;animation:ioneIntroServices .3s ease-out .48s both}
+#ioneNetworkBoot.ione-network-boot-out{opacity:0;transform:scale(1.035)}
+body.ione-gentle-boot #ioneHomeShell{animation-delay:.08s!important;animation-duration:.48s!important}
+body.ione-gentle-boot #wordOfDayPanel{animation-delay:.12s!important;animation-duration:.48s!important}
+body.ione-gentle-boot #scrollBanner{animation-delay:.22s!important;animation-duration:.48s!important}
+body.ione-gentle-boot #ioneTopActions{animation-delay:.16s!important;animation-duration:.45s!important}
+@keyframes ioneIntroLinkDraw{to{stroke-dashoffset:0}}
+@keyframes ioneIntroNode{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+@keyframes ioneIntroCore{0%{opacity:0;transform:scale(.35)}55%{opacity:1;transform:scale(1.15)}100%{opacity:.72;transform:scale(1)}}
+@keyframes ioneIntroRing{from{opacity:0;transform:scale(.48)}to{opacity:1;transform:scale(1)}}
+@keyframes ioneIntroWord{from{opacity:0;letter-spacing:5px}to{opacity:1;letter-spacing:1.1px}}
+@keyframes ioneIntroServices{from{opacity:0;transform:translateY(3px)}to{opacity:.86;transform:translateY(0)}}
+@keyframes ioneIntroOrbit{to{transform:rotate(360deg)}}
+@keyframes ioneIntroAtmosphere{from{opacity:.15}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#ioneNetworkBoot *{animation-duration:.01ms!important;animation-iteration-count:1!important}body.ione-gentle-boot #ioneHomeShell,body.ione-gentle-boot #wordOfDayPanel,body.ione-gentle-boot #scrollBanner,body.ione-gentle-boot #ioneTopActions{animation:none!important;opacity:1!important}}
+</style>
 </head>
 
-<body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true"><div class="ione-network-mark"><strong>I|ONE</strong><span>intoione.space</span><i></i></div></div>
+<body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true">
+  <svg class="ione-connectivity-scene" viewBox="0 0 360 220" role="presentation">
+    <defs>
+      <radialGradient id="ioneCoreGlow"><stop offset="0" stop-color="#e9ffff"/><stop offset=".24" stop-color="#00ffff"/><stop offset="1" stop-color="#00ffff" stop-opacity="0"/></radialGradient>
+      <linearGradient id="ioneLinkGlow"><stop stop-color="#00ffff" stop-opacity=".12"/><stop offset=".5" stop-color="#a9ffff"/><stop offset="1" stop-color="#00ffff" stop-opacity=".12"/></linearGradient>
+    </defs>
+    <g class="ione-network-links" fill="none" stroke="url(#ioneLinkGlow)" stroke-width="1.4">
+      <path d="M180 110 58 48 33 112 82 174 180 110 277 45 327 103 284 173 180 110"/>
+      <path d="M58 48 128 32 180 110 235 28 277 45 M33 112 105 103 82 174 148 190 180 110 218 185 284 173 M105 103 128 32 M235 28 218 185 M327 103 252 105 277 45 M252 105 284 173"/>
+    </g>
+    <g class="ione-network-orbits" fill="none" stroke="#00ffff" stroke-opacity=".22">
+      <circle cx="180" cy="110" r="57"/><circle cx="180" cy="110" r="82" stroke-dasharray="2 7"/>
+    </g>
+    <g class="ione-network-nodes" fill="#cfffff">
+      <circle cx="58" cy="48" r="3.2"/><circle cx="33" cy="112" r="2.6"/><circle cx="82" cy="174" r="3.1"/>
+      <circle cx="128" cy="32" r="2.5"/><circle cx="105" cy="103" r="3.3"/><circle cx="148" cy="190" r="2.4"/>
+      <circle cx="235" cy="28" r="3"/><circle cx="277" cy="45" r="3.3"/><circle cx="327" cy="103" r="2.7"/>
+      <circle cx="252" cy="105" r="3.2"/><circle cx="284" cy="173" r="3.1"/><circle cx="218" cy="185" r="2.4"/>
+    </g>
+    <circle class="ione-network-core-glow" cx="180" cy="110" r="48" fill="url(#ioneCoreGlow)"/>
+    <circle class="ione-network-core-ring" cx="180" cy="110" r="34" fill="#071417" stroke="#7affff" stroke-opacity=".7"/>
+    <text class="ione-network-core-text" x="180" y="116" text-anchor="middle">I|ONE</text>
+    <g class="ione-service-symbols" fill="#bfffff" font-family="Arial,sans-serif" font-size="9" font-weight="800" text-anchor="middle">
+      <text x="58" y="35">MARKET</text><text x="300" y="32">MEDIA</text><text x="45" y="194">BOOKS</text><text x="304" y="195">DIGITAL</text>
+    </g>
+  </svg>
+</div>
 
 <button id="installBtn" style="
   position:fixed;
@@ -10417,17 +10474,22 @@ function ioneRunBackgroundMediaPreload(){ return; }
   function closeNetworkBoot(){
     const el=document.getElementById("ioneNetworkBoot");
     if(!el)return;
-    el.style.opacity="0";
-    window.setTimeout(function(){if(el)el.remove();},600);
+    el.classList.add("ione-network-boot-out");
+    window.setTimeout(function(){if(el)el.remove();},420);
   }
 
   function startGentleBoot(){
     try{
-      window.setTimeout(closeNetworkBoot,1900);
+      /* The intro is intentionally one second and silent; the home reveal is visual-only. */
+      window.setTimeout(closeNetworkBoot,1000);
       window.setTimeout(function(){
         document.body.classList.remove("ione-gentle-boot");
-      },5600);
-    }catch(e){}
+      },1600);
+    }catch(e){
+      const el=document.getElementById("ioneNetworkBoot");
+      if(el)el.remove();
+      document.body.classList.remove("ione-gentle-boot");
+    }
   }
   if(document.readyState==="loading"){
     document.addEventListener("DOMContentLoaded",startGentleBoot,{once:true});
