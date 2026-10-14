@@ -1,5 +1,5 @@
 {
-  "version": "1.0.138",
-  "message": "Add manual upload subscriptions without changing BLMPay flow",
+  "version": "1.0.139",
+  "message": "Fix Authority Press manual subscription request controls",
   "force": true
 }
