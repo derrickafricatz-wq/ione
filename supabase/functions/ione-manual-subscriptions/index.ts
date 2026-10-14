@@ -105,17 +105,22 @@ Deno.serve(async (req) => {
       const {data:r,error:rError}=await admin.from("ione_manual_subscription_requests").select("*").eq("id",requestId).maybeSingle();
       if(rError||!r) return json({success:false,error:"Manual subscription request was not found."},404);
       if(r.status==="approved") return json({success:false,error:"This request has already been approved. Refresh the list to see its subscription."},409);
-      if(r.status!=="pending") return json({success:false,error:"Only pending requests can be approved."},409);
+      if(r.status!=="pending") return json({success:false,error:"This request is already being processed or is not pending."},409);
+      // Claim the request before creating an entitlement so two admins cannot grant access twice.
+      const claim=await admin.from("ione_manual_subscription_requests").update({status:"processing",updated_at:now.toISOString()})
+        .eq("id",r.id).eq("status","pending").select("id").maybeSingle();
+      if(claim.error||!claim.data) return json({success:false,error:"Another action is already processing this request. Refresh the list."},409);
+      const restorePending=async()=>{await admin.from("ione_manual_subscription_requests").update({status:"pending",updated_at:new Date().toISOString()}).eq("id",r.id).eq("status","processing");};
       // Re-read the customer and plan snapshot from the saved request; never trust client-supplied price or duration.
       const {data:customer,error:cError}=await admin.from("ione_upload_customers").select("id,phone_number,customer_name").eq("id",r.customer_id).single();
-      if(cError||!customer) return json({success:false,error:"Customer record is missing."},500);
+      if(cError||!customer){await restorePending();return json({success:false,error:"Customer record is missing."},500);}
       const startsAt=now.toISOString();
       let expiryBase=now.getTime();
       if(r.request_mode==="renew") {
         const active=await admin.from("ione_upload_subscriptions").select("expires_at")
           .eq("customer_id",r.customer_id).eq("status","active").gt("expires_at",startsAt)
           .order("expires_at",{ascending:false}).limit(1).maybeSingle();
-        if(active.error) return json({success:false,error:"Could not check the current subscription."},500);
+        if(active.error){await restorePending();return json({success:false,error:"Could not check the current subscription."},500);}
         if(active.data?.expires_at) expiryBase=Math.max(expiryBase,Date.parse(active.data.expires_at)||expiryBase);
       }
       const actualStarts=new Date(expiryBase).toISOString();
@@ -125,7 +130,7 @@ Deno.serve(async (req) => {
         amount:r.amount,currency:r.currency,status:"active",starts_at:actualStarts,expires_at:expiresAt,
         blmpay_reference:null,blmpay_transaction_id:null
       }).select("id,customer_id,plan_name,amount,currency,status,starts_at,expires_at").single();
-      if(subError) {console.error("Manual subscription activation:",subError);return json({success:false,error:"Payment can be confirmed, but subscription activation failed. Please retry."},500);}
+      if(subError) {console.error("Manual subscription activation:",subError);await restorePending();return json({success:false,error:"Payment can be confirmed, but subscription activation failed. Please retry."},500);}
       // Match the existing automatic renewal behavior: extend the existing billboard's
       // end_at/end_date so it returns to the public Market feed without republishing.
       if (r.request_mode === "renew" && r.billboard_id) {
@@ -134,15 +139,17 @@ Deno.serve(async (req) => {
           .eq("id", r.billboard_id).eq("owner_id", r.user_id).select("id").maybeSingle();
         if (renewal.error || !renewal.data) {
           await admin.from("ione_upload_subscriptions").delete().eq("id", sub.id);
+          await restorePending();
           return json({success:false,error:"Subscription was not activated because the original billboard could not be safely renewed. Refresh and contact support."},409);
         }
       }
       const {data:updated,error:updateError}=await admin.from("ione_manual_subscription_requests").update({
         status:"approved",subscription_id:sub.id,approved_at:now.toISOString(),approved_by:"Authority Press",admin_note:adminNote||null,updated_at:now.toISOString()
-      }).eq("id",r.id).eq("status","pending").select("id").maybeSingle();
+      }).eq("id",r.id).eq("status","processing").select("id").maybeSingle();
       if(updateError||!updated) {
-        // Roll back the entitlement if the request could not be claimed atomically.
+        // Roll back the entitlement if finalization fails; the request remains auditable.
         await admin.from("ione_upload_subscriptions").delete().eq("id",sub.id);
+        await restorePending();
         return json({success:false,error:"Request approval could not be finalized. Refresh and try again."},409);
       }
       return json({success:true,subscription:sub,request_id:r.id,message:"Manual subscription approved and access activated."});
