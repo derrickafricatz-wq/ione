@@ -182,6 +182,15 @@
   #topicsList{gap:26px!important;padding-top:8px!important;padding-bottom:calc(34px + env(safe-area-inset-bottom))!important;}
   #topicsList .ione-home-doc-card{margin:0!important;min-height:200px!important;}
 
+
+/* STARTUP BRAND COLOR LOCK • every visible startup accent uses the exact same cyan */
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-links{stroke:#00ffff!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-orbits{stroke:#00ffff!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-nodes{fill:#00ffff!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-ring{stroke:#00ffff!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-text{fill:#00ffff!important;color:#00ffff!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-service-symbols{fill:#00ffff!important;color:#00ffff!important}
+#ioneNetworkBoot .ione-from-derrick,#ioneNetworkBoot .ione-from-derrick span,#ioneNetworkBoot .ione-from-derrick strong{color:#00ffff!important}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -3020,7 +3029,7 @@ body.ione-gentle-boot #ioneTopActions{
 #ioneNetworkBoot .ione-network-nodes circle:nth-child(3n){animation-delay:.68s}
 #ioneNetworkBoot .ione-network-core-glow{opacity:0;animation:ioneIntroCore 1.1s ease-out .58s both}
 #ioneNetworkBoot .ione-network-core-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:ioneIntroRing .9s cubic-bezier(.16,1,.3,1) .48s both}
-#ioneNetworkBoot .ione-network-core-text{fill:#f4ffff;font:900 16px Arial,sans-serif;letter-spacing:1.1px;opacity:0;animation:ioneIntroWord .65s ease-out .85s both}
+#ioneNetworkBoot .ione-network-core-text{fill:#00ffff;font:900 16px Arial,sans-serif;letter-spacing:1.1px;opacity:0;animation:ioneIntroWord .65s ease-out .85s both}
 #ioneNetworkBoot .ione-service-symbols{opacity:0;animation:ioneIntroServices .65s ease-out .9s both}
 #ioneNetworkBoot.ione-network-boot-out{opacity:0;transform:scale(1.035)}
 body.ione-gentle-boot #ioneHomeShell{animation-delay:.28s!important;animation-duration:1.8s!important}
@@ -3061,7 +3070,7 @@ body.ione-gentle-boot #ioneTopActions{animation-delay:.58s!important;animation-d
       <circle cx="252" cy="105" r="3.2"/><circle cx="284" cy="173" r="3.1"/><circle cx="218" cy="185" r="2.4"/>
     </g>
     <circle class="ione-network-core-glow" cx="180" cy="110" r="48" fill="url(#ioneCoreGlow)"/>
-    <circle class="ione-network-core-ring" cx="180" cy="110" r="34" fill="#071417" stroke="#7affff" stroke-opacity=".7"/>
+    <circle class="ione-network-core-ring" cx="180" cy="110" r="34" fill="#071417" stroke="#00ffff" stroke-opacity=".7"/>
     <text class="ione-network-core-text" x="180" y="116" text-anchor="middle">I|ONE</text>
     <g class="ione-service-symbols" fill="#00ffff" font-family="Arial,sans-serif" font-size="9" font-weight="800" text-anchor="middle">
       <text x="58" y="35">MARKET</text><text x="300" y="32">MEDIA</text><text x="45" y="194">BOOKS</text><text x="304" y="195">DIGITAL</text>
