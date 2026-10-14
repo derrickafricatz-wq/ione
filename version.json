@@ -1,5 +1,5 @@
 {
-  "version": "1.0.149",
-  "message": "Improve Launch Observatory country detection",
+  "version": "1.0.150",
+  "message": "Add silent I|ONE connectivity startup animation",
   "force": true
 }
