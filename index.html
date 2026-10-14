@@ -183,14 +183,19 @@
   #topicsList .ione-home-doc-card{margin:0!important;min-height:200px!important;}
 
 
-/* STARTUP BRAND COLOR LOCK • every visible startup accent uses the exact same cyan */
-#ioneNetworkBoot .ione-connectivity-scene .ione-network-links{stroke:#00ffff!important}
-#ioneNetworkBoot .ione-connectivity-scene .ione-network-orbits{stroke:#00ffff!important}
+
+/* STARTUP: single flat brand cyan, with all glow and shadow effects removed */
+#ioneNetworkBoot::before{display:none!important;content:none!important;background:none!important;animation:none!important}
+#ioneNetworkBoot .ione-connectivity-scene{filter:none!important;box-shadow:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-links{stroke:#00ffff!important;stroke-opacity:1!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-orbits{stroke:#00ffff!important;stroke-opacity:1!important}
 #ioneNetworkBoot .ione-connectivity-scene .ione-network-nodes{fill:#00ffff!important}
-#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-ring{stroke:#00ffff!important}
-#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-text{fill:#00ffff!important;color:#00ffff!important}
-#ioneNetworkBoot .ione-connectivity-scene .ione-service-symbols{fill:#00ffff!important;color:#00ffff!important}
-#ioneNetworkBoot .ione-from-derrick,#ioneNetworkBoot .ione-from-derrick span,#ioneNetworkBoot .ione-from-derrick strong{color:#00ffff!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-glow{display:none!important;filter:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-ring{stroke:#00ffff!important;stroke-opacity:1!important;filter:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-text{fill:#00ffff!important;color:#00ffff!important;text-shadow:none!important;filter:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-service-symbols{fill:#00ffff!important;color:#00ffff!important;text-shadow:none!important;filter:none!important}
+#ioneNetworkBoot .ione-from-derrick,#ioneNetworkBoot .ione-from-derrick span,#ioneNetworkBoot .ione-from-derrick strong{color:#00ffff!important;text-shadow:none!important;filter:none!important}
+#ioneNetworkBoot *{text-shadow:none!important;filter:none!important}
 </style>
 
 <link rel="manifest" href="manifest.json">
