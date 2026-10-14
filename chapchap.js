@@ -1455,8 +1455,23 @@
     if(b)b.addEventListener("click",renderAuthorPayouts);
   }
   async function authorPayoutCall(body){
-    var r=await heavensSupabase.functions.invoke("ione-author-payouts",{body:Object.assign({password:ccPassword()},body)});
-    if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Author payout request failed.");
+    var authoritySession="";
+    try{authoritySession=sessionStorage.getItem("ioneAuthoritySession")||"";}catch(_){}
+    var r=await heavensSupabase.functions.invoke("ione-author-payouts",{
+      body:Object.assign({},body,{password:ccPassword(),authority_session:authoritySession})
+    });
+    if(r.error){
+      var message=r.data?.error||r.error?.message||"Author payout request failed.";
+      try{
+        var context=r.error.context;
+        if(context&&typeof context.clone==="function"){
+          var payload=await context.clone().json();
+          if(payload?.error)message=String(payload.error);
+        }
+      }catch(_){}
+      throw new Error(message);
+    }
+    if(!r.data?.success)throw new Error(r.data?.error||"Author payout request failed.");
     return r.data;
   }
   function authorPayoutCard(a){
