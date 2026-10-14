@@ -1,5 +1,5 @@
 {
-  "version": "1.0.148",
-  "message": "Fix Launch Observatory country names",
+  "version": "1.0.149",
+  "message": "Improve Launch Observatory country detection",
   "force": true
 }
