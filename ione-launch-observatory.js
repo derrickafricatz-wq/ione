@@ -43,19 +43,40 @@
     return "browser";
   }
 
+  const COUNTRY_CACHE_KEY = "ione_launch_country_v1";
+
+  async function getCountryCode() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(COUNTRY_CACHE_KEY) || "null");
+      if (cached && /^[A-Z]{2}$/.test(cached.code || "") && Date.now() - Number(cached.at || 0) < 24 * 60 * 60 * 1000) return cached.code;
+    } catch (_) {}
+    // A country-only IP lookup is needed because Supabase function calls do not reliably receive cf-ipcountry.
+    // Only the resulting country code is sent to I|ONE; raw IP addresses are not stored by this feature.
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 3500);
+      try {
+        const response = await fetch("https://ipapi.co/country/", { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", signal: controller.signal });
+        if (!response.ok) return null;
+        const code = (await response.text()).trim().toUpperCase();
+        if (!/^[A-Z]{2}$/.test(code) || code === "XX" || code === "T1") return null;
+        try { localStorage.setItem(COUNTRY_CACHE_KEY, JSON.stringify({ code, at: Date.now() })); } catch (_) {}
+        return code;
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    } catch (_) { return null; }
+  }
+
   async function track(eventType) {
     if (!ALLOWED_EVENTS.has(eventType)) return;
     try {
       if (typeof heavensSupabase === "undefined" || typeof ensureHeavensAnonymousSession !== "function") return;
       const session = await ensureHeavensAnonymousSession();
       if (!session || !session.user) return;
+      const countryCode = await getCountryCode();
       await heavensSupabase.functions.invoke(FUNCTION_NAME, {
-        body: {
-          action: "track",
-          event_type: eventType,
-          visitor_key: getVisitorKey(),
-          source: sourceType()
-        }
+        body: { action: "track", event_type: eventType, visitor_key: getVisitorKey(), country_code: countryCode, source: sourceType() }
       });
     } catch (error) {
       // Analytics is best-effort: failures must never affect I|ONE features.
