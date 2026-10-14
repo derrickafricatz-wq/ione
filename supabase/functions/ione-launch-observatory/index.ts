@@ -84,15 +84,16 @@ Deno.serve(async (req: Request) => {
     const cutoffDate = dateOffset(29);
     const cutoffIso = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [visitorCount, todayCount, installCount, launchCount, dailyResult, eventsResult] = await Promise.all([
+    const [visitorCount, todayCount, installCount, installClickCount, launchCount, dailyResult, eventsResult] = await Promise.all([
       admin.from("ione_launch_visitors").select("visitor_hash", { count: "exact", head: true }),
       admin.from("ione_launch_daily_visitors").select("visitor_hash", { count: "exact", head: true }).eq("visit_date", today),
       admin.from("ione_launch_events").select("id", { count: "exact", head: true }).eq("event_type", "install_confirmed"),
+      admin.from("ione_launch_events").select("id", { count: "exact", head: true }).eq("event_type", "install_click"),
       admin.from("ione_launch_events").select("id", { count: "exact", head: true }).eq("event_type", "installed_app_launch").gte("created_at", cutoffIso),
       admin.from("ione_launch_daily_visitors").select("visitor_hash,visit_date,country_code,country_name").gte("visit_date", cutoffDate).order("visit_date", { ascending: true }).limit(20000),
       admin.from("ione_launch_events").select("created_at,event_type,country_code,country_name,visitor_hash").gte("created_at", cutoffIso).order("created_at", { ascending: false }).limit(20000),
     ]);
-    for (const result of [visitorCount, todayCount, installCount, launchCount, dailyResult, eventsResult]) {
+    for (const result of [visitorCount, todayCount, installCount, installClickCount, launchCount, dailyResult, eventsResult]) {
       if (result.error) return json({ success: false, error: "Could not load launch analytics safely." }, 500);
     }
 
@@ -151,6 +152,7 @@ Deno.serve(async (req: Request) => {
       visitorsTotal,
       visitorsToday: todayCount.count || 0,
       installConfirmedTotal,
+      installClicksTotal: installClickCount.count || 0,
       installRate: visitorsTotal > 0 ? Math.round((installConfirmedTotal / visitorsTotal) * 10000) / 100 : 0,
       appLaunches30d: launchCount.count || 0,
       countries30d: visitorSets.size,
