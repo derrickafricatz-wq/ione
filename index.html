@@ -4907,7 +4907,7 @@ function ioneSubscriptionGate(mode="publish",existing=null){
 
   const manualToggle=gate.querySelector("#ioneManualWaysToggle");
   const manualForm=gate.querySelector("#ioneManualWaysForm");
-  const autoSelectors=[".ione-sub-heading",".ione-sub-plans",".ione-sub-phone-label","#ioneSubPhone","#ioneSubStatus","#ioneSubRecover","#ioneSubRecoveryBox",".ione-sub-actions"];
+  const autoSelectors=[".ione-sub-heading",".ione-sub-plans",'label[for="ioneSubPhone"]',"#ioneSubPhone","#ioneSubStatus","#ioneSubRecover","#ioneSubRecoveryBox",".ione-sub-actions"];
   let manualOpen=false;
   function setManualOpen(open){
     manualOpen=!!open;
