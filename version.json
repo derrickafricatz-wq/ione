@@ -1,5 +1,5 @@
 {
-  "version": "1.0.159",
-  "message": "Add safe billboard push notifications",
+  "version": "1.0.160",
+  "message": "Add private brand chat push notifications",
   "force": true
 }
