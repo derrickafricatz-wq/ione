@@ -1,5 +1,5 @@
 {
-  "version": "1.0.155",
-  "message": "Use one exact cyan throughout startup animation",
+  "version": "1.0.156",
+  "message": "Remove startup background glow and all shadows",
   "force": true
 }
