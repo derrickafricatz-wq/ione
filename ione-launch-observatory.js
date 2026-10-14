@@ -166,8 +166,10 @@
     const items = [
       ["UNIQUE BROWSERS", data.visitorsTotal, "All time"],
       ["VISITORS TODAY", data.visitorsToday, "Unique per reporting day"],
+      ["INSTALL BUTTON CLICKS", data.installClicksTotal, "Install interest"],
       ["CONFIRMED INSTALLS", data.installConfirmedTotal, "Where browser confirms"],
-      ["INSTALLED-APP LAUNCHES", data.appLaunches30d, "Last 30 days"]
+      ["INSTALLED-APP LAUNCHES", data.appLaunches30d, "Last 30 days"],
+      ["COUNTRIES REACHED", data.countries30d, "Last 30 days"]
     ];
     cards.innerHTML = items.map(item => '<div class="ilo-card"><div class="ilo-label">' + esc(item[0]) + '</div><div class="ilo-value">' + esc(formatNum(item[1])) + '</div><div class="ilo-muted">' + esc(item[2]) + '</div></div>').join("");
     const points = Array.isArray(data.trend) ? data.trend : [];
