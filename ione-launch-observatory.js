@@ -22,7 +22,16 @@
       }
       return value;
     } catch (_) {
-      return "s-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+      try {
+        let value = sessionStorage.getItem(VISITOR_KEY) || "";
+        if (!/^[a-zA-Z0-9-]{20,80}$/.test(value)) {
+          value = "s-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+          sessionStorage.setItem(VISITOR_KEY, value);
+        }
+        return value;
+      } catch (_) {
+        return "s-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+      }
     }
   }
 
