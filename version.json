@@ -1,5 +1,5 @@
 {
-  "version": "1.0.143",
-  "message": "Fix Authority Press session handoff and errors for author payouts",
+  "version": "1.0.144",
+  "message": "Add Find It for Me requests and Authority Press replies",
   "force": true
 }
