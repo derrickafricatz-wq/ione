@@ -17,9 +17,15 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function countryFromRequest(req: Request): { code: string | null; name: string | null } {
-  const raw = String(req.headers.get("cf-ipcountry") || "").trim().toUpperCase();
-  if (!/^[A-Z]{2}$/.test(raw) || raw === "XX" || raw === "T1") return { code: null, name: null };
+function countryFromRequest(req: Request, suppliedCode: unknown): { code: string | null; name: string | null } {
+  // Supabase function calls bypass the website's Cloudflare proxy, so cf-ipcountry
+  // is often absent. Fall back to the country code returned by the client IP-country lookup.
+  const headerCode = String(req.headers.get("cf-ipcountry") || "").trim().toUpperCase();
+  const clientCode = String(suppliedCode || "").trim().toUpperCase();
+  const raw = /^[A-Z]{2}$/.test(headerCode) && headerCode !== "XX" && headerCode !== "T1"
+    ? headerCode
+    : clientCode;
+  if (!/^[A-Z]{2}$/.test(raw) || raw === "XX" || raw === "T1" || raw === "UN") return { code: null, name: null };
   let name: string | null = raw;
   try {
     const display = new Intl.DisplayNames(["en"], { type: "region" }).of(raw);
@@ -176,17 +182,21 @@ Deno.serve(async (req: Request) => {
   const visitorKey = String(body.visitor_key || "");
   if (!/^[a-zA-Z0-9-]{20,80}$/.test(visitorKey)) return json({ success: false, error: "Invalid anonymous visitor identifier." }, 400);
   const visitorHash = await sha256(visitorKey);
-  const country = countryFromRequest(req);
+  const country = countryFromRequest(req, body.country_code);
   const source = safeSource(body.source);
   const now = new Date();
   const nowIso = now.toISOString();
 
-  const existingVisitor = await admin.from("ione_launch_visitors").select("visitor_hash").eq("visitor_hash", visitorHash).maybeSingle();
+  const existingVisitor = await admin.from("ione_launch_visitors").select("visitor_hash,first_country_code,first_country_name").eq("visitor_hash", visitorHash).maybeSingle();
   if (existingVisitor.error) return json({ success: false, error: "Could not record visitor." }, 500);
   if (existingVisitor.data) {
     const update = await admin.from("ione_launch_visitors").update({
       last_seen_at: nowIso,
-      ...(country.code ? { last_country_code: country.code, last_country_name: country.name } : {}),
+      ...(country.code ? {
+        last_country_code: country.code,
+        last_country_name: country.name,
+        ...(!existingVisitor.data.first_country_code ? { first_country_code: country.code, first_country_name: country.name } : {}),
+      } : {}),
     }).eq("visitor_hash", visitorHash);
     if (update.error) return json({ success: false, error: "Could not update visitor." }, 500);
   } else {
@@ -209,8 +219,17 @@ Deno.serve(async (req: Request) => {
       visit_date: day,
       country_code: country.code,
       country_name: country.name,
-    }, { onConflict: "visitor_hash,visit_date", ignoreDuplicates: true });
+    }, { onConflict: "visitor_hash,visit_date" });
     if (daily.error) return json({ success: false, error: "Could not update daily visit totals." }, 500);
+  }
+
+  // Once a country is known, repair this anonymous visitor's older unknown-country rows.
+  if (country.code) {
+    const backfill = await admin.from("ione_launch_daily_visitors").update({
+      country_code: country.code,
+      country_name: country.name,
+    }).eq("visitor_hash", visitorHash).is("country_code", null);
+    if (backfill.error) return json({ success: false, error: "Could not update country totals." }, 500);
   }
 
   let since: string | null = null;
