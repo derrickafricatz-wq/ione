@@ -447,6 +447,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
     }catch(e){status.textContent=e?.message||"Could not load manual requests.";status.style.color="#ff9f9f";}
     finally{if(button){button.disabled=false;button.textContent="REFRESH REQUESTS";}}
   }
+  window.ioneLoadManualSubscriptionRequests=loadManualSubscriptionRequests;
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
@@ -11223,7 +11224,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     }catch(e){status.textContent=e.message||"Could not load forms.";status.style.color="#ff9f9f";}
   }
   document.addEventListener("click",async event=>{
-    if(event.target.closest("#ioneManualRequestsRefresh")){loadManualSubscriptionRequests();return;}
+    if(event.target.closest("#ioneManualRequestsRefresh")){window.ioneLoadManualSubscriptionRequests?.();return;}
     const accessBtn=event.target.closest("[data-manual-access]");
     const rejectBtn=event.target.closest("[data-manual-reject]");
     if(accessBtn||rejectBtn){
@@ -11239,7 +11240,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       try{
         const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:approving?"approve":"reject",request_id:requestId,admin_note:note}});
         if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not update this request.");
-        await loadManualSubscriptionRequests();
+        await window.ioneLoadManualSubscriptionRequests?.();
       }catch(e){alert(e?.message||"Could not update manual subscription request.");btn.disabled=false;}
       return;
     }
