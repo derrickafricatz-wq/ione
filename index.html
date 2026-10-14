@@ -265,6 +265,18 @@ window.ioneEnsureBookPdfLibraries = async function(){
       const span=btn.querySelector("span");
       if(plan&&span)span.textContent="TZS "+Number(plan.amount).toLocaleString("en-US");
     });
+    const manualSelect=gate.querySelector("#ioneManualPlan");
+    if(manualSelect){
+      Array.from(manualSelect.options).forEach(option=>{
+        const key=map[option.value];
+        const plan=key && typeof IONE_UPLOAD_PLANS!=="undefined" ? IONE_UPLOAD_PLANS[key] : null;
+        if(plan)option.textContent=plan.name+" — TZS "+Number(plan.amount).toLocaleString("en-US");
+      });
+      const selectedKey=map[manualSelect.value];
+      const selectedPlan=selectedKey && typeof IONE_UPLOAD_PLANS!=="undefined" ? IONE_UPLOAD_PLANS[selectedKey] : null;
+      const price=gate.querySelector("#ioneManualPlanPrice");
+      if(selectedPlan&&price)price.textContent="Plan price: TZS "+Number(selectedPlan.amount).toLocaleString("en-US");
+    }
   }
 
   window.ioneRefreshLivePlans=loadLivePlans;
