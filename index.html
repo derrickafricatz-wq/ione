@@ -420,6 +420,33 @@ window.ioneEnsureBookPdfLibraries = async function(){
     }
   }
 
+  async function loadManualSubscriptionRequests(){
+    const list=document.getElementById("ioneManualRequestsList");
+    const status=document.getElementById("ioneManualRequestsStatus");
+    const button=document.getElementById("ioneManualRequestsRefresh");
+    if(!list||!status)return;
+    if(button){button.disabled=true;button.textContent="LOADING…";}
+    status.textContent="Loading manual subscription requests…";
+    try{
+      const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:"authority_list"}});
+      if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load manual requests.");
+      list.replaceChildren();
+      const requests=Array.isArray(r.data.requests)?r.data.requests:[];
+      if(!requests.length){status.textContent="No manual subscription requests yet.";return;}
+      requests.forEach(request=>{
+        const card=document.createElement("article");
+        card.style.cssText="display:grid;gap:8px;padding:13px;border:1px solid #31564a;border-radius:12px;background:#07140f;color:#eafff4;";
+        const esc=authorityEsc;
+        card.innerHTML='<strong style="color:#a8f1ca;font-size:15px">'+esc(request.customer_name||"I|ONE CUSTOMER")+'</strong>'+
+          '<div style="font-size:12px;line-height:1.7;color:#bdd3ce">Phone: <b>'+esc(request.customer_phone||"—")+'</b><br>Plan: '+esc(request.plan_name)+' • TSh '+Number(request.amount||0).toLocaleString("en-US")+'<br>Type: '+esc(request.request_mode==="renew"?"RENEWAL":"NEW SUBSCRIPTION")+(request.brand_name?'<br>Brand: '+esc(request.brand_name):"")+'<br>Submitted: '+esc(request.created_at||"—")+'<br>Status: <b>'+esc(String(request.status||"").toUpperCase())+'</b>'+(request.approved_at?'<br>Access granted: '+esc(request.approved_at):"")+'</div>'+
+          (request.status==="pending"?'<label style="font-size:11px;color:#a8f1ca;font-weight:800">ADMIN NOTE (OPTIONAL)<textarea data-manual-note rows="2" maxlength="1000" style="width:100%;box-sizing:border-box;margin-top:5px;padding:9px;border-radius:8px;background:#081113;color:#fff;border:1px solid #34534d"></textarea></label><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-manual-access style="border:0;border-radius:8px;padding:10px 15px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • ACCESS</button><button type="button" data-manual-reject style="border:1px solid #87555b;border-radius:8px;padding:10px 15px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT</button></div>':'');
+        card.dataset.manualRequestId=request.id;
+        list.appendChild(card);
+      });
+      status.textContent=requests.length+" request(s) • Only approve after manual payment verification.";
+    }catch(e){status.textContent=e?.message||"Could not load manual requests.";status.style.color="#ff9f9f";}
+    finally{if(button){button.disabled=false;button.textContent="REFRESH REQUESTS";}}
+  }
   function authorityEsc(v){return String(v==null?"":v).replace(/[&<>"']/g,function(ch){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]})}
   let chapChapAuthorityFilter="orders";
   let chapChapAuthorityCache=null;
@@ -3415,6 +3442,16 @@ function getMedia(id){
       </div>
       <div id="authorityNarrationList" style="display:grid;gap:12px;"></div>
     </div>
+    <div class="authority-panel-section" id="ioneManualSubscriptionsSection">
+      <div class="authority-section-kicker">I|ONE MARKETPLACE</div>
+      <h3>MANUAL SUBSCRIPTION REQUESTS</h3>
+      <p class="authority-section-note">Verify that manual payment has actually reached I|ONE before pressing Access. Approval activates the same upload subscription entitlement used by automatic BLMPay payments. Never approve from the request alone.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0;">
+        <button type="button" id="ioneManualRequestsRefresh" class="authority-save-button">REFRESH REQUESTS</button>
+        <span id="ioneManualRequestsStatus" role="status" style="font-size:12px;color:#bfe8d7;">Requests not loaded.</span>
+      </div>
+      <div id="ioneManualRequestsList" style="display:grid;gap:10px;"></div>
+    </div>
     <div class="authority-panel-section">
       <div class="authority-section-kicker">I|ONE COMMUNICATION</div>
       <h3>SCROLLING BANNERS</h3>
@@ -4795,6 +4832,27 @@ function ioneSubscriptionGate(mode="publish",existing=null){
 
       <div id="ioneSubCurrent" class="ione-sub-expiry"></div>
 
+      <button id="ioneManualWaysToggle" type="button" style="width:100%;margin:10px 0 12px;padding:13px 14px;border-radius:12px;border:1px solid #75e6b0;background:linear-gradient(135deg,#123b2b,#092019);color:#d8ffe9;font-weight:900;letter-spacing:.4px;">MANUAL WAYS</button>
+      <div id="ioneManualWaysForm" style="display:none;margin:0 0 16px;padding:14px;border:1px solid rgba(117,230,176,.55);border-radius:14px;background:rgba(3,24,17,.72);">
+        <h3 style="margin:0 0 8px;color:#a8f1ca;text-align:center;">MANUAL SUBSCRIPTION</h3>
+        <p style="margin:0 0 12px;color:#c6d8cf;font-size:12px;line-height:1.5;">Submit your request, then contact I|ONE support after paying manually. Your access opens only after the team verifies payment.</p>
+        <label for="ioneManualCustomerName" class="ione-sub-phone-label">FULL NAME</label>
+        <input id="ioneManualCustomerName" type="text" maxlength="120" autocomplete="name" placeholder="Enter your full name" style="width:100%;box-sizing:border-box;margin:0 0 12px;">
+        <label for="ioneManualCustomerPhone" class="ione-sub-phone-label">PHONE NUMBER</label>
+        <input id="ioneManualCustomerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="07XXXXXXXX" style="width:100%;box-sizing:border-box;margin:0 0 12px;">
+        <label for="ioneManualPlan" class="ione-sub-phone-label">CHOOSE SUBSCRIPTION PLAN</label>
+        <select id="ioneManualPlan" style="width:100%;height:50px;box-sizing:border-box;padding:0 12px;margin:0 0 8px;border-radius:12px;border:1px solid #31545a;background:#05090a;color:#fff;font-weight:700;">
+          ${plans.map(p=>`<option value="${p.id}">${p.name} — TZS ${Number(p.amount).toLocaleString("en-US")}</option>`).join("")}
+        </select>
+        <div id="ioneManualPlanPrice" style="margin:0 0 12px;color:#a8f1ca;font-size:13px;font-weight:900;"></div>
+        <label style="display:flex;gap:9px;align-items:flex-start;color:#d5e4dc;font-size:12px;line-height:1.5;margin:8px 0 12px;">
+          <input id="ioneManualTerms" type="checkbox" style="margin-top:3px;flex:0 0 auto;">
+          <span>I accept the I|ONE Terms and Conditions. I understand that manual payment is made outside the app and access is granted only after I|ONE confirms receipt.</span>
+        </label>
+        <div id="ioneManualStatus" role="status" style="min-height:36px;color:#d5e4dc;font-size:12px;line-height:1.5;margin:8px 0;"></div>
+        <button id="ioneManualSubmit" type="button" style="width:100%;min-height:48px;border:0;border-radius:12px;background:#a8f1ca;color:#09241b;font-weight:900;">SUBMIT REQUEST</button>
+      </div>
+
       <div class="ione-sub-heading">CHOOSE YOUR PLAN</div>
       <div class="ione-sub-plans">
         ${plans.map(p=>`
@@ -4846,6 +4904,59 @@ function ioneSubscriptionGate(mode="publish",existing=null){
       current.textContent="NO ACTIVE UPLOAD SUBSCRIPTION";
     }
   }
+
+  const manualToggle=gate.querySelector("#ioneManualWaysToggle");
+  const manualForm=gate.querySelector("#ioneManualWaysForm");
+  const autoSelectors=[".ione-sub-heading",".ione-sub-plans",'label[for="ioneSubPhone"]',"#ioneSubPhone","#ioneSubStatus","#ioneSubRecover","#ioneSubRecoveryBox",".ione-sub-actions"];
+  let manualOpen=false;
+  function setManualOpen(open){
+    manualOpen=!!open;
+    if(manualForm)manualForm.style.display=manualOpen?"block":"none";
+    if(manualToggle)manualToggle.textContent=manualOpen?"BACK TO AUTOMATIC PAYMENT":"MANUAL WAYS";
+    autoSelectors.forEach(sel=>gate.querySelectorAll(sel).forEach(el=>{el.style.display=manualOpen?"none":"";}));
+    if(manualOpen)updateManualPlanPrice();
+  }
+  function updateManualPlanPrice(){
+    const select=gate.querySelector("#ioneManualPlan");
+    const price=gate.querySelector("#ioneManualPlanPrice");
+    const selected=plans.find(p=>p.id===String(select?.value||""));
+    if(price&&selected)price.textContent="Plan price: TZS "+Number(selected.amount).toLocaleString("en-US");
+  }
+  manualToggle.onclick=()=>setManualOpen(!manualOpen);
+  gate.querySelector("#ioneManualPlan")?.addEventListener("change",updateManualPlanPrice);
+  updateManualPlanPrice();
+  gate.querySelector("#ioneManualSubmit").onclick=async()=>{
+    const status=gate.querySelector("#ioneManualStatus");
+    const submit=gate.querySelector("#ioneManualSubmit");
+    const customerName=String(gate.querySelector("#ioneManualCustomerName")?.value||"").trim();
+    const phone=String(gate.querySelector("#ioneManualCustomerPhone")?.value||"").trim();
+    const planId=String(gate.querySelector("#ioneManualPlan")?.value||"").trim();
+    const accepted=!!gate.querySelector("#ioneManualTerms")?.checked;
+    if(customerName.length<2||!phone||!planId||!accepted){
+      if(status)status.textContent="Complete your name, phone number and plan, then accept the Terms and Conditions.";
+      return;
+    }
+    submit.disabled=true;
+    if(status)status.textContent="Submitting your manual subscription request…";
+    try{
+      const session=await ensureHeavensAnonymousSession();
+      if(!session?.user?.id)throw new Error("Could not create your secure I|ONE session.");
+      const response=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{
+        action:"submit",user_id:session.user.id,customer_name:customerName,phone_number:phone,plan_id:planId,
+        terms_accepted:true,request_mode:mode==="renew"?"renew":"publish",
+        billboard_id:existing?.id||null,brand_name:existing?.brand_name||""
+      }});
+      if(response.error||!response.data?.success)throw new Error(response.data?.error||response.error?.message||"Could not submit the manual request.");
+      if(response.data.customer_id)ioneSubscriptionRememberCustomer(response.data.customer_id,phone);
+      if(status)status.textContent=response.data.already_pending
+        ?"A manual subscription request is already pending for this phone number. Contact I|ONE support after payment."
+        :"Request submitted successfully. Contact I|ONE support after paying manually. Your access will open after the team verifies payment.";
+      submit.textContent="REQUEST SUBMITTED";
+    }catch(e){
+      if(status)status.textContent=e?.message||"Could not submit the request. Please try again.";
+      submit.disabled=false;
+    }
+  };
 
   const buttons=[...gate.querySelectorAll(".ione-sub-plan")];
   buttons.forEach(btn=>{
@@ -8714,11 +8825,12 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
 const IONE_AUTHORITY_BODY_FUNCTIONS = new Set([
   "ione-app-banners", "ione-documentaries", "ione-author-access",
   "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage",
-  "ione-author-payouts"
+  "ione-author-payouts", "ione-manual-subscriptions"
 ]);
 const IONE_AUTHORITY_HEADER_FUNCTIONS = new Set([
   "ione-app-banners", "ione-documentaries", "ione-author-access",
-  "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage"
+  "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage",
+  "ione-manual-subscriptions"
 ]);
 
 // Install session injection immediately after creating the shared Supabase client,
@@ -11111,6 +11223,26 @@ function ioneRunBackgroundMediaPreload(){ return; }
     }catch(e){status.textContent=e.message||"Could not load forms.";status.style.color="#ff9f9f";}
   }
   document.addEventListener("click",async event=>{
+    if(event.target.closest("#ioneManualRequestsRefresh")){loadManualSubscriptionRequests();return;}
+    const accessBtn=event.target.closest("[data-manual-access]");
+    const rejectBtn=event.target.closest("[data-manual-reject]");
+    if(accessBtn||rejectBtn){
+      const btn=accessBtn||rejectBtn;
+      const card=btn.closest("[data-manual-request-id]");
+      const requestId=card?.dataset.manualRequestId;
+      if(!requestId)return;
+      const approving=!!accessBtn;
+      if(approving&&!confirm("Confirm you personally verified the manual payment in the I|ONE receiving account. This grants publishing access for the selected plan."))return;
+      if(rejectBtn&&!confirm("Reject this manual subscription request?"))return;
+      btn.disabled=true;
+      const note=card.querySelector("[data-manual-note]")?.value||"";
+      try{
+        const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:approving?"approve":"reject",request_id:requestId,admin_note:note}});
+        if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not update this request.");
+        await loadManualSubscriptionRequests();
+      }catch(e){alert(e?.message||"Could not update manual subscription request.");btn.disabled=false;}
+      return;
+    }
     const refreshBtn=event.target.closest("#ioneAuthorAccessRefresh");
     if(refreshBtn){refresh();return;}
     const btn=event.target.closest("[data-ione-author-action]");
