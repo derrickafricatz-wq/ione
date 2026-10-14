@@ -23,6 +23,9 @@ create table if not exists public.ione_manual_subscription_requests (
 
 create index if not exists ione_manual_subscription_requests_status_created_idx
   on public.ione_manual_subscription_requests(status, created_at desc);
+create unique index if not exists ione_manual_subscription_requests_one_open_per_customer_idx
+  on public.ione_manual_subscription_requests(customer_id)
+  where status in ('pending','processing');
 create index if not exists ione_manual_subscription_requests_customer_idx
   on public.ione_manual_subscription_requests(customer_id, created_at desc);
 
