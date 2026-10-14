@@ -87,6 +87,10 @@ Deno.serve(async (req) => {
 
     if (action === "authority_list") {
       if (!(await validAuthoritySession(admin,body?.authority_session||req.headers.get("x-ione-authority-session")))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+      // Recover a claim left behind by a terminated request; active processing normally completes in seconds.
+      const staleBefore=new Date(Date.now()-10*60*1000).toISOString();
+      await admin.from("ione_manual_subscription_requests").update({status:"pending",updated_at:new Date().toISOString()})
+        .eq("status","processing").lt("updated_at",staleBefore);
       const {data:rows,error}=await admin.from("ione_manual_subscription_requests")
         .select("id,customer_id,user_id,plan_id,plan_name,plan_days,amount,currency,request_mode,billboard_id,brand_name,status,subscription_id,approved_at,approved_by,admin_note,created_at,terms_version")
         .order("created_at",{ascending:false}).limit(200);
