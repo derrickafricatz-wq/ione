@@ -60,13 +60,6 @@ async function pushAuthority(admin: any, payload: any) {
     seen.add(String(row.endpoint));
     await sendPush(row, payload);
   }
-  const { data: subs } = await admin.from("ione_push_subscriptions")
-    .select("id,endpoint,p256dh,auth").eq("active", true);
-  for (const row of subs || []) {
-    if (seen.has(String(row.endpoint))) continue;
-    seen.add(String(row.endpoint));
-    await sendPush(row, payload);
-  }
 }
 async function pushAllUsers(admin: any, payload: any) {
   const { data, error } = await admin.from("ione_push_subscriptions")
