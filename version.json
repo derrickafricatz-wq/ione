@@ -1,5 +1,5 @@
 {
-  "version": "1.0.150",
-  "message": "Add silent I|ONE connectivity startup animation",
+  "version": "1.0.151",
+  "message": "Smooth and slow I|ONE startup reveal",
   "force": true
 }
