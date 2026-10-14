@@ -126,6 +126,17 @@ Deno.serve(async (req) => {
         blmpay_reference:null,blmpay_transaction_id:null
       }).select("id,customer_id,plan_name,amount,currency,status,starts_at,expires_at").single();
       if(subError) {console.error("Manual subscription activation:",subError);return json({success:false,error:"Payment can be confirmed, but subscription activation failed. Please retry."},500);}
+      // Match the existing automatic renewal behavior: extend the existing billboard's
+      // end_at/end_date so it returns to the public Market feed without republishing.
+      if (r.request_mode === "renew" && r.billboard_id) {
+        const renewal = await admin.from("afrilink_billboards")
+          .update({ end_date: expiresAt.slice(0,10), end_at: expiresAt, updated_at: now.toISOString() })
+          .eq("id", r.billboard_id).eq("owner_id", r.user_id).select("id").maybeSingle();
+        if (renewal.error || !renewal.data) {
+          await admin.from("ione_upload_subscriptions").delete().eq("id", sub.id);
+          return json({success:false,error:"Subscription was not activated because the original billboard could not be safely renewed. Refresh and contact support."},409);
+        }
+      }
       const {data:updated,error:updateError}=await admin.from("ione_manual_subscription_requests").update({
         status:"approved",subscription_id:sub.id,approved_at:now.toISOString(),approved_by:"Authority Press",admin_note:adminNote||null,updated_at:now.toISOString()
       }).eq("id",r.id).eq("status","pending").select("id").maybeSingle();
