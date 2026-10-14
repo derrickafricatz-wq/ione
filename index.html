@@ -3008,24 +3008,24 @@ body.ione-gentle-boot #ioneTopActions{
 
 <style id="ioneConnectivityIntroV1">
 /* I|ONE silent connectivity intro: self-contained vector motion, no media download. */
-#ioneNetworkBoot{background:radial-gradient(ellipse at 50% 48%,#10353c 0%,#071a20 42%,#040b0e 100%);opacity:1;transform:scale(1);transition:opacity .38s cubic-bezier(.22,.8,.24,1),transform .52s cubic-bezier(.22,.8,.24,1);overflow:hidden}
-#ioneNetworkBoot::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(0,255,255,.09),transparent 42%);animation:ioneIntroAtmosphere 1s ease-out both}
+#ioneNetworkBoot{background:radial-gradient(ellipse at 50% 48%,#10353c 0%,#071a20 42%,#040b0e 100%);opacity:1;transform:scale(1);transition:opacity .72s cubic-bezier(.22,.8,.24,1),transform .88s cubic-bezier(.22,.8,.24,1);overflow:hidden}
+#ioneNetworkBoot::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(0,255,255,.09),transparent 42%);animation:ioneIntroAtmosphere 2.2s ease-out both}
 #ioneNetworkBoot .ione-connectivity-scene{position:relative;display:block;width:min(92vw,430px);height:auto;overflow:visible;filter:drop-shadow(0 0 14px rgba(0,255,255,.1))}
-#ioneNetworkBoot .ione-network-links{stroke-dasharray:600;stroke-dashoffset:600;animation:ioneIntroLinkDraw .78s cubic-bezier(.22,.8,.24,1) .04s both}
-#ioneNetworkBoot .ione-network-orbits{transform-origin:180px 110px;animation:ioneIntroOrbit 1.3s linear infinite}
-#ioneNetworkBoot .ione-network-nodes circle{opacity:0;animation:ioneIntroNode .32s ease-out both}
-#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n+1){animation-delay:.12s}
-#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n+2){animation-delay:.22s}
-#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n){animation-delay:.32s}
-#ioneNetworkBoot .ione-network-core-glow{opacity:0;animation:ioneIntroCore .7s ease-out .34s both}
-#ioneNetworkBoot .ione-network-core-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:ioneIntroRing .58s cubic-bezier(.16,1,.3,1) .28s both}
-#ioneNetworkBoot .ione-network-core-text{fill:#f4ffff;font:900 16px Arial,sans-serif;letter-spacing:1.1px;opacity:0;animation:ioneIntroWord .32s ease-out .48s both}
-#ioneNetworkBoot .ione-service-symbols{opacity:0;animation:ioneIntroServices .3s ease-out .48s both}
+#ioneNetworkBoot .ione-network-links{stroke-dasharray:600;stroke-dashoffset:600;animation:ioneIntroLinkDraw 1.75s cubic-bezier(.22,.8,.24,1) .08s both}
+#ioneNetworkBoot .ione-network-orbits{transform-origin:180px 110px;animation:ioneIntroOrbit 2.8s linear infinite}
+#ioneNetworkBoot .ione-network-nodes circle{opacity:0;animation:ioneIntroNode .65s cubic-bezier(.22,.8,.24,1) both}
+#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n+1){animation-delay:.28s}
+#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n+2){animation-delay:.48s}
+#ioneNetworkBoot .ione-network-nodes circle:nth-child(3n){animation-delay:.68s}
+#ioneNetworkBoot .ione-network-core-glow{opacity:0;animation:ioneIntroCore 1.1s ease-out .58s both}
+#ioneNetworkBoot .ione-network-core-ring{transform-box:fill-box;transform-origin:center;opacity:0;animation:ioneIntroRing .9s cubic-bezier(.16,1,.3,1) .48s both}
+#ioneNetworkBoot .ione-network-core-text{fill:#f4ffff;font:900 16px Arial,sans-serif;letter-spacing:1.1px;opacity:0;animation:ioneIntroWord .65s ease-out .85s both}
+#ioneNetworkBoot .ione-service-symbols{opacity:0;animation:ioneIntroServices .65s ease-out .9s both}
 #ioneNetworkBoot.ione-network-boot-out{opacity:0;transform:scale(1.035)}
-body.ione-gentle-boot #ioneHomeShell{animation-delay:.08s!important;animation-duration:.48s!important}
-body.ione-gentle-boot #wordOfDayPanel{animation-delay:.12s!important;animation-duration:.48s!important}
-body.ione-gentle-boot #scrollBanner{animation-delay:.22s!important;animation-duration:.48s!important}
-body.ione-gentle-boot #ioneTopActions{animation-delay:.16s!important;animation-duration:.45s!important}
+body.ione-gentle-boot #ioneHomeShell{animation-delay:.18s!important;animation-duration:1.25s!important}
+body.ione-gentle-boot #wordOfDayPanel{animation-delay:.32s!important;animation-duration:1.1s!important}
+body.ione-gentle-boot #scrollBanner{animation-delay:.48s!important;animation-duration:1.35s!important}
+body.ione-gentle-boot #ioneTopActions{animation-delay:.4s!important;animation-duration:1.15s!important}
 @keyframes ioneIntroLinkDraw{to{stroke-dashoffset:0}}
 @keyframes ioneIntroNode{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
 @keyframes ioneIntroCore{0%{opacity:0;transform:scale(.35)}55%{opacity:1;transform:scale(1.15)}100%{opacity:.72;transform:scale(1)}}
@@ -10480,11 +10480,11 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
   function startGentleBoot(){
     try{
-      /* The intro is intentionally one second and silent; the home reveal is visual-only. */
-      window.setTimeout(closeNetworkBoot,1000);
+      /* The intro remains silent; slower network draw and a soft, staggered homepage reveal. */
+      window.setTimeout(closeNetworkBoot,2250);
       window.setTimeout(function(){
         document.body.classList.remove("ione-gentle-boot");
-      },1600);
+      },3100);
     }catch(e){
       const el=document.getElementById("ioneNetworkBoot");
       if(el)el.remove();
