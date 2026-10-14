@@ -1,5 +1,5 @@
 {
-  "version": "1.0.157",
+  "version": "1.0.158",
   "message": "Remove startup center glow and all startup shadows",
   "force": true
 }
