@@ -196,6 +196,17 @@
 #ioneNetworkBoot .ione-connectivity-scene .ione-service-symbols{fill:#00ffff!important;color:#00ffff!important;text-shadow:none!important;filter:none!important}
 #ioneNetworkBoot .ione-from-derrick,#ioneNetworkBoot .ione-from-derrick span,#ioneNetworkBoot .ione-from-derrick strong{color:#00ffff!important;text-shadow:none!important;filter:none!important}
 #ioneNetworkBoot *{text-shadow:none!important;filter:none!important}
+
+/* STARTUP: one flat business color, absolutely no blue/cyan shadow or glow */
+#ioneNetworkBoot::before,
+#ioneNetworkBoot::after{display:none!important;content:none!important;background:none!important;filter:none!important;box-shadow:none!important}
+#ioneNetworkBoot .ione-connectivity-scene{filter:none!important;box-shadow:none!important}
+#ioneNetworkBoot .ione-connectivity-scene *{filter:none!important;box-shadow:none!important;text-shadow:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-glow{display:none!important;opacity:0!important;filter:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-ring{stroke:#00ffff!important;stroke-opacity:1!important;filter:none!important}
+#ioneNetworkBoot .ione-connectivity-scene .ione-network-core-text{fill:#00ffff!important}
+#ioneNetworkBoot .ione-network-mark strong{color:#00ffff!important;text-shadow:none!important}
+
 </style>
 
 <link rel="manifest" href="manifest.json">
