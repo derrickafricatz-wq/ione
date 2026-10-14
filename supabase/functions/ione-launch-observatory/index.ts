@@ -18,7 +18,7 @@ async function sha256(value: string): Promise<string> {
 }
 
 function countryFromRequest(req: Request): { code: string | null; name: string | null } {
-  const raw = String(req.headers.get("cf-ipcountry") || req.headers.get("x-country-code") || "").trim().toUpperCase();
+  const raw = String(req.headers.get("cf-ipcountry") || "").trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(raw) || raw === "XX" || raw === "T1") return { code: null, name: null };
   let name: string | null = raw;
   try {
