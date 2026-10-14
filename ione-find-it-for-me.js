@@ -96,6 +96,7 @@
     }catch(e){detail.style.display="block";detail.textContent=e.message||"Could not open request."}}
     section.dataset.bound="1";section._refresh=refresh;section._open= openAdminThread;
     await refresh();
+    if(!section.dataset.polling){section.dataset.polling="1";setInterval(()=>{if(panel.getAttribute("aria-hidden")==="false"&&detail.style.display==="none")refresh().catch(()=>{});},15000);}
   }
   function watchAuthority(){
     const tryBind=()=>{const panel=document.getElementById("authorityPressPanel");if(panel?.getAttribute("aria-hidden")==="false")bindAuthority().catch(console.warn)};
