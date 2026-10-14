@@ -1,5 +1,5 @@
 {
-  "version": "1.0.144",
-  "message": "Add Find It for Me requests and Authority Press replies",
+  "version": "1.0.145",
+  "message": "Finish Find It for Me client and Authority Press inbox",
   "force": true
 }
