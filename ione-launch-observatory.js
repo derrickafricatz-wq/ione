@@ -56,9 +56,10 @@
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 3500);
       try {
-        const response = await fetch("https://ipapi.co/country/", { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", signal: controller.signal });
+        const response = await fetch("https://api.country.is/", { method: "GET", mode: "cors", credentials: "omit", cache: "no-store", signal: controller.signal });
         if (!response.ok) return null;
-        const code = (await response.text()).trim().toUpperCase();
+        const result = await response.json();
+        const code = String(result && result.country || "").trim().toUpperCase();
         if (!/^[A-Z]{2}$/.test(code) || code === "XX" || code === "T1") return null;
         try { localStorage.setItem(COUNTRY_CACHE_KEY, JSON.stringify({ code, at: Date.now() })); } catch (_) {}
         return code;
