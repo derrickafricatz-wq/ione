@@ -1,5 +1,5 @@
 {
-  "version": "1.0.137",
-  "message": "Translate Authority Press access prompt to French",
+  "version": "1.0.138",
+  "message": "Add manual upload subscriptions without changing BLMPay flow",
   "force": true
 }
