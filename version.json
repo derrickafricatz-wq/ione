@@ -1,5 +1,5 @@
 {
-  "version": "1.0.161",
-  "message": "Fix private brand chat push notifications",
+  "version": "1.0.162",
+  "message": "Add isolated one-device push self-test",
   "force": true
 }
