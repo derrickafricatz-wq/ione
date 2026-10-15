@@ -266,6 +266,41 @@ const lessonHints = [
     throw lastError || new Error("Authority notification failed.");
   };
 
+  async function handlePushSelfTest(){
+    let params;
+    try{ params = new URLSearchParams(location.search); }catch(_){ return; }
+    if(params.get("ionePushSelfTest") !== "1") return;
+    history.replaceState({},document.title,location.pathname+location.hash);
+    if(!confirm("Send one test notification to this same signed-in I|ONE device? This does not change normal client/brand chat notifications.")) return;
+    try{
+      const client=sb();
+      if(!client) throw new Error("I|ONE connection is not ready.");
+      if(typeof window.ensureHeavensAnonymousSession === "function"){
+        await window.ensureHeavensAnonymousSession();
+      }
+      let userId=null;
+      for(let attempt=0;attempt<8;attempt++){
+        userId=await pushUserId();
+        if(userId) break;
+        await new Promise(resolve=>setTimeout(resolve,500));
+      }
+      if(!userId) throw new Error("No signed-in I|ONE session was found. Open the app normally, then retry the test link.");
+      if(Notification.permission!=="granted") throw new Error("First enable I|ONE notifications using the ACCESS TRENDING control.");
+      await ensurePushSubscription();
+      const result=await client.functions.invoke("ione-push-self-test",{body:{}});
+      if(result.error) throw new Error(result.data?.error || result.error.message || "Self-test request failed.");
+      if(!result.data?.success) throw new Error(result.data?.error || result.data?.message || "Self-test could not send a notification.");
+      if(Number(result.data.delivered||0)>0){
+        alert("I|ONE test sent. The push provider accepted it for this account. Check whether the notification appears on this device. This tests push delivery only—not client-to-brand identity routing.");
+      }else{
+        alert(result.data.message || "The push provider did not deliver the test notification. Check the push logs.");
+      }
+    }catch(e){
+      alert(e?.message || "I|ONE push self-test failed.");
+      console.warn("I|ONE push self-test:",e);
+    }
+  }
+
   async function handlePushDestination(){
     try{
       const params=new URLSearchParams(location.search);
@@ -300,6 +335,7 @@ const lessonHints = [
       }
       setTimeout(updateNotificationBell,900);
       setTimeout(handlePushDestination,500);
+      setTimeout(handlePushSelfTest,900);
     },0);
   }
 
