@@ -1,5 +1,5 @@
 {
-  "version": "1.0.167",
-  "message": "Fix Request Live remote video connection",
+  "version": "1.0.168",
+  "message": "Restore two-way Request Live audio",
   "force": true
 }
