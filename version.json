@@ -1,5 +1,5 @@
 {
-  "version": "1.0.168",
-  "message": "Restore two-way Request Live audio",
+  "version": "1.0.169",
+  "message": "Silent Request Live video and stable client info",
   "force": true
 }
