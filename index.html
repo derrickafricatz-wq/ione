@@ -6146,21 +6146,28 @@ function aflGetOrCreateRemoteStream(stream){
 }
 function aflAttachRemoteMedia(stream){
   if(!stream)return;
+  // Keep one stable incoming stream, merging only tracks received from the peer.
   if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(stream.id||"");}
   for(const track of (stream.getTracks?.()||[])){
-    if(track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){try{aflRemoteMediaStream.addTrack(track);}catch(_){} }
+    if(track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){
+      try{aflRemoteMediaStream.addTrack(track);}catch(_){}
+    }
   }
   const stable=aflRemoteMediaStream;
   const v=document.getElementById("aflRemoteVideo");
-  const hasVideo=stable.getVideoTracks().length>0;
+  const hasVideo=stable.getVideoTracks().some(t=>t.readyState!=="ended");
   if(v&&hasVideo){
-    // Exactly ONE playback path for a Live Business call. The remote video
-    // element carries both remote camera and remote microphone audio.
     if(v.srcObject!==stable)v.srcObject=stable;
-    v.autoplay=true;v.playsInline=true;v.controls=false;v.muted=true;v.volume=0;v.setAttribute("muted","");v.style.display="block";
-    const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});
+    v.autoplay=true;v.playsInline=true;v.controls=false;
+    // Request Live is video-only; keep remote audio disabled.
+    v.muted=true;v.volume=0;v.setAttribute("muted","");
+    v.style.display="block";
+    const playRemote=()=>{if(v.srcObject===stable){const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}};
+    v.onloadedmetadata=playRemote;
+    playRemote();
   }
-  const ph=document.getElementById("aflVideoPlaceholder");if(ph)ph.style.display=hasVideo?"none":"grid";
+  const ph=document.getElementById("aflVideoPlaceholder");
+  if(ph)ph.style.display=hasVideo?"none":"grid";
 }
 
 function aflFindLiveChatHost(inquiryId){
@@ -6234,12 +6241,21 @@ async function aflSetupPeer(call,uid,role){
   pc._pendingIce=[];pc._iceRestarting=false;pc._videoSender=null;pc._audioSender=null;
   pc.onicecandidate=e=>{if(e.candidate)aflInsertCallSignal(call.id,uid,"ice",e.candidate.toJSON()).catch(console.warn);};
   pc.ontrack=e=>{
-    // Every incoming track is attached to one stable remote MediaStream.
-    // Audio and video may arrive as separate events, so neither is discarded.
-    if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(e.streams?.[0]?.id||"");}
-    if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){} }
+    // Prefer WebRTC's associated remote stream. Fall back to the actual track
+    // for browsers that provide an empty streams array.
+    const incoming=e.streams?.[0]||(e.track?new MediaStream([e.track]):null);
+    if(!incoming)return;
+    if(!aflRemoteMediaStream)aflRemoteMediaStream=new MediaStream();
+    aflRemoteMediaStreamId=String(incoming.id||aflRemoteMediaStreamId||"");
+    for(const track of (incoming.getTracks?.()||[])){
+      if(track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){try{aflRemoteMediaStream.addTrack(track);}catch(_){}}
+    }
+    if(e.track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===e.track.id)){try{aflRemoteMediaStream.addTrack(e.track);}catch(_){}}
     aflAttachRemoteMedia(aflRemoteMediaStream);
-    e.track.onunmute=()=>aflAttachRemoteMedia(aflRemoteMediaStream);
+    if(e.track){
+      e.track.addEventListener?.("unmute",()=>aflAttachRemoteMedia(aflRemoteMediaStream));
+      e.track.addEventListener?.("ended",()=>aflAttachRemoteMedia(aflRemoteMediaStream));
+    }
   };
   pc.onconnectionstatechange=()=>{
     const state=pc.connectionState;
@@ -6262,7 +6278,10 @@ async function aflSetupPeer(call,uid,role){
   // before creating the answer. This avoids asymmetric send/receive sections.
   if(role==="caller") {
     const track=stream.getVideoTracks?.()[0];
-    if(track){pc._videoSender=pc.addTrack(track,stream);}
+    // Declare bidirectional video before creating the offer, so both peers
+    // negotiate a send/receive video m-line consistently.
+    const videoTransceiver=pc.addTransceiver("video",{direction:"sendrecv"});
+    if(track){await videoTransceiver.sender.replaceTrack(track);pc._videoSender=videoTransceiver.sender;}
   }
   if(aflIsVideoCall(call)){
     aflSetVideoStage(true,stream);
