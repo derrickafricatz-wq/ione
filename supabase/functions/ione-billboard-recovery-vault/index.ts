@@ -27,7 +27,7 @@ Deno.serve(async(req:Request)=>{
   const action=String(body?.action||"list").trim().toLowerCase();
   const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
   if(action==="store"){
-   const bearer=String(req.headers.get("Authorization")||"").match(/^Bearer\\s+(.+)$/i);
+   const bearer=String(req.headers.get("Authorization")||"").match(/^Bearer\s+(.+)$/i);
    if(!bearer)return json({success:false,error:"Owner session required."},401);
    const {data:authData,error:authError}=await admin.auth.getUser(bearer[1]);
    const user=authData?.user;if(authError||!user?.id)return json({success:false,error:"Invalid owner session."},401);
