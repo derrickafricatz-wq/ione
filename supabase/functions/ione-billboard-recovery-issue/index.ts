@@ -24,7 +24,8 @@ async function encryptRecoveryCode(code: string, serviceKey: string) {
   const b64 = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes));
   return { encrypted_code: b64(new Uint8Array(encrypted)), iv: b64(iv) };
 }
-\nDeno.serve(async (req: Request) => {
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: cors });
   if (req.method !== "POST") return json({ success: false, error: "POST required." }, 405);
   try {
