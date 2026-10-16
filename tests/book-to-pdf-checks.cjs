@@ -24,7 +24,7 @@ assert.ok(html.includes('tap the existing I|ONE Support chat button'));
 assert.ok(html.includes('I|ONE / Authority Press may review'));
 assert.match(sw, /ione-app-v\d+/);
 assert.match(version.version, /^\d+\.\d+\.\d+$/);
-// Cache version is checked generically above so future safe cache bumps remain valid.
+assert.match(sw, /ione-app-v190/);
 assert.doesNotMatch(sw, /OFFLINE_MEDIA_CACHE_NAME/);
 assert.doesNotMatch(sw, /saved\.clone\(\)\.blob\(\)/);
 assert.match(sw, /SUPABASE_JS_CACHE_NAME/);
