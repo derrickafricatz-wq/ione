@@ -6159,12 +6159,29 @@ function aflAttachRemoteMedia(stream){
   if(v&&hasVideo){
     if(v.srcObject!==stable)v.srcObject=stable;
     v.autoplay=true;v.playsInline=true;v.controls=false;
-    // Request Live is video-only; keep remote audio disabled.
+    // Keep the picture element muted; remote voice plays through a dedicated audio element.
     v.muted=true;v.volume=0;v.setAttribute("muted","");
     v.style.display="block";
     const playRemote=()=>{if(v.srcObject===stable){const p=v.play();if(p&&typeof p.catch==="function")p.catch(()=>{});}};
     v.onloadedmetadata=playRemote;
     playRemote();
+  }
+  const hasAudio=stable.getAudioTracks().some(t=>t.readyState!=="ended");
+  if(hasAudio){
+    let audio=document.getElementById("aflCallAudio");
+    if(!audio){
+      audio=document.createElement("audio");
+      audio.id="aflCallAudio";
+      audio.autoplay=true;
+      audio.playsInline=true;
+      audio.style.display="none";
+      document.body.appendChild(audio);
+    }
+    if(audio.srcObject!==stable)audio.srcObject=stable;
+    audio.autoplay=true;audio.muted=false;audio.volume=1;
+    const playAudio=()=>{if(audio.srcObject===stable){const p=audio.play();if(p&&typeof p.catch==="function")p.catch(err=>console.warn("I|ONE live audio needs playback permission:",err));}};
+    audio.onloadedmetadata=playAudio;
+    playAudio();
   }
   const ph=document.getElementById("aflVideoPlaceholder");
   if(ph)ph.style.display=hasVideo?"none":"grid";
@@ -6267,9 +6284,11 @@ async function aflSetupPeer(call,uid,role){
     if(state==="connected"||state==="completed")pc._iceRestarting=false;
     if(state==="failed"&&aflCallState.call?.id===call.id&&aflCallState.call?.status==="accepted")aflTryIceRestart(pc,uid).catch(e=>console.warn("I|ONE ICE recovery:",e));
   };
-  // REQUEST LIVE is intentionally video-only. Voice recording remains in the chat,
-  // so the live video session has no microphone track and cannot create call echo.
-  const constraints={video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}},audio:false};
+  // Request Live carries live camera and microphone media in both directions.
+  const constraints={
+    video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}},
+    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+  };
   const stream=await navigator.mediaDevices.getUserMedia(constraints);
   pc._localStream=stream;
   aflCallState.micMuted=false;aflCallState.cameraOff=false;aflUpdateCallControlLabels();
@@ -6282,6 +6301,9 @@ async function aflSetupPeer(call,uid,role){
     // negotiate a send/receive video m-line consistently.
     const videoTransceiver=pc.addTransceiver("video",{direction:"sendrecv"});
     if(track){await videoTransceiver.sender.replaceTrack(track);pc._videoSender=videoTransceiver.sender;}
+    const audioTrack=stream.getAudioTracks?.()[0];
+    const audioTransceiver=pc.addTransceiver("audio",{direction:"sendrecv"});
+    if(audioTrack){await audioTransceiver.sender.replaceTrack(audioTrack);pc._audioSender=audioTransceiver.sender;}
   }
   if(aflIsVideoCall(call)){
     aflSetVideoStage(true,stream);
@@ -6319,6 +6341,19 @@ async function aflHandleCallSignal(sig,uid){
           const added=pc.addTransceiver("video",{direction:"sendrecv"});
           await added.sender.replaceTrack(localVideo);
           pc._videoSender=added.sender;
+        }
+      }
+      const localAudio=pc._localStream?.getAudioTracks?.()[0];
+      if(localAudio){
+        let audioTx=pc.getTransceivers().find(t=>t.receiver?.track?.kind==="audio" && t.sender);
+        if(audioTx){
+          try{audioTx.direction="sendrecv";}catch(_){}
+          await audioTx.sender.replaceTrack(localAudio);
+          pc._audioSender=audioTx.sender;
+        }else{
+          const addedAudio=pc.addTransceiver("audio",{direction:"sendrecv"});
+          await addedAudio.sender.replaceTrack(localAudio);
+          pc._audioSender=addedAudio.sender;
         }
       }
       await aflFlushPendingIce();
