@@ -5618,6 +5618,9 @@ async function aflLoadFeed(){
     if(error)throw error;
     const visible=(billboards||[]).filter(b=>aflEndAtActive(b.end_at || (b.end_date?`${b.end_date}T23:59:59`:"")));
     const expiredMine=(billboards||[]).find(b=>uid&&String(b.owner_id)===String(uid)&&!aflEndAtActive(b.end_at || (b.end_date?`${b.end_date}T23:59:59`:"")));
+    // Rotate active billboard positions on every feed load so visibility is shared fairly.
+    // This changes display order only; it never writes or changes stored billboard records.
+    for(let i=visible.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[visible[i],visible[j]]=[visible[j],visible[i]];}
     // The brand inbox is intentionally always visible beside UPLOAD.
     // RLS on the inquiry tables still limits the inbox data to the current brand owner.
     const ownerBtn=document.getElementById("aflOwnerInquiries");
