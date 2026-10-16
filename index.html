@@ -6146,9 +6146,12 @@ function aflGetOrCreateRemoteStream(stream){
 }
 function aflAttachRemoteMedia(stream){
   if(!stream)return;
+  // Request Live video is deliberately silent; voice calls keep their existing audio path.
+  const silentVideoCall=!!(aflIsVideoCall(aflCallState.call));
   // Keep one stable incoming stream, merging only tracks received from the peer.
   if(!aflRemoteMediaStream){aflRemoteMediaStream=new MediaStream();aflRemoteMediaStreamId=String(stream.id||"");}
   for(const track of (stream.getTracks?.()||[])){
+    if(track&&silentVideoCall&&track.kind==="audio"){track.enabled=false;continue;}
     if(track&&!aflRemoteMediaStream.getTracks().some(t=>t.id===track.id)){
       try{aflRemoteMediaStream.addTrack(track);}catch(_){}
     }
@@ -6166,7 +6169,7 @@ function aflAttachRemoteMedia(stream){
     v.onloadedmetadata=playRemote;
     playRemote();
   }
-  const hasAudio=stable.getAudioTracks().some(t=>t.readyState!=="ended");
+  const hasAudio=!silentVideoCall&&stable.getAudioTracks().some(t=>t.readyState!=="ended");
   if(hasAudio){
     let audio=document.getElementById("aflCallAudio");
     if(!audio){
@@ -6287,7 +6290,8 @@ async function aflSetupPeer(call,uid,role){
   // Request Live carries live camera and microphone media in both directions.
   const constraints={
     video:{facingMode:{ideal:"user"},width:{ideal:720},height:{ideal:960}},
-    audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
+    // Request Live video requests camera only. Existing voice calls still request microphone.
+    audio:aflIsVideoCall(call)?false:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}
   };
   const stream=await navigator.mediaDevices.getUserMedia(constraints);
   pc._localStream=stream;
@@ -6301,9 +6305,11 @@ async function aflSetupPeer(call,uid,role){
     // negotiate a send/receive video m-line consistently.
     const videoTransceiver=pc.addTransceiver("video",{direction:"sendrecv"});
     if(track){await videoTransceiver.sender.replaceTrack(track);pc._videoSender=videoTransceiver.sender;}
-    const audioTrack=stream.getAudioTracks?.()[0];
-    const audioTransceiver=pc.addTransceiver("audio",{direction:"sendrecv"});
-    if(audioTrack){await audioTransceiver.sender.replaceTrack(audioTrack);pc._audioSender=audioTransceiver.sender;}
+    if(!aflIsVideoCall(call)){
+      const audioTrack=stream.getAudioTracks?.()[0];
+      const audioTransceiver=pc.addTransceiver("audio",{direction:"sendrecv"});
+      if(audioTrack){await audioTransceiver.sender.replaceTrack(audioTrack);pc._audioSender=audioTransceiver.sender;}
+    }
   }
   if(aflIsVideoCall(call)){
     aflSetVideoStage(true,stream);
@@ -6343,7 +6349,7 @@ async function aflHandleCallSignal(sig,uid){
           pc._videoSender=added.sender;
         }
       }
-      const localAudio=pc._localStream?.getAudioTracks?.()[0];
+      const localAudio=aflIsVideoCall(aflCallState.call)?null:pc._localStream?.getAudioTracks?.()[0];
       if(localAudio){
         let audioTx=pc.getTransceivers().find(t=>t.receiver?.track?.kind==="audio" && t.sender);
         if(audioTx){
@@ -12498,7 +12504,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     }catch(_){return '';}
   }
 
-  async function renderBook(uid,keepId){
+  async function renderBookOnce(uid,keepId){
     const list=document.getElementById('aflOwnerInquiryList');if(!list)return null;
     clearOldGenerated();
     list.innerHTML='';
@@ -12576,8 +12582,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
       const p=document.createElement('section');p.className='afl-rbb-page';p.dataset.index=i;p.dataset.inquiryId=c.dataset.inquiryId;p.dataset.clientName=c.dataset.clientName||clientName(c);p.hidden=true;p.appendChild(c);pageArea.appendChild(p);pageEls.push(p);
     });
     book._pages=pageEls;book._ready=true;
-    if(book._opened)showPage(Number(book._pendingOpenIndex||0),'next');
-    else showPage(0,'next');
+    const keepIndex=keepId?pageEls.findIndex(p=>String(p.dataset.inquiryId)===String(keepId)):-1;
+    if(book._opened)showPage(keepIndex>=0?keepIndex:Number(book._pendingOpenIndex||0),'next');
+    else showPage(keepIndex>=0?keepIndex:0,'next');
 
     /* Keep the cover tied to the current brand owner only. Never use another brand's feed image. */
     if(immediateCover&&document.body.contains(book)){
@@ -12585,6 +12592,16 @@ function ioneRunBackgroundMediaPreload(){ return; }
       main.innerHTML='';const img=document.createElement('img');img.src=immediateCover;img.alt='Brand cover';main.appendChild(img);
     }
     return book;
+  }
+  // Keep one book renderer in flight. Reopening the panel reuses the mounted cover;
+  // only a confirmed inbox change or an explicit refresh rebuilds the book.
+  let renderBookInFlight=null;
+  async function renderBook(uid,keepId,force=false){
+    const existing=document.getElementById('aflRealBrandBook');
+    if(!force&&existing&&existing.isConnected&&String(existing.dataset.uid)===String(uid))return existing;
+    if(renderBookInFlight)return renderBookInFlight;
+    renderBookInFlight=renderBookOnce(uid,keepId).finally(()=>{renderBookInFlight=null;});
+    return renderBookInFlight;
   }
   function closeBook(){clearInterval(window.__aflAuthoritativeBrandTimer);const ov=document.getElementById('aflOwnerOverlay');if(ov){ov.style.display='none';ov.setAttribute('aria-hidden','true');}const b=document.getElementById('aflRealBrandBook');if(b)b.classList.remove('open');}
   function showNotification(qid){const book=document.getElementById('aflRealBrandBook');if(!book||!book._pages?.length)return;const idx=book._pages.findIndex(p=>String(p.dataset.inquiryId)===String(qid));if(idx<0)return;const name=book._pages[idx].dataset.clientName||'CLIENT';book._newIndex=idx;const a=book.querySelector('.afl-rbb-alert');if(a){a.textContent='NEW INFO FROM '+name;a.classList.add('show');}book._pages[idx].querySelector('.afl-owner-refresh')?.classList.add('has-new');}
@@ -12595,14 +12612,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
     /* Paint the cover immediately. Client pages hydrate in the background. */
     renderBook(uid,'').then(()=>startWatch(uid)).catch(err=>console.error('Client info book',err));
   }
-  async function refreshBrand(){const b=document.getElementById('aflRealBrandBook');const keep=b?.classList.contains('open')?b._pages?.[b._page]?.dataset.inquiryId:'';const s=await ensureHeavensAnonymousSession();if(s?.user?.id)await renderBook(s.user.id,keep||'');}
+  async function refreshBrand(){const b=document.getElementById('aflRealBrandBook');const keep=b?.classList.contains('open')?b._pages?.[b._page]?.dataset.inquiryId:'';const s=await ensureHeavensAnonymousSession();if(s?.user?.id)await renderBook(s.user.id,keep||'',true);}
   function startWatch(uid){
     clearInterval(window.__aflAuthoritativeBrandTimer);
     window.__aflAuthoritativeBrandTimer=setInterval(async()=>{
       const book=document.getElementById('aflRealBrandBook');if(!book)return;
       try{
         const qs=await fetchOwnerQueries(uid);const known=new Set(book._pages.map(p=>p.dataset.inquiryId));
-        if(qs.length!==known.size||qs.some(q=>!known.has(String(q.id)))){const keep=book._pages[book._page]?.dataset.inquiryId||'';await renderBook(uid,keep);return;}
+        if(qs.length!==known.size||qs.some(q=>!known.has(String(q.id)))){const keep=book._pages[book._page]?.dataset.inquiryId||'';await renderBook(uid,keep,true);return;}
         for(const p of book._pages){
           const qid=p.dataset.inquiryId;const r=await heavensSupabase.from('afrilink_inquiry_messages').select('id,sender_id,created_at').eq('inquiry_id',qid).order('created_at',{ascending:false}).limit(1).maybeSingle();const m=r?.data;if(!m)continue;const id=String(m.id);if(!p.dataset.watchBaseline){p.dataset.watchBaseline=id;continue;}if(id!==p.dataset.watchBaseline&&String(m.sender_id)!==String(uid)){p.dataset.watchBaseline=id;showNotification(qid);}else if(id!==p.dataset.watchBaseline){p.dataset.watchBaseline=id;}
         }
