@@ -5982,9 +5982,18 @@ function aflBuildChatMessageNode(m,viewerId,markedIds=new Set()){
   d.className="afl-chat-msg "+(m.sender_role==="owner"?"owner":"client")+(markedIds.has(m.id)?" marked":"");
   d.dataset.messageId=m.id;
   d.dataset.chatSignature=[m.id,m.created_at,m.message||"",m.voice_path||"",m.is_voice?"1":"0",markedIds.has(m.id)?"1":"0"].join("|");
+  const isVisualMessage=!m.is_voice&&m.voice_path&&m.message==="__IONE_VISUAL__";
   if(m.is_voice&&m.voice_path){
     const voice=document.createElement("audio");voice.controls=true;voice.className="afl-voice";voice.preload="none";voice.title="Voice message";
-    aflVoiceUrl(m.voice_path).then(url=>{voice.src=url;}).catch(()=>{});d.appendChild(voice);
+    aflVoiceUrl(m.voice_path).then(url=>{voice.src=url;}).catch(()=>{});
+    d.appendChild(voice);
+  }else if(isVisualMessage){
+    const visual=document.createElement("div");visual.className="afl-chat-visual";
+    const image=document.createElement("img");image.alt="Image shared in private chat";image.loading="lazy";
+    image.style.cssText="display:block;width:100%;max-width:340px;max-height:360px;object-fit:contain;border-radius:12px;background:#101b1d;cursor:zoom-in;";
+    const label=document.createElement("div");label.textContent="VISUAL DROP";label.style.cssText="font-size:10px;font-weight:900;letter-spacing:1px;margin-top:6px;opacity:.8;";
+    aflVoiceUrl(m.voice_path).then(url=>{image.src=url;image.onclick=(event)=>{event.stopPropagation();aflOpenVisualViewer(url);};}).catch(()=>{label.textContent="IMAGE UNAVAILABLE • REFRESH CHAT";});
+    visual.append(image,label);d.appendChild(visual);
   }else d.appendChild(document.createTextNode(m.message||""));
   const meta=document.createElement("span");meta.className="afl-chat-meta";meta.textContent=(m.sender_role||"client").toUpperCase()+" • "+new Date(m.created_at).toLocaleString()+" • expires "+new Date(m.expires_at||m.created_at).toLocaleDateString();d.appendChild(meta);
   const tools=document.createElement("div");tools.className="afl-chat-tools";
