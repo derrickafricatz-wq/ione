@@ -3507,7 +3507,8 @@ function getMedia(id){
       <h2>AUTHORITY PRESS</h2>
       <button type="button" id="authorityPressClose">CLOSE</button>
     </div>
-    <div class="authority-panel-section">
+    <section class="authority-panel-section ione-recovery-vault-section" id="ioneRecoveryVaultSection"><div class="authority-section-kicker">COMPANY SAFETY • AUTHORITY ONLY</div><h3>COMPANY RECOVERY VAULT</h3><p class="authority-section-note">Protected support copies of active billboard recovery codes. Codes never retained at generation cannot be reconstructed.</p><div class="ione-rv-toolbar"><input id="ioneRecoveryVaultSearch" type="search" placeholder="Search company or status" aria-label="Search recovery vault"><button type="button" id="ioneRecoveryVaultRefresh">REFRESH VAULT</button></div><div id="ioneRecoveryVaultStatus" class="ione-rv-feedback" role="status" aria-live="polite">Unlock Authority Press to load protected records.</div><div id="ioneRecoveryVaultList" class="ione-rv-list"><div class="ione-rv-empty">Vault records appear here after secure verification.</div></div></section>
+<div class="authority-panel-section">
       <div class="authority-section-kicker">I|ONE CONTROL CENTER</div>
       <h3>UPLOAD SUBSCRIPTION PRICES</h3>
       <p class="authority-section-note">These are the live prices used by I|ONE users and by the BLMPay payment server.</p>
@@ -12994,8 +12995,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
         if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||'Could not create recovery code.');
         const code=String(result.data.recovery_code||'');if(!code)throw new Error('The server did not return a recovery code.');
         const display=document.createElement('div');display.className='ione-recovery-overlay';
-        display.innerHTML=`<section class="ione-recovery-card" role="dialog" aria-modal="true"><h2>SAVE YOUR RECOVERY CODE</h2><p>This code is shown only once. Keep it somewhere private outside Chrome. Anyone with this code can claim this billboard, so do not share it publicly.</p><input readonly value="${code.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" aria-label="Recovery code"><button type="button" id="ioneRecoveryCopy">COPY CODE</button><button type="button" id="ioneRecoveryDone" class="secondary">I HAVE SAVED IT</button></section>`;
+        display.innerHTML=`<section class="ione-recovery-card" role="dialog" aria-modal="true"><h2>SAVE YOUR RECOVERY CODE</h2><p>This code is shown only once. Keep it somewhere private outside Chrome. Anyone with this code can claim this billboard, so do not share it publicly.</p><p id="ioneRecoveryVaultSaveStatus" style="font-size:12px;color:#f2cb8d">Saving secure Authority Press support copy…</p><input readonly value="${code.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" aria-label="Recovery code"><button type="button" id="ioneRecoveryCopy">COPY CODE</button><button type="button" id="ioneRecoveryDone" class="secondary">I HAVE SAVED IT</button></section>`;
         document.body.appendChild(display);
+        (async()=>{const state=display.querySelector('#ioneRecoveryVaultSaveStatus');try{const saved=await heavensSupabase.functions.invoke('ione-billboard-recovery-vault',{body:{action:'store',billboard_id:brand.id,recovery_code:code}});if(saved.error||!saved.data?.success)throw new Error(saved.data?.error||saved.error?.message||'Backup not confirmed.');if(state){state.textContent='Secure Authority Press support copy saved.';state.style.color='#8ee7ad';}}catch(vaultError){console.warn('I|ONE recovery vault backup failed; the original recovery code remains available:',vaultError);if(state){state.textContent='Vault copy could not be confirmed. Save this code safely and contact support if needed.';state.style.color='#f2cb8d';}}})();
         display.querySelector('#ioneRecoveryCopy').onclick=async()=>{try{await navigator.clipboard.writeText(code);display.querySelector('#ioneRecoveryCopy').textContent='COPIED ✓';}catch(_){const i=display.querySelector('input');i.select();display.querySelector('#ioneRecoveryCopy').textContent='SELECT AND COPY THE CODE ABOVE';}};
         display.querySelector('#ioneRecoveryDone').onclick=()=>display.remove();
       }catch(e){alert(e?.message||'Could not create recovery code.');}
@@ -13055,3 +13057,5 @@ function ioneRunBackgroundMediaPreload(){ return; }
   }
 })();
 </script>
+
+<script src="./ione-recovery-vault.js?v=1" defer></script>
