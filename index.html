@@ -12539,7 +12539,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     card.querySelector('.afl-owner-reply-btn').onclick=async()=>{const inp=card.querySelector('.afl-owner-reply-input'),msg=inp.value.trim();if(!msg)return;const {data:sentMessage,error}=await heavensSupabase.from('afrilink_inquiry_messages').insert({inquiry_id:q.id,billboard_id:q.billboard_id,owner_id:uid,client_id:q.client_id,sender_id:uid,sender_role:'owner',message:msg}).select('id').single();if(error){alert('Reply failed: '+error.message);return;}if(sentMessage?.id)void aflNotifyInquiryMessage(sentMessage.id);inp.value='';await refreshCardChat(card,q.id,uid);};
     card.querySelector('.afl-owner-refresh').onclick=async e=>{e.preventDefault();e.stopPropagation();card.dataset.pendingNewMessageId='';card.querySelector('.afl-owner-refresh').classList.remove('has-new');await refreshCardChat(card,q.id,uid);};
     card.querySelector('.afl-mic').onclick=()=>{if(aflVoiceRecorder&&aflVoiceRecorder.state!=='inactive'){aflVoiceRecorder.stop();return;}aflToggleVoiceRecorder('owner',{inquiryId:q.id,ownerId:uid,clientId:q.client_id,billboardId:q.billboard_id,status:card.querySelector('.afl-owner-voice-status')});};
-    card.querySelector('.afl-owner-video-call').onclick=async()=>{const b=card.querySelector('.afl-owner-video-call');b.disabled=true;try{await aflCreateCall(q.id,uid,q.client_id,'owner','video');}catch(e){alert(e?.message||'Could not start the video call.');}finally{b.disabled=false;}};
+    // VISUAL DROP replaces the retired video-call control; do not bind a missing button.
     return card;
   }
   async function refreshCardChat(card,qid,uid){
