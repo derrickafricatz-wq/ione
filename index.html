@@ -11438,6 +11438,146 @@ function ioneRunBackgroundMediaPreload(){ return; }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{}, {once:true});
 })()
 </script>
+
+<script>
+/* I|ONE MARKET RECOVERY + SECURE WELCOME MESSAGE PATCH */
+(function(){
+  if(window.__ioneMarketRecoveryPatchV1)return;
+  window.__ioneMarketRecoveryPatchV1=true;
+  const css=document.createElement('style');
+  css.textContent=`
+    .ione-recovery-overlay{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;background:rgba(0,0,0,.88);backdrop-filter:blur(8px)}
+    .ione-recovery-card{width:min(440px,100%);box-sizing:border-box;padding:22px;border:1px solid #3b7c68;border-radius:18px;background:#07130f;color:#f3fff8;box-shadow:0 18px 55px rgba(0,0,0,.5)}
+    .ione-recovery-card h2{margin:0 0 10px;text-align:center;font-size:20px;letter-spacing:.5px}
+    .ione-recovery-card p{font-size:13px;line-height:1.55;color:#c1d6cb}
+    .ione-recovery-card input{width:100%;box-sizing:border-box;padding:14px;border-radius:10px;border:1px solid #42685b;background:#020806;color:#fff;font-size:16px;margin:8px 0 12px}
+    .ione-recovery-card button{width:100%;min-height:46px;border-radius:10px;border:1px solid #3c866c;background:#174b36;color:#effff6;font-weight:900;margin-top:8px}
+    .ione-recovery-card button.secondary{background:#111916;border-color:#37433d;color:#d7e1db}
+    .ione-recovery-status{min-height:22px;font-size:12px;line-height:1.5;color:#bfe7d2;text-align:center;margin-top:10px;overflow-wrap:anywhere}
+  `;
+  document.head.appendChild(css);
+  let recoveryOverlay=null;
+  const sessionUser=async()=>{const s=await ensureHeavensAnonymousSession();return s?.user||null;};
+  async function ownedBillboard(){
+    const u=await sessionUser();if(!u?.id)return null;
+    const {data,error}=await heavensSupabase.from('afrilink_billboards').select('*').eq('owner_id',u.id).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    if(error)throw error;return data||null;
+  }
+  function closeRecovery(){if(recoveryOverlay){recoveryOverlay.remove();recoveryOverlay=null;}}
+  function openRecoveryDialog(destination){
+    closeRecovery();
+    const ov=document.createElement('div');ov.className='ione-recovery-overlay';
+    ov.innerHTML=`<section class="ione-recovery-card" role="dialog" aria-modal="true" aria-label="Recover your I|ONE billboard">
+      <h2>RECOVER MY BILLBOARD</h2>
+      <p>Your published brand and client records are still stored. Enter the one-time recovery code to reconnect the existing billboard to this browser. This will not create a duplicate or charge you again.</p>
+      <label for="ioneRecoveryCode">BILLBOARD RECOVERY CODE</label>
+      <input id="ioneRecoveryCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I1-…">
+      <button id="ioneRecoverySubmit" type="button">RECOVER EXISTING BRAND</button>
+      <button id="ioneRecoveryNew" class="secondary" type="button">CONTINUE TO SUBSCRIPTION PLANS</button>
+      <button id="ioneRecoveryCancel" class="secondary" type="button">CANCEL</button>
+      <div id="ioneRecoveryStatus" class="ione-recovery-status" aria-live="polite"></div>
+    </section>`;
+    document.body.appendChild(ov);recoveryOverlay=ov;
+    const input=ov.querySelector('#ioneRecoveryCode'),submit=ov.querySelector('#ioneRecoverySubmit'),status=ov.querySelector('#ioneRecoveryStatus');
+    ov.querySelector('#ioneRecoveryCancel').onclick=closeRecovery;
+    ov.querySelector('#ioneRecoveryNew').onclick=async()=>{
+      closeRecovery();
+      try{const ok=await ioneRequireUploadSubscription('publish',null);if(ok)aflOpenEditor('publish');}
+      catch(e){alert(e?.message||'Could not open subscription plans.');}
+    };
+    submit.onclick=async()=>{
+      const code=String(input.value||'').trim();if(!code){status.textContent='Enter your recovery code.';input.focus();return;}
+      submit.disabled=true;status.textContent='Verifying recovery code and reconnecting your saved brand…';
+      try{
+        const result=await heavensSupabase.functions.invoke('ione-billboard-recovery',{body:{recovery_code:code}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||'Recovery failed. Please check the code.');
+        const b=await ownedBillboard();
+        if(!b)throw new Error('Recovery succeeded but the brand is not visible yet. Close and reopen Market once.');
+        closeRecovery();
+        try{await ioneGetUploadSubscription();}catch(e){console.warn('I|ONE recovered subscription refresh:',e);}
+        if(typeof aflLoadFeed==='function')await aflLoadFeed();
+        if(destination==='post'){
+          ioneCloseSubscriptionGate();
+          const expiry=new Date(b.end_at||((b.end_date||'')+'T23:59:59'));
+          const isActive=Number.isFinite(expiry.getTime())&&expiry.getTime()>Date.now();
+          await aflOpenEditor(isActive?'publish':'renew',b);
+        }else{
+          const ownerBtn=document.getElementById('aflOwnerInquiries');
+          if(ownerBtn)ownerBtn.click();
+        }
+      }catch(e){status.textContent=e?.message||'Could not recover the billboard.';submit.disabled=false;}
+    };
+    ov.addEventListener('click',e=>{if(e.target===ov)closeRecovery();});
+    setTimeout(()=>input.focus(),50);
+  }
+
+  /* Create an owner recovery code only after a user has a verified owner session. */
+  async function addRecoveryCodeButton(){
+    const save=document.getElementById('aflEditorSave');
+    if(!save||!save.parentElement||document.getElementById('ioneIssueRecoveryCode'))return;
+    const b=document.createElement('button');b.id='ioneIssueRecoveryCode';b.type='button';b.textContent='CREATE RECOVERY CODE';
+    b.style.cssText='min-height:42px;margin-top:8px;width:100%;border:1px solid #4a8068;border-radius:10px;background:#10271d;color:#dcffeb;font-weight:900;';
+    b.onclick=async()=>{
+      b.disabled=true;b.textContent='CREATING…';
+      try{
+        const brand=await ownedBillboard();if(!brand)throw new Error('Publish your brand first, then create a recovery code.');
+        const result=await heavensSupabase.functions.invoke('ione-billboard-recovery-issue',{body:{billboard_id:brand.id}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||'Could not create recovery code.');
+        const code=String(result.data.recovery_code||'');if(!code)throw new Error('The server did not return a recovery code.');
+        const display=document.createElement('div');display.className='ione-recovery-overlay';
+        display.innerHTML=`<section class="ione-recovery-card" role="dialog" aria-modal="true"><h2>SAVE YOUR RECOVERY CODE</h2><p>This code is shown only once. Keep it somewhere private outside Chrome. Anyone with this code can claim this billboard, so do not share it publicly.</p><input readonly value="${code.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" aria-label="Recovery code"><button type="button" id="ioneRecoveryCopy">COPY CODE</button><button type="button" id="ioneRecoveryDone" class="secondary">I HAVE SAVED IT</button></section>`;
+        document.body.appendChild(display);
+        display.querySelector('#ioneRecoveryCopy').onclick=async()=>{try{await navigator.clipboard.writeText(code);display.querySelector('#ioneRecoveryCopy').textContent='COPIED ✓';}catch(_){const i=display.querySelector('input');i.select();display.querySelector('#ioneRecoveryCopy').textContent='SELECT AND COPY THE CODE ABOVE';}};
+        display.querySelector('#ioneRecoveryDone').onclick=()=>display.remove();
+      }catch(e){alert(e?.message||'Could not create recovery code.');}
+      finally{b.disabled=false;b.textContent='CREATE RECOVERY CODE';}
+    };
+    save.parentElement.appendChild(b);
+  }
+
+  /* Existing code is left intact for recognized owners. Unknown sessions get a recovery option before payment. */
+  const post=document.getElementById('aflUploadTop');
+  if(post){
+    post.onclick=async()=>{
+      try{
+        const b=await ownedBillboard();
+        if(!b){openRecoveryDialog('post');return;}
+        if(await ioneRequireUploadSubscription('publish',b))await aflOpenEditor('publish',b);
+      }catch(e){console.error('I|ONE POST owner check:',e);alert(e?.message||'Could not check your existing brand.');}
+    };
+  }
+  const info=document.getElementById('aflOwnerInquiries');
+  if(info){
+    const prior=info.onclick;
+    info.onclick=async function(e){
+      try{const b=await ownedBillboard();if(!b){e?.preventDefault?.();e?.stopPropagation?.();openRecoveryDialog('info');return;}}
+      catch(err){console.warn('I|ONE Client Info owner check:',err);}
+      if(typeof prior==='function')return prior.call(this,e);
+    };
+  }
+
+  /* Add a one-time recovery-code control to the existing editor without changing publish/payment actions. */
+  const originalOpenEditor=window.aflOpenEditor;
+  if(typeof originalOpenEditor==='function'&&!window.__ioneRecoveryEditorWrapped){
+    window.__ioneRecoveryEditorWrapped=true;
+    window.aflOpenEditor=async function(){
+      const result=await originalOpenEditor.apply(this,arguments);
+      setTimeout(addRecoveryCodeButton,80);
+      return result;
+    };
+  }
+
+  /* Server-side message creation: never impersonate the owner from the client browser. */
+  window.aflEnsureWaitingMessage=async function(q){
+    if(!q?.id)return;
+    try{
+      const result=await heavensSupabase.functions.invoke('ione-inquiry-welcome',{body:{inquiry_id:q.id}});
+      if(result.error||!result.data?.success)console.warn('I|ONE automatic welcome message:',result.data?.error||result.error?.message||'not confirmed');
+    }catch(e){console.warn('I|ONE automatic welcome message:',e);}
+  };
+})();
+</script>
+
 </body>
 </html>
 <script>
