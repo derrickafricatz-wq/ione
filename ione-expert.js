@@ -32,7 +32,16 @@
     #ioneExpertAuthority button{border:1px solid #c7dbbf;border-radius:9px;padding:9px 12px;background:#eaf4e4;color:#315b38;font-weight:800;margin:4px 4px 4px 0}
     #ioneExpertAuthority button.danger{background:#fff0ec;color:#9c332a;border-color:#e6c2ba}
     #ioneExpertAuthority,#ioneExpertAuthority *{box-sizing:border-box;min-width:0;max-width:100%}
-    #ioneExpertAuthority .iex-admin-card{overflow-wrap:anywhere;word-break:break-word}
+    #ioneExpertAuthority .iex-admin-card{overflow-wrap:anywhere;word-break:break-word;color:#23372a}
+    #ioneExpertAuthority .iex-admin-card p,#ioneExpertAuthority .iex-admin-replies,#ioneExpertAuthority .iex-admin-reply,#ioneExpertAuthority .iex-admin-reply div{color:#23372a!important}
+    #ioneExpertAuthority .iex-admin-reply{min-height:0!important;height:auto!important;max-height:none!important;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px!important}
+    #ioneExpertAuthority .iex-admin-reply:empty{display:none!important}
+    #ioneExpertAuthority .iex-question-details{color:#243b2d!important}
+    #ioneExpertAuthority .iex-app-name{display:block;color:#173e24!important;font-size:17px;margin-bottom:8px}
+    #ioneExpertAuthority .iex-app-experience{white-space:pre-wrap;line-height:1.55}
+    #ioneExpertAuthority .iex-app-status{font-weight:800}
+    #ioneExpertAuthority .iex-credential-preview{box-sizing:border-box;max-width:100%}
+    #ioneExpertAuthority .iex-credential-link{display:inline-block;margin:8px 0;color:#174b2d!important;text-decoration:underline;overflow-wrap:anywhere}
     #ioneExpertAuthority .iex-community-question{display:block!important;visibility:visible!important;opacity:1!important;background:#fff!important;border:1px solid #b9d4b2!important;padding:16px!important}
     #ioneExpertAuthority .iex-question-label{display:block!important;font-size:11px;font-weight:900;letter-spacing:1px;color:#315b38;margin-bottom:8px}
     #ioneExpertAuthority .iex-question-title{display:block!important;visibility:visible!important;opacity:1!important;font-size:18px;line-height:1.4;font-weight:900;color:#183d22;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -244,16 +253,29 @@
       const apps = $("ioneExpertAuthorityApplications"); apps.replaceChildren();
       (data.applications || []).forEach((app) => {
         const card = document.createElement("article"); card.className = "iex-admin-card";
-        const name = document.createElement("strong"); name.textContent = app.full_name + " • " + app.specialty;
-        const details = document.createElement("p"); details.textContent = app.phone_number + " • " + app.experience;
-        card.append(name, details);
-        if (app.credential_url) { const link = document.createElement("a"); link.href = app.credential_url; link.target = "_blank"; link.rel = "noopener noreferrer"; link.textContent = "OPEN PRIVATE CREDENTIAL"; card.appendChild(link); }
-        const note = document.createElement("input"); note.maxLength = 500; note.placeholder = "Authority review note (optional)";
-        const approve = document.createElement("button"); approve.textContent = "VERIFY & ENABLE";
-        const reject = document.createElement("button"); reject.className = "danger"; reject.textContent = "REJECT";
-        approve.addEventListener("click", () => reviewApplication(app.id, "approve_expert", note.value, approve));
-        reject.addEventListener("click", () => reviewApplication(app.id, "reject_expert", note.value, reject));
-        card.append(note, approve, reject); apps.appendChild(card);
+        const name = document.createElement("strong"); name.className = "iex-app-name"; name.textContent = app.full_name || "Expert applicant";
+        const specialty = document.createElement("p"); specialty.className = "iex-app-specialty"; specialty.textContent = "Specialty: " + (app.specialty || "Not provided");
+        const phone = document.createElement("p"); phone.textContent = "Phone: " + (app.phone_number || "Not provided");
+        const experience = document.createElement("p"); experience.className = "iex-app-experience"; experience.textContent = "Experience: " + (app.experience || "Not provided");
+        const state = document.createElement("p"); state.className = "iex-app-status"; state.textContent = "Status: " + String(app.status || "pending").toUpperCase() + (app.created_at ? " • Submitted " + new Date(app.created_at).toLocaleString() : "");
+        card.append(name, specialty, phone, experience, state);
+        if (app.credential_url) {
+          const link = document.createElement("a"); link.href = app.credential_url; link.target = "_blank"; link.rel = "noopener noreferrer";
+          const isPdf = /\.pdf(?:$|[?#])/i.test(String(app.credential_path || app.credential_url));
+          link.textContent = isPdf ? "OPEN CREDENTIAL PDF" : "OPEN PRIVATE CREDENTIAL";
+          link.className = "iex-credential-link";
+          if (isPdf) { link.type = "application/pdf"; link.addEventListener("click", () => { const preview = document.createElement("iframe"); preview.className = "iex-credential-preview"; preview.title = "Expert credential PDF"; preview.src = app.credential_url; preview.style.cssText = "display:block;width:100%;height:65vh;border:1px solid #ccd9ce;border-radius:10px;margin-top:10px;background:#fff"; const prior = card.querySelector(".iex-credential-preview"); if (prior) prior.remove(); card.appendChild(preview); }); }
+          card.appendChild(link);
+        } else { const missing = document.createElement("p"); missing.className = "iex-muted"; missing.textContent = "Credential preview is unavailable. Check the private upload record."; card.appendChild(missing); }
+        if (app.status === "pending") {
+          const note = document.createElement("input"); note.maxLength = 500; note.placeholder = "Authority review note (optional)";
+          const approve = document.createElement("button"); approve.textContent = "VERIFY & ENABLE";
+          const reject = document.createElement("button"); reject.className = "danger"; reject.textContent = "REJECT";
+          approve.addEventListener("click", () => reviewApplication(app.id, "approve_expert", note.value, approve));
+          reject.addEventListener("click", () => reviewApplication(app.id, "reject_expert", note.value, reject));
+          card.append(note, approve, reject);
+        }
+        apps.appendChild(card);
       });
       if (!(data.applications || []).length) apps.textContent = "No expert applications waiting.";
       const qs = $("ioneExpertAuthorityQuestions"); qs.replaceChildren();
@@ -269,7 +291,8 @@
         const thread = document.createElement("div"); thread.className = "iex-admin-replies";
         const threadTitle = document.createElement("strong"); threadTitle.textContent = "Question conversation";
         thread.appendChild(threadTitle);
-        const replies = Array.isArray(q.replies) ? q.replies : [];
+        // Authority Press displays its own official responses only; expert replies remain on the public I|ONE Expert question thread.
+        const replies = Array.isArray(q.replies) ? q.replies.filter(reply => reply.role === "authority") : [];
         if (!replies.length) {
           const empty = document.createElement("p"); empty.className = "iex-muted"; empty.textContent = "No replies have been published yet.";
           thread.appendChild(empty);
@@ -296,7 +319,7 @@
         card.append(thread, answer, send); qs.appendChild(card);
       });
       const advice = $("ioneExpertAuthorityAdvice"); advice.replaceChildren();
-      (data.advice || []).forEach((item) => {
+      (data.advice || []).filter(item => item.published).forEach((item) => {
         const row = document.createElement("div"); row.className = "iex-admin-card";
         const title = document.createElement("strong"); title.textContent = item.title + (item.published ? "" : " • UNPUBLISHED");
         row.appendChild(title);
