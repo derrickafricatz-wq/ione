@@ -124,7 +124,7 @@
     document.body.style.overflow = "";
   }
   async function readySession() {
-    if (!window.heavensSupabase) throw new Error("Huduma haijaunganishwa. Tafadhali pakia upya ukurasa.");
+    if (typeof heavensSupabase === "undefined") throw new Error("Huduma haijaunganishwa. Tafadhali pakia upya ukurasa.");
     let result = await heavensSupabase.auth.getSession();
     if (result.error) throw result.error;
     if (!result.data.session) {
