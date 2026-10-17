@@ -511,6 +511,116 @@ Deno.serve(async (req) => {
       return json({ success: true, delivery: created.data, message: "Delivery request sent to available verified riders. Delivery fee will be shown separately and must be confirmed by both sides." });
     }
 
+    if (action === "passenger_trip_request") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const passengerName = String(body?.passenger_name || "").trim().replace(/\s+/g, " ");
+      const passengerPhone = normalizeTanzaniaPhone(body?.passenger_phone);
+      const pickupArea = String(body?.pickup_area || "").trim().slice(0, 180);
+      const destinationArea = String(body?.destination_area || "").trim().slice(0, 180);
+      const pickupLat = Number(body?.pickup_lat), pickupLng = Number(body?.pickup_lng);
+      const note = String(body?.passenger_note || "").trim().slice(0, 500);
+      if (passengerName.length < 2 || !validPhone(passengerPhone) || pickupArea.length < 2 || destinationArea.length < 2 ||
+          !Number.isFinite(pickupLat) || !Number.isFinite(pickupLng) || pickupLat < -90 || pickupLat > 90 || pickupLng < -180 || pickupLng > 180) {
+        return json({ success: false, error: "Enter your name, valid phone, pickup area, destination and share GPS for pickup." }, 400);
+      }
+      const saved = await admin.from("ione_sokoni_passenger_trips").insert({
+        passenger_user_id: user.id, passenger_name: passengerName, passenger_phone: passengerPhone,
+        pickup_area: pickupArea, pickup_lat: pickupLat, pickup_lng: pickupLng,
+        destination_area: destinationArea, passenger_note: note, status: "requested"
+      }).select("id,status,created_at").single();
+      if (saved.error) return json({ success: false, error: "Could not send the passenger trip request. Please retry." }, 500);
+      return json({ success: true, trip: saved.data, message: "Ombi la safari limetumwa kwa bodaboda waliopo. Mtakubaliana nauli moja kwa moja." });
+    }
+
+    if (action === "passenger_trip_list") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      const [asPassenger, asRider] = await Promise.all([
+        admin.from("ione_sokoni_passenger_trips").select("*").eq("passenger_user_id", user.id).order("created_at", { ascending: false }).limit(50),
+        rider ? admin.from("ione_sokoni_passenger_trips").select("*").eq("rider_id", rider.id).order("created_at", { ascending: false }).limit(50) : Promise.resolve({ data: [], error: null })
+      ]);
+      if (asPassenger.error || asRider.error) return json({ success: false, error: "Could not load passenger trips." }, 500);
+      const combined = new Map<string, any>();
+      for (const trip of [...(asPassenger.data || []), ...(asRider.data || [])]) combined.set(trip.id, trip);
+      const trips = await Promise.all([...combined.values()].map(async (trip: any) => {
+        const other = trip.rider_id ? await admin.from("ione_sokoni_riders").select("rider_name,phone_number").eq("id", trip.rider_id).maybeSingle() : { data: null };
+        return { ...trip, rider_name: other.data?.rider_name || null, rider_phone: other.data?.phone_number || null };
+      }));
+      return json({ success: true, trips });
+    }
+
+    if (action === "passenger_trip_accept") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      if (!/^[0-9a-f-]{36}$/i.test(tripId)) return json({ success: false, error: "Invalid passenger trip." }, 400);
+      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at").eq("user_id", user.id).maybeSingle();
+      if (!rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+        return json({ success: false, error: "Thibitisha kuwa upo tayari na uwashe upatikanaji kwanza." }, 403);
+      }
+      const accepted = await admin.from("ione_sokoni_passenger_trips").update({
+        rider_id: rider.id, status: "accepted", updated_at: new Date().toISOString()
+      }).eq("id", tripId).eq("status", "requested").is("rider_id", null).select("id").maybeSingle();
+      if (accepted.error || !accepted.data) return json({ success: false, error: "Safari hii imechukuliwa na dereva mwingine au haipatikani." }, 409);
+      return json({ success: true, message: "Umechukua ombi la safari. Wasiliana na abiria kujadiliana nauli." });
+    }
+
+    if (action === "passenger_trip_offer_fare") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      const fare = Number(body?.fare_tzs);
+      if (!/^[0-9a-f-]{36}$/i.test(tripId) || !Number.isInteger(fare) || fare < 100 || fare > 500000) return json({ success: false, error: "Weka nauli halali kati ya TZS 100 na 500,000." }, 400);
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("*").eq("id", tripId).maybeSingle();
+      if (!trip) return json({ success: false, error: "Safari haipatikani." }, 404);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      const role = rider?.id === trip.rider_id ? "rider" : trip.passenger_user_id === user.id ? "passenger" : null;
+      if (!role || !trip.rider_id || !["accepted", "fare_proposed", "fare_countered"].includes(trip.status) || trip.fare_agreed) return json({ success: false, error: "Huwezi kubadilisha nauli ya safari hii sasa." }, 403);
+      if (trip.fare_proposed_by === role && trip.proposed_fare_tzs !== null) return json({ success: false, error: "Subiri upande mwingine ujibu nauli uliyopendekeza." }, 409);
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({
+        proposed_fare_tzs: fare, fare_proposed_by: role, status: role === "rider" ? "fare_proposed" : "fare_countered",
+        fare_agreed: false, updated_at: new Date().toISOString()
+      }).eq("id", tripId).select("id").single();
+      if (saved.error) return json({ success: false, error: "Could not save fare proposal." }, 500);
+      return json({ success: true, message: "Nauli imetumwa. Upande mwingine anaweza kukubali au kutoa pendekezo jingine." });
+    }
+
+    if (action === "passenger_trip_agree_fare") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      if (!/^[0-9a-f-]{36}$/i.test(tripId)) return json({ success: false, error: "Invalid passenger trip." }, 400);
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("*").eq("id", tripId).maybeSingle();
+      if (!trip || !["fare_proposed", "fare_countered"].includes(trip.status) || trip.fare_agreed || !trip.proposed_fare_tzs) return json({ success: false, error: "Hakuna nauli inayosubiri kukubaliwa." }, 409);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      const role = rider?.id === trip.rider_id ? "rider" : trip.passenger_user_id === user.id ? "passenger" : null;
+      if (!role || role === trip.fare_proposed_by) return json({ success: false, error: "Ni upande mwingine tu unaoweza kukubali nauli hii." }, 403);
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({ fare_agreed: true, status: "fare_agreed", updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
+      if (saved.error) return json({ success: false, error: "Could not confirm the fare." }, 500);
+      return json({ success: true, message: "Nauli imekubaliwa. Malipo yatafanyika moja kwa moja kati yenu." });
+    }
+
+    if (action === "passenger_trip_status") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      const next = String(body?.status || "").trim();
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("*").eq("id", tripId).maybeSingle();
+      if (!trip) return json({ success: false, error: "Safari haipatikani." }, 404);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      let patch: any = {};
+      if (rider?.id === trip.rider_id && next === "picked_up" && trip.status === "fare_agreed" && trip.fare_agreed) patch = { status: "picked_up" };
+      else if (trip.passenger_user_id === user.id && next === "completed" && trip.status === "picked_up") patch = { status: "completed", completed_at: new Date().toISOString() };
+      else if (trip.passenger_user_id === user.id && next === "cancelled" && ["requested", "accepted", "fare_proposed", "fare_countered"].includes(trip.status)) patch = { status: "cancelled" };
+      else return json({ success: false, error: "Huwezi kubadilisha hali ya safari hii kwa hatua hiyo." }, 403);
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
+      if (saved.error) return json({ success: false, error: "Could not update passenger trip." }, 500);
+      return json({ success: true, message: next === "picked_up" ? "Umemchukua abiria." : next === "completed" ? "Safari imekamilika." : "Ombi la safari limeghairiwa." });
+    }
+
     if (action === "rider_open_deliveries") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
@@ -520,11 +630,13 @@ Deno.serve(async (req) => {
       if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
         return json({ success: false, error: "Turn on your availability to see delivery requests." }, 403);
       }
-      const { data, error } = await admin.from("ione_sokoni_deliveries")
-        .select("id,created_at")
-        .eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100);
-      if (error) return json({ success: false, error: "Could not load delivery requests." }, 500);
-      return json({ success: true, deliveries: data || [] });
+      const [{ data, error }, passengerTrips] = await Promise.all([
+        admin.from("ione_sokoni_deliveries").select("id,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
+        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,destination_area,passenger_note,created_at,status")
+          .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100)
+      ]);
+      if (error || passengerTrips.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
+      return json({ success: true, deliveries: data || [], passenger_trips: passengerTrips.data || [] });
     }
 
     if (action === "accept_delivery") {
