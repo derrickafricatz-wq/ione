@@ -575,7 +575,31 @@ Deno.serve(async (req) => {
         if (created.error.code === "23505") return json({ success: false, error: "A Boda Yangu request already exists for this order." }, 409);
         return json({ success: false, error: "Could not send the delivery request." }, 500);
       }
-      return json({ success: true, delivery: created.data, message: "Delivery request sent to available verified riders. Delivery fee will be shown separately and must be confirmed by both sides." });
+
+      // Notify the seller as well as every currently available, recently active verified rider.
+      // The rider board remains the source of truth; push is an additional alert.
+      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const [{ data: availableRiders, error: ridersError }, { data: product }] = await Promise.all([
+        admin.from("ione_sokoni_riders").select("user_id")
+          .eq("status", "active").eq("available", true).gte("last_seen_at", freshSince).limit(100),
+        admin.from("ione_sokoni_products").select("product_name").eq("id", order.product_id).maybeSingle()
+      ]);
+      if (ridersError) console.warn("Could not load available riders for delivery alerts:", ridersError.message);
+      const productName = String(product?.product_name || order.product_name || "oda ya Sokoni");
+      const riderAlerts = (availableRiders || []).map((rider: any) =>
+        sendSokoniPush(admin, rider.user_id, {
+          title: "I|ONE Boda Yangu • Oda ya kuchukua",
+          body: "Ombi jipya la kuchukua " + productName + " limewasilishwa. Fungua Sokoni kuona safari.",
+          url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-delivery-" + created.data.id
+        })
+      );
+      const sellerAlert = sendSokoniPush(admin, order.seller_user_id, {
+        title: "I|ONE Sokoni • Boda imeombwa",
+        body: "Mteja ameomba boda kwa oda ya " + productName + ".",
+        url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-delivery-" + created.data.id
+      });
+      await Promise.allSettled([...riderAlerts, sellerAlert]);
+      return json({ success: true, delivery: created.data, message: "Ombi la boda limetumwa kwa Mama Sokoni na bodaboda waliopo tayari. Ada ya delivery itaonyeshwa kando na lazima ikubaliwe na pande zote mbili." });
     }
 
     if (action === "passenger_trip_request") {
