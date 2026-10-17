@@ -227,8 +227,8 @@ Deno.serve(async (req) => {
       const note = String(body?.buyer_note || "").trim().slice(0, 500);
       const wantsDelivery = body?.wants_delivery === true;
       const deliveryAddress = String(body?.delivery_address || "").trim().slice(0, 240);
-      const dropoffLat = Number(body?.dropoff_lat);
-      const dropoffLng = Number(body?.dropoff_lng);
+      const dropoffLat = body?.dropoff_lat === null || body?.dropoff_lat === undefined || body?.dropoff_lat === "" ? NaN : Number(body.dropoff_lat);
+      const dropoffLng = body?.dropoff_lng === null || body?.dropoff_lng === undefined || body?.dropoff_lng === "" ? NaN : Number(body.dropoff_lng);
       if (!/^[0-9a-f-]{36}$/i.test(productId) || buyerName.length < 2 || buyerName.length > 120 ||
           !validPhone(buyerPhone) || !Number.isFinite(quantity) || quantity <= 0 || quantity > 100000 || Math.round(quantity * 1000) !== quantity * 1000) {
         return json({ success: false, error: "Enter your name, valid phone number and a valid quantity." }, 400);
@@ -480,7 +480,7 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Turn on your availability to see delivery requests." }, 403);
       }
       const { data, error } = await admin.from("ione_sokoni_deliveries")
-        .select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,created_at")
+        .select("id,created_at")
         .eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100);
       if (error) return json({ success: false, error: "Could not load delivery requests." }, 500);
       return json({ success: true, deliveries: data || [] });
@@ -592,7 +592,7 @@ Deno.serve(async (req) => {
       const now = new Date().toISOString();
       const saved = await admin.from("ione_sokoni_deliveries").update({
         rider_lat: lat, rider_lng: lng, location_updated_at: now, updated_at: now
-      }).eq("id", delivery.id).eq("rider_user_id", user.id).select("id").maybeSingle();
+      }).eq("id", delivery.id).eq("rider_user_id", user.id).in("status", ["accepted", "picked_up"]).select("id").maybeSingle();
       if (saved.error || !saved.data) return json({ success: false, error: "Could not update trip location." }, 500);
       await admin.from("ione_sokoni_riders").update({
         location_lat: lat, location_lng: lng, location_updated_at: now, last_seen_at: now, updated_at: now
