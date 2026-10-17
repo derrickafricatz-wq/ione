@@ -12644,7 +12644,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
       loading.innerHTML='<strong>NO CLIENT INFORMATION YET</strong><span>New client requests will appear here automatically.</span>';
       book._ready=true;return book;
     }
-    const cards=[];for(const q of queries)cards.push(await makeCard(q,uid));
+    /* Load independent client cards concurrently while preserving inbox order. */
+    const cards=await Promise.all(queries.map(q=>makeCard(q,uid)));
     const pageEls=[];
     pageArea.innerHTML='';
     cards.forEach((c,i)=>{
