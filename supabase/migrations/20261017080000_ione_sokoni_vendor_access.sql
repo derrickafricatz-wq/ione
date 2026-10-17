@@ -22,7 +22,7 @@ create table if not exists public.ione_sokoni_payment_requests (
   phone_number text not null,
   amount_tzs integer not null default 1000 check (amount_tzs = 1000),
   period_days integer not null default 30 check (period_days = 30),
-  status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  status text not null default 'pending' check (status in ('pending','processing','approved','rejected')),
   payment_confirmed_at timestamptz null,
   approved_at timestamptz null,
   approved_by text null,
