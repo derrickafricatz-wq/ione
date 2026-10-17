@@ -11607,6 +11607,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     .afl-owner-book-cover img{width:100%;height:100%;object-fit:cover;display:block}
     .afl-owner-book-cover-fallback{height:100%;display:grid;place-items:center;padding:22px;text-align:center;color:#00ffff;font:900 clamp(22px,7vw,34px)/1.1 'Playfair Display',Georgia,serif}
     .afl-owner-book-brand{text-align:center;color:#fff;font:900 18px/1.15 'Russo One',Arial,sans-serif;letter-spacing:1px;position:relative;z-index:2}
+    .afl-owner-book:before{display:none!important}.afl-owner-book-brand{margin:8px 0 4px}.afl-owner-book .afl-book-pages{scroll-behavior:auto}.afl-owner-book .afl-inquiry-card{scroll-margin:0}
     .afl-owner-book-sub{text-align:center;color:#789198;font:900 8px/1.3 Arial,sans-serif;letter-spacing:2px;margin-top:5px;position:relative;z-index:2}
     .afl-owner-book-nav{display:flex;align-items:center;justify-content:center;gap:9px;margin:14px 0 5px;position:relative;z-index:4}
     .afl-book-nav-btn{min-width:92px;min-height:42px;border-radius:12px;border:1px solid rgba(0,255,255,.48);background:linear-gradient(145deg,#123238,#061012);color:#00ffff;font-weight:1000;font-size:9px;letter-spacing:.7px;box-shadow:inset 0 1px rgba(255,255,255,.12),0 6px 15px rgba(0,0,0,.35)}
@@ -11616,8 +11617,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     .afl-book-new-alert.show{display:block}
     .afl-book-pages{position:relative;z-index:2;min-height:20px}
     .afl-owner-book .afl-inquiry-card{display:none;position:relative;margin:10px 2px 0;padding:15px;border-radius:14px;background:linear-gradient(145deg,#101a1d,#05090a);border:1px solid #294349;box-shadow:inset 0 1px rgba(255,255,255,.06),0 12px 25px rgba(0,0,0,.34)}
-    .afl-owner-book .afl-inquiry-card.afl-book-current{display:block;animation:aflPageOpen .42s ease both}.afl-owner-book .afl-inquiry-card.afl-page-turn-out{display:block;animation:aflPageTurnOut .34s ease both}.afl-owner-book .afl-inquiry-card.afl-page-turn-in{animation:aflPageTurnIn .42s ease both}
-    @keyframes aflPageOpen{from{opacity:.25;transform:perspective(900px) rotateY(-8deg) translateX(8px)}to{opacity:1;transform:none}}@keyframes aflPageTurnOut{from{opacity:1;transform:perspective(900px) rotateY(0)}to{opacity:.25;transform:perspective(900px) rotateY(-82deg) translateX(-8px)}}@keyframes aflPageTurnIn{from{opacity:.25;transform:perspective(900px) rotateY(82deg) translateX(8px)}to{opacity:1;transform:none}}
+    .afl-owner-book .afl-inquiry-card.afl-book-current{display:block!important;animation:none!important;transform:none!important;opacity:1!important;backface-visibility:visible!important}.afl-owner-book .afl-inquiry-card.afl-page-turn-out,.afl-owner-book .afl-inquiry-card.afl-page-turn-in{display:none!important;animation:none!important;transform:none!important;opacity:1!important}
+    @media(prefers-reduced-motion:reduce){.afl-owner-book *{animation:none!important;transition:none!important}}
     .afl-owner-book .afl-inquiry-card.afl-book-current:after{content:"";position:absolute;right:-4px;top:7%;bottom:7%;width:3px;border-radius:3px;background:linear-gradient(180deg,transparent,#00ffff,transparent);opacity:.35}
     .afl-owner-book .afl-owner-chat{max-height:260px!important}
     .afl-owner-book .afl-owner-reply{position:sticky;bottom:0;background:linear-gradient(180deg,transparent,#05090a 22%);padding-top:8px;z-index:8}
@@ -11670,23 +11671,15 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const title=first.querySelector('.afl-inquiry-title')?.textContent||'BRAND';
     const brandName=title.split(' • ')[0]||'BRAND';
     book=document.createElement('div');book.className='afl-owner-book';book._cards=cards;book._current=0;
-    const cover=document.createElement('div');cover.className='afl-owner-book-cover';cover.innerHTML='<div class="afl-owner-book-cover-fallback">'+escapeHtml(brandName)+'</div>';
     const brand=document.createElement('div');brand.className='afl-owner-book-brand';brand.textContent=brandName;
-    const sub=document.createElement('div');sub.className='afl-owner-book-sub';sub.textContent='PRIVATE CLIENT BOOK • I|ONE';
+    const sub=document.createElement('div');sub.className='afl-owner-book-sub';sub.textContent='CLIENT INFORMATION • I|ONE';
     const nav=document.createElement('div');nav.className='afl-owner-book-nav';nav.innerHTML='<button type="button" class="afl-book-nav-btn afl-book-prev">‹ PREVIOUS</button><div class="afl-book-page-count">PAGE 1 / '+cards.length+'</div><button type="button" class="afl-book-nav-btn afl-book-next">NEXT ›</button>';
     const alert=document.createElement('button');alert.type='button';alert.className='afl-book-new-alert';alert.textContent='NEW CLIENT INFORMATION';
     const pages=document.createElement('div');pages.className='afl-book-pages';cards.forEach(c=>pages.appendChild(c));
-    book.append(cover,brand,sub,nav,alert,pages);list.innerHTML='';list.appendChild(book);
+    book.append(brand,sub,nav,alert,pages);list.innerHTML='';list.appendChild(book);
     book.querySelector('.afl-book-prev').onclick=()=>showPage(book,book._current-1);
     book.querySelector('.afl-book-next').onclick=()=>showPage(book,book._current+1);
     alert.onclick=()=>{const idx=Number(book.dataset.newIndex);if(Number.isFinite(idx))showPage(book,idx);};
-    const firstQ=cards[0]?.dataset.inquiryId;
-    if(firstQ){
-      try{
-        const {data:item}=await heavensSupabase.from('afrilink_billboard_items').select('image_url').eq('billboard_id',cards[0].dataset.billboardId||'').eq('active',true).order('sort_order',{ascending:true}).limit(1).maybeSingle();
-        if(item?.image_url){cover.innerHTML='<img src="'+escapeHtml(item.image_url)+'" alt="Brand cover">';}
-      }catch(_){ }
-    }
     cards.forEach((c,i)=>{c.dataset.bookIndex=String(i);if(i===0)c.classList.add('afl-book-current');});
     showPage(book,0);
   }
@@ -12799,7 +12792,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-find-it-for-me.js?v=1" defer></script>
 <script src="./ione-launch-observatory.js?v=4" defer></script>
 <script src="./ione-sokoni.js?v=4" defer></script>
-<script src="./ione-expert.js?v=3" defer></script>
+<script src="./ione-expert.js?v=4" defer></script>
 <script>
 /* I|ONE DOCUMENTARY AUTO-SCROLL • waits for the library to open and for cards to render */
 (function(){
