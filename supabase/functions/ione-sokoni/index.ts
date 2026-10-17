@@ -593,7 +593,7 @@ Deno.serve(async (req) => {
       const saved = await admin.from("ione_sokoni_deliveries").update({
         rider_lat: lat, rider_lng: lng, location_updated_at: now, updated_at: now
       }).eq("id", delivery.id).eq("rider_user_id", user.id).in("status", ["accepted", "picked_up"]).select("id").maybeSingle();
-      if (saved.error || !saved.data) return json({ success: false, error: "Could not update trip location." }, 500);
+      if (saved.error || !saved.data) return json({ success: false, error: "Trip is no longer active; live location sharing has stopped." }, 409);
       await admin.from("ione_sokoni_riders").update({
         location_lat: lat, location_lng: lng, location_updated_at: now, last_seen_at: now, updated_at: now
       }).eq("user_id", user.id);
