@@ -1432,7 +1432,9 @@
     installAuthorityDashboard();
     try {
       if (new URLSearchParams(window.location.search).get("ionePushDestination") === "sokoni") {
-        window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.delete("ionePushDestination");
+        window.history.replaceState({}, "", currentUrl.pathname + currentUrl.search + currentUrl.hash);
         window.setTimeout(open, 350);
       }
     } catch (_) {}
