@@ -633,7 +633,7 @@ Deno.serve(async (req) => {
       }
       const [{ data, error }, passengerTrips] = await Promise.all([
         admin.from("ione_sokoni_deliveries").select("id,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
-        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,destination_area,passenger_note,created_at,status")
+        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status")
           .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100)
       ]);
       if (error || passengerTrips.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
