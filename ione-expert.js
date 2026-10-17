@@ -140,6 +140,10 @@
         experience: $("ioneExpertExperience", root).value.trim(),
         credential_path: path
       });
+      if (result.already_pending && path) {
+        await heavensSupabase.storage.from("ione-expert-credentials").remove([path]);
+        path = "";
+      }
       status("ioneExpertApplicationStatus", result.message || "Application sent."); $("ioneExpertApplyForm", root).reset(); await refresh();
     } catch (error) {
       if (path) try { await heavensSupabase.storage.from("ione-expert-credentials").remove([path]); } catch (_) {}
