@@ -491,9 +491,8 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const available = body?.available === true;
-      const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available")
-        .eq("user_id", user.id).maybeSingle();
-      if (error || !rider || rider.status !== "active") return json({ success: false, error: "Only Authority Press verified riders can change availability." }, 403);
+      const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (error || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now()) return json({ success: false, error: "Authority Press must approve your rider access and dates before you can go on duty." }, 403);
       const active = await admin.from("ione_sokoni_deliveries").select("id")
         .eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]).limit(1);
       if (active.error) return json({ success: false, error: "Could not check your active trip." }, 500);
@@ -510,9 +509,8 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const now = new Date().toISOString();
-      const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available")
-        .eq("user_id", user.id).maybeSingle();
-      if (error || !rider || rider.status !== "active") return json({ success: false, error: "Verified rider profile not found." }, 403);
+      const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (error || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now()) return json({ success: false, error: "Authority Press must approve your rider access and dates before you can go on duty." }, 403);
       if (!rider.available) return json({ success: true, available: false });
       const active = await admin.from("ione_sokoni_deliveries").select("id")
         .eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]).limit(1);
@@ -660,8 +658,8 @@ Deno.serve(async (req) => {
       const tripId = String(body?.trip_id || "").trim();
       if (!/^[0-9a-f-]{36}$/i.test(tripId)) return json({ success: false, error: "Invalid passenger trip." }, 400);
       const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { data: rider } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at").eq("user_id", user.id).maybeSingle();
-      if (!rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (!rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now() || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
         return json({ success: false, error: "Thibitisha kuwa upo tayari na uwashe upatikanaji kwanza." }, 403);
       }
       const accepted = await admin.from("ione_sokoni_passenger_trips").update({
@@ -749,10 +747,9 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at")
-        .eq("user_id", user.id).maybeSingle();
-      if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
-        return json({ success: false, error: "Turn on your availability to see delivery requests." }, 403);
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now() || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+        return json({ success: false, error: "Turn on your Authority-approved, active Boda Yangu access to see trip requests." }, 403);
       }
       const [{ data, error }, passengerTrips] = await Promise.all([
         admin.from("ione_sokoni_deliveries").select("id,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
@@ -932,11 +929,34 @@ Deno.serve(async (req) => {
       return json({ success: true, vendors: data || [] });
     }
 
-    if (action === "authority_dashboard" || action === "approve" || action === "reject" || action === "approve_rider" || action === "reject_rider") {
+    if (action === "authority_dashboard" || action === "approve" || action === "reject" || action === "approve_rider" || action === "reject_rider" || action === "set_rider_access") {
       const rawSession = body?.authority_session || req.headers.get("x-ione-authority-session");
       if (!(await validAuthoritySession(admin, rawSession))) {
         return json({ success: false, error: "Authority Press session expired. Unlock Authority Press again." }, 401);
       }
+      if (action === "set_rider_access") {
+        const riderId = String(body?.rider_id || "").trim();
+        const grant = body?.grant === true;
+        if (!/^[0-9a-f-]{36}$/i.test(riderId)) return json({ success: false, error: "Invalid rider record." }, 400);
+        const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,rider_name,status").eq("id", riderId).maybeSingle();
+        if (riderError || !rider) return json({ success: false, error: "Verified rider record not found." }, 404);
+        const now = new Date();
+        let patch: Record<string, unknown>;
+        if (grant) {
+          const startDate = String(body?.start_date || ""), expiryDate = String(body?.expiry_date || "");
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(expiryDate) || expiryDate < startDate) return json({ success: false, error: "Enter valid access start and expiry dates." }, 400);
+          const start = new Date(startDate + "T00:00:00.000Z"), expiry = new Date(expiryDate + "T23:59:59.999Z");
+          if (!Number.isFinite(start.getTime()) || !Number.isFinite(expiry.getTime()) || start.toISOString().slice(0,10) !== startDate || expiry.toISOString().slice(0,10) !== expiryDate) return json({ success: false, error: "The access dates are invalid." }, 400);
+          if (expiry.getTime() <= now.getTime()) return json({ success: false, error: "The expiry date must be today or a future date." }, 400);
+          patch = { access_payment_confirmed: true, access_started_at: start.toISOString(), access_expires_at: expiry.toISOString(), access_amount_tzs: 5000, access_note: "Manually granted by Authority Press", updated_at: now.toISOString() };
+        } else {
+          patch = { access_payment_confirmed: false, available: false, last_seen_at: null, location_lat: null, location_lng: null, location_updated_at: null, access_note: "Access locked by Authority Press", updated_at: now.toISOString() };
+        }
+        const saved = await admin.from("ione_sokoni_riders").update(patch).eq("id", riderId).select("id,rider_name,access_payment_confirmed,access_started_at,access_expires_at").single();
+        if (saved.error) return json({ success: false, error: "Could not save rider access dates and status." }, 500);
+        return json({ success: true, rider: saved.data, message: grant ? "Boda Yangu access granted and dates saved." : "Boda Yangu access locked. The rider is now off duty." });
+      }
+
       if (action === "authority_dashboard") {
         const nowIso = new Date().toISOString();
         const [requestsResult, pendingCount, activeCount, expiredCount, vendorListResult, riderAppsResult, riderPendingCount, verifiedRiderCount] = await Promise.all([
@@ -952,9 +972,10 @@ Deno.serve(async (req) => {
             .select("id,user_id,rider_name,phone_number,identity_document_type,identity_document_path,motorcycle_plate,rider_group_name,chairman_phone,status,created_at,reviewed_at,reviewed_by,admin_note")
             .order("created_at", { ascending: false }).limit(500),
           admin.from("ione_sokoni_rider_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
-          admin.from("ione_sokoni_riders").select("id", { count: "exact", head: true }).eq("status", "active")
+          admin.from("ione_sokoni_riders").select("id", { count: "exact", head: true }).eq("status", "active"),
+          admin.from("ione_sokoni_riders").select("id,user_id,rider_name,phone_number,status,available,access_payment_confirmed,access_started_at,access_expires_at,access_amount_tzs,access_note,verified_at,created_at").order("created_at", { ascending: false }).limit(500)
         ]);
-        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error || vendorListResult.error || riderAppsResult.error || riderPendingCount.error || verifiedRiderCount.error) {
+        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error || vendorListResult.error || riderAppsResult.error || riderPendingCount.error || verifiedRiderCount.error || ridersResult.error) {
           return json({ success: false, error: "Could not load Sokoni dashboard data." }, 500);
         }
         let confirmedPayments = 0;
@@ -985,6 +1006,7 @@ Deno.serve(async (req) => {
           requests: requestsResult.data || [],
           vendors: vendorListResult.data || [],
           riderApplications,
+          riders: ridersResult.data || [],
           metrics: {
             pending: pendingCount.count || 0,
             pendingRiders: riderPendingCount.count || 0,
