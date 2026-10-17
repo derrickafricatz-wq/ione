@@ -38,7 +38,7 @@ assert.match(migration, /values \('ione-sokoni-products', 'ione-sokoni-products'
 assert.match(migration, /file_size_limit = 5242880/);
 console.log("PASS: separate RLS-protected Sokoni records, fixed monthly fee and private product-photo bucket");
 
-for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "delete_product", "place_order", "my_orders", "update_order_status", "authority_dashboard", "approve", "reject"]) {
+for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "delete_product", "place_order", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "confirm_delivery_fee", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
   assert.ok(edge.includes('action === "' + action + '"'), "Missing Edge Function action: " + action);
 }
 assert.match(edge, /validAuthoritySession\(admin, rawSession\)/);
@@ -46,6 +46,11 @@ assert.match(edge, /admin\.auth\.getUser\(token\)/);
 assert.match(edge, /eq\("stock_quantity", product\.stock_quantity\)/);
 assert.match(edge, /createSignedUrl\(r\.photo_path, 3600\)/);
 assert.match(edge, /totalRevenueTzs/);
+assert.match(edge, /Reserve this rider first/);
+assert.match(edge, /rider_heartbeat/);
+assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
+assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
+assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(sw, /ione-app-v241/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
 assert.match(version.version, /^1\.0\.175$/);
