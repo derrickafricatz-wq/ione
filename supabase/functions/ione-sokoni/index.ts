@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
       if (!vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
         return json({ success: false, error: "Your Sokoni access is not active. Contact Authority Press to renew." }, 403);
       }
-      const name = String(body?.product_name || "").trim().replace(/\\s+/g, " ");
+      const name = String(body?.product_name || "").trim().replace(/\s+/g, " ");
       const description = String(body?.description || "").trim().slice(0, 1200);
       const unit = String(body?.unit_name || "").trim().slice(0, 40);
       const price = Number(body?.price_tzs);
@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
       const buyer = await getVerifiedUser(admin, req);
       if (!buyer) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const productId = String(body?.product_id || "").trim();
-      const buyerName = String(body?.buyer_name || "").trim().replace(/\\s+/g, " ");
+      const buyerName = String(body?.buyer_name || "").trim().replace(/\s+/g, " ");
       const buyerPhone = normalizeTanzaniaPhone(body?.buyer_phone);
       const quantity = Number(body?.quantity);
       const note = String(body?.buyer_note || "").trim().slice(0, 500);
@@ -346,12 +346,12 @@ Deno.serve(async (req) => {
     if (action === "rider_apply") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
-      const name = String(body?.rider_name || "").trim().replace(/\\s+/g, " ");
+      const name = String(body?.rider_name || "").trim().replace(/\s+/g, " ");
       const phone = normalizeTanzaniaPhone(body?.phone_number);
       const documentType = String(body?.identity_document_type || "").trim();
       const documentPath = String(body?.identity_document_path || "").trim();
-      const plate = String(body?.motorcycle_plate || "").trim().toUpperCase().replace(/\\s+/g, " ");
-      const groupName = String(body?.rider_group_name || "").trim().replace(/\\s+/g, " ");
+      const plate = String(body?.motorcycle_plate || "").trim().toUpperCase().replace(/\s+/g, " ");
+      const groupName = String(body?.rider_group_name || "").trim().replace(/\s+/g, " ");
       const chairmanPhone = normalizeTanzaniaPhone(body?.chairman_phone);
       const allowedDocumentTypes = ["driving_license", "national_id", "rider_group_id"];
       if (name.length < 2 || name.length > 120 || !validPhone(phone) ||
@@ -361,7 +361,7 @@ Deno.serve(async (req) => {
       }
       const pathParts = documentPath.split("/");
       if (pathParts.length !== 2 || pathParts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(pathParts[1]) ||
-          !/\\.(jpg|png|webp|pdf)$/i.test(pathParts[1])) {
+          !/\.(jpg|png|webp|pdf)$/i.test(pathParts[1])) {
         return json({ success: false, error: "The identity document upload is invalid. Please upload it again." }, 400);
       }
       const listed = await admin.storage.from("ione-sokoni-rider-documents").list(user.id, { search: pathParts[1], limit: 20 });
