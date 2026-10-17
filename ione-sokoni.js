@@ -217,7 +217,16 @@
         <button class="is-button" type="button" id="isRefreshPassengerTrips">Sasisha safari za abiria</button>
         <div class="is-vendors" id="isPassengerTrips"><p class="is-muted">Maombi na makubaliano ya safari yataonekana hapa.</p></div>
         <h3 style="margin-top:22px">Jiunge kama dereva wa bodaboda</h3>
-        <p class="is-muted">Jaza taarifa za utambulisho, pikipiki na kikundi chako. Authority Press itazikagua kabla ya kukuidhinisha.</p>
+        <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
+        <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
+          <strong>MAELEKEZO YA MALIPO YA BODA YANGU</strong><br>
+          Mtoa huduma / Mtandao: <strong>Airtel Money</strong><br>
+          Jina la mfanyabiashara: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
+          Namba ya malipo: <strong>140001788</strong><br>
+          Ada: <strong>TZS 5,000</strong><br>
+          Muda wa ruhusa: <strong>Miezi 3 (siku 90)</strong><br>
+          Baada ya kutuma maombi, lipa ada hii. Ruhusa haitafunguliwa mpaka Authority Press ithibitishe malipo kwa mkono.
+        </div>
         <form class="is-form" id="isRiderForm">
           <div><label for="isRiderName">Jina kamili</label><input id="isRiderName" maxlength="120" required autocomplete="name" placeholder="Andika jina lako kamili"></div>
           <div><label for="isRiderPhone">Namba yako ya simu</label><input id="isRiderPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
@@ -1421,7 +1430,46 @@
         }
         riderList.appendChild(row);
       });
-      status.textContent = "Dashibodi ya Sokoni imesasishwa. Thibitisha baada ya kuona malipo yamepokelewa.";
+      const verifiedRiders = data.riders || [];
+      if (verifiedRiders.length) {
+        const heading = document.createElement("h4"); heading.textContent = "RUHUSA ZA BODA • TAREHE ZA MALIPO"; riderList.appendChild(heading);
+      }
+      verifiedRiders.forEach((rider) => {
+        const row = document.createElement("article"); row.className = "is-admin-request";
+        const name = document.createElement("strong"); name.textContent = escText(rider.rider_name);
+        const phone = document.createElement("p"); phone.textContent = "Simu: " + escText(rider.phone_number);
+        const state = document.createElement("p"); state.textContent = "Hali: " + (rider.status === "active" ? "RUHUSA IMEWASHWA" : "IMEFUNGWA / INASUBIRI RUHUSA");
+        const start = document.createElement("input"); start.type = "date"; start.setAttribute("aria-label", "Tarehe ya kuanza ruhusa");
+        const expiry = document.createElement("input"); expiry.type = "date"; expiry.setAttribute("aria-label", "Tarehe ya mwisho ya miezi mitatu");
+        const dateString = (d) => [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+        const today = new Date(); start.value = rider.access_started_at ? dateString(new Date(rider.access_started_at)) : dateString(today);
+        const defaultExpiry = new Date(today); defaultExpiry.setDate(defaultExpiry.getDate()+90);
+        expiry.value = rider.access_expires_at ? dateString(new Date(rider.access_expires_at)) : dateString(defaultExpiry);
+        const record = document.createElement("p");
+        record.textContent = rider.access_started_at && rider.access_expires_at
+          ? "Rekodi: " + new Date(rider.access_started_at).toLocaleDateString("en-GB") + " hadi " + new Date(rider.access_expires_at).toLocaleDateString("en-GB") + " • TZS " + Number(rider.access_amount_tzs || 0).toLocaleString("en-TZ")
+          : "Hakuna tarehe za ruhusa zilizorekodiwa bado.";
+        const actions = document.createElement("div"); actions.className = "is-admin-actions";
+        const give = document.createElement("button"); give.type = "button"; give.textContent = "TOA RUHUSA";
+        give.addEventListener("click", async () => {
+          if (!start.value || !expiry.value || expiry.value <= start.value) { $("isAuthorityStatus").textContent = "Weka tarehe sahihi ya kuanza na tarehe ya mwisho."; $("isAuthorityStatus").classList.add("error"); return; }
+          give.disabled = true;
+          try {
+            const result = await invoke("set_rider_access", { rider_id: rider.id, grant: true, start_date: start.value, expiry_date: expiry.value });
+            $("isAuthorityStatus").textContent = result.message || "Ruhusa imetolewa."; $("isAuthorityStatus").classList.remove("error"); await loadAuthorityDashboard();
+          } catch (e) { $("isAuthorityStatus").textContent = e.message || "Ruhusa haikutolewa."; $("isAuthorityStatus").classList.add("error"); give.disabled = false; }
+        });
+        const revoke = document.createElement("button"); revoke.type = "button"; revoke.className = "reject"; revoke.textContent = "FUNGIA SOKONI";
+        revoke.addEventListener("click", async () => {
+          revoke.disabled = true;
+          try {
+            const result = await invoke("set_rider_access", { rider_id: rider.id, grant: false });
+            $("isAuthorityStatus").textContent = result.message || "Ruhusa imefungwa."; $("isAuthorityStatus").classList.remove("error"); await loadAuthorityDashboard();
+          } catch (e) { $("isAuthorityStatus").textContent = e.message || "Ruhusa haikufungwa."; $("isAuthorityStatus").classList.add("error"); revoke.disabled = false; }
+        });
+        actions.append(give, revoke); row.append(name, phone, state, start, expiry, record, actions); riderList.appendChild(row);
+      });
+      status.textContent = "Dashibodi ya Sokoni imesasishwa. Thibitisha malipo kabla ya kutoa ruhusa.";
     } catch (e) {
       status.textContent = e.message || "Imeshindikana kupakia dashibodi ya Sokoni.";
       status.classList.add("error");
