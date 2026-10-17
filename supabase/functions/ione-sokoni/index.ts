@@ -546,7 +546,8 @@ Deno.serve(async (req) => {
       for (const trip of [...(asPassenger.data || []), ...(asRider.data || [])]) combined.set(trip.id, trip);
       const trips = await Promise.all([...combined.values()].map(async (trip: any) => {
         const other = trip.rider_id ? await admin.from("ione_sokoni_riders").select("rider_name,phone_number").eq("id", trip.rider_id).maybeSingle() : { data: null };
-        return { ...trip, rider_name: other.data?.rider_name || null, rider_phone: other.data?.phone_number || null };
+        return { ...trip, is_passenger: trip.passenger_user_id === user.id, is_rider: !!rider?.id && trip.rider_id === rider.id,
+          rider_name: other.data?.rider_name || null, rider_phone: other.data?.phone_number || null };
       }));
       return json({ success: true, trips });
     }
