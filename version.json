@@ -1,5 +1,5 @@
 {
-  "version": "1.0.179",
-  "message": "Fix Sokoni delivery alerts, Boda access controls and Expert replies",
+  "version": "1.0.180",
+  "message": "Make published I|ONE Expert questions clearly visible in Authority Press",
   "force": true
 }
