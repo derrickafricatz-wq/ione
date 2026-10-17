@@ -101,3 +101,88 @@ create index if not exists ione_sokoni_orders_buyer_idx
 alter table public.ione_sokoni_orders enable row level security;
 revoke all on public.ione_sokoni_orders from anon, authenticated;
 grant all on public.ione_sokoni_orders to service_role;
+
+-- Live Boda Yangu is separate from seller subscriptions and uses active-trip-only location sharing.
+alter table public.ione_sokoni_vendors
+  add column if not exists pickup_location text null,
+  add column if not exists pickup_lat double precision null,
+  add column if not exists pickup_lng double precision null;
+alter table public.ione_sokoni_orders
+  add column if not exists wants_delivery boolean not null default false,
+  add column if not exists delivery_address text null,
+  add column if not exists dropoff_lat double precision null,
+  add column if not exists dropoff_lng double precision null;
+
+create table if not exists public.ione_sokoni_rider_applications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  rider_name text not null check (char_length(trim(rider_name)) between 2 and 120),
+  phone_number text not null,
+  status text not null default 'pending' check (status in ('pending','processing','approved','rejected')),
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz null,
+  reviewed_by text null,
+  admin_note text null
+);
+create unique index if not exists ione_sokoni_rider_one_pending_idx
+  on public.ione_sokoni_rider_applications(user_id) where status = 'pending';
+create index if not exists ione_sokoni_rider_applications_status_idx
+  on public.ione_sokoni_rider_applications(status, created_at desc);
+
+create table if not exists public.ione_sokoni_riders (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique,
+  rider_name text not null,
+  phone_number text not null,
+  status text not null default 'active' check (status in ('active','suspended')),
+  available boolean not null default false,
+  last_seen_at timestamptz null,
+  location_lat double precision null check (location_lat between -90 and 90),
+  location_lng double precision null check (location_lng between -180 and 180),
+  location_updated_at timestamptz null,
+  verified_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists ione_sokoni_riders_availability_idx
+  on public.ione_sokoni_riders(status, available, last_seen_at desc);
+
+create table if not exists public.ione_sokoni_deliveries (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null unique references public.ione_sokoni_orders(id) on delete restrict,
+  buyer_user_id uuid not null,
+  seller_user_id uuid not null,
+  vendor_id uuid not null references public.ione_sokoni_vendors(id) on delete restrict,
+  rider_user_id uuid null,
+  pickup_location text not null,
+  pickup_lat double precision not null check (pickup_lat between -90 and 90),
+  pickup_lng double precision not null check (pickup_lng between -180 and 180),
+  dropoff_location text not null,
+  dropoff_lat double precision not null check (dropoff_lat between -90 and 90),
+  dropoff_lng double precision not null check (dropoff_lng between -180 and 180),
+  delivery_fee_tzs integer null check (delivery_fee_tzs >= 0),
+  buyer_fee_confirmed boolean not null default false,
+  seller_fee_confirmed boolean not null default false,
+  status text not null default 'requested' check (status in ('requested','accepted','picked_up','delivered','completed','cancelled')),
+  rider_lat double precision null check (rider_lat between -90 and 90),
+  rider_lng double precision null check (rider_lng between -180 and 180),
+  location_updated_at timestamptz null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists ione_sokoni_deliveries_open_idx
+  on public.ione_sokoni_deliveries(status, created_at desc);
+create index if not exists ione_sokoni_deliveries_rider_idx
+  on public.ione_sokoni_deliveries(rider_user_id, status, updated_at desc);
+create index if not exists ione_sokoni_deliveries_parties_idx
+  on public.ione_sokoni_deliveries(buyer_user_id, seller_user_id, created_at desc);
+
+alter table public.ione_sokoni_rider_applications enable row level security;
+alter table public.ione_sokoni_riders enable row level security;
+alter table public.ione_sokoni_deliveries enable row level security;
+revoke all on public.ione_sokoni_rider_applications from anon, authenticated;
+revoke all on public.ione_sokoni_riders from anon, authenticated;
+revoke all on public.ione_sokoni_deliveries from anon, authenticated;
+grant all on public.ione_sokoni_rider_applications to service_role;
+grant all on public.ione_sokoni_riders to service_role;
+grant all on public.ione_sokoni_deliveries to service_role;
