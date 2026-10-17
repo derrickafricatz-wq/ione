@@ -215,7 +215,7 @@
     loadPublicRiders();
     loadRiderStatus();
     if (sokoniRefreshHandle) clearInterval(sokoniRefreshHandle);
-    sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); } }, 20000);
+    sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); invoke("rider_heartbeat").catch(() => {}); } }, 20000);
   }
   function close() {
     overlay.style.display = "none";
@@ -839,12 +839,12 @@
       <button type="button" id="isAuthorityRefresh" class="authority-action-button">REFRESH SOKONI</button>
       <div id="isAuthorityMetrics" class="is-metrics"><div class="is-metric"><span>Loading dashboard…</span></div></div>
       <div id="isAuthorityStatus" class="is-status" role="status" aria-live="polite"></div>
-      <h3 style="margin-top:22px">CONFIRM PENDING PAYMENTS</h3>
+      <h3 style="margin-top:22px">THIBITISHA MALIPO YANAYOSUBIRI</h3>
       <div id="isAuthorityRequests"></div>
-      <h3 style="margin-top:22px">REGISTERED SOKONI VENDORS</h3>
+      <h3 style="margin-top:22px">WAFANYABIASHARA WA SOKONI</h3>
       <div id="isAuthorityVendors" class="is-vendors"></div>
-      <h3 style="margin-top:22px">BODA YANGU • RIDER VERIFICATION</h3>
-      <p class="authority-section-note">Only approve riders after checking their identity and contact details. Rider locations are private and are shared only during an assigned trip.</p>
+      <h3 style="margin-top:22px">BODA YANGU • UTHIBITISHO WA MADEREVA</h3>
+      <p class="authority-section-note">Thibitisha dereva baada ya kukagua utambulisho na mawasiliano yake. Eneo la dereva ni la faragha na hushirikishwa wakati wa safari aliyopewa tu.</p>
       <div id="isAuthorityRiders" class="is-vendors"></div>`;
     host.appendChild(section);
     $("isAuthorityRefresh").addEventListener("click", loadAuthorityDashboard);
@@ -856,19 +856,19 @@
     const vendorList = $("isAuthorityVendors");
     const riderList = $("isAuthorityRiders");
     if (!status || !requests || !metrics || !vendorList || !riderList) return;
-    status.textContent = "Loading protected Sokoni records…";
+    status.textContent = "Inapakia taarifa salama za Sokoni…";
     requests.replaceChildren();
     try {
       const data = await invoke("authority_dashboard");
       const m = data.metrics || {};
       const metricItems = [
-        ["Pending requests", m.pending || 0],
-        ["Active vendors", m.activeVendors || 0],
-        ["Expired access", m.expiredVendors || 0],
-        ["Confirmed payments", m.confirmedPayments || 0],
-        ["Total revenue", "TZS " + Number(m.totalRevenueTzs || 0).toLocaleString("en-TZ")],
-        ["Pending rider applications", m.pendingRiders || 0],
-        ["Verified riders", m.verifiedRiders || 0]
+        ["Maombi yanayosubiri", m.pending || 0],
+        ["Wafanyabiashara wenye ruhusa", m.activeVendors || 0],
+        ["Ruhusa zilizoisha", m.expiredVendors || 0],
+        ["Malipo yaliyothibitishwa", m.confirmedPayments || 0],
+        ["Mapato yote", "TZS " + Number(m.totalRevenueTzs || 0).toLocaleString("en-TZ")],
+        ["Maombi ya madereva yanayosubiri", m.pendingRiders || 0],
+        ["Madereva waliothibitishwa", m.verifiedRiders || 0]
       ];
       metrics.replaceChildren();
       metricItems.forEach(([label, value]) => {
@@ -885,7 +885,7 @@
       if (!pending.length) {
         const empty = document.createElement("p");
         empty.className = "authority-section-note";
-        empty.textContent = "No pending Sokoni vendor payments.";
+        empty.textContent = "Hakuna malipo ya wafanyabiashara wa Sokoni yanayosubiri.";
         requests.appendChild(empty);
       }
       pending.forEach((request) => {
@@ -894,21 +894,21 @@
         const title = document.createElement("strong");
         title.textContent = escText(request.vendor_name);
         const phone = document.createElement("p");
-        phone.textContent = "Phone: " + escText(request.phone_number);
+        phone.textContent = "Simu: " + escText(request.phone_number);
         const amount = document.createElement("p");
-        amount.textContent = "Manual payment to verify: TZS " + Number(request.amount_tzs || 1000).toLocaleString("en-TZ");
+        amount.textContent = "Malipo ya kuthibitisha: TZS " + Number(request.amount_tzs || 1000).toLocaleString("en-TZ");
         const created = document.createElement("p");
-        created.textContent = "Applied: " + new Date(request.created_at).toLocaleString("en-GB");
+        created.textContent = "Tarehe ya ombi: " + new Date(request.created_at).toLocaleString("en-GB");
         const actions = document.createElement("div");
         actions.className = "is-admin-actions";
         const approve = document.createElement("button");
         approve.type = "button";
-        approve.textContent = "CONFIRM PAYMENT & ACTIVATE";
+        approve.textContent = "THIBITISHA MALIPO NA RUHUSU";
         approve.addEventListener("click", () => reviewRequest(request.id, "approve", approve));
         const reject = document.createElement("button");
         reject.type = "button";
         reject.className = "reject";
-        reject.textContent = "REJECT";
+        reject.textContent = "KATAA";
         reject.addEventListener("click", () => reviewRequest(request.id, "reject", reject));
         actions.append(approve, reject);
         card.append(title, phone, amount, created, actions);
@@ -919,7 +919,7 @@
       if (!registered.length) {
         const emptyVendor = document.createElement("p");
         emptyVendor.className = "authority-section-note";
-        emptyVendor.textContent = "No Sokoni vendors have been approved yet.";
+        emptyVendor.textContent = "Bado hakuna mfanyabiashara wa Sokoni aliyeidhinishwa.";
         vendorList.appendChild(emptyVendor);
       }
       registered.forEach((vendor) => {
@@ -928,10 +928,10 @@
         const name = document.createElement("strong");
         name.textContent = escText(vendor.vendor_name);
         const phone = document.createElement("small");
-        phone.textContent = "Phone: " + escText(vendor.phone_number);
+        phone.textContent = "Simu: " + escText(vendor.phone_number);
         const expires = document.createElement("p");
         const expired = Date.parse(vendor.paid_until) <= Date.now();
-        expires.textContent = (expired ? "Access expired: " : "Access valid until: ") + new Date(vendor.paid_until).toLocaleDateString("en-GB");
+        expires.textContent = (expired ? "Ruhusa imeisha: " : "Ruhusa inaisha: ") + new Date(vendor.paid_until).toLocaleDateString("en-GB");
         row.append(name, phone, expires);
         vendorList.appendChild(row);
       });
@@ -949,9 +949,9 @@
         const name = document.createElement("strong");
         name.textContent = escText(application.rider_name);
         const phone = document.createElement("p");
-        phone.textContent = "Phone: " + escText(application.phone_number);
+        phone.textContent = "Simu: " + escText(application.phone_number);
         const date = document.createElement("p");
-        date.textContent = "Applied: " + new Date(application.created_at).toLocaleString("en-GB");
+        date.textContent = "Tarehe ya ombi: " + new Date(application.created_at).toLocaleString("en-GB");
         const actions = document.createElement("div");
         actions.className = "is-admin-actions";
         const approve = document.createElement("button");
@@ -961,28 +961,28 @@
         const reject = document.createElement("button");
         reject.type = "button";
         reject.className = "reject";
-        reject.textContent = "REJECT";
+        reject.textContent = "KATAA";
         reject.addEventListener("click", () => reviewRider(application.id, "reject_rider", reject));
         actions.append(approve, reject);
         row.append(name, phone, date, actions);
         riderList.appendChild(row);
       });
-      status.textContent = "Sokoni dashboard updated. Confirm only after checking the payment was received.";
+      status.textContent = "Dashibodi ya Sokoni imesasishwa. Thibitisha baada ya kuona malipo yamepokelewa.";
     } catch (e) {
-      status.textContent = e.message || "Could not load Sokoni dashboard.";
+      status.textContent = e.message || "Imeshindikana kupakia dashibodi ya Sokoni.";
       status.classList.add("error");
     }
   }
   async function reviewRider(id, action, button) {
     button.disabled = true;
-    const note = action === "reject_rider" ? (window.prompt("Optional reason for rejecting this rider:") || "") : "";
+    const note = action === "reject_rider" ? (window.prompt("Sababu ya kukataa ombi la dereva (si lazima):") || "") : "";
     try {
       const data = await invoke(action, { application_id: id, note });
-      $("isAuthorityStatus").textContent = data.message || "Rider application reviewed.";
+      $("isAuthorityStatus").textContent = data.message || "Ombi la dereva limekaguliwa.";
       $("isAuthorityStatus").classList.remove("error");
       await loadAuthorityDashboard();
     } catch (e) {
-      $("isAuthorityStatus").textContent = e.message || "Rider review was not saved.";
+      $("isAuthorityStatus").textContent = e.message || "Uamuzi wa dereva haukuhifadhiwa.";
       $("isAuthorityStatus").classList.add("error");
       button.disabled = false;
     }
@@ -990,11 +990,11 @@
   async function reviewRequest(id, action, button) {
     button.disabled = true;
     const card = button.closest(".is-admin-request");
-    const note = action === "reject" ? (window.prompt("Optional reason for rejecting this request:") || "") : "";
+    const note = action === "reject" ? (window.prompt("Sababu ya kukataa ombi hili (si lazima):") || "") : "";
     try {
       const data = await invoke(action, { request_id: id, note });
       if (card) card.remove();
-      $("isAuthorityStatus").textContent = data.message || "Saved.";
+      $("isAuthorityStatus").textContent = data.message || "Imehifadhiwa.";
       $("isAuthorityStatus").classList.remove("error");
       await loadAuthorityDashboard();
     } catch (e) {
