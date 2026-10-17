@@ -6,6 +6,13 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('ione-sokoni-rider-profiles', 'ione-sokoni-rider-profiles', true, 3145728, array['image/jpeg','image/png','image/webp'])
 on conflict (id) do update set public = true, file_size_limit = 3145728, allowed_mime_types = excluded.allowed_mime_types;
 
+drop policy if exists "Sokoni riders upload own profile photo" on storage.objects;
+create policy "Sokoni riders upload own profile photo" on storage.objects for insert to authenticated
+with check (bucket_id = 'ione-sokoni-rider-profiles' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "Sokoni riders delete own profile photo" on storage.objects;
+create policy "Sokoni riders delete own profile photo" on storage.objects for delete to authenticated
+using (bucket_id = 'ione-sokoni-rider-profiles' and (storage.foldername(name))[1] = auth.uid()::text);
+
 create table if not exists public.ione_sokoni_passenger_trips (
   id uuid primary key default gen_random_uuid(),
   passenger_user_id uuid not null references auth.users(id) on delete cascade,
@@ -105,3 +112,6 @@ on conflict (id) do update set public = false, file_size_limit = 5242880, allowe
 drop policy if exists "I1 experts upload own credential" on storage.objects;
 create policy "I1 experts upload own credential" on storage.objects for insert to authenticated
 with check (bucket_id = 'ione-expert-credentials' and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "I1 experts delete own credential" on storage.objects;
+create policy "I1 experts delete own credential" on storage.objects for delete to authenticated
+using (bucket_id = 'ione-expert-credentials' and (storage.foldername(name))[1] = auth.uid()::text);
