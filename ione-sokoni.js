@@ -640,6 +640,10 @@
       $("isOrderPanel").style.display = "none";
       selectedOrderProduct = null;
       await loadMyOrders();
+      if (data.order?.id) {
+        const buyerOrdersPanel = $("isBuyerOrders");
+        if (buyerOrdersPanel) buyerOrdersPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     } catch (e) { setStatus("isOrderStatus", e.message || "Ombi halikutumwa.", true); }
     finally { button.disabled = false; }
   }
