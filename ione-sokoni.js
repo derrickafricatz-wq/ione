@@ -65,6 +65,18 @@
   .is-admin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
   .is-admin-actions button{border:1px solid #4b805b;border-radius:9px;padding:10px 12px;background:#183723;color:#effff4;font-weight:800}
   .is-admin-actions .reject{border-color:#764b4b;background:#301b1b}
+  .is-boda-panel{padding:16px;border:1px solid #efcfad;border-radius:18px;background:#fffdf8;margin:16px 0;box-shadow:0 7px 20px rgba(115,77,37,.06)}
+  .is-boda-board{border-color:#e8bd8e;background:linear-gradient(150deg,#fffaf2,#fffdf9)}
+  .is-boda-passenger{border-color:#edc69c;background:#fffaf3}
+  .is-boda-register{border-color:#c8dcb8;background:#fbfff7}
+  .is-boda-dashboard{border-color:#a8c99c;background:#f5fff2}
+  .is-boda-heading{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+  .is-boda-heading>span{display:grid;place-items:center;width:46px;height:46px;flex:0 0 46px;border-radius:14px;background:#f6e0c5;font-size:24px}
+  .is-boda-heading h2{margin:0 0 5px!important;font-size:21px}
+  .is-boda-heading p{margin:0;color:#725b4b;font-size:12px;line-height:1.55}
+  .is-boda-title{margin:0 0 10px;font-size:19px;color:#68452c}
+  .is-boda-panel .is-payment{margin:12px 0}
+  .is-boda-panel .is-muted{line-height:1.6}
   @media(max-width:620px){.is-sections{grid-template-columns:1fr}.is-category{min-height:auto}.is-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.is-hero{padding:22px}.is-admin-actions button{flex:1}}
   /* Warm, friendly Sokoni market palette and a tidy nine-tile home arrangement. */
     #ioneSokoniOverlay{background:#fff7ec!important;color:#3d2b20!important}
@@ -114,7 +126,7 @@
       <section class="is-sections" aria-label="Huduma za Sokoni">
         <div class="is-category"><div aria-hidden="true">🥬</div><b>Mama Sokoni</b><span>Mboga, matunda na bidhaa za kila siku kutoka kwa wauzaji waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🍲</div><b>Mama wa Pishi</b><span>Chakula, chapati, supu na vitafunwa vya karibu nawe.</span></div>
-        <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Huduma ya usafirishaji na ufuatiliaji wa safari halisi itapatikana baada ya kuunganishwa na waendesha bodaboda waliothibitishwa.</span></div>
+        <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Angalia bodaboda waliothibitishwa, omba safari ya abiria, au jiunge kama dereva. Safari hupokelewa na madereva walioidhinishwa na walio tayari.</span></div>
       </section>
       <section class="is-card">
         <h2>Jiunge kama muuzaji</h2>
@@ -207,11 +219,14 @@
         <div class="is-vendors" id="isBuyerOrders"><p class="is-muted">Oda zako zitaonekana hapa.</p></div>
       </section>
       <section class="is-card">
-        <h2>Boda Yangu</h2>
+        <div class="is-boda-panel is-boda-board">
+        <div class="is-boda-heading"><span>🏍️</span><div><h2>Boda Yangu</h2><p>Orodha ya madereva waliothibitishwa na walio tayari kupokea safari.</p></div></div>
         <p class="is-muted">Waendesha bodaboda huanza kupokea safari baada ya kuthibitishwa na Authority Press. Ada ya safari itaonyeshwa tofauti na bei ya bidhaa, na muuzaji pamoja na mnunuzi lazima waikubali kabla ya kuchukua bidhaa.</p>
         <button class="is-button" type="button" id="isRefreshRiders">Angalia bodaboda waliopo</button>
         <div class="is-vendors" id="isPublicRiders"><p class="is-muted">Orodha ya bodaboda itasasishwa hapa.</p></div>
-        <h3 style="margin-top:22px">Omba safari ya abiria</h3>
+        </div>
+        <div class="is-boda-panel is-boda-passenger">
+        <h3 class="is-boda-title">Omba safari ya abiria</h3>
         <p class="is-muted">Weka eneo la kuanzia na unakoenda. Dereva na abiria watajadiliana nauli moja kwa moja; malipo hayapiti Authority Press.</p>
         <form class="is-form" id="isPassengerTripForm">
           <div><label for="isPassengerName">Jina lako</label><input id="isPassengerName" maxlength="120" required placeholder="Jina kamili"></div>
@@ -227,7 +242,9 @@
         <h3 style="margin-top:22px">Safari za abiria nilizoomba</h3>
         <button class="is-button" type="button" id="isRefreshPassengerTrips">Sasisha safari za abiria</button>
         <div class="is-vendors" id="isPassengerTrips"><p class="is-muted">Maombi na makubaliano ya safari yataonekana hapa.</p></div>
-        <h3 style="margin-top:22px">Jiunge kama dereva wa bodaboda</h3>
+        </div>
+        <div class="is-boda-panel is-boda-register">
+        <h3 class="is-boda-title">Jiunge kama dereva wa bodaboda</h3>
         <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
         <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
           <strong>MAELEKEZO YA MALIPO YA BODA YANGU</strong><br>
@@ -250,6 +267,8 @@
           <button class="is-button primary" type="submit" id="isRiderSubmit">Tuma maombi ya bodaboda</button>
         </form>
         <div class="is-status" id="isRiderApplyStatus" role="status" aria-live="polite"></div>
+        </div>
+        <div id="isRiderDashboard" class="is-boda-panel is-boda-dashboard" style="display:none;margin-top:16px">
         <div id="isRiderDashboard" style="display:none;margin-top:16px">
           <h3>Eneo la dereva</h3>
           <div class="is-status" id="isRiderStatus" role="status" aria-live="polite"></div>
