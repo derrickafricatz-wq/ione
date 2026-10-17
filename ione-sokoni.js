@@ -573,7 +573,10 @@
       <h3 style="margin-top:22px">CONFIRM PENDING PAYMENTS</h3>
       <div id="isAuthorityRequests"></div>
       <h3 style="margin-top:22px">REGISTERED SOKONI VENDORS</h3>
-      <div id="isAuthorityVendors" class="is-vendors"></div>`;
+      <div id="isAuthorityVendors" class="is-vendors"></div>
+      <h3 style="margin-top:22px">BODA YANGU • RIDER VERIFICATION</h3>
+      <p class="authority-section-note">Only approve riders after checking their identity and contact details. Rider locations are private and are shared only during an assigned trip.</p>
+      <div id="isAuthorityRiders" class="is-vendors"></div>`;
     host.appendChild(section);
     $("isAuthorityRefresh").addEventListener("click", loadAuthorityDashboard);
   }
@@ -582,7 +585,8 @@
     const requests = $("isAuthorityRequests");
     const metrics = $("isAuthorityMetrics");
     const vendorList = $("isAuthorityVendors");
-    if (!status || !requests || !metrics || !vendorList) return;
+    const riderList = $("isAuthorityRiders");
+    if (!status || !requests || !metrics || !vendorList || !riderList) return;
     status.textContent = "Loading protected Sokoni records…";
     requests.replaceChildren();
     try {
@@ -593,7 +597,9 @@
         ["Active vendors", m.activeVendors || 0],
         ["Expired access", m.expiredVendors || 0],
         ["Confirmed payments", m.confirmedPayments || 0],
-        ["Total revenue", "TZS " + Number(m.totalRevenueTzs || 0).toLocaleString("en-TZ")]
+        ["Total revenue", "TZS " + Number(m.totalRevenueTzs || 0).toLocaleString("en-TZ")],
+        ["Pending rider applications", m.pendingRiders || 0],
+        ["Verified riders", m.verifiedRiders || 0]
       ];
       metrics.replaceChildren();
       metricItems.forEach(([label, value]) => {
@@ -660,10 +666,56 @@
         row.append(name, phone, expires);
         vendorList.appendChild(row);
       });
+      riderList.replaceChildren();
+      const riderApps = data.riderApplications || [];
+      if (!riderApps.length) {
+        const emptyRider = document.createElement("p");
+        emptyRider.className = "authority-section-note";
+        emptyRider.textContent = "No pending rider applications.";
+        riderList.appendChild(emptyRider);
+      }
+      riderApps.forEach((application) => {
+        const row = document.createElement("div");
+        row.className = "is-admin-request";
+        const name = document.createElement("strong");
+        name.textContent = escText(application.rider_name);
+        const phone = document.createElement("p");
+        phone.textContent = "Phone: " + escText(application.phone_number);
+        const date = document.createElement("p");
+        date.textContent = "Applied: " + new Date(application.created_at).toLocaleString("en-GB");
+        const actions = document.createElement("div");
+        actions.className = "is-admin-actions";
+        const approve = document.createElement("button");
+        approve.type = "button";
+        approve.textContent = "VERIFY RIDER";
+        approve.addEventListener("click", () => reviewRider(application.id, "approve_rider", approve));
+        const reject = document.createElement("button");
+        reject.type = "button";
+        reject.className = "reject";
+        reject.textContent = "REJECT";
+        reject.addEventListener("click", () => reviewRider(application.id, "reject_rider", reject));
+        actions.append(approve, reject);
+        row.append(name, phone, date, actions);
+        riderList.appendChild(row);
+      });
       status.textContent = "Sokoni dashboard updated. Confirm only after checking the payment was received.";
     } catch (e) {
       status.textContent = e.message || "Could not load Sokoni dashboard.";
       status.classList.add("error");
+    }
+  }
+  async function reviewRider(id, action, button) {
+    button.disabled = true;
+    const note = action === "reject_rider" ? (window.prompt("Optional reason for rejecting this rider:") || "") : "";
+    try {
+      const data = await invoke(action, { application_id: id, note });
+      $("isAuthorityStatus").textContent = data.message || "Rider application reviewed.";
+      $("isAuthorityStatus").classList.remove("error");
+      await loadAuthorityDashboard();
+    } catch (e) {
+      $("isAuthorityStatus").textContent = e.message || "Rider review was not saved.";
+      $("isAuthorityStatus").classList.add("error");
+      button.disabled = false;
     }
   }
   async function reviewRequest(id, action, button) {
