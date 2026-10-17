@@ -602,7 +602,8 @@ Deno.serve(async (req) => {
       const deliveries = [...map.values()].map((d: any) => {
         const fresh = !!d.location_updated_at && nowMs - Date.parse(d.location_updated_at) <= 120000;
         return {
-          id: d.id, order_id: d.order_id, buyer_user_id: d.buyer_user_id, seller_user_id: d.seller_user_id,
+          id: d.id, order_id: d.order_id, is_buyer: d.buyer_user_id === user.id, is_seller: d.seller_user_id === user.id,
+          is_rider: d.rider_user_id === user.id, rider_assigned: !!d.rider_user_id,
           rider_user_id: d.rider_user_id, pickup_location: d.pickup_location, pickup_lat: d.pickup_lat, pickup_lng: d.pickup_lng,
           dropoff_location: d.dropoff_location, dropoff_lat: d.dropoff_lat, dropoff_lng: d.dropoff_lng,
           delivery_fee_tzs: d.delivery_fee_tzs, buyer_fee_confirmed: d.buyer_fee_confirmed,
