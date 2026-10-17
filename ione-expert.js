@@ -33,6 +33,11 @@
     #ioneExpertAuthority button.danger{background:#fff0ec;color:#9c332a;border-color:#e6c2ba}
     #ioneExpertAuthority,#ioneExpertAuthority *{box-sizing:border-box;min-width:0;max-width:100%}
     #ioneExpertAuthority .iex-admin-card{overflow-wrap:anywhere;word-break:break-word}
+    #ioneExpertAuthority .iex-community-question{display:block!important;visibility:visible!important;opacity:1!important;background:#fff!important;border:1px solid #b9d4b2!important;padding:16px!important}
+    #ioneExpertAuthority .iex-question-label{display:block!important;font-size:11px;font-weight:900;letter-spacing:1px;color:#315b38;margin-bottom:8px}
+    #ioneExpertAuthority .iex-question-title{display:block!important;visibility:visible!important;opacity:1!important;font-size:18px;line-height:1.4;font-weight:900;color:#183d22;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+    #ioneExpertAuthority .iex-question-meta{display:block!important;font-size:12px;color:#526a57;margin:6px 0 12px;overflow-wrap:anywhere}
+    #ioneExpertAuthority .iex-question-details{display:block!important;visibility:visible!important;opacity:1!important;color:#243b2d;background:#f5faf2;border:1px solid #dce9d6;border-radius:8px;padding:12px;margin:8px 0 14px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;min-height:36px}
     #ioneExpertAuthority input,#ioneExpertAuthority textarea,#ioneExpertAuthority select{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box}
     #ioneExpertAuthority textarea{resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
     #ioneExpertAuthority a{overflow-wrap:anywhere;word-break:break-word}
@@ -253,10 +258,14 @@
       if (!(data.applications || []).length) apps.textContent = "No expert applications waiting.";
       const qs = $("ioneExpertAuthorityQuestions"); qs.replaceChildren();
       (data.questions || []).forEach((q) => {
-        const card = document.createElement("article"); card.className = "iex-admin-card";
-        const title = document.createElement("strong"); title.textContent = q.title;
-        const body = document.createElement("p"); body.textContent = q.details || "No question details were provided.";
-        card.append(title, body);
+        const card = document.createElement("article"); card.className = "iex-admin-card iex-community-question";
+        const label = document.createElement("div"); label.className = "iex-question-label"; label.textContent = "PUBLISHED COMMUNITY QUESTION";
+        const title = document.createElement("h4"); title.className = "iex-question-title"; title.textContent = String(q.title || "Community question");
+        const meta = document.createElement("div"); meta.className = "iex-question-meta";
+        meta.textContent = [q.category || "General", q.display_name || "Community member", q.status || "open", q.created_at ? new Date(q.created_at).toLocaleString() : ""].filter(Boolean).join(" • ");
+        const body = document.createElement("div"); body.className = "iex-question-details";
+        body.textContent = String(q.details || q.question || q.question_text || "The question was received, but its detail text is empty in the saved record.");
+        card.append(label, title, meta, body);
         const thread = document.createElement("div"); thread.className = "iex-admin-replies";
         const threadTitle = document.createElement("strong"); threadTitle.textContent = "Question conversation";
         thread.appendChild(threadTitle);
