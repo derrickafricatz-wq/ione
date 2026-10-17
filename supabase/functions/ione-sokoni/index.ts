@@ -225,9 +225,17 @@ Deno.serve(async (req) => {
       const buyerPhone = normalizeTanzaniaPhone(body?.buyer_phone);
       const quantity = Number(body?.quantity);
       const note = String(body?.buyer_note || "").trim().slice(0, 500);
+      const wantsDelivery = body?.wants_delivery === true;
+      const deliveryAddress = String(body?.delivery_address || "").trim().slice(0, 240);
+      const dropoffLat = Number(body?.dropoff_lat);
+      const dropoffLng = Number(body?.dropoff_lng);
       if (!/^[0-9a-f-]{36}$/i.test(productId) || buyerName.length < 2 || buyerName.length > 120 ||
           !validPhone(buyerPhone) || !Number.isFinite(quantity) || quantity <= 0 || quantity > 100000 || Math.round(quantity * 1000) !== quantity * 1000) {
         return json({ success: false, error: "Enter your name, valid phone number and a valid quantity." }, 400);
+      }
+      if (wantsDelivery && (deliveryAddress.length < 4 || !Number.isFinite(dropoffLat) || !Number.isFinite(dropoffLng) ||
+          dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)) {
+        return json({ success: false, error: "For Boda Yangu, enter the delivery address and share your current map location." }, 400);
       }
       const { data: product, error: productError } = await admin.from("ione_sokoni_products")
         .select("id,vendor_id,user_id,product_name,unit_name,price_tzs,stock_quantity,available")
@@ -247,7 +255,9 @@ Deno.serve(async (req) => {
         product_id: product.id, vendor_id: vendor.id, seller_user_id: vendor.user_id, buyer_user_id: buyer.id,
         product_name: product.product_name, unit_name: product.unit_name, quantity,
         unit_price_tzs: product.price_tzs, total_tzs: total, buyer_name: buyerName,
-        buyer_phone: buyerPhone, buyer_note: note, status: "new"
+        buyer_phone: buyerPhone, buyer_note: note, wants_delivery: wantsDelivery,
+        delivery_address: wantsDelivery ? deliveryAddress : null,
+        dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null, status: "new"
       }).select("id,status,total_tzs,created_at").single();
       if (inserted.error) return json({ success: false, error: "Could not send your order request. Please retry." }, 500);
       return json({ success: true, order: inserted.data,
@@ -258,9 +268,9 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const [seller, buyer] = await Promise.all([
-        admin.from("ione_sokoni_orders").select("id,product_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,buyer_name,buyer_phone,buyer_note,status,created_at")
+        admin.from("ione_sokoni_orders").select("id,product_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,buyer_name,buyer_phone,buyer_note,wants_delivery,delivery_address,status,created_at")
           .eq("seller_user_id", user.id).order("created_at", { ascending: false }).limit(100),
-        admin.from("ione_sokoni_orders").select("id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,status,created_at")
+        admin.from("ione_sokoni_orders").select("id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,wants_delivery,status,created_at")
           .eq("buyer_user_id", user.id).order("created_at", { ascending: false }).limit(100)
       ]);
       if (seller.error || buyer.error) return json({ success: false, error: "Could not load Sokoni order requests." }, 500);
