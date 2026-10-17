@@ -482,7 +482,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
     if(button){button.disabled=true;button.textContent="LOADING…";}
     status.textContent="Loading manual subscription requests…";
     try{
-      const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions", "ione-sokoni", "ione-sokoni",{body:{action:"authority_list"}});
+      const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:"authority_list"}});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load manual requests.");
       list.replaceChildren();
       const requests=Array.isArray(r.data.requests)?r.data.requests:[];
