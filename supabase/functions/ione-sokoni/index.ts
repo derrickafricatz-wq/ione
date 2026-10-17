@@ -326,28 +326,38 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Authority Press session expired. Unlock Authority Press again." }, 401);
       }
       if (action === "authority_dashboard") {
-        const [requestsResult, vendorsResult, paidResult] = await Promise.all([
+        const nowIso = new Date().toISOString();
+        const [requestsResult, pendingCount, activeCount, expiredCount] = await Promise.all([
           admin.from("ione_sokoni_payment_requests")
             .select("id,user_id,vendor_id,vendor_name,phone_number,amount_tzs,status,created_at,approved_at,admin_note")
             .order("created_at", { ascending: false }).limit(200),
-          admin.from("ione_sokoni_vendors").select("id,status,paid_until").limit(10000),
-          admin.from("ione_sokoni_payment_requests").select("amount_tzs").eq("status", "approved").limit(10000)
+          admin.from("ione_sokoni_payment_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+          admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).eq("status", "active").gt("paid_until", nowIso),
+          admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).lte("paid_until", nowIso)
         ]);
-        if (requestsResult.error || vendorsResult.error || paidResult.error) {
+        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error) {
           return json({ success: false, error: "Could not load Sokoni dashboard data." }, 500);
         }
-        const vendors = vendorsResult.data || [];
-        const payments = paidResult.data || [];
-        const now = Date.now();
+        let confirmedPayments = 0;
+        let totalRevenueTzs = 0;
+        for (let offset = 0; ; offset += 1000) {
+          const page = await admin.from("ione_sokoni_payment_requests").select("amount_tzs")
+            .eq("status", "approved").order("created_at", { ascending: true }).range(offset, offset + 999);
+          if (page.error) return json({ success: false, error: "Could not calculate confirmed Sokoni payments." }, 500);
+          const rows = page.data || [];
+          confirmedPayments += rows.length;
+          totalRevenueTzs += rows.reduce((sum: number, p: any) => sum + Number(p.amount_tzs || 0), 0);
+          if (rows.length < 1000) break;
+        }
         return json({
           success: true,
           requests: requestsResult.data || [],
           metrics: {
-            pending: (requestsResult.data || []).filter((r: any) => r.status === "pending").length,
-            activeVendors: vendors.filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > now).length,
-            expiredVendors: vendors.filter((v: any) => Date.parse(v.paid_until) <= now).length,
-            confirmedPayments: payments.length,
-            totalRevenueTzs: payments.reduce((sum: number, p: any) => sum + Number(p.amount_tzs || 0), 0)
+            pending: pendingCount.count || 0,
+            activeVendors: activeCount.count || 0,
+            expiredVendors: expiredCount.count || 0,
+            confirmedPayments,
+            totalRevenueTzs
           }
         });
       }
