@@ -420,6 +420,15 @@ Deno.serve(async (req) => {
       return json({ success: true, available: true, has_active_trip: !!active.data?.length, last_seen_at: now });
     }
 
+    if (action === "rider_heartbeat") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const saved = await admin.from("ione_sokoni_riders").update({ last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("user_id", user.id).eq("status", "active").eq("available", true).select("id").maybeSingle();
+      if (saved.error) return json({ success: false, error: "Could not update rider availability." }, 500);
+      return json({ success: true, available: !!saved.data });
+    }
+
     if (action === "public_riders") {
       const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data, error } = await admin.from("ione_sokoni_riders")
@@ -487,20 +496,24 @@ Deno.serve(async (req) => {
       if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
         return json({ success: false, error: "Only available, verified riders with a recent heartbeat can accept trips." }, 403);
       }
+      const active = await admin.from("ione_sokoni_deliveries").select("id")
+        .eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]).limit(1);
+      if (active.error || active.data?.length) return json({ success: false, error: "Finish your current trip before accepting another." }, 409);
+      // Reserve this rider first. Only one concurrent request can change available=true to false.
+      const reservation = await admin.from("ione_sokoni_riders").update({
+        available: false, updated_at: new Date().toISOString()
+      }).eq("id", rider.id).eq("status", "active").eq("available", true).select("id").maybeSingle();
+      if (reservation.error || !reservation.data) return json({ success: false, error: "Your rider account is already reserved for another trip. Refresh the board." }, 409);
       const claimed = await admin.from("ione_sokoni_deliveries").update({
         rider_user_id: user.id, status: "accepted", updated_at: new Date().toISOString()
       }).eq("id", deliveryId).eq("status", "requested").is("rider_user_id", null)
         .select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,delivery_fee_tzs,status").maybeSingle();
-      if (claimed.error || !claimed.data) return json({ success: false, error: "Another rider accepted this trip first. Refresh the board." }, 409);
-      const offDuty = await admin.from("ione_sokoni_riders").update({
-        available: false, updated_at: new Date().toISOString()
-      }).eq("id", rider.id).eq("available", true).select("id").maybeSingle();
-      if (offDuty.error || !offDuty.data) {
-        await admin.from("ione_sokoni_deliveries").update({ rider_user_id: null, status: "requested", updated_at: new Date().toISOString() })
-          .eq("id", claimed.data.id).eq("rider_user_id", user.id).eq("status", "accepted");
-        return json({ success: false, error: "Could not reserve your rider profile. Please retry." }, 409);
+      if (claimed.error || !claimed.data) {
+        await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq("id", rider.id).eq("available", false);
+        return json({ success: false, error: "Another rider accepted this trip first. Refresh the board." }, 409);
       }
-      return json({ success: true, delivery: claimed.data, message: "Trip assigned to you. Propose a delivery fee; buyer and seller must both confirm it before pickup." });
+      return json({ success: true, delivery: claimed.data, message: "Safari imekabidhiwa kwako. Pendekeza ada ya safari; mnunuzi na muuzaji lazima waikubali kabla ya kuchukua bidhaa." });
     }
 
     if (action === "set_delivery_fee") {
