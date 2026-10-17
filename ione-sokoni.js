@@ -234,6 +234,11 @@
           <h3>Eneo la dereva</h3>
           <div class="is-status" id="isRiderStatus" role="status" aria-live="polite"></div>
           <button class="is-button" type="button" id="isRiderAvailability">Washa upatikanaji</button>
+          <form class="is-form" id="isRiderProfileUpdateForm" style="margin:12px 0">
+            <div><label for="isRiderProfileUpdateFile">Sasisha picha ya wasifu wa bodaboda</label><input id="isRiderProfileUpdateFile" type="file" accept="image/jpeg,image/png,image/webp" required><small class="is-muted">Picha hii itaonekana kwa watumiaji wa Sokoni. JPG, PNG au WEBP hadi MB 3.</small></div>
+            <button class="is-button" type="submit" id="isRiderProfileUpdateSubmit">Sasisha picha ya wasifu</button>
+          </form>
+          <div class="is-status" id="isRiderProfileUpdateStatus" role="status" aria-live="polite"></div>
           <button class="is-button" type="button" id="isRefreshOpenTrips">Sasisha maombi ya safari</button>
           <div class="is-vendors" id="isOpenTrips"></div>
         </div>
@@ -1130,6 +1135,33 @@
   });
   $("isRefreshOpenTrips").addEventListener("click", loadOpenTrips);
   $("isRefreshDeliveries").addEventListener("click", loadMyDeliveries);
+  $("isRiderProfileUpdateForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = $("isRiderProfileUpdateSubmit"), file = $("isRiderProfileUpdateFile").files?.[0];
+    let path = "";
+    button.disabled = true;
+    try {
+      if (!file) throw new Error("Chagua picha ya wasifu.");
+      if (file.size > 3 * 1024 * 1024) throw new Error("Picha ya wasifu isizidi MB 3.");
+      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Tumia picha ya JPG, PNG au WEBP.");
+      const session = await heavensSupabase.auth.getSession();
+      const userId = session.data?.session?.user?.id;
+      if (!userId) throw new Error("Ingia tena kwenye akaunti yako.");
+      const ext = ({"image/jpeg":"jpg","image/png":"png","image/webp":"webp"})[file.type];
+      const random = (window.crypto && typeof window.crypto.randomUUID === "function") ? window.crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2));
+      path = userId + "/" + random + "." + ext;
+      const upload = await heavensSupabase.storage.from("ione-sokoni-rider-profiles").upload(path, file, { contentType: file.type, upsert: false });
+      if (upload.error) throw new Error("Picha haikupakiwa. Jaribu tena.");
+      const result = await invoke("rider_update_profile", { profile_path: path });
+      path = "";
+      setStatus("isRiderProfileUpdateStatus", result.message || "Picha ya wasifu imesasishwa.");
+      $("isRiderProfileUpdateForm").reset();
+      await Promise.all([loadPublicRiders(), loadRiderStatus()]);
+    } catch (e) {
+      if (path) try { await heavensSupabase.storage.from("ione-sokoni-rider-profiles").remove([path]); } catch (_) {}
+      setStatus("isRiderProfileUpdateStatus", e.message || "Picha haikusasishwa.", true);
+    } finally { button.disabled = false; }
+  });
   $("isRefreshPassengerTrips").addEventListener("click", loadPassengerTrips);
   $("isPassengerPickupGps").addEventListener("click", () => captureGps("isPassengerPickupStatus", (pos) => { passengerPickup = pos; }));
   $("isPassengerTripForm").addEventListener("submit", async (event) => {
