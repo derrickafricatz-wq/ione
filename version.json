@@ -1,5 +1,5 @@
 {
-  "version": "1.0.188",
-  "message": "Fix rider trip dashboard and restore Authority Press rider access dates and controls",
+  "version": "1.0.189",
+  "message": "Keep passenger trips visible, add rider fare responses, and fix Sokoni Authority dashboard",
   "force": true
 }
