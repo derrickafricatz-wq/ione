@@ -655,6 +655,13 @@
         }
         seenOrderStatuses[order.id] = order.status;
       });
+      const seenSellerOrders = window.__ioneSokoniSellerOrders || (window.__ioneSokoniSellerOrders = {});
+      (data.seller_orders || []).forEach((order) => {
+        if (!seenSellerOrders[order.id] && order.status === "new" && typeof Notification !== "undefined" && Notification.permission === "granted") {
+          try { new Notification("I|ONE Sokoni • Oda mpya", { body: order.product_name + " • " + order.buyer_name + " ametuma ombi jipya." }); } catch (_) {}
+        }
+        seenSellerOrders[order.id] = order.status;
+      });
       if (buyerBox) {
         buyerBox.replaceChildren();
         const buyerRows = data.buyer_orders || [];
@@ -814,6 +821,13 @@
       const data = await invoke("rider_open_deliveries");
       const deliveries = data.deliveries || [];
       const passengerTrips = data.passenger_trips || [];
+      const seenPassengerRequests = window.__ioneSokoniRiderPassengerRequests || (window.__ioneSokoniRiderPassengerRequests = {});
+      passengerTrips.forEach((trip) => {
+        if (!seenPassengerRequests[trip.id] && typeof Notification !== "undefined" && Notification.permission === "granted") {
+          try { new Notification("I|ONE Boda Yangu • Abiria mpya", { body: trip.pickup_area + " → " + trip.destination_area }); } catch (_) {}
+        }
+        seenPassengerRequests[trip.id] = true;
+      });
       if (!deliveries.length && !passengerTrips.length) {
         const empty = document.createElement("p"); empty.className = "is-muted";
         empty.textContent = "Hakuna ombi jipya la uwasilishaji au abiria kwa sasa."; box.appendChild(empty); return;
@@ -836,6 +850,11 @@
         const route = document.createElement("p"); route.textContent = "Kutoka: " + trip.pickup_area + " • Kwenda: " + trip.destination_area;
         const passenger = document.createElement("small"); passenger.textContent = "Abiria: " + trip.passenger_name + " • " + trip.passenger_phone;
         const note = document.createElement("small"); note.textContent = trip.passenger_note || "";
+        if (Number.isFinite(Number(trip.pickup_lat)) && Number.isFinite(Number(trip.pickup_lng))) {
+          const mapLink = document.createElement("a"); mapLink.href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(trip.pickup_lat + "," + trip.pickup_lng) + "&travelmode=driving";
+          mapLink.target = "_blank"; mapLink.rel = "noopener noreferrer"; mapLink.className = "is-button"; mapLink.textContent = "Fungua ramani ya eneo la abiria";
+          mapLink.style.display = "inline-flex"; mapLink.style.textDecoration = "none"; row.appendChild(mapLink);
+        }
         const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali ombi la abiria";
         accept.addEventListener("click", async () => {
           accept.disabled = true;
@@ -865,6 +884,13 @@
           const rider = document.createElement("p"); rider.textContent = "Dereva: " + trip.rider_name; row.appendChild(rider);
           if (trip.is_passenger && trip.rider_phone && ["accepted","fare_proposed","fare_countered","fare_agreed","picked_up"].includes(trip.status)) {
             const call = document.createElement("a"); call.className = "is-button"; call.href = "tel:" + String(trip.rider_phone).replace(/[^+0-9]/g, ""); call.textContent = "Piga simu kwa dereva"; call.style.display = "inline-flex"; call.style.textDecoration = "none"; row.appendChild(call);
+          }
+        }
+        if (trip.is_rider && trip.passenger_phone && ["accepted","fare_proposed","fare_countered","fare_agreed","picked_up"].includes(trip.status)) {
+          const callPassenger = document.createElement("a"); callPassenger.className = "is-button"; callPassenger.href = "tel:" + String(trip.passenger_phone).replace(/[^+0-9]/g, ""); callPassenger.textContent = "Piga simu kwa abiria"; callPassenger.style.display = "inline-flex"; callPassenger.style.textDecoration = "none"; row.appendChild(callPassenger);
+          if (Number.isFinite(Number(trip.pickup_lat)) && Number.isFinite(Number(trip.pickup_lng))) {
+            const navigate = document.createElement("a"); navigate.className = "is-button"; navigate.href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(trip.pickup_lat + "," + trip.pickup_lng) + "&travelmode=driving";
+            navigate.target = "_blank"; navigate.rel = "noopener noreferrer"; navigate.textContent = "Nenda kumchukua abiria"; navigate.style.display = "inline-flex"; navigate.style.textDecoration = "none"; row.appendChild(navigate);
           }
         }
         if (trip.proposed_fare_tzs) {
