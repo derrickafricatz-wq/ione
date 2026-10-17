@@ -94,7 +94,7 @@
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
     <main class="is-shell" role="dialog" aria-modal="true" aria-labelledby="isTitle">
-      <div class="is-top"><div class="is-brand">I|ONE • SOKONI</div><button class="is-close" id="isClose" type="button">Funga ✕</button></div>
+      <div class="is-top"><div class="is-brand">I|ONE • SOKONI</div><button class="is-close" id="isClose" type="button">Funga</button></div>
       <section class="is-hero">
         <div class="is-kicker">SOKO LA KARIBU • I|ONE</div>
         <h1 id="isTitle">Karibu Sokoni.</h1>
@@ -206,6 +206,7 @@
           <div><label for="isRiderName">Jina kamili</label><input id="isRiderName" maxlength="120" required autocomplete="name" placeholder="Andika jina lako kamili"></div>
           <div><label for="isRiderPhone">Namba yako ya simu</label><input id="isRiderPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
           <div><label for="isRiderDocumentType">Chagua kitambulisho kimoja</label><select id="isRiderDocumentType" required><option value="">Chagua aina ya kitambulisho</option><option value="driving_license">Leseni ya udereva</option><option value="national_id">Kitambulisho cha Taifa (NIDA)</option><option value="rider_group_id">Kitambulisho cha kikundi cha bodaboda</option></select></div>
+          <div><label for="isRiderProfileFile">Pakia picha yako ya wasifu</label><input id="isRiderProfileFile" type="file" accept="image/jpeg,image/png,image/webp" required><small class="is-muted">Picha itaonekana kwa watumiaji wa Sokoni. Tumia picha yako halisi, hadi MB 3.</small></div>
           <div><label for="isRiderIdentityFile">Pakia picha au PDF ya kitambulisho</label><input id="isRiderIdentityFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><small class="is-muted">Faili la faragha, hadi MB 5. Litaonekana kwa Authority Press pekee.</small></div>
           <div><label for="isRiderPlate">Namba ya usajili wa pikipiki</label><input id="isRiderPlate" maxlength="24" required placeholder="Mfano: MC 123 ABC"></div>
           <div><label for="isRiderGroup">Jina la kikundi cha bodaboda</label><input id="isRiderGroup" maxlength="140" required placeholder="Jina la kikundi chako"></div>
@@ -628,6 +629,14 @@
     try {
       const data = await invoke("my_orders");
       const buyerBox = $("isBuyerOrders");
+      const seenOrderStatuses = window.__ioneSokoniOrderStatuses || (window.__ioneSokoniOrderStatuses = {});
+      (data.buyer_orders || []).forEach((order) => {
+        const previous = seenOrderStatuses[order.id];
+        if (previous && previous !== order.status && typeof Notification !== "undefined" && Notification.permission === "granted") {
+          try { new Notification("I|ONE Sokoni", { body: order.status === "accepted" ? "Muuzaji amekubali oda yako: " + order.product_name : order.status === "rejected" ? "Muuzaji amekataa oda yako: " + order.product_name : "Hali ya oda yako imebadilika: " + order.product_name }); } catch (_) {}
+        }
+        seenOrderStatuses[order.id] = order.status;
+      });
       if (buyerBox) {
         buyerBox.replaceChildren();
         const buyerRows = data.buyer_orders || [];
@@ -645,6 +654,14 @@
           const details = document.createElement("small");
           details.textContent = "Kiasi: " + order.quantity + " " + order.unit_name + " • Jumla: TZS " + Number(order.total_tzs || 0).toLocaleString("en-TZ") + " • Hali: " + orderStatusSw(order.status);
           row.append(title, details);
+          if (order.status === "new" && order.seller_phone) {
+            const call = document.createElement("a");
+            call.className = "is-button";
+            call.href = "tel:" + String(order.seller_phone).replace(/[^+0-9]/g, "");
+            call.textContent = "Piga simu kwa Mama Sokoni";
+            call.style.display = "inline-flex"; call.style.alignItems = "center"; call.style.justifyContent = "center"; call.style.textDecoration = "none"; call.style.marginTop = "8px";
+            row.appendChild(call);
+          }
           if (order.wants_delivery && order.status === "accepted") {
             const delivery = document.createElement("button"); delivery.type = "button"; delivery.className = "is-button primary"; delivery.textContent = "Omba Boda Yangu";
             delivery.addEventListener("click", async () => { delivery.disabled = true; try { const result = await invoke("request_delivery", { order_id: order.id }); setStatus("isOrderStatus", result.message || "Ombi la bodaboda limetumwa."); await loadMyDeliveries(); } catch (e) { setStatus("isOrderStatus", e.message || "Ombi la bodaboda halikutumwa.", true); delivery.disabled = false; } });
@@ -720,7 +737,14 @@
     navigator.geolocation.getCurrentPosition((position) => {
       const coords = { latitude: position.coords.latitude, longitude: position.coords.longitude };
       onSuccess(coords);
-      setStatus(statusId, "Eneo limechaguliwa: " + coords.latitude.toFixed(5) + ", " + coords.longitude.toFixed(5));
+      setStatus(statusId, "Eneo limechaguliwa. Linatafuta jina la eneo…");
+      fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + encodeURIComponent(coords.latitude) + "&lon=" + encodeURIComponent(coords.longitude) + "&zoom=16&addressdetails=1", { headers: { "Accept": "application/json" } })
+        .then((response) => response.ok ? response.json() : Promise.reject(new Error("Geocoding unavailable")))
+        .then((place) => {
+          const a = place.address || {};
+          const area = a.neighbourhood || a.suburb || a.village || a.town || a.city_district || a.city || a.municipality || a.county || a.state;
+          setStatus(statusId, area ? "Eneo: " + area : "Eneo limechaguliwa kwenye ramani.");
+        }).catch(() => setStatus(statusId, "Eneo limechaguliwa kwenye ramani."));
     }, () => setStatus(statusId, "GPS haijapatikana. Ruhusu eneo kwenye kivinjari kisha jaribu tena.", true), { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   }
   async function loadPublicRiders() {
@@ -911,11 +935,16 @@
     event.preventDefault();
     const button = $("isRiderSubmit");
     const file = $("isRiderIdentityFile").files?.[0];
+    const profileFile = $("isRiderProfileFile").files?.[0];
     let uploadedPath = "";
+    let profilePath = "";
     button.disabled = true;
     setStatus("isRiderApplyStatus", "Inapakia kitambulisho salama na kutuma maombi…");
     try {
       if (!file) throw new Error("Chagua picha au PDF ya kitambulisho chako.");
+      if (!profileFile) throw new Error("Pakia picha yako ya wasifu kwanza.");
+      if (profileFile.size > 3 * 1024 * 1024) throw new Error("Picha ya wasifu isizidi MB 3.");
+      if (!["image/jpeg", "image/png", "image/webp"].includes(profileFile.type)) throw new Error("Picha ya wasifu iwe JPG, PNG au WEBP.");
       if (file.size > 5 * 1024 * 1024) throw new Error("Faili la kitambulisho lisizidi MB 5.");
       const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
       if (!allowedTypes.includes(file.type)) throw new Error("Tumia picha ya JPG, PNG, WEBP au faili la PDF.");
@@ -923,6 +952,11 @@
       const sessionResult = await heavensSupabase.auth.getSession();
       if (sessionResult.error || !sessionResult.data.session?.user?.id) throw new Error("Kipindi chako hakiko tayari. Pakia ukurasa upya.");
       const userId = sessionResult.data.session.user.id;
+      const profileExtension = ({"image/jpeg":"jpg","image/png":"png","image/webp":"webp"})[profileFile.type];
+      const profileRandom = (window.crypto && typeof window.crypto.randomUUID === "function") ? window.crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2, 10));
+      profilePath = userId + "/" + profileRandom + "." + profileExtension;
+      const profileUpload = await heavensSupabase.storage.from("ione-sokoni-rider-profiles").upload(profilePath, profileFile, { contentType: profileFile.type, upsert: false });
+      if (profileUpload.error) throw new Error("Picha ya wasifu haikupakiwa. Jaribu tena.");
       const extension = ({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","application/pdf":"pdf"})[file.type];
       const randomPart = (window.crypto && typeof window.crypto.randomUUID === "function") ? window.crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2, 10));
       uploadedPath = userId + "/" + randomPart + "." + extension;
@@ -933,19 +967,24 @@
         phone_number: $("isRiderPhone").value.trim(),
         identity_document_type: $("isRiderDocumentType").value,
         identity_document_path: uploadedPath,
+        profile_path: profilePath,
         motorcycle_plate: $("isRiderPlate").value.trim(),
         rider_group_name: $("isRiderGroup").value.trim(),
         chairman_phone: $("isRiderChairmanPhone").value.trim()
       });
-      if (result.already_pending && uploadedPath) {
-        await heavensSupabase.storage.from("ione-sokoni-rider-documents").remove([uploadedPath]);
-        uploadedPath = "";
+      if (result.already_pending) {
+        if (uploadedPath) await heavensSupabase.storage.from("ione-sokoni-rider-documents").remove([uploadedPath]);
+        if (profilePath) await heavensSupabase.storage.from("ione-sokoni-rider-profiles").remove([profilePath]);
+        uploadedPath = ""; profilePath = "";
       }
       setStatus("isRiderApplyStatus", result.message || "Ombi limetumwa.");
       await loadRiderStatus();
     } catch (e) {
       if (uploadedPath && typeof heavensSupabase !== "undefined") {
         try { await heavensSupabase.storage.from("ione-sokoni-rider-documents").remove([uploadedPath]); } catch (_) {}
+      }
+      if (profilePath && typeof heavensSupabase !== "undefined") {
+        try { await heavensSupabase.storage.from("ione-sokoni-rider-profiles").remove([profilePath]); } catch (_) {}
       }
       setStatus("isRiderApplyStatus", e.message || "Ombi halikutumwa.", true);
     } finally { button.disabled = false; }
