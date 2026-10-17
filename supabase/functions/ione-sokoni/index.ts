@@ -95,6 +95,110 @@ Deno.serve(async (req) => {
       return json({ success: true, active, vendor: vendor || null, requests: requests || [] });
     }
 
+    if (action === "public_products") {
+      const { data: rows, error } = await admin.from("ione_sokoni_products")
+        .select("id,vendor_id,user_id,product_name,description,price_tzs,unit_name,stock_quantity,photo_path,available,updated_at")
+        .eq("available", true).gt("stock_quantity", 0).order("updated_at", { ascending: false }).limit(300);
+      if (error) return json({ success: false, error: "Could not load Sokoni products." }, 500);
+      const vendorIds = [...new Set((rows || []).map((r: any) => r.vendor_id))];
+      let vendorRows: any[] = [];
+      if (vendorIds.length) {
+        const result = await admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until").in("id", vendorIds);
+        if (result.error) return json({ success: false, error: "Could not load verified sellers." }, 500);
+        vendorRows = result.data || [];
+      }
+      const nowMs = Date.now();
+      const vendorMap = new Map(vendorRows.filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > nowMs).map((v: any) => [v.id, v]));
+      const products = await Promise.all((rows || []).filter((r: any) => vendorMap.has(r.vendor_id)).map(async (r: any) => {
+        let photoUrl = null;
+        if (r.photo_path) {
+          const signed = await admin.storage.from("ione-sokoni-products").createSignedUrl(r.photo_path, 3600);
+          if (!signed.error) photoUrl = signed.data.signedUrl;
+        }
+        return {
+          id: r.id, vendor_id: r.vendor_id, product_name: r.product_name, description: r.description,
+          price_tzs: r.price_tzs, unit_name: r.unit_name, stock_quantity: r.stock_quantity,
+          photo_url: photoUrl, vendor_name: vendorMap.get(r.vendor_id).vendor_name, updated_at: r.updated_at
+        };
+      }));
+      return json({ success: true, products });
+    }
+
+    if (action === "save_product") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
+        .select("id,status,paid_until").eq("user_id", user.id).maybeSingle();
+      if (vendorError) return json({ success: false, error: "Could not verify your vendor access." }, 500);
+      if (!vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
+        return json({ success: false, error: "Your Sokoni access is not active. Contact Authority Press to renew." }, 403);
+      }
+      const name = String(body?.product_name || "").trim().replace(/\\s+/g, " ");
+      const description = String(body?.description || "").trim().slice(0, 1200);
+      const unit = String(body?.unit_name || "").trim().slice(0, 40);
+      const price = Number(body?.price_tzs);
+      const stock = Number(body?.stock_quantity);
+      if (name.length < 2 || name.length > 140 || !unit || !Number.isSafeInteger(price) || price < 0 ||
+          !Number.isFinite(stock) || stock < 0 || stock > 100000000) {
+        return json({ success: false, error: "Enter a product name, valid price, unit and available quantity." }, 400);
+      }
+      const productId = String(body?.product_id || "").trim();
+      let prior: any = null;
+      if (productId) {
+        if (!/^[0-9a-f-]{36}$/i.test(productId)) return json({ success: false, error: "Invalid product." }, 400);
+        const result = await admin.from("ione_sokoni_products").select("*").eq("id", productId).eq("user_id", user.id).maybeSingle();
+        if (result.error || !result.data) return json({ success: false, error: "Product not found in your own listings." }, 404);
+        prior = result.data;
+      }
+      let photoPath = prior?.photo_path || null;
+      let newPhotoPath: string | null = null;
+      if (body?.image_base64) {
+        const mime = String(body?.image_mime || "").toLowerCase();
+        const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "";
+        const encoded = String(body.image_base64);
+        if (!ext || encoded.length > 7000000 || !/^[a-z0-9+/]*={0,2}$/i.test(encoded)) {
+          return json({ success: false, error: "Choose a JPG, PNG or WebP photo up to 5 MB." }, 400);
+        }
+        const binary = atob(encoded);
+        if (binary.length > 5 * 1024 * 1024) return json({ success: false, error: "Product photos must be 5 MB or smaller." }, 400);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        newPhotoPath = user.id + "/" + crypto.randomUUID() + "." + ext;
+        const upload = await admin.storage.from("ione-sokoni-products").upload(newPhotoPath, bytes, {
+          contentType: mime, upsert: false, cacheControl: "3600"
+        });
+        if (upload.error) return json({ success: false, error: "Could not upload product photo. Try a smaller image." }, 500);
+        photoPath = newPhotoPath;
+      }
+      const values = {
+        vendor_id: vendor.id, user_id: user.id, product_name: name, description,
+        price_tzs: price, unit_name: unit, stock_quantity: stock, photo_path: photoPath,
+        available: stock > 0, updated_at: new Date().toISOString()
+      };
+      const saved = prior
+        ? await admin.from("ione_sokoni_products").update(values).eq("id", prior.id).eq("user_id", user.id).select("id").single()
+        : await admin.from("ione_sokoni_products").insert(values).select("id").single();
+      if (saved.error) {
+        if (newPhotoPath) await admin.storage.from("ione-sokoni-products").remove([newPhotoPath]);
+        return json({ success: false, error: "Could not save product listing." }, 500);
+      }
+      if (newPhotoPath && prior?.photo_path) await admin.storage.from("ione-sokoni-products").remove([prior.photo_path]);
+      return json({ success: true, product_id: saved.data.id, message: "Product listing saved." });
+    }
+
+    if (action === "delete_product") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const productId = String(body?.product_id || "").trim();
+      const { data: product, error } = await admin.from("ione_sokoni_products").select("id,photo_path")
+        .eq("id", productId).eq("user_id", user.id).maybeSingle();
+      if (error || !product) return json({ success: false, error: "Product not found in your own listings." }, 404);
+      const deleted = await admin.from("ione_sokoni_products").delete().eq("id", product.id).eq("user_id", user.id);
+      if (deleted.error) return json({ success: false, error: "Could not remove product listing." }, 500);
+      if (product.photo_path) await admin.storage.from("ione-sokoni-products").remove([product.photo_path]);
+      return json({ success: true, message: "Product removed." });
+    }
+
     if (action === "public_vendors") {
       const { data, error } = await admin.from("ione_sokoni_vendors")
         .select("id,vendor_name,paid_until").eq("status", "active").gt("paid_until", new Date().toISOString())
