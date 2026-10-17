@@ -74,3 +74,30 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values ('ione-sokoni-products', 'ione-sokoni-products', false, 5242880, array['image/jpeg','image/png','image/webp'])
 on conflict (id) do update set public = false, file_size_limit = 5242880,
   allowed_mime_types = array['image/jpeg','image/png','image/webp'];
+
+-- Buyer requests and seller responses stay separate from billboard orders and payments.
+create table if not exists public.ione_sokoni_orders (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references public.ione_sokoni_products(id) on delete restrict,
+  vendor_id uuid not null references public.ione_sokoni_vendors(id) on delete restrict,
+  seller_user_id uuid not null,
+  buyer_user_id uuid not null,
+  product_name text not null,
+  unit_name text not null,
+  quantity numeric not null check (quantity > 0),
+  unit_price_tzs integer not null check (unit_price_tzs >= 0),
+  total_tzs numeric not null check (total_tzs >= 0),
+  buyer_name text not null check (char_length(trim(buyer_name)) between 2 and 120),
+  buyer_phone text not null,
+  buyer_note text not null default '' check (char_length(buyer_note) <= 500),
+  status text not null default 'new' check (status in ('new','accepted','rejected','completed')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists ione_sokoni_orders_seller_idx
+  on public.ione_sokoni_orders(seller_user_id, status, created_at desc);
+create index if not exists ione_sokoni_orders_buyer_idx
+  on public.ione_sokoni_orders(buyer_user_id, created_at desc);
+alter table public.ione_sokoni_orders enable row level security;
+revoke all on public.ione_sokoni_orders from anon, authenticated;
+grant all on public.ione_sokoni_orders to service_role;
