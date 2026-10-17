@@ -35,6 +35,13 @@
   .is-payment strong{color:#d7f8df}
   .is-vendors{display:grid;gap:8px;margin-top:12px}
   .is-vendor{padding:12px;border:1px solid #274d36;border-radius:11px;background:#091a11}
+  .is-product{display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;align-items:start;padding:12px;border:1px solid #274d36;border-radius:12px;background:#091a11}
+  .is-product img{width:82px;height:82px;object-fit:cover;border-radius:9px;background:#183323}
+  .is-product strong{display:block;overflow-wrap:anywhere}
+  .is-product p{font-size:12px;color:#b7d1c0;line-height:1.5;margin:5px 0}
+  .is-product-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+  .is-product-actions button{border:1px solid #477d61;border-radius:8px;background:#10271c;color:#effff4;padding:8px 10px;font-weight:800}
+
   .is-vendor strong{display:block}
   .is-vendor small{color:#b7d1c0}
   .is-footer{font-size:11px;color:#91b39d;text-align:center;margin:24px 0 8px;line-height:1.6}
@@ -94,11 +101,33 @@
         <button class="is-button" type="button" id="isCheckStatus">Angalia hali yangu</button>
         <div class="is-status" id="isMyStatus" role="status" aria-live="polite"></div>
       </section>
+      <section class="is-card" id="isSellerTools" style="display:none">
+        <h2>Bidhaa zangu</h2>
+        <p class="is-muted">Weka picha halisi ya bidhaa, bei, kipimo na kiasi kilichopo. Orodha itaonekana kwa wanunuzi baada ya kuhifadhi.</p>
+        <form class="is-form" id="isProductForm">
+          <div><label for="isProductName">Jina la bidhaa</label><input id="isProductName" maxlength="140" required placeholder="Mfano: Nyanya"></div>
+          <div><label for="isProductPhoto">Picha ya bidhaa (JPG, PNG au WebP; hadi MB 5)</label><input id="isProductPhoto" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <div><label for="isProductDescription">Maelezo (si lazima)</label><input id="isProductDescription" maxlength="1200" placeholder="Maelezo mafupi"></div>
+          <div><label for="isProductPrice">Bei kwa TZS</label><input id="isProductPrice" type="number" min="0" step="1" inputmode="numeric" required placeholder="Bei"></div>
+          <div><label for="isProductUnit">Kipimo</label><input id="isProductUnit" maxlength="40" required placeholder="Mfano: kilo, fungu, kreti, sahani"></div>
+          <div><label for="isProductStock">Kiasi kilichopo</label><input id="isProductStock" type="number" min="0" step="0.1" required placeholder="Mfano: 10"></div>
+          <button class="is-button primary" type="submit" id="isProductSave">Hifadhi bidhaa</button>
+          <button class="is-button" type="button" id="isProductCancel" style="display:none">Ghairi uhariri</button>
+        </form>
+        <div class="is-status" id="isProductStatus" role="status" aria-live="polite"></div>
+        <div class="is-vendors" id="isMyProducts"><p class="is-muted">Bidhaa ulizohifadhi zitaonekana hapa.</p></div>
+      </section>
       <section class="is-card">
         <h2>Wauzaji waliothibitishwa</h2>
         <p class="is-muted">Orodha itaonyesha wauzaji ambao ruhusa yao ya Sokoni bado inatumika.</p>
         <button class="is-button" type="button" id="isRefreshVendors">Sasisha orodha</button>
         <div class="is-vendors" id="isVendorList"><p class="is-muted">Bonyeza “Sasisha orodha” ili kuona wauzaji waliothibitishwa.</p></div>
+      </section>
+      <section class="is-card">
+        <h2>Bidhaa zinazopatikana Sokoni</h2>
+        <p class="is-muted">Bidhaa kutoka kwa wauzaji wenye ruhusa hai. Bei na kiasi huwekwa na muuzaji.</p>
+        <button class="is-button" type="button" id="isRefreshProducts">Sasisha bidhaa</button>
+        <div class="is-vendors" id="isProductCatalog"><p class="is-muted">Bonyeza “Sasisha bidhaa” ili kuona bidhaa zinazopatikana.</p></div>
       </section>
       <p class="is-footer">I|ONE Sokoni • Soko la karibu, kwa uwazi na uaminifu.</p>
     </main>`;
@@ -146,6 +175,8 @@
       if (data.active) {
         const date = new Date(data.vendor.paid_until).toLocaleDateString("sw-TZ", { year: "numeric", month: "long", day: "numeric" });
         setStatus("isMyStatus", "Ruhusa yako inatumika. Inaisha tarehe " + date + ". Unaweza kuendelea kwenye Sokoni.");
+        $("isSellerTools").style.display = "block";
+        loadMyProducts();
       } else if (data.requests?.[0]?.status === "pending") {
         setStatus("isMyStatus", "Ombi lako linasubiri uthibitisho wa malipo kutoka Authority Press.");
         $("isPaymentInstructions").style.display = "block";
@@ -158,6 +189,157 @@
       setStatus("isMyStatus", e.message || "Imeshindikana kupakia hali.", true);
     }
   }
+  let editingProductId = null;
+  function resetProductForm() {
+    editingProductId = null;
+    $("isProductForm").reset();
+    $("isProductSave").textContent = "Hifadhi bidhaa";
+    $("isProductCancel").style.display = "none";
+    setStatus("isProductStatus", "");
+  }
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = String(reader.result || "");
+        resolve(value.includes(",") ? value.slice(value.indexOf(",") + 1) : value);
+      };
+      reader.onerror = () => reject(new Error("Imeshindikana kusoma picha."));
+      reader.readAsDataURL(file);
+    });
+  }
+  function renderProductRows(container, products, own) {
+    container.replaceChildren();
+    if (!products.length) {
+      const empty = document.createElement("p");
+      empty.className = "is-muted";
+      empty.textContent = own ? "Bado hujaweka bidhaa. Tumia fomu iliyo juu kuanza." : "Bado hakuna bidhaa zinazopatikana kwenye orodha.";
+      container.appendChild(empty);
+      return;
+    }
+    products.forEach((product) => {
+      const card = document.createElement("div");
+      card.className = "is-product";
+      if (product.photo_url) {
+        const img = document.createElement("img");
+        img.src = product.photo_url;
+        img.alt = escText(product.product_name);
+        img.loading = "lazy";
+        card.appendChild(img);
+      } else {
+        const placeholder = document.createElement("div");
+        placeholder.style.cssText = "width:82px;height:82px;border-radius:9px;background:#183323;display:grid;place-items:center;color:#b6e7c3;font-size:22px";
+        placeholder.textContent = "S";
+        card.appendChild(placeholder);
+      }
+      const detail = document.createElement("div");
+      const title = document.createElement("strong");
+      title.textContent = escText(product.product_name);
+      const price = document.createElement("p");
+      price.textContent = "TZS " + Number(product.price_tzs || 0).toLocaleString("en-TZ") + " / " + escText(product.unit_name);
+      const stock = document.createElement("p");
+      stock.textContent = "Kiasi kilichopo: " + escText(product.stock_quantity);
+      detail.append(title, price, stock);
+      if (product.vendor_name) {
+        const vendor = document.createElement("p");
+        vendor.textContent = "Muuzaji: " + escText(product.vendor_name);
+        detail.appendChild(vendor);
+      }
+      if (product.description) {
+        const desc = document.createElement("p");
+        desc.textContent = escText(product.description);
+        detail.appendChild(desc);
+      }
+      if (own) {
+        const actions = document.createElement("div");
+        actions.className = "is-product-actions";
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "Hariri";
+        edit.addEventListener("click", () => {
+          editingProductId = product.id;
+          $("isProductName").value = product.product_name || "";
+          $("isProductDescription").value = product.description || "";
+          $("isProductPrice").value = String(product.price_tzs ?? "");
+          $("isProductUnit").value = product.unit_name || "";
+          $("isProductStock").value = String(product.stock_quantity ?? "");
+          $("isProductPhoto").value = "";
+          $("isProductSave").textContent = "Hifadhi mabadiliko";
+          $("isProductCancel").style.display = "inline-block";
+          $("isProductForm").scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "Futa";
+        remove.addEventListener("click", async () => {
+          if (!window.confirm("Unataka kufuta bidhaa hii?")) return;
+          try {
+            const result = await invoke("delete_product", { product_id: product.id });
+            setStatus("isProductStatus", result.message);
+            await loadMyProducts();
+            await loadProductCatalog();
+          } catch (e) { setStatus("isProductStatus", e.message || "Imeshindikana kufuta bidhaa.", true); }
+        });
+        actions.append(edit, remove);
+        detail.appendChild(actions);
+      }
+      card.appendChild(detail);
+      container.appendChild(card);
+    });
+  }
+  async function loadMyProducts() {
+    const box = $("isMyProducts");
+    if (!box || $("isSellerTools").style.display === "none") return;
+    box.textContent = "Inapakia bidhaa zako…";
+    try {
+      const data = await invoke("my_products");
+      renderProductRows(box, data.products || [], true);
+    } catch (e) { box.textContent = e.message || "Bidhaa zako hazipatikani kwa sasa."; }
+  }
+  async function loadProductCatalog() {
+    const box = $("isProductCatalog");
+    if (!box) return;
+    box.textContent = "Inapakia bidhaa…";
+    try {
+      const data = await invoke("public_products");
+      renderProductRows(box, data.products || [], false);
+    } catch (e) { box.textContent = e.message || "Bidhaa hazipatikani kwa sasa."; }
+  }
+  async function saveProduct(event) {
+    event.preventDefault();
+    const button = $("isProductSave");
+    button.disabled = true;
+    setStatus("isProductStatus", "Inahifadhi bidhaa…");
+    try {
+      const photo = $("isProductPhoto").files?.[0];
+      let image_base64 = null;
+      let image_mime = null;
+      if (photo) {
+        if (photo.size > 5 * 1024 * 1024) throw new Error("Picha lazima iwe MB 5 au chini.");
+        if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) throw new Error("Tumia picha ya JPG, PNG au WebP.");
+        image_base64 = await fileToBase64(photo);
+        image_mime = photo.type;
+      }
+      const payload = {
+        product_name: $("isProductName").value.trim(),
+        description: $("isProductDescription").value.trim(),
+        price_tzs: Number($("isProductPrice").value),
+        unit_name: $("isProductUnit").value.trim(),
+        stock_quantity: Number($("isProductStock").value)
+      };
+      if (editingProductId) payload.product_id = editingProductId;
+      if (image_base64) { payload.image_base64 = image_base64; payload.image_mime = image_mime; }
+      const data = await invoke("save_product", payload);
+      setStatus("isProductStatus", data.message || "Bidhaa imehifadhiwa.");
+      resetProductForm();
+      await Promise.all([loadMyProducts(), loadProductCatalog()]);
+    } catch (e) {
+      setStatus("isProductStatus", e.message || "Bidhaa haikuhifadhiwa.", true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
   async function loadVendors() {
     const list = $("isVendorList");
     list.replaceChildren();
@@ -196,6 +378,9 @@
   $("isClose").addEventListener("click", close);
   $("isCheckStatus").addEventListener("click", loadStatus);
   $("isRefreshVendors").addEventListener("click", loadVendors);
+  $("isRefreshProducts").addEventListener("click", loadProductCatalog);
+  $("isProductForm").addEventListener("submit", saveProduct);
+  $("isProductCancel").addEventListener("click", resetProductForm);
   overlay.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
   $("isVendorForm").addEventListener("submit", async (event) => {
     event.preventDefault();
