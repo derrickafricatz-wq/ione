@@ -322,6 +322,299 @@ Deno.serve(async (req) => {
       return json({ success: true, message: nextStatus === "completed" ? "Order marked completed." : "Order request rejected." });
     }
 
+    if (action === "save_pickup_location") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const label = String(body?.pickup_location || "").trim().slice(0, 240);
+      const lat = Number(body?.pickup_lat);
+      const lng = Number(body?.pickup_lng);
+      if (label.length < 4 || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+        return json({ success: false, error: "Enter the pickup address and share its map location." }, 400);
+      }
+      const { data: vendor, error } = await admin.from("ione_sokoni_vendors").select("id,status,paid_until")
+        .eq("user_id", user.id).maybeSingle();
+      if (error || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
+        return json({ success: false, error: "Active Sokoni vendor access is required." }, 403);
+      }
+      const saved = await admin.from("ione_sokoni_vendors").update({
+        pickup_location: label, pickup_lat: lat, pickup_lng: lng, updated_at: new Date().toISOString()
+      }).eq("id", vendor.id).select("id").maybeSingle();
+      if (saved.error || !saved.data) return json({ success: false, error: "Could not save the pickup location." }, 500);
+      return json({ success: true, message: "Pickup location saved for Boda Yangu requests." });
+    }
+
+    if (action === "rider_apply") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const name = String(body?.rider_name || "").trim().replace(/\\s+/g, " ");
+      const phone = normalizeTanzaniaPhone(body?.phone_number);
+      if (name.length < 2 || name.length > 120 || !validPhone(phone)) {
+        return json({ success: false, error: "Enter your name and a valid Tanzania phone number." }, 400);
+      }
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id,status").eq("user_id", user.id).maybeSingle();
+      if (rider) return json({ success: false, error: "Your Boda Yangu rider profile already exists. Check its status below." }, 409);
+      const { data: pending } = await admin.from("ione_sokoni_rider_applications").select("id,status")
+        .eq("user_id", user.id).eq("status", "pending").maybeSingle();
+      if (pending) return json({ success: true, already_pending: true, message: "Your rider application is already waiting for Authority Press." });
+      const result = await admin.from("ione_sokoni_rider_applications").insert({
+        user_id: user.id, rider_name: name, phone_number: phone, status: "pending"
+      }).select("id,status,created_at").single();
+      if (result.error) return json({ success: false, error: "Could not submit the rider application. Please retry." }, 500);
+      return json({ success: true, application: result.data, message: "Rider application submitted. Authority Press must verify you before you can receive trips." });
+    }
+
+    if (action === "rider_status") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const [riderResult, applicationResult] = await Promise.all([
+        admin.from("ione_sokoni_riders").select("id,rider_name,phone_number,status,available,last_seen_at,location_updated_at")
+          .eq("user_id", user.id).maybeSingle(),
+        admin.from("ione_sokoni_rider_applications").select("id,rider_name,status,created_at,reviewed_at,admin_note")
+          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1)
+      ]);
+      if (riderResult.error || applicationResult.error) return json({ success: false, error: "Could not load rider status." }, 500);
+      let activeDelivery = null;
+      if (riderResult.data) {
+        const active = await admin.from("ione_sokoni_deliveries").select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,delivery_fee_tzs,buyer_fee_confirmed,seller_fee_confirmed,status,created_at")
+          .eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]).maybeSingle();
+        if (active.error) return json({ success: false, error: "Could not load your current trip." }, 500);
+        activeDelivery = active.data || null;
+      }
+      return json({ success: true, rider: riderResult.data || null, application: applicationResult.data?.[0] || null, active_delivery: activeDelivery });
+    }
+
+    if (action === "rider_availability") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const available = body?.available === true;
+      const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available")
+        .eq("user_id", user.id).maybeSingle();
+      if (error || !rider || rider.status !== "active") return json({ success: false, error: "Only Authority Press verified riders can change availability." }, 403);
+      const active = await admin.from("ione_sokoni_deliveries").select("id")
+        .eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]).limit(1);
+      if (active.error) return json({ success: false, error: "Could not check your active trip." }, 500);
+      if (available && active.data?.length) return json({ success: false, error: "Complete your current trip before becoming available again." }, 409);
+      const saved = await admin.from("ione_sokoni_riders").update({
+        available, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        ...(available ? {} : { location_lat: null, location_lng: null, location_updated_at: null })
+      }).eq("id", rider.id).select("available").single();
+      if (saved.error) return json({ success: false, error: "Could not update rider availability." }, 500);
+      return json({ success: true, available: saved.data.available, message: available ? "You are now available for Boda Yangu requests." : "You are now off duty." });
+    }
+
+    if (action === "public_riders") {
+      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data, error } = await admin.from("ione_sokoni_riders")
+        .select("id,rider_name").eq("status", "active").eq("available", true).gt("last_seen_at", freshSince)
+        .order("last_seen_at", { ascending: false }).limit(100);
+      if (error) return json({ success: false, error: "Could not load the available rider board." }, 500);
+      return json({ success: true, riders: data || [] });
+    }
+
+    if (action === "request_delivery") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const orderId = String(body?.order_id || "").trim();
+      if (!/^[0-9a-f-]{36}$/i.test(orderId)) return json({ success: false, error: "Invalid order." }, 400);
+      const { data: order, error } = await admin.from("ione_sokoni_orders").select("*").eq("id", orderId).maybeSingle();
+      if (error || !order || (order.buyer_user_id !== user.id && order.seller_user_id !== user.id)) {
+        return json({ success: false, error: "This order is not available in your account." }, 404);
+      }
+      if (order.status !== "accepted" || !order.wants_delivery || !order.delivery_address ||
+          !Number.isFinite(Number(order.dropoff_lat)) || !Number.isFinite(Number(order.dropoff_lng))) {
+        return json({ success: false, error: "This accepted order does not have a valid delivery destination." }, 409);
+      }
+      const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
+        .select("id,status,paid_until,pickup_location,pickup_lat,pickup_lng").eq("id", order.vendor_id).maybeSingle();
+      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now() ||
+          !vendor.pickup_location || !Number.isFinite(Number(vendor.pickup_lat)) || !Number.isFinite(Number(vendor.pickup_lng))) {
+        return json({ success: false, error: "The seller must save a valid pickup address and map location before requesting Boda Yangu." }, 409);
+      }
+      const created = await admin.from("ione_sokoni_deliveries").insert({
+        order_id: order.id, buyer_user_id: order.buyer_user_id, seller_user_id: order.seller_user_id, vendor_id: order.vendor_id,
+        pickup_location: vendor.pickup_location, pickup_lat: vendor.pickup_lat, pickup_lng: vendor.pickup_lng,
+        dropoff_location: order.delivery_address, dropoff_lat: order.dropoff_lat, dropoff_lng: order.dropoff_lng,
+        status: "requested"
+      }).select("id,status,created_at").single();
+      if (created.error) {
+        if (created.error.code === "23505") return json({ success: false, error: "A Boda Yangu request already exists for this order." }, 409);
+        return json({ success: false, error: "Could not send the delivery request." }, 500);
+      }
+      return json({ success: true, delivery: created.data, message: "Delivery request sent to available verified riders. Delivery fee will be shown separately and must be confirmed by both sides." });
+    }
+
+    if (action === "rider_open_deliveries") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at")
+        .eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+        return json({ success: false, error: "Turn on your availability to see delivery requests." }, 403);
+      }
+      const { data, error } = await admin.from("ione_sokoni_deliveries")
+        .select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,created_at")
+        .eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100);
+      if (error) return json({ success: false, error: "Could not load delivery requests." }, 500);
+      return json({ success: true, deliveries: data || [] });
+    }
+
+    if (action === "accept_delivery") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const deliveryId = String(body?.delivery_id || "").trim();
+      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at")
+        .eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+        return json({ success: false, error: "Only available, verified riders with a recent heartbeat can accept trips." }, 403);
+      }
+      const claimed = await admin.from("ione_sokoni_deliveries").update({
+        rider_user_id: user.id, status: "accepted", updated_at: new Date().toISOString()
+      }).eq("id", deliveryId).eq("status", "requested").is("rider_user_id", null)
+        .select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,delivery_fee_tzs,status").maybeSingle();
+      if (claimed.error || !claimed.data) return json({ success: false, error: "Another rider accepted this trip first. Refresh the board." }, 409);
+      const offDuty = await admin.from("ione_sokoni_riders").update({
+        available: false, updated_at: new Date().toISOString()
+      }).eq("id", rider.id).eq("available", true).select("id").maybeSingle();
+      if (offDuty.error || !offDuty.data) {
+        await admin.from("ione_sokoni_deliveries").update({ rider_user_id: null, status: "requested", updated_at: new Date().toISOString() })
+          .eq("id", claimed.data.id).eq("rider_user_id", user.id).eq("status", "accepted");
+        return json({ success: false, error: "Could not reserve your rider profile. Please retry." }, 409);
+      }
+      return json({ success: true, delivery: claimed.data, message: "Trip assigned to you. Propose a delivery fee; buyer and seller must both confirm it before pickup." });
+    }
+
+    if (action === "set_delivery_fee") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const deliveryId = String(body?.delivery_id || "").trim();
+      const fee = Number(body?.delivery_fee_tzs);
+      if (!Number.isSafeInteger(fee) || fee < 0 || fee > 10000000) return json({ success: false, error: "Enter a valid delivery fee in TZS." }, 400);
+      const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("id,status,rider_user_id")
+        .eq("id", deliveryId).maybeSingle();
+      if (error || !delivery || delivery.rider_user_id !== user.id || delivery.status !== "accepted") {
+        return json({ success: false, error: "Only the assigned rider can set the fee before pickup." }, 403);
+      }
+      const saved = await admin.from("ione_sokoni_deliveries").update({
+        delivery_fee_tzs: fee, buyer_fee_confirmed: false, seller_fee_confirmed: false, updated_at: new Date().toISOString()
+      }).eq("id", delivery.id).eq("status", "accepted").eq("rider_user_id", user.id).select("id").maybeSingle();
+      if (saved.error || !saved.data) return json({ success: false, error: "Could not save the delivery fee." }, 500);
+      return json({ success: true, message: "Delivery fee proposed. Buyer and seller must both confirm it." });
+    }
+
+    if (action === "confirm_delivery_fee") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const deliveryId = String(body?.delivery_id || "").trim();
+      const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("id,status,buyer_user_id,seller_user_id,delivery_fee_tzs")
+        .eq("id", deliveryId).maybeSingle();
+      if (error || !delivery || (delivery.buyer_user_id !== user.id && delivery.seller_user_id !== user.id) ||
+          delivery.status !== "accepted" || delivery.delivery_fee_tzs === null) {
+        return json({ success: false, error: "A delivery fee must be proposed first, and only the buyer or seller can confirm it." }, 403);
+      }
+      const field = delivery.buyer_user_id === user.id ? "buyer_fee_confirmed" : "seller_fee_confirmed";
+      const saved = await admin.from("ione_sokoni_deliveries").update({ [field]: true, updated_at: new Date().toISOString() })
+        .eq("id", delivery.id).eq("status", "accepted").select("id").maybeSingle();
+      if (saved.error || !saved.data) return json({ success: false, error: "Could not confirm the delivery fee." }, 500);
+      const latest = await admin.from("ione_sokoni_deliveries").select("buyer_fee_confirmed,seller_fee_confirmed")
+        .eq("id", delivery.id).single();
+      return json({ success: true, both_confirmed: !!latest.data?.buyer_fee_confirmed && !!latest.data?.seller_fee_confirmed,
+        message: "Your delivery-fee confirmation has been saved." });
+    }
+
+    if (action === "update_delivery_status") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const deliveryId = String(body?.delivery_id || "").trim();
+      const next = String(body?.status || "").trim();
+      if (!["picked_up", "delivered"].includes(next)) return json({ success: false, error: "Invalid trip status." }, 400);
+      const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("*")
+        .eq("id", deliveryId).maybeSingle();
+      if (error || !delivery || delivery.rider_user_id !== user.id) return json({ success: false, error: "This trip is not assigned to your rider account." }, 404);
+      if (next === "picked_up" && (delivery.status !== "accepted" || !delivery.buyer_fee_confirmed || !delivery.seller_fee_confirmed)) {
+        return json({ success: false, error: "Pickup is locked until both buyer and seller confirm the delivery fee." }, 409);
+      }
+      if (next === "delivered" && delivery.status !== "picked_up") return json({ success: false, error: "Mark the parcel picked up before marking it delivered." }, 409);
+      const updated = await admin.from("ione_sokoni_deliveries").update({ status: next, updated_at: new Date().toISOString() })
+        .eq("id", delivery.id).eq("status", delivery.status).eq("rider_user_id", user.id).select("id").maybeSingle();
+      if (updated.error || !updated.data) return json({ success: false, error: "Trip status changed elsewhere. Refresh and try again." }, 409);
+      return json({ success: true, message: next === "picked_up" ? "Pickup confirmed. Customer can now follow the delivery." : "Marked delivered. Buyer or seller can confirm completion." });
+    }
+
+    if (action === "update_rider_location") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const deliveryId = String(body?.delivery_id || "").trim();
+      const lat = Number(body?.latitude);
+      const lng = Number(body?.longitude);
+      if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+        return json({ success: false, error: "Invalid GPS coordinates." }, 400);
+      }
+      const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("id,status,rider_user_id,buyer_fee_confirmed,seller_fee_confirmed")
+        .eq("id", deliveryId).maybeSingle();
+      if (error || !delivery || delivery.rider_user_id !== user.id ||
+          !["accepted", "picked_up", "delivered"].includes(delivery.status) ||
+          !delivery.buyer_fee_confirmed || !delivery.seller_fee_confirmed) {
+        return json({ success: false, error: "Live location is available only on your assigned trip after the delivery fee is confirmed." }, 403);
+      }
+      const now = new Date().toISOString();
+      const saved = await admin.from("ione_sokoni_deliveries").update({
+        rider_lat: lat, rider_lng: lng, location_updated_at: now, updated_at: now
+      }).eq("id", delivery.id).eq("rider_user_id", user.id).select("id").maybeSingle();
+      if (saved.error || !saved.data) return json({ success: false, error: "Could not update trip location." }, 500);
+      await admin.from("ione_sokoni_riders").update({
+        location_lat: lat, location_lng: lng, location_updated_at: now, last_seen_at: now, updated_at: now
+      }).eq("user_id", user.id);
+      return json({ success: true, updated_at: now });
+    }
+
+    if (action === "my_deliveries") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const [buyer, seller, rider] = await Promise.all([
+        admin.from("ione_sokoni_deliveries").select("*").eq("buyer_user_id", user.id).order("created_at", { ascending: false }).limit(50),
+        admin.from("ione_sokoni_deliveries").select("*").eq("seller_user_id", user.id).order("created_at", { ascending: false }).limit(50),
+        admin.from("ione_sokoni_deliveries").select("*").eq("rider_user_id", user.id).order("created_at", { ascending: false }).limit(50)
+      ]);
+      if (buyer.error || seller.error || rider.error) return json({ success: false, error: "Could not load your delivery trips." }, 500);
+      const map = new Map<string, any>();
+      [...(buyer.data || []), ...(seller.data || []), ...(rider.data || [])].forEach((row: any) => map.set(row.id, row));
+      const nowMs = Date.now();
+      const deliveries = [...map.values()].map((d: any) => {
+        const fresh = !!d.location_updated_at && nowMs - Date.parse(d.location_updated_at) <= 120000;
+        return {
+          id: d.id, order_id: d.order_id, buyer_user_id: d.buyer_user_id, seller_user_id: d.seller_user_id,
+          rider_user_id: d.rider_user_id, pickup_location: d.pickup_location, pickup_lat: d.pickup_lat, pickup_lng: d.pickup_lng,
+          dropoff_location: d.dropoff_location, dropoff_lat: d.dropoff_lat, dropoff_lng: d.dropoff_lng,
+          delivery_fee_tzs: d.delivery_fee_tzs, buyer_fee_confirmed: d.buyer_fee_confirmed,
+          seller_fee_confirmed: d.seller_fee_confirmed, status: d.status,
+          rider_lat: fresh ? d.rider_lat : null, rider_lng: fresh ? d.rider_lng : null,
+          location_updated_at: d.location_updated_at, location_stale: !fresh, created_at: d.created_at
+        };
+      }).sort((a: any, b: any) => Date.parse(b.created_at) - Date.parse(a.created_at));
+      return json({ success: true, deliveries });
+    }
+
+    if (action === "complete_delivery") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const deliveryId = String(body?.delivery_id || "").trim();
+      const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("id,status,buyer_user_id,seller_user_id,rider_user_id")
+        .eq("id", deliveryId).maybeSingle();
+      if (error || !delivery || (delivery.buyer_user_id !== user.id && delivery.seller_user_id !== user.id) || delivery.status !== "delivered") {
+        return json({ success: false, error: "Only the buyer or seller can complete a delivered trip." }, 403);
+      }
+      const done = await admin.from("ione_sokoni_deliveries").update({
+        status: "completed", rider_lat: null, rider_lng: null, location_updated_at: null, updated_at: new Date().toISOString()
+      }).eq("id", delivery.id).eq("status", "delivered").select("id").maybeSingle();
+      if (done.error || !done.data) return json({ success: false, error: "Could not complete the delivery." }, 500);
+      if (delivery.rider_user_id) await admin.from("ione_sokoni_riders").update({
+        available: false, location_lat: null, location_lng: null, location_updated_at: null, updated_at: new Date().toISOString()
+      }).eq("user_id", delivery.rider_user_id);
+      return json({ success: true, message: "Delivery completed. Live location sharing has stopped." });
+    }
+
     if (action === "public_vendors") {
       const { data, error } = await admin.from("ione_sokoni_vendors")
         .select("id,vendor_name,paid_until").eq("status", "active").gt("paid_until", new Date().toISOString())
