@@ -270,11 +270,19 @@ Deno.serve(async (req) => {
       const [seller, buyer] = await Promise.all([
         admin.from("ione_sokoni_orders").select("id,product_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,buyer_name,buyer_phone,buyer_note,wants_delivery,delivery_address,status,created_at")
           .eq("seller_user_id", user.id).order("created_at", { ascending: false }).limit(100),
-        admin.from("ione_sokoni_orders").select("id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,wants_delivery,status,created_at")
+        admin.from("ione_sokoni_orders").select("id,vendor_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,wants_delivery,status,created_at")
           .eq("buyer_user_id", user.id).order("created_at", { ascending: false }).limit(100)
       ]);
       if (seller.error || buyer.error) return json({ success: false, error: "Could not load Sokoni order requests." }, 500);
-      return json({ success: true, seller_orders: seller.data || [], buyer_orders: buyer.data || [] });
+      const vendorIds = [...new Set((buyer.data || []).map((order: any) => order.vendor_id).filter(Boolean))];
+      let sellerPhones = new Map<string, string>();
+      if (vendorIds.length) {
+        const vendorContacts = await admin.from("ione_sokoni_vendors").select("id,phone_number").in("id", vendorIds);
+        if (vendorContacts.error) return json({ success: false, error: "Could not load seller contact details." }, 500);
+        sellerPhones = new Map((vendorContacts.data || []).map((vendor: any) => [vendor.id, vendor.phone_number]));
+      }
+      const buyerOrders = (buyer.data || []).map((order: any) => ({ ...order, seller_phone: sellerPhones.get(order.vendor_id) || null }));
+      return json({ success: true, seller_orders: seller.data || [], buyer_orders: buyerOrders });
     }
 
     if (action === "update_order_status") {
