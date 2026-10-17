@@ -1,5 +1,5 @@
 {
-  "version": "1.0.187",
-  "message": "Show Authority-approved Sokoni riders with clear availability status",
+  "version": "1.0.188",
+  "message": "Fix rider trip dashboard and restore Authority Press rider access dates and controls",
   "force": true
 }
