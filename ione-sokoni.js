@@ -768,6 +768,8 @@
         .then((place) => {
           const a = place.address || {};
           const area = a.neighbourhood || a.suburb || a.village || a.town || a.city_district || a.city || a.municipality || a.county || a.state;
+          const passengerPickupField = document.getElementById("isPassengerPickupArea");
+          if (area && passengerPickupField && !passengerPickupField.value.trim()) passengerPickupField.value = area;
           setStatus(statusId, area ? "Eneo: " + area : "Eneo limechaguliwa kwenye ramani.");
         }).catch(() => setStatus(statusId, "Eneo limechaguliwa kwenye ramani."));
     }, () => setStatus(statusId, "GPS haijapatikana. Ruhusu eneo kwenye kivinjari kisha jaribu tena.", true), { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
