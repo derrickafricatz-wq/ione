@@ -260,12 +260,27 @@
         const state = document.createElement("p"); state.className = "iex-app-status"; state.textContent = "Status: " + String(app.status || "pending").toUpperCase() + (app.created_at ? " • Submitted " + new Date(app.created_at).toLocaleString() : "");
         card.append(name, specialty, phone, experience, state);
         if (app.credential_url) {
-          const link = document.createElement("a"); link.href = app.credential_url; link.target = "_blank"; link.rel = "noopener noreferrer";
-          const isPdf = /\.pdf(?:$|[?#])/i.test(String(app.credential_path || app.credential_url));
-          link.textContent = isPdf ? "OPEN CREDENTIAL PDF" : "OPEN PRIVATE CREDENTIAL";
-          link.className = "iex-credential-link";
-          if (isPdf) { link.type = "application/pdf"; link.addEventListener("click", () => { const preview = document.createElement("iframe"); preview.className = "iex-credential-preview"; preview.title = "Expert credential PDF"; preview.src = app.credential_url; preview.style.cssText = "display:block;width:100%;height:65vh;border:1px solid #ccd9ce;border-radius:10px;margin-top:10px;background:#fff"; const prior = card.querySelector(".iex-credential-preview"); if (prior) prior.remove(); card.appendChild(preview); }); }
-          card.appendChild(link);
+          const isPdf = /\.pdf(?:$|[?#])/i.test(String(app.credential_path || ""));
+          const previewButton = document.createElement("button"); previewButton.type = "button";
+          previewButton.className = "iex-credential-link"; previewButton.textContent = isPdf ? "VIEW CREDENTIAL PDF HERE" : "VIEW CREDENTIAL HERE";
+          previewButton.addEventListener("click", () => {
+            const prior = card.querySelector(".iex-credential-preview-wrap");
+            if (prior) { prior.remove(); previewButton.textContent = isPdf ? "VIEW CREDENTIAL PDF HERE" : "VIEW CREDENTIAL HERE"; return; }
+            const wrap = document.createElement("div"); wrap.className = "iex-credential-preview-wrap";
+            wrap.style.cssText = "display:block;width:100%;margin-top:10px;overflow:hidden";
+            if (isPdf) {
+              const preview = document.createElement("iframe"); preview.className = "iex-credential-preview"; preview.title = "Expert credential PDF";
+              preview.setAttribute("referrerpolicy", "no-referrer"); preview.src = app.credential_url;
+              preview.style.cssText = "display:block;width:100%;height:65vh;max-width:100%;border:1px solid #ccd9ce;border-radius:10px;background:#fff";
+              wrap.appendChild(preview);
+            } else {
+              const preview = document.createElement("img"); preview.className = "iex-credential-preview"; preview.alt = "Expert credential image";
+              preview.src = app.credential_url; preview.style.cssText = "display:block;width:100%;height:auto;max-height:65vh;object-fit:contain;border:1px solid #ccd9ce;border-radius:10px;background:#fff";
+              wrap.appendChild(preview);
+            }
+            card.appendChild(wrap); previewButton.textContent = "HIDE CREDENTIAL";
+          });
+          card.appendChild(previewButton);
         } else { const missing = document.createElement("p"); missing.className = "iex-muted"; missing.textContent = "Credential preview is unavailable. Check the private upload record."; card.appendChild(missing); }
         if (app.status === "pending") {
           const note = document.createElement("input"); note.maxLength = 500; note.placeholder = "Authority review note (optional)";
