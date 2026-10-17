@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
       if (action === "authority_reply") {
         const questionId = clean(body?.question_id, 80), text = clean(body?.body, 5000);
         if (!/^[0-9a-f-]{36}$/i.test(questionId) || text.length < 5) return json({ success: false, error: "Write an official response first." }, 400);
-        const saved = await admin.from("ione_expert_replies").insert({ question_id: questionId, user_id: "00000000-0000-0000-0000-000000000000", display_name: "Authority Press", role: "authority", body: text });
+        const saved = await admin.from("ione_expert_replies").insert({ question_id: questionId, user_id: null, display_name: "Authority Press", role: "authority", body: text });
         if (saved.error) return json({ success: false, error: "Could not publish the official response." }, 500);
         await admin.from("ione_expert_questions").update({ status: "answered", updated_at: new Date().toISOString() }).eq("id", questionId);
         return json({ success: true, message: "Official response published." });
