@@ -1,5 +1,5 @@
 {
-  "version": "1.0.178",
-  "message": "Allow existing riders to update profile photos",
+  "version": "1.0.179",
+  "message": "Fix Sokoni delivery alerts, Boda access controls and Expert replies",
   "force": true
 }
