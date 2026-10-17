@@ -482,7 +482,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
     if(button){button.disabled=true;button.textContent="LOADING…";}
     status.textContent="Loading manual subscription requests…";
     try{
-      const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:"authority_list"}});
+      const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions", "ione-sokoni", "ione-sokoni",{body:{action:"authority_list"}});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not load manual requests.");
       list.replaceChildren();
       const requests=Array.isArray(r.data.requests)?r.data.requests:[];
@@ -3480,6 +3480,7 @@ function getMedia(id){
 <button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">SW</span><strong>SPACEWAY</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
 <button class="smart-item ione-special ione-gift" id="openIoneGift" type="button"><span class="ione-service-art" aria-hidden="true"><svg viewBox="0 0 80 80"><path d="M12 31h56v38H12z" fill="none" stroke="currentColor" stroke-width="5"/><path d="M8 22h64v14H8z" fill="none" stroke="currentColor" stroke-width="5"/><path d="M40 22v47M40 22c-2-12-12-18-18-12-7 7 6 15 18 12Zm0 0c2-12 12-18 18-12 7 7-6 15-18 12Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg></span><strong>GIFT</strong><small>INVITE A BRAND • EARN $1</small></button>
 <button class="smart-item ione-special ione-support" id="openIoneSupport" type="button"><span class="ione-service-art" aria-hidden="true"><svg viewBox="0 0 80 80"><path d="M10 12h60v43H36L20 68V55H10z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M24 30h32M24 41h21" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span><strong>I1 SUPPORT</strong><small>PRIVATE LIVE SUPPORT</small></button>
+<button class="smart-item ione-special ione-sokoni-tile" id="openSokoni" type="button"><span class="smart-icon" aria-hidden="true">S</span><strong>I|ONE SOKONI</strong><small>SOKO LA KARIBU • WAFANYABIASHARA</small></button>
 </div></section></div>
 <div id="scrollBanner" aria-label="I|ONE scrolling information"><div class="ione-banner-frame"><span class="ione-banner-label">I|ONE</span><div id="scrollText"></div></div></div>
 
@@ -4030,7 +4031,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=130", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=131", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -12789,6 +12790,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./chapchap.js?v=14"></script>
 <script src="./ione-find-it-for-me.js?v=1" defer></script>
 <script src="./ione-launch-observatory.js?v=4" defer></script>
+<script src="./ione-sokoni.js?v=1" defer></script>
 <script>
 /* I|ONE DOCUMENTARY AUTO-SCROLL • waits for the library to open and for cards to render */
 (function(){
