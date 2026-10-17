@@ -534,13 +534,19 @@ Deno.serve(async (req) => {
     }
 
     if (action === "public_riders") {
-      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const now = Date.now();
+      const freshSince = new Date(now - 3 * 60 * 1000).toISOString();
+      // Show every Authority-approved rider whose manually granted access is still valid.
+      // Availability only changes the displayed status; trip matching keeps its stricter
+      // available + recent-heartbeat checks, so offline riders cannot accept live requests.
       const { data, error } = await admin.from("ione_sokoni_riders")
-        .select("id,rider_name,profile_path").eq("status", "active").eq("available", true).gt("last_seen_at", freshSince)
-        .order("last_seen_at", { ascending: false }).limit(100);
-      if (error) return json({ success: false, error: "Could not load the available rider board." }, 500);
+        .select("id,rider_name,profile_path,available,last_seen_at,access_payment_confirmed,access_expires_at")
+        .eq("status", "active").eq("access_payment_confirmed", true).gt("access_expires_at", new Date(now).toISOString())
+        .order("available", { ascending: false }).order("last_seen_at", { ascending: false, nullsFirst: false }).limit(100);
+      if (error) return json({ success: false, error: "Could not load the verified rider board." }, 500);
       const riders = (data || []).map((rider: any) => ({
         id: rider.id, rider_name: rider.rider_name,
+        available: rider.available === true && !!rider.last_seen_at && Date.parse(rider.last_seen_at) > Date.parse(freshSince),
         profile_url: rider.profile_path ? admin.storage.from("ione-sokoni-rider-profiles").getPublicUrl(rider.profile_path).data?.publicUrl || null : null
       }));
       return json({ success: true, riders });
