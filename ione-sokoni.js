@@ -200,6 +200,22 @@
         <p class="is-muted">Waendesha bodaboda huanza kupokea safari baada ya kuthibitishwa na Authority Press. Ada ya safari itaonyeshwa tofauti na bei ya bidhaa, na muuzaji pamoja na mnunuzi lazima waikubali kabla ya kuchukua bidhaa.</p>
         <button class="is-button" type="button" id="isRefreshRiders">Angalia bodaboda waliopo</button>
         <div class="is-vendors" id="isPublicRiders"><p class="is-muted">Orodha ya bodaboda itasasishwa hapa.</p></div>
+        <h3 style="margin-top:22px">Omba safari ya abiria</h3>
+        <p class="is-muted">Weka eneo la kuanzia na unakoenda. Dereva na abiria watajadiliana nauli moja kwa moja; malipo hayapiti Authority Press.</p>
+        <form class="is-form" id="isPassengerTripForm">
+          <div><label for="isPassengerName">Jina lako</label><input id="isPassengerName" maxlength="120" required placeholder="Jina kamili"></div>
+          <div><label for="isPassengerPhone">Namba ya simu</label><input id="isPassengerPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="07XXXXXXXX"></div>
+          <div><label for="isPassengerPickupArea">Eneo la kuchukuliwa</label><input id="isPassengerPickupArea" maxlength="180" required placeholder="Mfano: Mlimani City, Dar es Salaam"></div>
+          <button class="is-button" id="isPassengerPickupGps" type="button">Tumia GPS ya eneo la kuchukuliwa</button>
+          <div class="is-status" id="isPassengerPickupStatus" role="status" aria-live="polite"></div>
+          <div><label for="isPassengerDestination">Unakoenda</label><input id="isPassengerDestination" maxlength="180" required placeholder="Jina la eneo unakoenda"></div>
+          <div><label for="isPassengerNote">Maelezo ya ziada (si lazima)</label><input id="isPassengerNote" maxlength="500" placeholder="Alama ya eneo au maelekezo"></div>
+          <button class="is-button primary" type="submit" id="isPassengerTripSubmit">Tuma ombi la safari</button>
+        </form>
+        <div class="is-status" id="isPassengerTripStatus" role="status" aria-live="polite"></div>
+        <h3 style="margin-top:22px">Safari za abiria nilizoomba</h3>
+        <button class="is-button" type="button" id="isRefreshPassengerTrips">Sasisha safari za abiria</button>
+        <div class="is-vendors" id="isPassengerTrips"><p class="is-muted">Maombi na makubaliano ya safari yataonekana hapa.</p></div>
         <h3 style="margin-top:22px">Jiunge kama dereva wa bodaboda</h3>
         <p class="is-muted">Jaza taarifa za utambulisho, pikipiki na kikundi chako. Authority Press itazikagua kabla ya kukuidhinisha.</p>
         <form class="is-form" id="isRiderForm">
@@ -248,8 +264,9 @@
     loadMyOrders();
     loadPublicRiders();
     loadRiderStatus();
+    loadPassengerTrips();
     if (sokoniRefreshHandle) clearInterval(sokoniRefreshHandle);
-    sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); invoke("rider_heartbeat").catch(() => {}); if ($("isRiderDashboard").style.display !== "none") loadOpenTrips(); } }, 20000);
+    sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); loadPassengerTrips(); invoke("rider_heartbeat").catch(() => {}); if ($("isRiderDashboard").style.display !== "none") loadOpenTrips(); } }, 20000);
   }
   function close() {
     overlay.style.display = "none";
@@ -583,6 +600,7 @@
   let selectedOrderProduct = null;
   let buyerDropoff = null;
   let sellerPickup = null;
+  let passengerPickup = null;
   let riderWatchId = null;
   let sokoniRefreshHandle = null;
   let currentRiderId = null;
@@ -794,26 +812,89 @@
     box.replaceChildren();
     try {
       const data = await invoke("rider_open_deliveries");
-      if (!data.deliveries?.length) {
+      const deliveries = data.deliveries || [];
+      const passengerTrips = data.passenger_trips || [];
+      if (!deliveries.length && !passengerTrips.length) {
         const empty = document.createElement("p"); empty.className = "is-muted";
-        empty.textContent = "Hakuna ombi jipya la safari kwa sasa."; box.appendChild(empty); return;
+        empty.textContent = "Hakuna ombi jipya la uwasilishaji au abiria kwa sasa."; box.appendChild(empty); return;
       }
-      data.deliveries.forEach((trip) => {
+      deliveries.forEach((trip) => {
         const row = document.createElement("article"); row.className = "is-vendor";
-        const title = document.createElement("strong"); title.textContent = "Ombi jipya la safari";
+        const title = document.createElement("strong"); title.textContent = "Ombi la kupeleka bidhaa ya Sokoni";
         const date = document.createElement("small"); date.textContent = "Limetumwa: " + new Date(trip.created_at).toLocaleString("sw-TZ");
-        const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali safari";
+        const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali uwasilishaji";
         accept.addEventListener("click", async () => {
           accept.disabled = true;
-          try {
-            const result = await invoke("accept_delivery", { delivery_id: trip.id });
-            setStatus("isRiderStatus", result.message || "Safari imekabidhiwa kwako.");
-            await Promise.all([loadOpenTrips(), loadMyDeliveries(), loadRiderStatus()]);
-          } catch (e) { setStatus("isRiderStatus", e.message || "Safari haikukubaliwa.", true); accept.disabled = false; }
+          try { const result = await invoke("accept_delivery", { delivery_id: trip.id }); setStatus("isRiderStatus", result.message || "Safari imekabidhiwa kwako."); await Promise.all([loadOpenTrips(), loadMyDeliveries(), loadRiderStatus()]); }
+          catch (e) { setStatus("isRiderStatus", e.message || "Safari haikukubaliwa.", true); accept.disabled = false; }
         });
         row.append(title, date, accept); box.appendChild(row);
       });
+      passengerTrips.forEach((trip) => {
+        const row = document.createElement("article"); row.className = "is-vendor";
+        const title = document.createElement("strong"); title.textContent = "Ombi la abiria";
+        const route = document.createElement("p"); route.textContent = "Kutoka: " + trip.pickup_area + " • Kwenda: " + trip.destination_area;
+        const passenger = document.createElement("small"); passenger.textContent = "Abiria: " + trip.passenger_name + " • " + trip.passenger_phone;
+        const note = document.createElement("small"); note.textContent = trip.passenger_note || "";
+        const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali ombi la abiria";
+        accept.addEventListener("click", async () => {
+          accept.disabled = true;
+          try { const result = await invoke("passenger_trip_accept", { trip_id: trip.id }); setStatus("isRiderStatus", result.message || "Ombi la abiria limekubaliwa."); await Promise.all([loadOpenTrips(), loadPassengerTrips()]); }
+          catch (e) { setStatus("isRiderStatus", e.message || "Ombi halikukubaliwa.", true); accept.disabled = false; }
+        });
+        row.append(title, route, passenger, note, accept); box.appendChild(row);
+      });
     } catch (e) { box.textContent = e.message || "Maombi ya safari hayapatikani."; }
+  }
+
+  async function loadPassengerTrips() {
+    const box = $("isPassengerTrips");
+    if (!box) return;
+    try {
+      const data = await invoke("passenger_trip_list");
+      box.replaceChildren();
+      const trips = data.trips || [];
+      if (!trips.length) { const empty = document.createElement("p"); empty.className = "is-muted"; empty.textContent = "Bado hakuna ombi la safari ya abiria."; box.appendChild(empty); return; }
+      const labels = { requested: "Inasubiri dereva", accepted: "Dereva amekubali • jadilianeni nauli", fare_proposed: "Dereva amependekeza nauli", fare_countered: "Nauli imejadiliwa upya", fare_agreed: "Nauli imekubaliwa", picked_up: "Abiria amechukuliwa", completed: "Safari imekamilika", cancelled: "Safari imeghairiwa" };
+      trips.forEach((trip) => {
+        const row = document.createElement("article"); row.className = "is-vendor";
+        const title = document.createElement("strong"); title.textContent = trip.pickup_area + " → " + trip.destination_area;
+        const status = document.createElement("small"); status.textContent = "Hali: " + (labels[trip.status] || trip.status);
+        row.append(title, status);
+        if (trip.rider_name) {
+          const rider = document.createElement("p"); rider.textContent = "Dereva: " + trip.rider_name; row.appendChild(rider);
+          if (trip.is_passenger && trip.rider_phone && ["accepted","fare_proposed","fare_countered","fare_agreed","picked_up"].includes(trip.status)) {
+            const call = document.createElement("a"); call.className = "is-button"; call.href = "tel:" + String(trip.rider_phone).replace(/[^+0-9]/g, ""); call.textContent = "Piga simu kwa dereva"; call.style.display = "inline-flex"; call.style.textDecoration = "none"; row.appendChild(call);
+          }
+        }
+        if (trip.proposed_fare_tzs) {
+          const fare = document.createElement("p"); fare.textContent = "Nauli iliyopendekezwa: TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " • " + (trip.fare_proposed_by === "rider" ? "Dereva" : "Abiria"); row.appendChild(fare);
+        }
+        if (!trip.fare_agreed && ["accepted","fare_proposed","fare_countered"].includes(trip.status)) {
+          const offer = document.createElement("input"); offer.type = "number"; offer.min = "100"; offer.max = "500000"; offer.step = "100"; offer.placeholder = "Pendekeza nauli (TZS)"; offer.style.cssText = "width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #e5c5a4;margin-top:8px";
+          const offerBtn = document.createElement("button"); offerBtn.type = "button"; offerBtn.className = "is-button"; offerBtn.textContent = "Tuma pendekezo la nauli";
+          offerBtn.addEventListener("click", async () => { offerBtn.disabled = true; try { const result = await invoke("passenger_trip_offer_fare", { trip_id: trip.id, fare_tzs: Number(offer.value) }); setStatus("isPassengerTripStatus", result.message); await loadPassengerTrips(); } catch (e) { setStatus("isPassengerTripStatus", e.message || "Nauli haikutumwa.", true); offerBtn.disabled = false; } });
+          row.append(offer, offerBtn);
+        }
+        const isOtherParty = trip.is_passenger ? trip.fare_proposed_by === "rider" : trip.fare_proposed_by === "passenger";
+        if (trip.proposed_fare_tzs && !trip.fare_agreed && isOtherParty && ["fare_proposed","fare_countered"].includes(trip.status)) {
+          const agree = document.createElement("button"); agree.type = "button"; agree.className = "is-button primary"; agree.textContent = "Kubali nauli";
+          agree.addEventListener("click", async () => { agree.disabled = true; try { const result = await invoke("passenger_trip_agree_fare", { trip_id: trip.id }); setStatus("isPassengerTripStatus", result.message); await loadPassengerTrips(); } catch (e) { setStatus("isPassengerTripStatus", e.message || "Nauli haikukubaliwa.", true); agree.disabled = false; } });
+          row.appendChild(agree);
+        }
+        if (trip.is_rider && trip.status === "fare_agreed") {
+          const pickup = document.createElement("button"); pickup.type = "button"; pickup.className = "is-button primary"; pickup.textContent = "Nimemchukua abiria";
+          pickup.addEventListener("click", async () => { pickup.disabled = true; try { const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "picked_up" }); setStatus("isPassengerTripStatus", result.message); await loadPassengerTrips(); } catch (e) { setStatus("isPassengerTripStatus", e.message || "Hali haikubadilika.", true); pickup.disabled = false; } });
+          row.appendChild(pickup);
+        }
+        if (trip.is_passenger && trip.status === "picked_up") {
+          const done = document.createElement("button"); done.type = "button"; done.className = "is-button primary"; done.textContent = "Thibitisha safari imekamilika";
+          done.addEventListener("click", async () => { done.disabled = true; try { const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "completed" }); setStatus("isPassengerTripStatus", result.message); await loadPassengerTrips(); } catch (e) { setStatus("isPassengerTripStatus", e.message || "Safari haikukamilika.", true); done.disabled = false; } });
+          row.appendChild(done);
+        }
+        box.appendChild(row);
+      });
+    } catch (e) { box.textContent = e.message || "Safari za abiria hazipatikani."; }
   }
   function renderDeliveryMap(trip, isRider) {
     const map = $("isLiveMap");
@@ -1013,6 +1094,25 @@
   });
   $("isRefreshOpenTrips").addEventListener("click", loadOpenTrips);
   $("isRefreshDeliveries").addEventListener("click", loadMyDeliveries);
+  $("isRefreshPassengerTrips").addEventListener("click", loadPassengerTrips);
+  $("isPassengerPickupGps").addEventListener("click", () => captureGps("isPassengerPickupStatus", (pos) => { passengerPickup = pos; }));
+  $("isPassengerTripForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = $("isPassengerTripSubmit");
+    if (!passengerPickup) { setStatus("isPassengerTripStatus", "Tumia GPS kuchagua eneo la kuchukuliwa kwanza.", true); return; }
+    button.disabled = true;
+    try {
+      const result = await invoke("passenger_trip_request", {
+        passenger_name: $("isPassengerName").value.trim(), passenger_phone: $("isPassengerPhone").value.trim(),
+        pickup_area: $("isPassengerPickupArea").value.trim(), pickup_lat: passengerPickup.latitude, pickup_lng: passengerPickup.longitude,
+        destination_area: $("isPassengerDestination").value.trim(), passenger_note: $("isPassengerNote").value.trim()
+      });
+      setStatus("isPassengerTripStatus", result.message || "Ombi la safari limetumwa.");
+      $("isPassengerTripForm").reset(); passengerPickup = null;
+      await loadPassengerTrips();
+    } catch (e) { setStatus("isPassengerTripStatus", e.message || "Ombi la safari halikutumwa.", true); }
+    finally { button.disabled = false; }
+  });
   $("isPickupGps").addEventListener("click", () => captureGps("isPickupCoordinates", (pos) => { sellerPickup = pos; }));
   $("isBuyerGps").addEventListener("click", () => captureGps("isBuyerCoordinates", (pos) => { buyerDropoff = pos; }));
   $("isWantsDelivery").addEventListener("change", () => {
