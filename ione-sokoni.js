@@ -1137,27 +1137,65 @@
         riderList.appendChild(emptyRider);
       }
       riderApps.forEach((application) => {
-        const row = document.createElement("div");
+        const row = document.createElement("article");
         row.className = "is-admin-request";
         const name = document.createElement("strong");
         name.textContent = escText(application.rider_name);
+        const statusLabels = { pending: "INASUBIRI UKAGUZI", processing: "UKAGUZI UNAENDELEA", approved: "AMEIDHINISHWA", rejected: "AMEKATALIWA" };
+        const status = document.createElement("p");
+        status.textContent = "Hali: " + (statusLabels[application.status] || escText(application.status));
         const phone = document.createElement("p");
-        phone.textContent = "Simu: " + escText(application.phone_number);
+        phone.textContent = "Simu ya dereva: " + escText(application.phone_number);
+        const plate = document.createElement("p");
+        plate.textContent = "Namba ya pikipiki: " + (application.motorcycle_plate ? escText(application.motorcycle_plate) : "Haipo kwenye maombi ya zamani");
+        const group = document.createElement("p");
+        group.textContent = "Kikundi: " + (application.rider_group_name ? escText(application.rider_group_name) : "Haipo kwenye maombi ya zamani");
+        const chairman = document.createElement("p");
+        chairman.textContent = "Simu ya mwenyekiti: " + (application.chairman_phone ? escText(application.chairman_phone) : "Haipo kwenye maombi ya zamani");
+        const docTypeLabels = { driving_license: "Leseni ya udereva", national_id: "Kitambulisho cha Taifa", rider_group_id: "Kitambulisho cha kikundi" };
+        const docType = document.createElement("p");
+        docType.textContent = "Aina ya kitambulisho: " + (docTypeLabels[application.identity_document_type] || "Hakikuambatanishwa kwenye ombi la zamani");
         const date = document.createElement("p");
         date.textContent = "Tarehe ya ombi: " + new Date(application.created_at).toLocaleString("en-GB");
-        const actions = document.createElement("div");
-        actions.className = "is-admin-actions";
-        const approve = document.createElement("button");
-        approve.type = "button";
-        approve.textContent = "VERIFY RIDER";
-        approve.addEventListener("click", () => reviewRider(application.id, "approve_rider", approve));
-        const reject = document.createElement("button");
-        reject.type = "button";
-        reject.className = "reject";
-        reject.textContent = "KATAA";
-        reject.addEventListener("click", () => reviewRider(application.id, "reject_rider", reject));
-        actions.append(approve, reject);
-        row.append(name, phone, date, actions);
+        row.append(name, status, phone, plate, group, chairman, docType, date);
+        if (application.identity_document_url) {
+          const doc = document.createElement("a");
+          doc.href = application.identity_document_url;
+          doc.target = "_blank";
+          doc.rel = "noopener noreferrer";
+          doc.textContent = "Fungua kitambulisho cha faragha";
+          doc.style.cssText = "display:inline-block;margin:6px 0;color:#a54d2b;font-weight:800;overflow-wrap:anywhere";
+          row.appendChild(doc);
+        } else {
+          const missing = document.createElement("p");
+          missing.textContent = "Hakuna faili la kitambulisho lililohifadhiwa kwa ombi hili.";
+          row.appendChild(missing);
+        }
+        if (application.reviewed_at) {
+          const reviewed = document.createElement("p");
+          reviewed.textContent = "Tarehe ya uamuzi: " + new Date(application.reviewed_at).toLocaleString("en-GB") + (application.reviewed_by ? " • " + application.reviewed_by : "");
+          row.appendChild(reviewed);
+        }
+        if (application.admin_note) {
+          const note = document.createElement("p");
+          note.textContent = "Maelezo ya Authority: " + escText(application.admin_note);
+          row.appendChild(note);
+        }
+        if (application.status === "pending") {
+          const actions = document.createElement("div");
+          actions.className = "is-admin-actions";
+          const approve = document.createElement("button");
+          approve.type = "button";
+          approve.textContent = "THIBITISHA DEREVA";
+          approve.addEventListener("click", () => reviewRider(application.id, "approve_rider", approve));
+          const reject = document.createElement("button");
+          reject.type = "button";
+          reject.className = "reject";
+          reject.textContent = "KATAA";
+          reject.addEventListener("click", () => reviewRider(application.id, "reject_rider", reject));
+          actions.append(approve, reject);
+          row.appendChild(actions);
+        }
         riderList.appendChild(row);
       });
       status.textContent = "Dashibodi ya Sokoni imesasishwa. Thibitisha baada ya kuona malipo yamepokelewa.";
