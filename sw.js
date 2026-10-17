@@ -23,6 +23,7 @@ const APP_FILES = [
   "./ione-recovery-vault.js",
   "./ione-launch-observatory.js",
   "./ione-sokoni.js",
+  "./ione-expert.js",
   "./chapchap.js",
   "./chapchap-receipts.js",
   "./images/1.jpg",
