@@ -55,6 +55,34 @@
   .is-admin-actions button{border:1px solid #4b805b;border-radius:9px;padding:10px 12px;background:#183723;color:#effff4;font-weight:800}
   .is-admin-actions .reject{border-color:#764b4b;background:#301b1b}
   @media(max-width:620px){.is-sections{grid-template-columns:1fr}.is-category{min-height:auto}.is-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.is-hero{padding:22px}.is-admin-actions button{flex:1}}
+  /* Warm, friendly Sokoni market palette and a tidy nine-tile home arrangement. */
+    #ioneSokoniOverlay{background:#fff7ec!important;color:#3d2b20!important}
+    #ioneSokoniOverlay .is-hero{background:#ffefd8;border-color:#f0c99d;color:#3d2b20}
+    #ioneSokoniOverlay .is-hero p,#ioneSokoniOverlay .is-muted{color:#725b4b}
+    #ioneSokoniOverlay .is-brand,#ioneSokoniOverlay .is-kicker{color:#a54d2b}
+    #ioneSokoniOverlay .is-card,#ioneSokoniOverlay .is-category,#ioneSokoniOverlay .is-vendor,#ioneSokoniOverlay .is-product,#ioneSokoniOverlay .is-admin-request,#ioneSokoniOverlay .is-metric{background:#fffdfa;border-color:#f0d5b7;color:#3d2b20}
+    #ioneSokoniOverlay .is-form label{color:#654a38}
+    #ioneSokoniOverlay .is-form input,#ioneSokoniOverlay .is-form select{background:#fffdfa;color:#3d2b20;border-color:#e5c5a4}
+    #ioneSokoniOverlay .is-button,#ioneSokoniOverlay .is-close{background:#e7f2d9;color:#31583a;border-color:#b9d4a3}
+    #ioneSokoniOverlay .is-button.primary{background:#ef8b5b;color:#fff;border-color:#ef8b5b}
+    #ioneSokoniOverlay .is-payment{background:#fff2d7;border-color:#edce88;color:#604323}
+    #ioneSokoniOverlay .is-payment strong{color:#604323}
+    #ioneSokoniOverlay .is-status{color:#426c43}
+    #ioneSokoniOverlay .is-status.error{color:#a32222}
+    #ioneSokoniOverlay .is-vendor small,#ioneSokoniOverlay .is-product p,#ioneSokoniOverlay .is-admin-request p,#ioneSokoniOverlay .is-metric span{color:#725b4b}
+    #ioneSokoniOverlay .is-admin-actions button{background:#e7f2d9;color:#31583a;border-color:#b9d4a3}
+    #ioneSokoniOverlay .is-admin-actions .reject{background:#fff0ec;color:#a32222;border-color:#e9b7ab}
+    .smart-grid #openSokoni{order:1}
+    .smart-grid #openAfrilink{order:2}
+    .smart-grid #openTranscript{order:3}
+    .smart-grid #openHealth{order:4}
+    .smart-grid #openAuthority{order:5}
+    .smart-grid #openIoneGift{order:6}
+    .smart-grid #openIoneSupport{order:7}
+    .smart-grid #openBusBooking{order:8}
+    .smart-grid #openFlightBooking{order:9}
+    @media(min-width:760px){.smart-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important}}
+    @media(max-width:759px){.smart-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}}
   `;
   const style = document.createElement("style");
   style.id = "ioneSokoniStyles";
@@ -173,11 +201,16 @@
         <button class="is-button" type="button" id="isRefreshRiders">Angalia bodaboda waliopo</button>
         <div class="is-vendors" id="isPublicRiders"><p class="is-muted">Orodha ya bodaboda itasasishwa hapa.</p></div>
         <h3 style="margin-top:22px">Jiunge kama dereva wa bodaboda</h3>
-        <p class="is-muted">Jaza jina na namba ya simu pekee. Authority Press itathibitisha maombi yako.</p>
+        <p class="is-muted">Jaza taarifa za utambulisho, pikipiki na kikundi chako. Authority Press itazikagua kabla ya kukuidhinisha.</p>
         <form class="is-form" id="isRiderForm">
-          <div><label for="isRiderName">Jina lako</label><input id="isRiderName" maxlength="120" required placeholder="Andika jina lako"></div>
-          <div><label for="isRiderPhone">Namba ya simu</label><input id="isRiderPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
-          <button class="is-button primary" type="submit" id="isRiderSubmit">Tuma ombi la bodaboda</button>
+          <div><label for="isRiderName">Jina kamili</label><input id="isRiderName" maxlength="120" required autocomplete="name" placeholder="Andika jina lako kamili"></div>
+          <div><label for="isRiderPhone">Namba yako ya simu</label><input id="isRiderPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
+          <div><label for="isRiderDocumentType">Chagua kitambulisho kimoja</label><select id="isRiderDocumentType" required><option value="">Chagua aina ya kitambulisho</option><option value="driving_license">Leseni ya udereva</option><option value="national_id">Kitambulisho cha Taifa (NIDA)</option><option value="rider_group_id">Kitambulisho cha kikundi cha bodaboda</option></select></div>
+          <div><label for="isRiderIdentityFile">Pakia picha au PDF ya kitambulisho</label><input id="isRiderIdentityFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><small class="is-muted">Faili la faragha, hadi MB 5. Litaonekana kwa Authority Press pekee.</small></div>
+          <div><label for="isRiderPlate">Namba ya usajili wa pikipiki</label><input id="isRiderPlate" maxlength="24" required placeholder="Mfano: MC 123 ABC"></div>
+          <div><label for="isRiderGroup">Jina la kikundi cha bodaboda</label><input id="isRiderGroup" maxlength="140" required placeholder="Jina la kikundi chako"></div>
+          <div><label for="isRiderChairmanPhone">Namba ya simu ya mwenyekiti wa kikundi</label><input id="isRiderChairmanPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
+          <button class="is-button primary" type="submit" id="isRiderSubmit">Tuma maombi ya bodaboda</button>
         </form>
         <div class="is-status" id="isRiderApplyStatus" role="status" aria-live="polite"></div>
         <div id="isRiderDashboard" style="display:none;margin-top:16px">
@@ -344,7 +377,18 @@
     await readySession();
     const result = await heavensSupabase.functions.invoke("ione-sokoni", { body: Object.assign({ action }, extra || {}) });
     if (result.error) {
-      const message = result.data?.error || result.error.message;
+      let message = result.data?.error || "";
+      const response = result.error.context;
+      if (!message && response && typeof response.clone === "function") {
+        try {
+          const payload = await response.clone().json();
+          message = payload?.error || payload?.message || "";
+        } catch (_) {}
+      }
+      if (!message) message = result.error.message || "Ombi halikukamilika. Jaribu tena.";
+      if (/edge function returned a 2xx status code/i.test(message)) {
+        message = "Seva imerudisha hitilafu isiyoeleweka. Tumia akaunti tofauti na muuzaji, kisha hakikisha jina, simu, kiasi na taarifa za uwasilishaji zimejazwa.";
+      }
       throw new Error(swahiliMessage(message) || "Ombi halikukamilika. Jaribu tena.");
     }
     if (!result.data || result.data.success !== true) throw new Error(swahiliMessage(result.data?.error) || "Ombi halikukamilika. Jaribu tena.");
@@ -866,13 +910,45 @@
   $("isRiderForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = $("isRiderSubmit");
+    const file = $("isRiderIdentityFile").files?.[0];
+    let uploadedPath = "";
     button.disabled = true;
+    setStatus("isRiderApplyStatus", "Inapakia kitambulisho salama na kutuma maombi…");
     try {
-      const result = await invoke("rider_apply", { rider_name: $("isRiderName").value.trim(), phone_number: $("isRiderPhone").value.trim() });
+      if (!file) throw new Error("Chagua picha au PDF ya kitambulisho chako.");
+      if (file.size > 5 * 1024 * 1024) throw new Error("Faili la kitambulisho lisizidi MB 5.");
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
+      if (!allowedTypes.includes(file.type)) throw new Error("Tumia picha ya JPG, PNG, WEBP au faili la PDF.");
+      await readySession();
+      const sessionResult = await heavensSupabase.auth.getSession();
+      if (sessionResult.error || !sessionResult.data.session?.user?.id) throw new Error("Kipindi chako hakiko tayari. Pakia ukurasa upya.");
+      const userId = sessionResult.data.session.user.id;
+      const extension = ({"image/jpeg":"jpg","image/png":"png","image/webp":"webp","application/pdf":"pdf"})[file.type];
+      const randomPart = (window.crypto && typeof window.crypto.randomUUID === "function") ? window.crypto.randomUUID() : (Date.now() + "-" + Math.random().toString(36).slice(2, 10));
+      uploadedPath = userId + "/" + randomPart + "." + extension;
+      const upload = await heavensSupabase.storage.from("ione-sokoni-rider-documents").upload(uploadedPath, file, { contentType: file.type, upsert: false });
+      if (upload.error) throw new Error("Kitambulisho hakikupakiwa. Hakikisha intaneti inafanya kazi kisha ujaribu tena.");
+      const result = await invoke("rider_apply", {
+        rider_name: $("isRiderName").value.trim(),
+        phone_number: $("isRiderPhone").value.trim(),
+        identity_document_type: $("isRiderDocumentType").value,
+        identity_document_path: uploadedPath,
+        motorcycle_plate: $("isRiderPlate").value.trim(),
+        rider_group_name: $("isRiderGroup").value.trim(),
+        chairman_phone: $("isRiderChairmanPhone").value.trim()
+      });
+      if (result.already_pending && uploadedPath) {
+        await heavensSupabase.storage.from("ione-sokoni-rider-documents").remove([uploadedPath]);
+        uploadedPath = "";
+      }
       setStatus("isRiderApplyStatus", result.message || "Ombi limetumwa.");
       await loadRiderStatus();
-    } catch (e) { setStatus("isRiderApplyStatus", e.message || "Ombi halikutumwa.", true); }
-    finally { button.disabled = false; }
+    } catch (e) {
+      if (uploadedPath && typeof heavensSupabase !== "undefined") {
+        try { await heavensSupabase.storage.from("ione-sokoni-rider-documents").remove([uploadedPath]); } catch (_) {}
+      }
+      setStatus("isRiderApplyStatus", e.message || "Ombi halikutumwa.", true);
+    } finally { button.disabled = false; }
   });
   $("isRiderAvailability").addEventListener("click", async () => {
     const button = $("isRiderAvailability");
