@@ -656,12 +656,14 @@
         seenOrderStatuses[order.id] = order.status;
       });
       const seenSellerOrders = window.__ioneSokoniSellerOrders || (window.__ioneSokoniSellerOrders = {});
+      const sellerAlertsReady = window.__ioneSokoniSellerAlertsReady === true;
       (data.seller_orders || []).forEach((order) => {
-        if (!seenSellerOrders[order.id] && order.status === "new" && typeof Notification !== "undefined" && Notification.permission === "granted") {
+        if (sellerAlertsReady && !seenSellerOrders[order.id] && order.status === "new" && typeof Notification !== "undefined" && Notification.permission === "granted") {
           try { new Notification("I|ONE Sokoni • Oda mpya", { body: order.product_name + " • " + order.buyer_name + " ametuma ombi jipya." }); } catch (_) {}
         }
         seenSellerOrders[order.id] = order.status;
       });
+      window.__ioneSokoniSellerAlertsReady = true;
       if (buyerBox) {
         buyerBox.replaceChildren();
         const buyerRows = data.buyer_orders || [];
@@ -824,12 +826,14 @@
       const deliveries = data.deliveries || [];
       const passengerTrips = data.passenger_trips || [];
       const seenPassengerRequests = window.__ioneSokoniRiderPassengerRequests || (window.__ioneSokoniRiderPassengerRequests = {});
+      const riderTripAlertsReady = window.__ioneSokoniRiderTripAlertsReady === true;
       passengerTrips.forEach((trip) => {
-        if (!seenPassengerRequests[trip.id] && typeof Notification !== "undefined" && Notification.permission === "granted") {
+        if (riderTripAlertsReady && !seenPassengerRequests[trip.id] && typeof Notification !== "undefined" && Notification.permission === "granted") {
           try { new Notification("I|ONE Boda Yangu • Abiria mpya", { body: trip.pickup_area + " → " + trip.destination_area }); } catch (_) {}
         }
         seenPassengerRequests[trip.id] = true;
       });
+      window.__ioneSokoniRiderTripAlertsReady = true;
       if (!deliveries.length && !passengerTrips.length) {
         const empty = document.createElement("p"); empty.className = "is-muted";
         empty.textContent = "Hakuna ombi jipya la uwasilishaji au abiria kwa sasa."; box.appendChild(empty); return;
