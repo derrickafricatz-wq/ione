@@ -54,6 +54,13 @@ for (const action of ["submit", "my_status", "public_vendors", "public_products"
   assert.ok(edge.includes('action === "' + action + '"'), "Missing Edge Function action: " + action);
 }
 assert.match(edge, /validAuthoritySession\(admin, rawSession\)/);
+assert.match(edge, /action === "set_rider_access"/);
+assert.match(edge, /riders: ridersResult\.data \|\| \[\]/);
+assert.match(edge, /access_payment_confirmed/);
+assert.match(moduleSource, /id="isRiderDashboard"/);
+assert.match(moduleSource, /Tarehe ya kuanza ruhusa/);
+assert.match(moduleSource, /Tarehe ya mwisho ya ruhusa/);
+
 assert.match(edge, /admin\.auth\.getUser\(token\)/);
 assert.match(edge, /eq\("stock_quantity", product\.stock_quantity\)/);
 assert.match(edge, /createSignedUrl\(r\.photo_path, 3600\)/);
