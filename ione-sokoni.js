@@ -904,22 +904,49 @@
       });
       passengerTrips.forEach((trip) => {
         const row = document.createElement("article"); row.className = "is-vendor";
-        const title = document.createElement("strong"); title.textContent = "Ombi la abiria";
+        const title = document.createElement("strong"); title.textContent = trip.status === "requested" ? "Ombi jipya la abiria" : "Safari ya abiria inayoendelea";
         const route = document.createElement("p"); route.textContent = "Kutoka: " + trip.pickup_area + " • Kwenda: " + trip.destination_area;
         const passenger = document.createElement("small"); passenger.textContent = "Abiria: " + trip.passenger_name + " • " + trip.passenger_phone;
         const note = document.createElement("small"); note.textContent = trip.passenger_note || "";
+        const tripStatus = document.createElement("p");
+        const tripLabels = { requested: "Inasubiri dereva", accepted: "Umekubali • jadilianeni nauli", fare_proposed: "Nauli imependekezwa", fare_countered: "Nauli imejadiliwa upya", fare_agreed: "Nauli imekubaliwa • anza safari", picked_up: "Abiria amechukuliwa" };
+        tripStatus.textContent = "Hali: " + (tripLabels[trip.status] || trip.status);
+        row.append(title, route, passenger, note, tripStatus);
         if (Number.isFinite(Number(trip.pickup_lat)) && Number.isFinite(Number(trip.pickup_lng))) {
           const mapLink = document.createElement("a"); mapLink.href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(trip.pickup_lat + "," + trip.pickup_lng) + "&travelmode=driving";
           mapLink.target = "_blank"; mapLink.rel = "noopener noreferrer"; mapLink.className = "is-button"; mapLink.textContent = "Fungua ramani ya eneo la abiria";
           mapLink.style.display = "inline-flex"; mapLink.style.textDecoration = "none"; row.appendChild(mapLink);
         }
-        const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali ombi la abiria";
-        accept.addEventListener("click", async () => {
-          accept.disabled = true;
-          try { const result = await invoke("passenger_trip_accept", { trip_id: trip.id }); setStatus("isRiderStatus", result.message || "Ombi la abiria limekubaliwa."); await Promise.all([loadOpenTrips(), loadPassengerTrips()]); }
-          catch (e) { setStatus("isRiderStatus", e.message || "Ombi halikukubaliwa.", true); accept.disabled = false; }
-        });
-        row.append(title, route, passenger, note, accept); box.appendChild(row);
+        if (trip.proposed_fare_tzs) {
+          const fare = document.createElement("p"); fare.textContent = "Nauli iliyopendekezwa: TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " • " + (trip.fare_proposed_by === "passenger" ? "Abiria" : "Dereva"); row.appendChild(fare);
+        }
+        if (trip.status === "requested" && !trip.rider_id) {
+          const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali ombi la abiria";
+          accept.addEventListener("click", async () => {
+            accept.disabled = true;
+            try { const result = await invoke("passenger_trip_accept", { trip_id: trip.id }); setStatus("isRiderStatus", result.message || "Ombi la abiria limekubaliwa."); await Promise.all([loadOpenTrips(), loadPassengerTrips()]); }
+            catch (e) { setStatus("isRiderStatus", e.message || "Ombi halikukubaliwa.", true); accept.disabled = false; }
+          });
+          row.appendChild(accept);
+        } else if (["accepted", "fare_proposed", "fare_countered"].includes(trip.status) && !trip.fare_agreed) {
+          if (!trip.proposed_fare_tzs || trip.fare_proposed_by !== "rider") {
+            const offer = document.createElement("input"); offer.type = "number"; offer.min = "100"; offer.max = "500000"; offer.step = "100"; offer.placeholder = "Pendekeza nauli (TZS)"; offer.style.cssText = "width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px solid #e5c5a4;margin-top:8px";
+            const offerBtn = document.createElement("button"); offerBtn.type = "button"; offerBtn.className = "is-button"; offerBtn.textContent = "Tuma pendekezo la nauli";
+            offerBtn.addEventListener("click", async () => { offerBtn.disabled = true; try { const result = await invoke("passenger_trip_offer_fare", { trip_id: trip.id, fare_tzs: Number(offer.value) }); setStatus("isRiderStatus", result.message); await loadOpenTrips(); } catch (e) { setStatus("isRiderStatus", e.message || "Nauli haikutumwa.", true); offerBtn.disabled = false; } });
+            row.append(offer, offerBtn);
+          }
+          if (trip.proposed_fare_tzs && trip.fare_proposed_by === "passenger") {
+            const agree = document.createElement("button"); agree.type = "button"; agree.className = "is-button primary"; agree.textContent = "Kubali nauli ya abiria";
+            agree.addEventListener("click", async () => { agree.disabled = true; try { const result = await invoke("passenger_trip_agree_fare", { trip_id: trip.id }); setStatus("isRiderStatus", result.message); await loadOpenTrips(); } catch (e) { setStatus("isRiderStatus", e.message || "Nauli haikukubaliwa.", true); agree.disabled = false; } });
+            row.appendChild(agree);
+          }
+        } else if (trip.status === "fare_agreed") {
+          const start = document.createElement("p"); start.textContent = "Nauli imekubaliwa. Wasiliana na abiria kisha bonyeza ‘Nimemchukua abiria’ unapoanza safari."; row.appendChild(start);
+          const pickup = document.createElement("button"); pickup.type = "button"; pickup.className = "is-button primary"; pickup.textContent = "Nimemchukua abiria";
+          pickup.addEventListener("click", async () => { pickup.disabled = true; try { const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "picked_up" }); setStatus("isRiderStatus", result.message); await loadOpenTrips(); } catch (e) { setStatus("isRiderStatus", e.message || "Hali haikubadilika.", true); pickup.disabled = false; } });
+          row.appendChild(pickup);
+        }
+        row.style.marginBottom = "10px"; box.appendChild(row);
       });
     } catch (e) { box.textContent = e.message || "Maombi ya safari hayapatikani."; }
   }
