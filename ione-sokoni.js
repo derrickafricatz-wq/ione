@@ -846,7 +846,13 @@
         }
         const info = document.createElement("div");
         const name = document.createElement("strong"); name.textContent = rider.rider_name;
-        const status = document.createElement("small"); status.textContent = "Amethibitishwa na yupo tayari kupokea safari";
+        const status = document.createElement("small");
+        status.textContent = rider.available
+          ? "Amethibitishwa • yupo tayari kupokea safari"
+          : "Amethibitishwa • hayupo kazini sasa";
+        status.style.display = "block";
+        status.style.marginTop = "4px";
+        status.style.color = rider.available ? "#9bd8a6" : "#b8c4c7";
         info.append(name, status); row.appendChild(info); box.appendChild(row);
       });
     } catch (e) { box.textContent = e.message || "Orodha haipatikani."; }
