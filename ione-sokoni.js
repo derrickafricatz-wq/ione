@@ -759,9 +759,18 @@
       }
       data.riders.forEach((rider) => {
         const row = document.createElement("div"); row.className = "is-vendor";
+        row.style.display = "flex"; row.style.alignItems = "center"; row.style.gap = "12px";
+        if (rider.profile_url) {
+          const photo = document.createElement("img");
+          photo.src = rider.profile_url; photo.alt = "Picha ya " + rider.rider_name;
+          photo.loading = "lazy"; photo.width = 64; photo.height = 64;
+          photo.style.cssText = "width:64px;height:64px;object-fit:cover;border-radius:50%;border:2px solid #b9d4a3;flex:0 0 64px";
+          row.appendChild(photo);
+        }
+        const info = document.createElement("div");
         const name = document.createElement("strong"); name.textContent = rider.rider_name;
         const status = document.createElement("small"); status.textContent = "Amethibitishwa na yupo tayari kupokea safari";
-        row.append(name, status); box.appendChild(row);
+        info.append(name, status); row.appendChild(info); box.appendChild(row);
       });
     } catch (e) { box.textContent = e.message || "Orodha haipatikani."; }
   }
@@ -1178,6 +1187,13 @@
       riderApps.forEach((application) => {
         const row = document.createElement("article");
         row.className = "is-admin-request";
+        if (application.profile_photo_url) {
+          const profilePhoto = document.createElement("img");
+          profilePhoto.src = application.profile_photo_url; profilePhoto.alt = "Picha ya dereva " + application.rider_name;
+          profilePhoto.width = 76; profilePhoto.height = 76;
+          profilePhoto.style.cssText = "width:76px;height:76px;object-fit:cover;border-radius:50%;border:2px solid #b9d4a3;margin-bottom:10px";
+          row.appendChild(profilePhoto);
+        }
         const name = document.createElement("strong");
         name.textContent = escText(application.rider_name);
         const statusLabels = { pending: "INASUBIRI UKAGUZI", processing: "UKAGUZI UNAENDELEA", approved: "AMEIDHINISHWA", rejected: "AMEKATALIWA" };
