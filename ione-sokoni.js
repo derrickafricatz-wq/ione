@@ -116,6 +116,10 @@
         </form>
         <div class="is-status" id="isProductStatus" role="status" aria-live="polite"></div>
         <div class="is-vendors" id="isMyProducts"><p class="is-muted">Bidhaa ulizohifadhi zitaonekana hapa.</p></div>
+        <h2 style="margin-top:22px">Maombi ya wanunuzi</h2>
+        <p class="is-muted">Kubali ombi tu ikiwa bidhaa ipo. Kiasi cha bidhaa kitapunguzwa baada ya kukubali oda.</p>
+        <button class="is-button" type="button" id="isRefreshSellerOrders">Sasisha maombi</button>
+        <div class="is-vendors" id="isSellerOrders"><p class="is-muted">Maombi ya wanunuzi yataonekana hapa.</p></div>
       </section>
       <section class="is-card">
         <h2>Wauzaji waliothibitishwa</h2>
@@ -128,6 +132,25 @@
         <p class="is-muted">Bidhaa kutoka kwa wauzaji wenye ruhusa hai. Bei na kiasi huwekwa na muuzaji.</p>
         <button class="is-button" type="button" id="isRefreshProducts">Sasisha bidhaa</button>
         <div class="is-vendors" id="isProductCatalog"><p class="is-muted">Bonyeza “Sasisha bidhaa” ili kuona bidhaa zinazopatikana.</p></div>
+      </section>
+      <section class="is-card" id="isOrderPanel" style="display:none">
+        <h2>Omba bidhaa</h2>
+        <p class="is-muted" id="isOrderProductLabel"></p>
+        <form class="is-form" id="isOrderForm">
+          <div><label for="isBuyerName">Jina lako</label><input id="isBuyerName" maxlength="120" required placeholder="Andika jina lako"></div>
+          <div><label for="isBuyerPhone">Namba ya simu</label><input id="isBuyerPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
+          <div><label for="isOrderQuantity">Kiasi unachohitaji</label><input id="isOrderQuantity" type="number" min="0.001" step="0.001" value="1" required></div>
+          <div><label for="isOrderNote">Maelezo ya ziada (si lazima)</label><input id="isOrderNote" maxlength="500" placeholder="Mfano: rangi, ukubwa au muda wa kuchukua"></div>
+          <button class="is-button primary" type="submit" id="isOrderSubmit">Tuma ombi kwa muuzaji</button>
+          <button class="is-button" type="button" id="isOrderCancel">Ghairi</button>
+        </form>
+        <div class="is-status" id="isOrderStatus" role="status" aria-live="polite"></div>
+      </section>
+      <section class="is-card">
+        <h2>Maombi yangu ya bidhaa</h2>
+        <p class="is-muted">Oda ulizotuma na hali yake zitaonekana hapa.</p>
+        <button class="is-button" type="button" id="isRefreshBuyerOrders">Sasisha oda zangu</button>
+        <div class="is-vendors" id="isBuyerOrders"><p class="is-muted">Oda zako zitaonekana hapa.</p></div>
       </section>
       <p class="is-footer">I|ONE Sokoni • Soko la karibu, kwa uwazi na uaminifu.</p>
     </main>`;
@@ -146,6 +169,8 @@
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     loadStatus();
+    loadProductCatalog();
+    loadMyOrders();
   }
   function close() {
     overlay.style.display = "none";
@@ -282,6 +307,15 @@
         });
         actions.append(edit, remove);
         detail.appendChild(actions);
+      } else {
+        const actions = document.createElement("div");
+        actions.className = "is-product-actions";
+        const order = document.createElement("button");
+        order.type = "button";
+        order.textContent = "Omba bidhaa";
+        order.addEventListener("click", () => openOrderForm(product));
+        actions.appendChild(order);
+        detail.appendChild(actions);
       }
       card.appendChild(detail);
       container.appendChild(card);
@@ -340,6 +374,117 @@
     }
   }
 
+  let selectedOrderProduct = null;
+  function openOrderForm(product) {
+    selectedOrderProduct = product;
+    $("isOrderPanel").style.display = "block";
+    $("isOrderProductLabel").textContent = product.product_name + " • TZS " + Number(product.price_tzs || 0).toLocaleString("en-TZ") + " / " + product.unit_name + " • Muuzaji: " + product.vendor_name;
+    $("isOrderQuantity").value = "1";
+    setStatus("isOrderStatus", "");
+    $("isOrderPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  async function submitOrder(event) {
+    event.preventDefault();
+    if (!selectedOrderProduct) return;
+    const button = $("isOrderSubmit");
+    button.disabled = true;
+    setStatus("isOrderStatus", "Inatuma ombi kwa muuzaji…");
+    try {
+      const data = await invoke("place_order", {
+        product_id: selectedOrderProduct.id,
+        buyer_name: $("isBuyerName").value.trim(),
+        buyer_phone: $("isBuyerPhone").value.trim(),
+        quantity: Number($("isOrderQuantity").value),
+        buyer_note: $("isOrderNote").value.trim()
+      });
+      setStatus("isOrderStatus", data.message || "Ombi limetumwa.");
+      $("isOrderForm").reset();
+      $("isOrderPanel").style.display = "none";
+      selectedOrderProduct = null;
+      await loadMyOrders();
+    } catch (e) { setStatus("isOrderStatus", e.message || "Ombi halikutumwa.", true); }
+    finally { button.disabled = false; }
+  }
+  async function loadMyOrders() {
+    try {
+      const data = await invoke("my_orders");
+      const buyerBox = $("isBuyerOrders");
+      if (buyerBox) {
+        buyerBox.replaceChildren();
+        const buyerRows = data.buyer_orders || [];
+        if (!buyerRows.length) {
+          const empty = document.createElement("p");
+          empty.className = "is-muted";
+          empty.textContent = "Bado hujatuma oda yoyote.";
+          buyerBox.appendChild(empty);
+        }
+        buyerRows.forEach((order) => {
+          const row = document.createElement("div");
+          row.className = "is-vendor";
+          const title = document.createElement("strong");
+          title.textContent = escText(order.product_name);
+          const details = document.createElement("small");
+          details.textContent = "Kiasi: " + order.quantity + " " + order.unit_name + " • Jumla: TZS " + Number(order.total_tzs || 0).toLocaleString("en-TZ") + " • Hali: " + orderStatusSw(order.status);
+          row.append(title, details);
+          buyerBox.appendChild(row);
+        });
+      }
+      const sellerBox = $("isSellerOrders");
+      if (sellerBox && $("isSellerTools").style.display !== "none") {
+        sellerBox.replaceChildren();
+        const sellerRows = data.seller_orders || [];
+        if (!sellerRows.length) {
+          const empty = document.createElement("p");
+          empty.className = "is-muted";
+          empty.textContent = "Bado hakuna maombi ya wanunuzi.";
+          sellerBox.appendChild(empty);
+        }
+        sellerRows.forEach((order) => {
+          const row = document.createElement("div");
+          row.className = "is-vendor";
+          const title = document.createElement("strong");
+          title.textContent = escText(order.product_name) + " • " + order.quantity + " " + order.unit_name;
+          const details = document.createElement("small");
+          details.textContent = "Mnunuzi: " + escText(order.buyer_name) + " • " + escText(order.buyer_phone) + " • Jumla: TZS " + Number(order.total_tzs || 0).toLocaleString("en-TZ") + " • Hali: " + orderStatusSw(order.status);
+          const note = document.createElement("p");
+          note.textContent = order.buyer_note ? "Maelezo: " + order.buyer_note : "";
+          row.append(title, details, note);
+          if (order.status === "new" || order.status === "accepted") {
+            const actions = document.createElement("div");
+            actions.className = "is-product-actions";
+            const action = (label, status) => {
+              const button = document.createElement("button");
+              button.type = "button";
+              button.textContent = label;
+              button.addEventListener("click", async () => {
+                button.disabled = true;
+                try {
+                  const result = await invoke("update_order_status", { order_id: order.id, status });
+                  setStatus("isProductStatus", result.message || "Oda imesasishwa.");
+                  await Promise.all([loadMyOrders(), loadMyProducts(), loadProductCatalog()]);
+                } catch (e) { setStatus("isProductStatus", e.message || "Oda haikubadilishwa.", true); button.disabled = false; }
+              });
+              return button;
+            };
+            if (order.status === "new") {
+              actions.append(action("Kubali oda", "accepted"), action("Kataa", "rejected"));
+            } else {
+              actions.append(action("Weka imekamilika", "completed"));
+            }
+            row.appendChild(actions);
+          }
+          sellerBox.appendChild(row);
+        });
+      }
+    } catch (e) {
+      const buyerBox = $("isBuyerOrders");
+      if (buyerBox) buyerBox.textContent = e.message || "Oda hazipatikani kwa sasa.";
+    }
+  }
+  function orderStatusSw(status) {
+    return ({ new: "Inasubiri", accepted: "Imekubaliwa", rejected: "Imekataliwa", completed: "Imekamilika" })[status] || status;
+  }
+
   async function loadVendors() {
     const list = $("isVendorList");
     list.replaceChildren();
@@ -381,6 +526,10 @@
   $("isRefreshProducts").addEventListener("click", loadProductCatalog);
   $("isProductForm").addEventListener("submit", saveProduct);
   $("isProductCancel").addEventListener("click", resetProductForm);
+  $("isRefreshSellerOrders").addEventListener("click", loadMyOrders);
+  $("isRefreshBuyerOrders").addEventListener("click", loadMyOrders);
+  $("isOrderCancel").addEventListener("click", () => { $("isOrderPanel").style.display = "none"; setStatus("isOrderStatus", ""); });
+  $("isOrderForm").addEventListener("submit", submitOrder);
   overlay.addEventListener("keydown", (event) => { if (event.key === "Escape") close(); });
   $("isVendorForm").addEventListener("submit", async (event) => {
     event.preventDefault();
