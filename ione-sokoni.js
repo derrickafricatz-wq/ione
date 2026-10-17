@@ -21,8 +21,19 @@
   .is-category{padding:17px 14px;border:1px solid #294d39;border-radius:16px;background:#0d2118;min-height:130px}
   .is-category b{display:block;margin:10px 0 6px;font-size:15px}
   .is-category span{display:block;color:#b7d1c0;font-size:12px;line-height:1.55}
-  .is-card{padding:20px;border:1px solid #294d39;border-radius:18px;background:#0c1e16;margin-top:14px}
+  .is-card{padding:20px;border:1px solid #294d39;border-radius:18px;background:#0c1e16;margin-top:14px;box-shadow:0 7px 20px rgba(39,65,45,.055)}
   .is-card h2{font-size:20px;margin:0 0 9px}
+  /* Clear visual zones only; existing forms, IDs, actions and data flow stay untouched. */
+  #ioneSokoniOverlay .is-card:has(#isVendorForm){border:2px solid #b7d6a1;background:#fbfff7}
+  #ioneSokoniOverlay .is-card:has(#isSellerTools),#ioneSokoniOverlay .is-card:has(#isProductForm){border:2px solid #b7d6a1;background:#fbfff7}
+  #ioneSokoniOverlay .is-card:has(#isProductCatalog),#ioneSokoniOverlay .is-card:has(#isOrderForm),#ioneSokoniOverlay .is-card:has(#isBuyerOrders){border:2px solid #efc28e;background:#fffaf2}
+  #ioneSokoniOverlay .is-card:has(#isRefreshRiders){border:2px solid #c8b4e8;background:#fcf9ff}
+  #ioneSokoniOverlay .is-card:has(#isVendorForm)>h2:before,
+  #ioneSokoniOverlay .is-card:has(#isSellerTools)>h2:before{content:"MUUZAJI • ";display:block;margin-bottom:7px;color:#42753a;font-size:10px;letter-spacing:1.6px}
+  #ioneSokoniOverlay .is-card:has(#isProductCatalog)>h2:before,
+  #ioneSokoniOverlay .is-card:has(#isOrderForm)>h2:before,
+  #ioneSokoniOverlay .is-card:has(#isBuyerOrders)>h2:before{content:"MNUNUZI • ";display:block;margin-bottom:7px;color:#a85d22;font-size:10px;letter-spacing:1.6px}
+  #ioneSokoniOverlay .is-card:has(#isRefreshRiders)>h2:before{content:"BODA YANGU • ";display:block;margin-bottom:7px;color:#77539e;font-size:10px;letter-spacing:1.6px}
   .is-muted{color:#b7d1c0;font-size:13px;line-height:1.65}
   .is-form{display:grid;gap:11px;margin-top:15px}
   .is-form label{font-size:12px;font-weight:800;color:#cde6d5}
