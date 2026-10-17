@@ -327,15 +327,17 @@ Deno.serve(async (req) => {
       }
       if (action === "authority_dashboard") {
         const nowIso = new Date().toISOString();
-        const [requestsResult, pendingCount, activeCount, expiredCount] = await Promise.all([
+        const [requestsResult, pendingCount, activeCount, expiredCount, vendorListResult] = await Promise.all([
           admin.from("ione_sokoni_payment_requests")
             .select("id,user_id,vendor_id,vendor_name,phone_number,amount_tzs,status,created_at,approved_at,admin_note")
-            .order("created_at", { ascending: false }).limit(200),
+            .eq("status", "pending").order("created_at", { ascending: true }).limit(500),
           admin.from("ione_sokoni_payment_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
           admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).eq("status", "active").gt("paid_until", nowIso),
-          admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).lte("paid_until", nowIso)
+          admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).lte("paid_until", nowIso),
+          admin.from("ione_sokoni_vendors").select("id,vendor_name,phone_number,status,paid_until,approved_at")
+            .order("paid_until", { ascending: false }).limit(200)
         ]);
-        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error) {
+        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error || vendorListResult.error) {
           return json({ success: false, error: "Could not load Sokoni dashboard data." }, 500);
         }
         let confirmedPayments = 0;
@@ -352,6 +354,7 @@ Deno.serve(async (req) => {
         return json({
           success: true,
           requests: requestsResult.data || [],
+          vendors: vendorListResult.data || [],
           metrics: {
             pending: pendingCount.count || 0,
             activeVendors: activeCount.count || 0,
