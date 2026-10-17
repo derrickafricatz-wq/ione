@@ -441,6 +441,32 @@ Deno.serve(async (req) => {
       return json({ success: true, application: result.data, message: "Rider application submitted. Authority Press must verify you before you can receive trips." });
     }
 
+    if (action === "rider_update_profile") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const profilePath = String(body?.profile_path || "").trim();
+      const parts = profilePath.split("/");
+      if (parts.length !== 2 || parts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(parts[1]) || !/\.(jpg|png|webp)$/i.test(parts[1])) {
+        return json({ success: false, error: "The profile photo is invalid. Upload it again." }, 400);
+      }
+      const listed = await admin.storage.from("ione-sokoni-rider-profiles").list(user.id, { search: parts[1], limit: 20 });
+      if (listed.error || !(listed.data || []).some((item: any) => item.name === parts[1])) return json({ success: false, error: "The profile photo could not be verified." }, 400);
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,profile_path").eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.status !== "active") return json({ success: false, error: "Only an Authority-approved rider can update this profile." }, 403);
+      const updated = await admin.from("ione_sokoni_riders").update({ profile_path: profilePath, updated_at: new Date().toISOString() }).eq("id", rider.id).select("id").maybeSingle();
+      if (updated.error || !updated.data) return json({ success: false, error: "Could not update the rider profile." }, 500);
+      const applicationUpdate = await admin.from("ione_sokoni_rider_applications").update({ profile_path: profilePath }).eq("user_id", user.id).eq("status", "approved");
+      if (applicationUpdate.error) {
+        if (rider.profile_path) await admin.from("ione_sokoni_riders").update({ profile_path: rider.profile_path }).eq("id", rider.id);
+        else await admin.from("ione_sokoni_riders").update({ profile_path: null }).eq("id", rider.id);
+        return json({ success: false, error: "The Authority profile record could not be updated. Please retry." }, 500);
+      }
+      if (rider.profile_path && rider.profile_path !== profilePath) {
+        try { await admin.storage.from("ione-sokoni-rider-profiles").remove([rider.profile_path]); } catch (_) {}
+      }
+      return json({ success: true, message: "Picha ya wasifu imesasishwa na itaonekana Sokoni ukiwasha upatikanaji." });
+    }
+
     if (action === "rider_status") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
