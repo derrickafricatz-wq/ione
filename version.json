@@ -1,5 +1,5 @@
 {
-  "version": "1.0.184",
-  "message": "Speed up Client Info and clarify Sokoni seller, buyer and rider panels",
+  "version": "1.0.185",
+  "message": "Separate Boda Yangu rider board, passenger trip requests and driver registration panels",
   "force": true
 }
