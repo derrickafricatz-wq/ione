@@ -60,6 +60,7 @@ assert.match(edge, /access_payment_confirmed/);
 assert.match(moduleSource, /id="isRiderDashboard"/);
 assert.match(moduleSource, /Tarehe ya kuanza ruhusa/);
 assert.match(moduleSource, /Tarehe ya mwisho ya ruhusa/);
+assert.equal((moduleSource.match(/id="isRiderDashboard"/g) || []).length, 1);
 
 assert.match(edge, /admin\.auth\.getUser\(token\)/);
 assert.match(edge, /eq\("stock_quantity", product\.stock_quantity\)/);
