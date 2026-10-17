@@ -124,6 +124,24 @@ Deno.serve(async (req) => {
       return json({ success: true, products });
     }
 
+    if (action === "my_products") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const { data: rows, error } = await admin.from("ione_sokoni_products").select("*")
+        .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(100);
+      if (error) return json({ success: false, error: "Could not load your product listings." }, 500);
+      const products = await Promise.all((rows || []).map(async (r: any) => {
+        let photoUrl = null;
+        if (r.photo_path) {
+          const signed = await admin.storage.from("ione-sokoni-products").createSignedUrl(r.photo_path, 3600);
+          if (!signed.error) photoUrl = signed.data.signedUrl;
+        }
+        return { id: r.id, product_name: r.product_name, description: r.description, price_tzs: r.price_tzs,
+          unit_name: r.unit_name, stock_quantity: r.stock_quantity, photo_url: photoUrl, available: r.available };
+      }));
+      return json({ success: true, products });
+    }
+
     if (action === "save_product") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
