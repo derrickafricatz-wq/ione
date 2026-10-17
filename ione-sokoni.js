@@ -1474,9 +1474,13 @@
         const row = document.createElement("article"); row.className = "is-admin-request";
         const name = document.createElement("strong"); name.textContent = escText(rider.rider_name);
         const phone = document.createElement("p"); phone.textContent = "Simu: " + escText(rider.phone_number);
-        const state = document.createElement("p"); state.textContent = "Hali: " + (rider.status === "active" ? "RUHUSA IMEWASHWA" : "IMEFUNGWA / INASUBIRI RUHUSA");
-        const start = document.createElement("input"); start.type = "date"; start.setAttribute("aria-label", "Tarehe ya kuanza ruhusa");
-        const expiry = document.createElement("input"); expiry.type = "date"; expiry.setAttribute("aria-label", "Tarehe ya mwisho ya miezi mitatu");
+        const accessIsLive = rider.access_payment_confirmed === true && !!rider.access_expires_at && Date.parse(rider.access_expires_at) > Date.now();
+        const state = document.createElement("p");
+        state.textContent = "Hali: " + (accessIsLive ? "SOKONI IMEWASHWA" : "SOKONI IMEFUNGIWA / RUHUSA IMEISHA");
+        const start = document.createElement("input"); start.type = "date"; start.id = "isRiderAccessStart-" + rider.id; start.setAttribute("aria-label", "Tarehe ya kuanza ruhusa");
+        const startLabel = document.createElement("label"); startLabel.htmlFor = start.id; startLabel.textContent = "Tarehe ya kuanza ruhusa";
+        const expiry = document.createElement("input"); expiry.type = "date"; expiry.id = "isRiderAccessExpiry-" + rider.id; expiry.setAttribute("aria-label", "Tarehe ya mwisho ya ruhusa");
+        const expiryLabel = document.createElement("label"); expiryLabel.htmlFor = expiry.id; expiryLabel.textContent = "Tarehe ya mwisho ya ruhusa";
         const dateString = (d) => [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
         const today = new Date(); start.value = rider.access_started_at ? dateString(new Date(rider.access_started_at)) : dateString(today);
         const defaultExpiry = new Date(today); defaultExpiry.setDate(defaultExpiry.getDate()+90);
@@ -1503,7 +1507,7 @@
             $("isAuthorityStatus").textContent = result.message || "Ruhusa imefungwa."; $("isAuthorityStatus").classList.remove("error"); await loadAuthorityDashboard();
           } catch (e) { $("isAuthorityStatus").textContent = e.message || "Ruhusa haikufungwa."; $("isAuthorityStatus").classList.add("error"); revoke.disabled = false; }
         });
-        actions.append(give, revoke); row.append(name, phone, state, start, expiry, record, actions); riderList.appendChild(row);
+        actions.append(give, revoke); row.append(name, phone, state, startLabel, start, expiryLabel, expiry, record, actions); riderList.appendChild(row);
       });
       status.textContent = "Dashibodi ya Sokoni imesasishwa. Thibitisha malipo kabla ya kutoa ruhusa.";
     } catch (e) {
