@@ -623,14 +623,14 @@ Deno.serve(async (req) => {
       return json({ success: true, vendors: data || [] });
     }
 
-    if (action === "authority_dashboard" || action === "approve" || action === "reject") {
+    if (action === "authority_dashboard" || action === "approve" || action === "reject" || action === "approve_rider" || action === "reject_rider") {
       const rawSession = body?.authority_session || req.headers.get("x-ione-authority-session");
       if (!(await validAuthoritySession(admin, rawSession))) {
         return json({ success: false, error: "Authority Press session expired. Unlock Authority Press again." }, 401);
       }
       if (action === "authority_dashboard") {
         const nowIso = new Date().toISOString();
-        const [requestsResult, pendingCount, activeCount, expiredCount, vendorListResult] = await Promise.all([
+        const [requestsResult, pendingCount, activeCount, expiredCount, vendorListResult, riderAppsResult, riderPendingCount, verifiedRiderCount] = await Promise.all([
           admin.from("ione_sokoni_payment_requests")
             .select("id,user_id,vendor_id,vendor_name,phone_number,amount_tzs,status,created_at,approved_at,admin_note")
             .eq("status", "pending").order("created_at", { ascending: true }).limit(500),
@@ -638,9 +638,13 @@ Deno.serve(async (req) => {
           admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).eq("status", "active").gt("paid_until", nowIso),
           admin.from("ione_sokoni_vendors").select("id", { count: "exact", head: true }).lte("paid_until", nowIso),
           admin.from("ione_sokoni_vendors").select("id,vendor_name,phone_number,status,paid_until,approved_at")
-            .order("paid_until", { ascending: false }).limit(200)
+            .order("paid_until", { ascending: false }).limit(200),
+          admin.from("ione_sokoni_rider_applications").select("id,user_id,rider_name,phone_number,status,created_at")
+            .eq("status", "pending").order("created_at", { ascending: true }).limit(500),
+          admin.from("ione_sokoni_rider_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
+          admin.from("ione_sokoni_riders").select("id", { count: "exact", head: true }).eq("status", "active")
         ]);
-        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error || vendorListResult.error) {
+        if (requestsResult.error || pendingCount.error || activeCount.error || expiredCount.error || vendorListResult.error || riderAppsResult.error || riderPendingCount.error || verifiedRiderCount.error) {
           return json({ success: false, error: "Could not load Sokoni dashboard data." }, 500);
         }
         let confirmedPayments = 0;
@@ -658,14 +662,59 @@ Deno.serve(async (req) => {
           success: true,
           requests: requestsResult.data || [],
           vendors: vendorListResult.data || [],
+          riderApplications: riderAppsResult.data || [],
           metrics: {
             pending: pendingCount.count || 0,
+            pendingRiders: riderPendingCount.count || 0,
+            verifiedRiders: verifiedRiderCount.count || 0,
             activeVendors: activeCount.count || 0,
             expiredVendors: expiredCount.count || 0,
             confirmedPayments,
             totalRevenueTzs
           }
         });
+      }
+
+      if (action === "approve_rider" || action === "reject_rider") {
+        const applicationId = String(body?.application_id || "").trim();
+        if (!/^[0-9a-f-]{36}$/i.test(applicationId)) return json({ success: false, error: "Invalid rider application." }, 400);
+        const { data: application, error: applicationError } = await admin.from("ione_sokoni_rider_applications")
+          .select("*").eq("id", applicationId).maybeSingle();
+        if (applicationError || !application) return json({ success: false, error: "Rider application not found." }, 404);
+        if (application.status !== "pending") return json({ success: false, error: "This rider application has already been reviewed." }, 409);
+        const now = new Date().toISOString();
+        const claim = await admin.from("ione_sokoni_rider_applications").update({ status: "processing" })
+          .eq("id", application.id).eq("status", "pending").select("id").maybeSingle();
+        if (claim.error || !claim.data) return json({ success: false, error: "Another review is in progress. Refresh the dashboard." }, 409);
+        if (action === "reject_rider") {
+          const rejected = await admin.from("ione_sokoni_rider_applications").update({
+            status: "rejected", reviewed_at: now, reviewed_by: "Authority Press",
+            admin_note: String(body?.note || "").trim().slice(0, 500)
+          }).eq("id", application.id).eq("status", "processing");
+          if (rejected.error) {
+            await admin.from("ione_sokoni_rider_applications").update({ status: "pending" }).eq("id", application.id).eq("status", "processing");
+            return json({ success: false, error: "Could not save rider decision." }, 500);
+          }
+          return json({ success: true, message: "Rider application rejected." });
+        }
+        const riderWrite = await admin.from("ione_sokoni_riders").upsert({
+          user_id: application.user_id, rider_name: application.rider_name, phone_number: application.phone_number,
+          status: "active", available: false, verified_at: now, updated_at: now
+        }, { onConflict: "user_id" }).select("id").single();
+        if (riderWrite.error) {
+          await admin.from("ione_sokoni_rider_applications").update({ status: "pending" }).eq("id", application.id).eq("status", "processing");
+          return json({ success: false, error: "Could not create verified rider profile. No approval was recorded." }, 500);
+        }
+        const approved = await admin.from("ione_sokoni_rider_applications").update({
+          status: "approved", reviewed_at: now, reviewed_by: "Authority Press",
+          admin_note: String(body?.note || "").trim().slice(0, 500)
+        }).eq("id", application.id).eq("status", "processing");
+        if (approved.error) {
+          await admin.from("ione_sokoni_riders").delete().eq("user_id", application.user_id);
+          await admin.from("ione_sokoni_rider_applications").update({ status: "pending" }).eq("id", application.id).eq("status", "processing");
+          return json({ success: false, error: "Rider approval was rolled back because the review record could not be saved." }, 500);
+        }
+        return json({ success: true, message: "Rider verified. They can now sign in to Boda Yangu and turn availability on." });
       }
 
       const requestId = String(body?.request_id || "").trim();
