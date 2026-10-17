@@ -1,5 +1,5 @@
 {
-  "version": "1.0.175",
-  "message": "Add isolated Sokoni vendor onboarding and Authority dashboard",
+  "version": "1.0.176",
+  "message": "Fix Sokoni orders and add private rider verification records",
   "force": true
 }
