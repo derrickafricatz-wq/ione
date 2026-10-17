@@ -75,7 +75,7 @@ create index if not exists ione_expert_questions_feed_idx on public.ione_expert_
 create table if not exists public.ione_expert_replies (
   id uuid primary key default gen_random_uuid(),
   question_id uuid not null references public.ione_expert_questions(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid references auth.users(id) on delete cascade,
   display_name text not null,
   role text not null check (role in ('expert','authority','community')),
   body text not null,
