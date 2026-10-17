@@ -1133,7 +1133,7 @@
       if (!riderApps.length) {
         const emptyRider = document.createElement("p");
         emptyRider.className = "authority-section-note";
-        emptyRider.textContent = "No pending rider applications.";
+        emptyRider.textContent = "No rider applications have been submitted.";
         riderList.appendChild(emptyRider);
       }
       riderApps.forEach((application) => {
