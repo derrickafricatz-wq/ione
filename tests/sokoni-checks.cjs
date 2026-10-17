@@ -24,7 +24,7 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=1/);
+assert.match(html, /ione-sokoni\.js\?v=2/);
 assert.match(html, /sw\.js\?v=132/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
