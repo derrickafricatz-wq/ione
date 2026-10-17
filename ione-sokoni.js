@@ -233,11 +233,122 @@
       if (signed.error) throw signed.error;
     }
   }
+  const sokoniTranslations = {
+    "Method not allowed.":"Njia ya ombi hairuhusiwi.",
+    "Server configuration is missing.":"Huduma haijasanidiwa kikamilifu. Tafadhali jaribu baadaye.",
+    "Invalid request.":"Ombi si sahihi.",
+    "Your session is not ready. Please reload and try again.":"Kipindi chako hakijawa tayari. Pakia ukurasa upya kisha ujaribu tena.",
+    "Your session is not ready. Reload and try again.":"Kipindi chako hakijawa tayari. Pakia ukurasa upya kisha ujaribu tena.",
+    "Your session is not ready. Please reload and try again.":"Kipindi chako hakijawa tayari. Pakia ukurasa upya kisha ujaribu tena.",
+    "Please enter your name and a valid Tanzania phone number.":"Weka jina lako na namba sahihi ya simu ya Tanzania.",
+    "Could not check your Sokoni access.":"Imeshindikana kukagua ruhusa yako ya Sokoni.",
+    "Could not check your existing request.":"Imeshindikana kukagua ombi lako la awali.",
+    "Your request is already waiting for Authority Press to confirm payment.":"Ombi lako tayari linasubiri Authority Press ithibitishe malipo.",
+    "A request is already pending. Refresh to check its status.":"Tayari una ombi linalosubiri. Sasisha ukurasa kuangalia hali yake.",
+    "We could not submit your request. Please try again.":"Imeshindikana kutuma ombi lako. Tafadhali jaribu tena.",
+    "Request received. Pay TZS 1,000 using the official I|ONE manual payment instructions. Access opens only after Authority Press confirms receipt.":"Ombi limepokelewa. Lipa TZS 1,000 kwa kutumia maelekezo rasmi ya malipo ya I|ONE. Ruhusa itafunguliwa baada ya Authority Press kuthibitisha kupokea malipo.",
+    "Could not load your Sokoni status.":"Imeshindikana kupakia hali yako ya Sokoni.",
+    "Could not load Sokoni products.":"Imeshindikana kupakia bidhaa za Sokoni.",
+    "Could not load verified sellers.":"Imeshindikana kupakia wauzaji waliothibitishwa.",
+    "Could not load your product listings.":"Imeshindikana kupakia bidhaa zako.",
+    "Could not verify your vendor access.":"Imeshindikana kuthibitisha ruhusa yako ya muuzaji.",
+    "Your Sokoni access is not active. Contact Authority Press to renew.":"Ruhusa yako ya Sokoni haitumiki. Wasiliana na Authority Press ili kuhuisha.",
+    "Enter a product name, valid price, unit and available quantity.":"Weka jina la bidhaa, bei sahihi, kipimo na kiasi kilichopo.",
+    "Product not found in your own listings.":"Bidhaa haikupatikana kwenye orodha yako.",
+    "Choose a JPG, PNG or WebP photo up to 5 MB.":"Chagua picha ya JPG, PNG au WebP isiyozidi MB 5.",
+    "Product photos must be 5 MB or smaller.":"Picha ya bidhaa haipaswi kuzidi MB 5.",
+    "Could not upload product photo. Try a smaller image.":"Imeshindikana kupakia picha. Jaribu picha ndogo zaidi.",
+    "Could not save product listing.":"Imeshindikana kuhifadhi bidhaa.",
+    "Product listing saved.":"Bidhaa imehifadhiwa.",
+    "Could not remove product listing.":"Imeshindikana kufuta bidhaa.",
+    "Product removed.":"Bidhaa imefutwa.",
+    "Enter your name, valid phone number and a valid quantity.":"Weka jina, namba sahihi ya simu na kiasi sahihi.",
+    "For Boda Yangu, enter the delivery address and share your current map location.":"Kwa Boda Yangu, weka anwani ya kupeleka na uchague eneo lako kwenye ramani.",
+    "This product is unavailable or the requested quantity is no longer in stock.":"Bidhaa haipatikani au kiasi ulichoomba hakipo tena.",
+    "You cannot order your own listing.":"Huwezi kuagiza bidhaa uliyoiorodhesha mwenyewe.",
+    "This seller's Sokoni access is not currently active.":"Ruhusa ya Sokoni ya muuzaji huyu haitumiki kwa sasa.",
+    "Could not send your order request. Please retry.":"Imeshindikana kutuma oda. Tafadhali jaribu tena.",
+    "Ombi limetumwa kwa muuzaji. Muuzaji atapitia ombi na kuwasiliana nawe kwa namba uliyotoa.":"Ombi limetumwa kwa muuzaji. Atalipitia na kuwasiliana nawe kwa namba uliyotoa.",
+    "Could not load Sokoni order requests.":"Imeshindikana kupakia oda za Sokoni.",
+    "Invalid order update.":"Mabadiliko ya oda si sahihi.",
+    "Active Sokoni vendor access is required.":"Unahitaji ruhusa hai ya muuzaji wa Sokoni.",
+    "Order request not found in your seller account.":"Oda haikupatikana kwenye akaunti yako ya muuzaji.",
+    "This order cannot be changed to that status.":"Hali hii haiwezi kutumika kwenye oda hiyo.",
+    "Another action already updated this order. Refresh and retry.":"Oda imesasishwa na hatua nyingine. Sasisha kisha ujaribu tena.",
+    "Not enough stock remains to accept this order.":"Bidhaa iliyobaki haitoshi kukubali oda hii.",
+    "Stock changed while accepting. Refresh the order and try again.":"Kiasi cha bidhaa kimebadilika. Sasisha oda kisha ujaribu tena.",
+    "Order accepted and stock updated.":"Oda imekubaliwa na kiasi cha bidhaa kimesasishwa.",
+    "Order status was not saved. Refresh and try again.":"Hali ya oda haikuhifadhiwa. Sasisha kisha ujaribu tena.",
+    "Enter the pickup address and share its map location.":"Weka anwani ya kuchukulia bidhaa na uchague eneo lake kwenye ramani.",
+    "Could not save the pickup location.":"Imeshindikana kuhifadhi eneo la kuchukulia bidhaa.",
+    "Pickup location saved for Boda Yangu requests.":"Eneo la kuchukulia bidhaa limehifadhiwa kwa maombi ya Boda Yangu.",
+    "Enter your name and a valid Tanzania phone number.":"Weka jina lako na namba sahihi ya simu ya Tanzania.",
+    "Your Boda Yangu rider profile already exists. Check its status below.":"Taarifa zako za dereva wa Boda Yangu tayari zipo. Angalia hali yake hapa chini.",
+    "Your rider application is already waiting for Authority Press.":"Ombi lako la udereva tayari linasubiri Authority Press.",
+    "Could not submit the rider application. Please retry.":"Imeshindikana kutuma ombi la udereva. Tafadhali jaribu tena.",
+    "Rider application submitted. Authority Press must verify you before you can receive trips.":"Ombi la udereva limetumwa. Authority Press lazima ikuthibitishe kabla ya kupokea safari.",
+    "Could not load rider status.":"Imeshindikana kupakia hali ya dereva.",
+    "Only Authority Press verified riders can change availability.":"Madereva waliothibitishwa na Authority Press pekee ndio wanaoweza kuwasha upatikanaji.",
+    "Complete your current trip before becoming available again.":"Kamilisha safari uliyonayo kabla ya kupokea nyingine.",
+    "Could not update rider availability.":"Imeshindikana kusasisha upatikanaji wa dereva.",
+    "Could not load the available rider board.":"Imeshindikana kupakia orodha ya bodaboda waliopo.",
+    "This order is not available in your account.":"Oda hii haipatikani kwenye akaunti yako.",
+    "This accepted order does not have a valid delivery destination.":"Oda iliyokubaliwa haina eneo sahihi la kupeleka bidhaa.",
+    "The seller must save a valid pickup address and map location before requesting Boda Yangu.":"Muuzaji lazima ahifadhi anwani na eneo sahihi la kuchukulia kabla ya kuomba Boda Yangu.",
+    "A Boda Yangu request already exists for this order.":"Tayari kuna ombi la Boda Yangu kwa oda hii.",
+    "Could not send the delivery request.":"Imeshindikana kutuma ombi la usafirishaji.",
+    "Delivery request sent to available verified riders. Delivery fee will be shown separately and must be confirmed by both sides.":"Ombi la usafirishaji limetumwa kwa madereva waliothibitishwa na walio tayari. Ada itaonyeshwa kando na lazima ikubaliwe na mnunuzi na muuzaji.",
+    "Turn on your availability to see delivery requests.":"Washa upatikanaji wako ili kuona maombi ya safari.",
+    "Could not load delivery requests.":"Imeshindikana kupakia maombi ya safari.",
+    "Only available, verified riders with a recent heartbeat can accept trips.":"Madereva waliothibitishwa, walio tayari na waliothibitisha upatikanaji hivi karibuni pekee ndio wanaoweza kukubali safari.",
+    "Finish your current trip before accepting another.":"Kamilisha safari uliyonayo kabla ya kukubali nyingine.",
+    "Your rider account is already reserved for another trip. Refresh the board.":"Akaunti yako ya dereva imehifadhiwa kwa safari nyingine. Sasisha orodha.",
+    "Another rider accepted this trip first. Refresh the board.":"Dereva mwingine amekubali safari hii kwanza. Sasisha orodha.",
+    "Enter a valid delivery fee in TZS.":"Weka ada sahihi ya usafirishaji kwa TZS.",
+    "Only the assigned rider can set the fee before pickup.":"Dereva aliyepewa safari pekee ndiye anayeweza kuweka ada kabla ya kuchukua bidhaa.",
+    "Could not save the delivery fee.":"Imeshindikana kuhifadhi ada ya usafirishaji.",
+    "Delivery fee proposed. Buyer and seller must both confirm it.":"Ada ya usafirishaji imependekezwa. Mnunuzi na muuzaji wote wawili lazima waikubali.",
+    "A delivery fee must be proposed first, and only the buyer or seller can confirm it.":"Lazima ada ipendekezwe kwanza; mnunuzi au muuzaji pekee ndiye anayeweza kuithibitisha.",
+    "Could not confirm the delivery fee.":"Imeshindikana kuthibitisha ada ya usafirishaji.",
+    "Your delivery-fee confirmation has been saved.":"Uthibitisho wako wa ada ya usafirishaji umehifadhiwa.",
+    "Pickup is locked until both buyer and seller confirm the delivery fee.":"Kuchukua bidhaa kumezuiwa hadi mnunuzi na muuzaji wote wakubali ada.",
+    "Mark the parcel picked up before marking it delivered.":"Thibitisha kwanza kuwa bidhaa imechukuliwa kabla ya kusema imefikishwa.",
+    "Invalid GPS coordinates.":"Taarifa za GPS si sahihi.",
+    "Live location is available only on your assigned trip after the delivery fee is confirmed.":"Eneo la moja kwa moja linapatikana kwenye safari uliyopewa tu baada ya ada kuthibitishwa.",
+    "Trip is no longer active; live location sharing has stopped.":"Safari haipo tena kwenye shughuli; kushiriki eneo kumesimama.",
+    "Could not load your delivery trips.":"Imeshindikana kupakia safari zako.",
+    "Only the buyer or seller can complete a delivered trip.":"Mnunuzi au muuzaji pekee ndiye anayeweza kukamilisha safari iliyofikishwa.",
+    "Could not complete the delivery.":"Imeshindikana kukamilisha usafirishaji.",
+    "Delivery completed. Live location sharing has stopped.":"Usafirishaji umekamilika. Kushiriki eneo la moja kwa moja kumesimama.",
+    "Authority Press session expired. Unlock Authority Press again.":"Kipindi cha Authority Press kimeisha. Fungua Authority Press tena.",
+    "Could not load Sokoni dashboard data.":"Imeshindikana kupakia taarifa za dashibodi ya Sokoni.",
+    "Could not calculate confirmed Sokoni payments.":"Imeshindikana kuhesabu malipo yaliyothibitishwa ya Sokoni.",
+    "This rider application has already been reviewed.":"Ombi hili la dereva tayari limekaguliwa.",
+    "Rider application rejected.":"Ombi la dereva limekataliwa.",
+    "Rider verified. They can now sign in to Boda Yangu and turn availability on.":"Dereva amethibitishwa. Sasa anaweza kuingia Boda Yangu na kuwasha upatikanaji.",
+    "This request has already been reviewed. Refresh the dashboard.":"Ombi hili tayari limekaguliwa. Sasisha dashibodi.",
+    "Could not save the decision. Please retry.":"Imeshindikana kuhifadhi uamuzi. Tafadhali jaribu tena.",
+    "Request marked as not approved.":"Ombi limewekwa kuwa halijaidhinishwa.",
+    "Could not verify vendor record.":"Imeshindikana kuthibitisha taarifa za muuzaji.",
+    "Payment decision could not activate vendor access. No approval was recorded; retry safely.":"Uamuzi wa malipo haukuweza kufungua ruhusa ya muuzaji. Hakuna idhini iliyorekodiwa; kagua taarifa kisha ujaribu tena.",
+    "Approval was rolled back because payment history could not be saved. Refresh and retry after checking the record.":"Idhini imerudishwa nyuma kwa sababu historia ya malipo haikuhifadhiwa. Kagua rekodi, sasisha kisha ujaribu tena.",
+    "Payment confirmed and Sokoni access activated for 30 days.":"Malipo yamethibitishwa na ruhusa ya Sokoni imefunguliwa kwa siku 30.",
+    "Unknown Sokoni action.":"Hatua ya Sokoni haijatambuliwa.",
+    "Sokoni is temporarily unavailable. Please try again.":"Sokoni haipatikani kwa muda. Tafadhali jaribu tena."
+  };
+  function swahiliMessage(value) {
+    const message = String(value || "");
+    return sokoniTranslations[message] || message;
+  }
   async function invoke(action, extra) {
     await readySession();
     const result = await heavensSupabase.functions.invoke("ione-sokoni", { body: Object.assign({ action }, extra || {}) });
-    if (result.error) throw result.error;
-    if (!result.data || result.data.success !== true) throw new Error(result.data?.error || "Ombi halikukamilika. Jaribu tena.");
+    if (result.error) {
+      const message = result.data?.error || result.error.message;
+      throw new Error(swahiliMessage(message) || "Ombi halikukamilika. Jaribu tena.");
+    }
+    if (!result.data || result.data.success !== true) throw new Error(swahiliMessage(result.data?.error) || "Ombi halikukamilika. Jaribu tena.");
+    if (result.data.message) result.data.message = swahiliMessage(result.data.message);
     return result.data;
   }
   async function loadStatus() {
@@ -840,9 +951,9 @@
     section.className = "authority-panel-section";
     section.innerHTML = `
       <div class="authority-section-kicker">I|ONE SOKONI • AUTHORITY ONLY</div>
-      <h3> SOKONI VENDOR DASHBOARD </h3>
-      <p class="authority-section-note">Review manual TZS 1,000 vendor payments. Access activates only after Authority Press confirms payment. This dashboard is separate from billboard subscriptions and Author Studio.</p>
-      <button type="button" id="isAuthorityRefresh" class="authority-action-button">REFRESH SOKONI</button>
+      <h3> DASHIBODI YA WAFANYABIASHARA WA SOKONI </h3>
+      <p class="authority-section-note">Kagua malipo ya mkono ya TZS 1,000. Ruhusa huanza baada ya Authority Press kuthibitisha malipo. Dashibodi hii ni tofauti na usajili wa mabango na Studio ya Waandishi.</p>
+      <button type="button" id="isAuthorityRefresh" class="authority-action-button">SASISHA SOKONI</button>
       <div id="isAuthorityMetrics" class="is-metrics"><div class="is-metric"><span>Loading dashboard…</span></div></div>
       <div id="isAuthorityStatus" class="is-status" role="status" aria-live="polite"></div>
       <h3 style="margin-top:22px">THIBITISHA MALIPO YANAYOSUBIRI</h3>
