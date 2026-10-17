@@ -12478,6 +12478,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
       .afl-rbb-cover-sub{margin:7px 0 13px;color:#a8bdc2;font:900 8px/1.3 Arial,sans-serif;letter-spacing:2px}
       .afl-rbb-view{width:100%;min-height:58px;border:1px solid #59ff8a;border-radius:16px;background:linear-gradient(145deg,#16452e,#07140d);color:#59ff8a;font:1000 12px/1 Arial,sans-serif;letter-spacing:2px;box-shadow:0 0 30px rgba(89,255,138,.16),inset 0 1px rgba(255,255,255,.18);animation:aflRbbPulse 1.8s ease-in-out infinite}
       .afl-rbb-pages{display:none;z-index:30;background:linear-gradient(145deg,#071013,#020506)}
+      /* Client Info pages switch instantly: no page-turn transforms or wobble on mobile. */
+      #aflRealBrandBook .afl-rbb-page,
+      #aflRealBrandBook .afl-rbb-page.current,
+      #aflRealBrandBook .afl-rbb-page.turn-next,
+      #aflRealBrandBook .afl-rbb-page.turn-prev{animation:none!important;transition:none!important;transform:none!important;filter:none!important}
+      #aflRealBrandBook .afl-rbb-cover-bg{display:none!important}
+      #aflRealBrandBook .afl-rbb-cover-main{background:linear-gradient(145deg,#10251c,#07130d)!important}
+      #aflRealBrandBook .afl-rbb-cover-main img{display:none!important}
       #aflRealBrandBook.open .afl-rbb-cover{display:none}
       #aflRealBrandBook.open .afl-rbb-pages{display:block}
       #aflRealBrandBook.open .afl-rbb-nav{display:grid}
@@ -12600,11 +12608,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     book.append(cover,pages,nav,alert);list.appendChild(book);
     book._pages=[];book._page=0;book._uid=uid;book._newIndex=-1;book._ready=false;book._opened=false;
 
-    const immediateCover=await getOwnerBrandCover(uid);
-    if(immediateCover){
-      bg.style.backgroundImage=`url("${immediateCover.replace(/"/g,'&quot;')}")`;
-      main.innerHTML='';const im=document.createElement('img');im.src=immediateCover;im.alt='Brand cover';main.appendChild(im);
-    }
+    /* Keep the Client Info landing screen lightweight: brand name only.
+       Do not wait for or render a billboard cover before loading the private inbox. */
 
     function showPage(idx,direction='next'){
       const ps=book._pages||[];if(!ps.length)return;
@@ -12650,11 +12655,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(book._opened)showPage(keepIndex>=0?keepIndex:Number(book._pendingOpenIndex||0),'next');
     else showPage(keepIndex>=0?keepIndex:0,'next');
 
-    /* Keep the cover tied to the current brand owner only. Never use another brand's feed image. */
-    if(immediateCover&&document.body.contains(book)){
-      bg.style.backgroundImage=`url("${immediateCover.replace(/"/g,'&quot;')}")`;
-      main.innerHTML='';const img=document.createElement('img');img.src=immediateCover;img.alt='Brand cover';main.appendChild(img);
-    }
+    /* The landing screen stays text-only; client information is rendered inside this panel. */
     return book;
   }
   // Keep one book renderer in flight. Reopening the panel reuses the mounted cover;
