@@ -751,13 +751,16 @@ Deno.serve(async (req) => {
       if (riderError || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now() || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
         return json({ success: false, error: "Turn on your Authority-approved, active Boda Yangu access to see trip requests." }, 403);
       }
-      const [{ data, error }, passengerTrips] = await Promise.all([
+      const [deliveriesResult, openPassengerResult, myPassengerResult] = await Promise.all([
         admin.from("ione_sokoni_deliveries").select("id,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
-        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status")
-          .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100)
+        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
+          .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100),
+        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
+          .eq("rider_id", rider.id).in("status", ["accepted", "fare_proposed", "fare_countered", "fare_agreed", "picked_up"]).order("created_at", { ascending: false }).limit(50)
       ]);
-      if (error || passengerTrips.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
-      return json({ success: true, deliveries: data || [], passenger_trips: passengerTrips.data || [] });
+      if (deliveriesResult.error || openPassengerResult.error || myPassengerResult.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
+      const passengerTrips = [...(openPassengerResult.data || []), ...(myPassengerResult.data || [])];
+      return json({ success: true, deliveries: deliveriesResult.data || [], passenger_trips: passengerTrips });
     }
 
     if (action === "accept_delivery") {
@@ -959,7 +962,7 @@ Deno.serve(async (req) => {
 
       if (action === "authority_dashboard") {
         const nowIso = new Date().toISOString();
-        const [requestsResult, pendingCount, activeCount, expiredCount, vendorListResult, riderAppsResult, riderPendingCount, verifiedRiderCount] = await Promise.all([
+        const [requestsResult, pendingCount, activeCount, expiredCount, vendorListResult, riderAppsResult, riderPendingCount, verifiedRiderCount, ridersResult] = await Promise.all([
           admin.from("ione_sokoni_payment_requests")
             .select("id,user_id,vendor_id,vendor_name,phone_number,amount_tzs,status,created_at,approved_at,admin_note")
             .eq("status", "pending").order("created_at", { ascending: true }).limit(500),
