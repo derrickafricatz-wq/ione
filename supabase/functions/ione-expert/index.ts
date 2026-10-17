@@ -151,7 +151,19 @@ Deno.serve(async (req) => {
           const { credential_path: _private, ...safe } = app;
           return { ...safe, credential_url };
         }));
-        return json({ success: true, applications: safeApplications, questions: questions || [], advice: advice || [] });
+        const questionIds = (questions || []).map((question: any) => question.id);
+        let replies: any[] = [];
+        if (questionIds.length) {
+          const replyResult = await admin.from("ione_expert_replies")
+            .select("id,question_id,display_name,role,body,created_at")
+            .in("question_id", questionIds).order("created_at", { ascending: true }).limit(500);
+          if (replyResult.error) return json({ success: false, error: "Could not load official question replies." }, 500);
+          replies = replyResult.data || [];
+        }
+        const questionsWithReplies = (questions || []).map((question: any) => ({
+          ...question, replies: replies.filter((reply: any) => reply.question_id === question.id)
+        }));
+        return json({ success: true, applications: safeApplications, questions: questionsWithReplies, advice: advice || [] });
       }
       if (action === "approve_expert" || action === "reject_expert") {
         const applicationId = clean(body?.application_id, 80);
