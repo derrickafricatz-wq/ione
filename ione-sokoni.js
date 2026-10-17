@@ -570,7 +570,10 @@
       <button type="button" id="isAuthorityRefresh" class="authority-action-button">REFRESH SOKONI</button>
       <div id="isAuthorityMetrics" class="is-metrics"><div class="is-metric"><span>Loading dashboard…</span></div></div>
       <div id="isAuthorityStatus" class="is-status" role="status" aria-live="polite"></div>
-      <div id="isAuthorityRequests"></div>`;
+      <h3 style="margin-top:22px">CONFIRM PENDING PAYMENTS</h3>
+      <div id="isAuthorityRequests"></div>
+      <h3 style="margin-top:22px">REGISTERED SOKONI VENDORS</h3>
+      <div id="isAuthorityVendors" class="is-vendors"></div>`;
     host.appendChild(section);
     $("isAuthorityRefresh").addEventListener("click", loadAuthorityDashboard);
   }
@@ -578,7 +581,8 @@
     const status = $("isAuthorityStatus");
     const requests = $("isAuthorityRequests");
     const metrics = $("isAuthorityMetrics");
-    if (!status || !requests || !metrics) return;
+    const vendorList = $("isAuthorityVendors");
+    if (!status || !requests || !metrics || !vendorList) return;
     status.textContent = "Loading protected Sokoni records…";
     requests.replaceChildren();
     try {
@@ -634,6 +638,27 @@
         actions.append(approve, reject);
         card.append(title, phone, amount, created, actions);
         requests.appendChild(card);
+      });
+      vendorList.replaceChildren();
+      const registered = data.vendors || [];
+      if (!registered.length) {
+        const emptyVendor = document.createElement("p");
+        emptyVendor.className = "authority-section-note";
+        emptyVendor.textContent = "No Sokoni vendors have been approved yet.";
+        vendorList.appendChild(emptyVendor);
+      }
+      registered.forEach((vendor) => {
+        const row = document.createElement("div");
+        row.className = "is-vendor";
+        const name = document.createElement("strong");
+        name.textContent = escText(vendor.vendor_name);
+        const phone = document.createElement("small");
+        phone.textContent = "Phone: " + escText(vendor.phone_number);
+        const expires = document.createElement("p");
+        const expired = Date.parse(vendor.paid_until) <= Date.now();
+        expires.textContent = (expired ? "Access expired: " : "Access valid until: ") + new Date(vendor.paid_until).toLocaleDateString("en-GB");
+        row.append(name, phone, expires);
+        vendorList.appendChild(row);
       });
       status.textContent = "Sokoni dashboard updated. Confirm only after checking the payment was received.";
     } catch (e) {
