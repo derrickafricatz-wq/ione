@@ -384,7 +384,7 @@ Deno.serve(async (req) => {
         return json({ success: true, message: "Request marked as not approved." });
       }
 
-      const current = await admin.from("ione_sokoni_vendors").select("id,paid_until,status")
+      const current = await admin.from("ione_sokoni_vendors").select("*")
         .eq("user_id", request.user_id).maybeSingle();
       if (current.error) {
         await admin.from("ione_sokoni_payment_requests").update({ status: "pending" }).eq("id", request.id).eq("status", "processing");
@@ -411,7 +411,16 @@ Deno.serve(async (req) => {
       }).eq("id", request.id).eq("status", "processing");
       if (paymentWrite.error) {
         console.error("Sokoni payment approval record failed:", paymentWrite.error);
-        return json({ success: false, error: "Vendor record was updated but payment history needs Authority Press review. Do not approve again; refresh the dashboard." }, 500);
+        // Compensate for the vendor upsert if payment history could not be committed.
+        // This keeps an unrecorded payment from granting access silently.
+        if (current.data) {
+          await admin.from("ione_sokoni_vendors").upsert(current.data, { onConflict: "user_id" });
+        } else {
+          await admin.from("ione_sokoni_vendors").delete().eq("user_id", request.user_id);
+        }
+        await admin.from("ione_sokoni_payment_requests").update({ status: "pending", updated_at: new Date().toISOString() })
+          .eq("id", request.id).eq("status", "processing");
+        return json({ success: false, error: "Approval was rolled back because payment history could not be saved. Refresh and retry after checking the record." }, 500);
       }
       return json({ success: true, vendor_id: vendorWrite.data.id, paid_until: paidUntil,
         message: "Payment confirmed and Sokoni access activated for 30 days." });
