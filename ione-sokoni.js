@@ -872,11 +872,13 @@
   }
   async function loadOpenTrips() {
     const box = $("isOpenTrips");
-    box.replaceChildren();
     try {
       const data = await invoke("rider_open_deliveries");
       const deliveries = data.deliveries || [];
       const passengerTrips = data.passenger_trips || [];
+      // Replace the visible board only after a successful refresh, so a temporary
+      // network/heartbeat error does not make pending or active trips disappear.
+      box.replaceChildren();
       const seenPassengerRequests = window.__ioneSokoniRiderPassengerRequests || (window.__ioneSokoniRiderPassengerRequests = {});
       const riderTripAlertsReady = window.__ioneSokoniRiderTripAlertsReady === true;
       passengerTrips.forEach((trip) => {
@@ -948,7 +950,14 @@
         }
         row.style.marginBottom = "10px"; box.appendChild(row);
       });
-    } catch (e) { box.textContent = e.message || "Maombi ya safari hayapatikani."; }
+    } catch (e) {
+      setStatus("isRiderStatus", e.message || "Maombi ya safari hayapatikani kwa muda. Jaribu kusasisha tena.", true);
+      if (!box.childElementCount) {
+        const error = document.createElement("p"); error.className = "is-muted";
+        error.textContent = e.message || "Maombi ya safari hayapatikani kwa muda. Jaribu kusasisha tena.";
+        box.appendChild(error);
+      }
+    }
   }
 
   async function loadPassengerTrips() {
