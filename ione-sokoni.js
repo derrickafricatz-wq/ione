@@ -6,7 +6,7 @@
   window.__ioneSokoniBooted = true;
 
   const css = `
-  #ioneSokoniOverlay{position:fixed;inset:0;z-index:100050;display:none;background:#071713;color:#f3fff8;font-family:Arial,sans-serif;overflow:auto;overscroll-behavior:contain}
+  #openSokoni.ione-sokoni-tile{background:#153d31!important;border:1px solid #48765a!important;color:#f3fff8!important}\n  #openSokoni.ione-sokoni-tile .smart-icon{color:#b6e7c3!important}\n  #ioneSokoniOverlay{position:fixed;inset:0;z-index:100050;display:none;background:#071713;color:#f3fff8;font-family:Arial,sans-serif;overflow:auto;overscroll-behavior:contain}
   #ioneSokoniOverlay *{box-sizing:border-box}
   .is-shell{width:min(980px,100%);min-height:100%;margin:0 auto;padding:clamp(14px,4vw,28px)}
   .is-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px}
