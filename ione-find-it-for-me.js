@@ -51,7 +51,7 @@
   function ensureOverlay(){
     let root=document.getElementById("ioneFindItOverlay");if(root)return root;
     root=document.createElement("div");root.id="ioneFindItOverlay";root.className="ione-find-overlay";root.setAttribute("aria-hidden","true");
-    root.innerHTML='<section class="ione-find-card" role="dialog" aria-modal="true" aria-labelledby="ioneFindItTitle"><div class="ione-find-head"><h2 id="ioneFindItTitle">FIND IT FOR ME</h2><button type="button" class="ione-find-close" id="ioneFindItClose">CLOSE ✕</button></div><div id="ioneFindItBody"></div></section>';
+    root.innerHTML='<section class="ione-find-card" role="dialog" aria-modal="true" aria-labelledby="ioneFindItTitle"><div class="ione-find-head"><h2 id="ioneFindItTitle">FIND IT FOR ME</h2><button type="button" class="ione-find-close" id="ioneFindItClose">CLOSE</button></div><div id="ioneFindItBody"></div></section>';
     document.body.appendChild(root);
     root.querySelector("#ioneFindItClose").onclick=closePanel;
     root.addEventListener("click",e=>{if(e.target===root)closePanel()});
