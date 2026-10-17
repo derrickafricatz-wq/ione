@@ -1,0 +1,27 @@
+name: Sokoni regression checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "ione-sokoni.js"
+      - "sw.js"
+      - "version.json"
+      - "supabase/functions/ione-sokoni/**"
+      - "supabase/migrations/*ione_sokoni*"
+      - "tests/sokoni-checks.cjs"
+      - ".github/workflows/sokoni-checks.yml"
+  push:
+    branches: [feature/ione-sokoni]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run Sokoni isolation and regression checks
+        run: node tests/sokoni-checks.cjs
