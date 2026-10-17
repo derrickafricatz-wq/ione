@@ -31,6 +31,14 @@
     #ioneExpertAuthority input,#ioneExpertAuthority textarea{width:100%;padding:10px;border:1px solid #d4e1d0;border-radius:8px;margin:5px 0}
     #ioneExpertAuthority button{border:1px solid #c7dbbf;border-radius:9px;padding:9px 12px;background:#eaf4e4;color:#315b38;font-weight:800;margin:4px 4px 4px 0}
     #ioneExpertAuthority button.danger{background:#fff0ec;color:#9c332a;border-color:#e6c2ba}
+    #ioneExpertAuthority,#ioneExpertAuthority *{box-sizing:border-box;min-width:0;max-width:100%}
+    #ioneExpertAuthority .iex-admin-card{overflow-wrap:anywhere;word-break:break-word}
+    #ioneExpertAuthority input,#ioneExpertAuthority textarea,#ioneExpertAuthority select{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+    #ioneExpertAuthority textarea{resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
+    #ioneExpertAuthority a{overflow-wrap:anywhere;word-break:break-word}
+    #ioneExpertAuthority .iex-admin-replies{margin:10px 0;padding:10px;border:1px solid #e0eadc;border-radius:9px;background:#f7fbf6}
+    #ioneExpertAuthority .iex-admin-reply{margin:7px 0;padding:8px 10px;border-left:3px solid #8ebd87;background:#fff;border-radius:0 7px 7px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+    #ioneExpertAuthority .iex-admin-reply strong{display:block;margin-bottom:4px;color:#315b38;font-size:12px}
   `;
   document.head.appendChild(style);
 
@@ -247,11 +255,36 @@
       (data.questions || []).forEach((q) => {
         const card = document.createElement("article"); card.className = "iex-admin-card";
         const title = document.createElement("strong"); title.textContent = q.title;
-        const body = document.createElement("p"); body.textContent = q.details;
-        const answer = document.createElement("textarea"); answer.maxLength = 5000; answer.placeholder = "Official Authority Press answer";
+        const body = document.createElement("p"); body.textContent = q.details || "No question details were provided.";
+        card.append(title, body);
+        const thread = document.createElement("div"); thread.className = "iex-admin-replies";
+        const threadTitle = document.createElement("strong"); threadTitle.textContent = "Question conversation";
+        thread.appendChild(threadTitle);
+        const replies = Array.isArray(q.replies) ? q.replies : [];
+        if (!replies.length) {
+          const empty = document.createElement("p"); empty.className = "iex-muted"; empty.textContent = "No replies have been published yet.";
+          thread.appendChild(empty);
+        } else {
+          replies.forEach((reply) => {
+            const item = document.createElement("div"); item.className = "iex-admin-reply";
+            const who = document.createElement("strong"); who.textContent = (reply.display_name || (reply.role === "authority" ? "Authority Press" : "Expert")) + (reply.role === "authority" ? " • OFFICIAL RESPONSE" : " • EXPERT");
+            const message = document.createElement("div"); message.textContent = reply.body || "";
+            item.append(who, message); thread.appendChild(item);
+          });
+        }
+        const answer = document.createElement("textarea"); answer.maxLength = 5000; answer.rows = 4; answer.placeholder = "Write an official response for the client and community";
         const send = document.createElement("button"); send.textContent = "PUBLISH OFFICIAL RESPONSE";
-        send.addEventListener("click", async () => { send.disabled = true; try { const result = await invoke("authority_reply", { question_id: q.id, body: answer.value.trim() }); status.textContent = result.message; await loadAuthority(); } catch (error) { status.textContent = error.message; send.disabled = false; } });
-        card.append(title, body, answer, send); qs.appendChild(card);
+        send.addEventListener("click", async () => {
+          const responseText = answer.value.trim();
+          if (responseText.length < 5) { status.textContent = "Write an official response first."; answer.focus(); return; }
+          send.disabled = true;
+          try {
+            const result = await invoke("authority_reply", { question_id: q.id, body: responseText });
+            status.textContent = result.message;
+            await loadAuthority();
+          } catch (error) { status.textContent = error.message; send.disabled = false; }
+        });
+        card.append(thread, answer, send); qs.appendChild(card);
       });
       const advice = $("ioneExpertAuthorityAdvice"); advice.replaceChildren();
       (data.advice || []).forEach((item) => {
