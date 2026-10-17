@@ -1,5 +1,5 @@
 {
-  "version": "1.0.181",
-  "message": "Retain expert application records and clean Authority Press question/advice panels",
+  "version": "1.0.182",
+  "message": "Keep expert credentials inside Authority Press and open Client Info without cover animation",
   "force": true
 }
