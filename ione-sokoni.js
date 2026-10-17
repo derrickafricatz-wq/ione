@@ -269,7 +269,6 @@
         <div class="is-status" id="isRiderApplyStatus" role="status" aria-live="polite"></div>
         </div>
         <div id="isRiderDashboard" class="is-boda-panel is-boda-dashboard" style="display:none;margin-top:16px">
-        <div id="isRiderDashboard" style="display:none;margin-top:16px">
           <h3>Eneo la dereva</h3>
           <div class="is-status" id="isRiderStatus" role="status" aria-live="polite"></div>
           <button class="is-button" type="button" id="isRiderAvailability">Washa upatikanaji</button>
@@ -280,7 +279,6 @@
           <div class="is-status" id="isRiderProfileUpdateStatus" role="status" aria-live="polite"></div>
           <button class="is-button" type="button" id="isRefreshOpenTrips">Sasisha maombi ya safari</button>
           <div class="is-vendors" id="isOpenTrips"></div>
-        </div>
         <h3 style="margin-top:22px">Safari zangu</h3>
         <button class="is-button" type="button" id="isRefreshDeliveries">Sasisha safari</button>
         <div class="is-vendors" id="isMyDeliveries"><p class="is-muted">Safari ulizohusika nazo zitaonekana hapa.</p></div>
