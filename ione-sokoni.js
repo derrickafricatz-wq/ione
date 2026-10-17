@@ -203,11 +203,14 @@
         $("isSellerTools").style.display = "block";
         loadMyProducts();
       } else if (data.requests?.[0]?.status === "pending") {
+        $("isSellerTools").style.display = "none";
         setStatus("isMyStatus", "Ombi lako linasubiri uthibitisho wa malipo kutoka Authority Press.");
         $("isPaymentInstructions").style.display = "block";
       } else if (data.requests?.[0]?.status === "rejected") {
+        $("isSellerTools").style.display = "none";
         setStatus("isMyStatus", "Ombi la mwisho halikuidhinishwa. Tafadhali wasiliana na I|ONE Support kabla ya kutuma ombi jipya.", true);
       } else {
+        $("isSellerTools").style.display = "none";
         setStatus("isMyStatus", "Bado huna ruhusa inayotumika ya Sokoni. Tuma ombi la kujiunga hapo juu.");
       }
     } catch (e) {
