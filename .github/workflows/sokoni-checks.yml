@@ -6,10 +6,13 @@ on:
     paths:
       - "index.html"
       - "ione-sokoni.js"
+      - "ione-expert.js"
       - "sw.js"
       - "version.json"
       - "supabase/functions/ione-sokoni/**"
+      - "supabase/functions/ione-expert/**"
       - "supabase/migrations/*ione_sokoni*"
+      - "supabase/migrations/*ione_expert*"
       - "tests/sokoni-checks.cjs"
       - ".github/workflows/sokoni-checks.yml"
   push:
@@ -30,3 +33,5 @@ jobs:
           deno-version: v2.x
       - name: Type-check the Sokoni Edge Function
         run: deno check supabase/functions/ione-sokoni/index.ts
+      - name: Type-check the I|ONE Expert Edge Function
+        run: deno check supabase/functions/ione-expert/index.ts

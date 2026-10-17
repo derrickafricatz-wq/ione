@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +39,34 @@ async function validAuthoritySession(admin: any, rawToken: unknown) {
   const { data, error } = await admin.from("ione_authority_sessions").select("token_hash")
     .eq("token_hash", hash).gt("expires_at", new Date().toISOString()).is("revoked_at", null).maybeSingle();
   return !error && !!data;
+}
+
+async function sendSokoniPush(admin: any, userId: string, payload: any) {
+  try {
+    const { data: config, error: configError } = await admin.from("ione_push_config")
+      .select("vapid_public_key,vapid_private_key,vapid_subject").eq("id", true).maybeSingle();
+    if (configError || !config?.vapid_public_key || !config?.vapid_private_key) return 0;
+    webpush.setVapidDetails(config.vapid_subject || "mailto:notifications@ione.app", config.vapid_public_key, config.vapid_private_key);
+    const { data: subscriptions, error } = await admin.from("ione_push_subscriptions")
+      .select("id,endpoint,p256dh,auth").eq("user_id", userId).eq("active", true);
+    if (error) return 0;
+    let delivered = 0;
+    for (const sub of subscriptions || []) {
+      try {
+        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload));
+        delivered++;
+      } catch (pushError: any) {
+        const statusCode = Number(pushError?.statusCode || 0);
+        if (statusCode === 404 || statusCode === 410) {
+          await admin.from("ione_push_subscriptions").update({ active: false, updated_at: new Date().toISOString() }).eq("id", sub.id);
+        }
+      }
+    }
+    return delivered;
+  } catch (pushError) {
+    console.warn("Sokoni push notification was skipped:", pushError);
+    return 0;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -260,6 +289,10 @@ Deno.serve(async (req) => {
         dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null, status: "new"
       }).select("id,status,total_tzs,created_at").single();
       if (inserted.error) return json({ success: false, error: "Could not send your order request. Please retry." }, 500);
+      await sendSokoniPush(admin, vendor.user_id, {
+        title: "I|ONE Sokoni • Oda mpya", body: body?.buyer_name + " ametuma oda ya " + product.product_name + ".",
+        url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + inserted.data.id
+      });
       return json({ success: true, order: inserted.data,
         message: "Ombi limetumwa kwa muuzaji. Muuzaji atapitia ombi na kuwasiliana nawe kwa namba uliyotoa." });
     }
@@ -270,11 +303,19 @@ Deno.serve(async (req) => {
       const [seller, buyer] = await Promise.all([
         admin.from("ione_sokoni_orders").select("id,product_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,buyer_name,buyer_phone,buyer_note,wants_delivery,delivery_address,status,created_at")
           .eq("seller_user_id", user.id).order("created_at", { ascending: false }).limit(100),
-        admin.from("ione_sokoni_orders").select("id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,wants_delivery,status,created_at")
+        admin.from("ione_sokoni_orders").select("id,vendor_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs,wants_delivery,status,created_at")
           .eq("buyer_user_id", user.id).order("created_at", { ascending: false }).limit(100)
       ]);
       if (seller.error || buyer.error) return json({ success: false, error: "Could not load Sokoni order requests." }, 500);
-      return json({ success: true, seller_orders: seller.data || [], buyer_orders: buyer.data || [] });
+      const vendorIds = [...new Set((buyer.data || []).map((order: any) => order.vendor_id).filter(Boolean))];
+      let sellerPhones = new Map<string, string>();
+      if (vendorIds.length) {
+        const vendorContacts = await admin.from("ione_sokoni_vendors").select("id,phone_number").in("id", vendorIds);
+        if (vendorContacts.error) return json({ success: false, error: "Could not load seller contact details." }, 500);
+        sellerPhones = new Map((vendorContacts.data || []).map((vendor: any) => [vendor.id, vendor.phone_number]));
+      }
+      const buyerOrders = (buyer.data || []).map((order: any) => ({ ...order, seller_phone: sellerPhones.get(order.vendor_id) || null }));
+      return json({ success: true, seller_orders: seller.data || [], buyer_orders: buyerOrders });
     }
 
     if (action === "update_order_status") {
@@ -314,11 +355,19 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_orders").update({ status: "new", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "accepted");
           return json({ success: false, error: "Stock changed while accepting. Refresh the order and try again." }, 409);
         }
+        await sendSokoniPush(admin, order.buyer_user_id, {
+          title: "I|ONE Sokoni • Oda imekubaliwa", body: "Muuzaji amekubali oda yako ya " + order.product_name + ". Wasiliana naye ili kupanga malipo.",
+          url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-status-" + order.id
+        });
         return json({ success: true, message: "Order accepted and stock updated." });
       }
       const update = await admin.from("ione_sokoni_orders").update({ status: nextStatus, updated_at: new Date().toISOString() })
         .eq("id", order.id).eq("status", order.status).select("id").maybeSingle();
       if (update.error || !update.data) return json({ success: false, error: "Order status was not saved. Refresh and try again." }, 409);
+      if (nextStatus === "rejected") await sendSokoniPush(admin, order.buyer_user_id, {
+        title: "I|ONE Sokoni • Oda imekataliwa", body: "Muuzaji hakuweza kukubali oda yako ya " + order.product_name + ".",
+        url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-status-" + order.id
+      });
       return json({ success: true, message: nextStatus === "completed" ? "Order marked completed." : "Order request rejected." });
     }
 
@@ -348,6 +397,7 @@ Deno.serve(async (req) => {
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const name = String(body?.rider_name || "").trim().replace(/\s+/g, " ");
       const phone = normalizeTanzaniaPhone(body?.phone_number);
+      const profilePath = String(body?.profile_path || "").trim();
       const documentType = String(body?.identity_document_type || "").trim();
       const documentPath = String(body?.identity_document_path || "").trim();
       const plate = String(body?.motorcycle_plate || "").trim().toUpperCase().replace(/\s+/g, " ");
@@ -358,6 +408,15 @@ Deno.serve(async (req) => {
           !allowedDocumentTypes.includes(documentType) || plate.length < 4 || plate.length > 24 ||
           groupName.length < 2 || groupName.length > 140 || !validPhone(chairmanPhone)) {
         return json({ success: false, error: "Enter your full name, valid phone numbers, one identity document, motorcycle plate and rider group details." }, 400);
+      }
+      const profileParts = profilePath.split("/");
+      if (profileParts.length !== 2 || profileParts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(profileParts[1]) ||
+          !/\.(jpg|png|webp)$/i.test(profileParts[1])) {
+        return json({ success: false, error: "The rider profile photo is invalid. Please upload it again." }, 400);
+      }
+      const profileListed = await admin.storage.from("ione-sokoni-rider-profiles").list(user.id, { search: profileParts[1], limit: 20 });
+      if (profileListed.error || !(profileListed.data || []).some((item: any) => item.name === profileParts[1])) {
+        return json({ success: false, error: "The rider profile photo could not be verified. Upload it again." }, 400);
       }
       const pathParts = documentPath.split("/");
       if (pathParts.length !== 2 || pathParts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(pathParts[1]) ||
@@ -375,7 +434,7 @@ Deno.serve(async (req) => {
       if (pending) return json({ success: true, already_pending: true, message: "Your rider application is already waiting for Authority Press." });
       const result = await admin.from("ione_sokoni_rider_applications").insert({
         user_id: user.id, rider_name: name, phone_number: phone, identity_document_type: documentType,
-        identity_document_path: documentPath, motorcycle_plate: plate, rider_group_name: groupName,
+        identity_document_path: documentPath, profile_path: profilePath, motorcycle_plate: plate, rider_group_name: groupName,
         chairman_phone: chairmanPhone, status: "pending"
       }).select("id,status,created_at").single();
       if (result.error) return json({ success: false, error: "Could not submit the rider application. Please retry." }, 500);
@@ -451,10 +510,14 @@ Deno.serve(async (req) => {
     if (action === "public_riders") {
       const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data, error } = await admin.from("ione_sokoni_riders")
-        .select("id,rider_name").eq("status", "active").eq("available", true).gt("last_seen_at", freshSince)
+        .select("id,rider_name,profile_path").eq("status", "active").eq("available", true).gt("last_seen_at", freshSince)
         .order("last_seen_at", { ascending: false }).limit(100);
       if (error) return json({ success: false, error: "Could not load the available rider board." }, 500);
-      return json({ success: true, riders: data || [] });
+      const riders = (data || []).map((rider: any) => ({
+        id: rider.id, rider_name: rider.rider_name,
+        profile_url: rider.profile_path ? admin.storage.from("ione-sokoni-rider-profiles").getPublicUrl(rider.profile_path).data?.publicUrl || null : null
+      }));
+      return json({ success: true, riders });
     }
 
     if (action === "request_delivery") {
@@ -489,6 +552,143 @@ Deno.serve(async (req) => {
       return json({ success: true, delivery: created.data, message: "Delivery request sent to available verified riders. Delivery fee will be shown separately and must be confirmed by both sides." });
     }
 
+    if (action === "passenger_trip_request") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const passengerName = String(body?.passenger_name || "").trim().replace(/\s+/g, " ");
+      const passengerPhone = normalizeTanzaniaPhone(body?.passenger_phone);
+      const pickupArea = String(body?.pickup_area || "").trim().slice(0, 180);
+      const destinationArea = String(body?.destination_area || "").trim().slice(0, 180);
+      const pickupLat = Number(body?.pickup_lat), pickupLng = Number(body?.pickup_lng);
+      const note = String(body?.passenger_note || "").trim().slice(0, 500);
+      if (passengerName.length < 2 || !validPhone(passengerPhone) || pickupArea.length < 2 || destinationArea.length < 2 ||
+          !Number.isFinite(pickupLat) || !Number.isFinite(pickupLng) || pickupLat < -90 || pickupLat > 90 || pickupLng < -180 || pickupLng > 180) {
+        return json({ success: false, error: "Enter your name, valid phone, pickup area, destination and share GPS for pickup." }, 400);
+      }
+      const saved = await admin.from("ione_sokoni_passenger_trips").insert({
+        passenger_user_id: user.id, passenger_name: passengerName, passenger_phone: passengerPhone,
+        pickup_area: pickupArea, pickup_lat: pickupLat, pickup_lng: pickupLng,
+        destination_area: destinationArea, passenger_note: note, status: "requested"
+      }).select("id,status,created_at").single();
+      if (saved.error) return json({ success: false, error: "Could not send the passenger trip request. Please retry." }, 500);
+      const { data: availableRiders } = await admin.from("ione_sokoni_riders").select("user_id").eq("status", "active").eq("available", true).limit(100);
+      await Promise.all((availableRiders || []).map((rider: any) => sendSokoniPush(admin, rider.user_id, {
+        title: "I|ONE Boda Yangu • Safari mpya", body: pickupArea + " → " + destinationArea + ". Fungua Sokoni kuona ombi.",
+        url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + saved.data.id
+      })));
+      return json({ success: true, trip: saved.data, message: "Ombi la safari limetumwa kwa bodaboda waliopo. Mtakubaliana nauli moja kwa moja." });
+    }
+
+    if (action === "passenger_trip_list") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      const [asPassenger, asRider] = await Promise.all([
+        admin.from("ione_sokoni_passenger_trips").select("*").eq("passenger_user_id", user.id).order("created_at", { ascending: false }).limit(50),
+        rider ? admin.from("ione_sokoni_passenger_trips").select("*").eq("rider_id", rider.id).order("created_at", { ascending: false }).limit(50) : Promise.resolve({ data: [], error: null })
+      ]);
+      if (asPassenger.error || asRider.error) return json({ success: false, error: "Could not load passenger trips." }, 500);
+      const combined = new Map<string, any>();
+      for (const trip of [...(asPassenger.data || []), ...(asRider.data || [])]) combined.set(trip.id, trip);
+      const trips = await Promise.all([...combined.values()].map(async (trip: any) => {
+        const other = trip.rider_id ? await admin.from("ione_sokoni_riders").select("rider_name,phone_number").eq("id", trip.rider_id).maybeSingle() : { data: null };
+        return { ...trip, is_passenger: trip.passenger_user_id === user.id, is_rider: !!rider?.id && trip.rider_id === rider.id,
+          rider_name: other.data?.rider_name || null, rider_phone: other.data?.phone_number || null };
+      }));
+      return json({ success: true, trips });
+    }
+
+    if (action === "passenger_trip_accept") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      if (!/^[0-9a-f-]{36}$/i.test(tripId)) return json({ success: false, error: "Invalid passenger trip." }, 400);
+      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at").eq("user_id", user.id).maybeSingle();
+      if (!rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+        return json({ success: false, error: "Thibitisha kuwa upo tayari na uwashe upatikanaji kwanza." }, 403);
+      }
+      const accepted = await admin.from("ione_sokoni_passenger_trips").update({
+        rider_id: rider.id, status: "accepted", updated_at: new Date().toISOString()
+      }).eq("id", tripId).eq("status", "requested").is("rider_id", null).select("id").maybeSingle();
+      if (accepted.error || !accepted.data) return json({ success: false, error: "Safari hii imechukuliwa na dereva mwingine au haipatikani." }, 409);
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("passenger_user_id,pickup_area,destination_area").eq("id", tripId).maybeSingle();
+      if (trip) await sendSokoniPush(admin, trip.passenger_user_id, {
+        title: "I|ONE Boda Yangu • Dereva amepatikana", body: "Dereva amekubali safari yako. Wasiliana naye kujadiliana nauli.",
+        url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + tripId
+      });
+      return json({ success: true, message: "Umechukua ombi la safari. Wasiliana na abiria kujadiliana nauli." });
+    }
+
+    if (action === "passenger_trip_offer_fare") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      const fare = Number(body?.fare_tzs);
+      if (!/^[0-9a-f-]{36}$/i.test(tripId) || !Number.isInteger(fare) || fare < 100 || fare > 500000) return json({ success: false, error: "Weka nauli halali kati ya TZS 100 na 500,000." }, 400);
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("*").eq("id", tripId).maybeSingle();
+      if (!trip) return json({ success: false, error: "Safari haipatikani." }, 404);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      const role = rider?.id === trip.rider_id ? "rider" : trip.passenger_user_id === user.id ? "passenger" : null;
+      if (!role || !trip.rider_id || !["accepted", "fare_proposed", "fare_countered"].includes(trip.status) || trip.fare_agreed) return json({ success: false, error: "Huwezi kubadilisha nauli ya safari hii sasa." }, 403);
+      if (trip.fare_proposed_by === role && trip.proposed_fare_tzs !== null) return json({ success: false, error: "Subiri upande mwingine ujibu nauli uliyopendekeza." }, 409);
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({
+        proposed_fare_tzs: fare, fare_proposed_by: role, status: role === "rider" ? "fare_proposed" : "fare_countered",
+        fare_agreed: false, updated_at: new Date().toISOString()
+      }).eq("id", tripId).select("id").single();
+      if (saved.error) return json({ success: false, error: "Could not save fare proposal." }, 500);
+      const recipient = role === "rider" ? trip.passenger_user_id : (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id;
+      if (recipient) await sendSokoniPush(admin, recipient, {
+        title: "I|ONE Boda Yangu • Nauli imependekezwa", body: "Pendekezo la nauli ni TZS " + fare.toLocaleString("en-TZ") + ". Fungua Sokoni kujibu.",
+        url: "./?ionePushDestination=sokoni", tag: "ione-passenger-fare-" + tripId
+      });
+      return json({ success: true, message: "Nauli imetumwa. Upande mwingine anaweza kukubali au kutoa pendekezo jingine." });
+    }
+
+    if (action === "passenger_trip_agree_fare") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      if (!/^[0-9a-f-]{36}$/i.test(tripId)) return json({ success: false, error: "Invalid passenger trip." }, 400);
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("*").eq("id", tripId).maybeSingle();
+      if (!trip || !["fare_proposed", "fare_countered"].includes(trip.status) || trip.fare_agreed || !trip.proposed_fare_tzs) return json({ success: false, error: "Hakuna nauli inayosubiri kukubaliwa." }, 409);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      const role = rider?.id === trip.rider_id ? "rider" : trip.passenger_user_id === user.id ? "passenger" : null;
+      if (!role || role === trip.fare_proposed_by) return json({ success: false, error: "Ni upande mwingine tu unaoweza kukubali nauli hii." }, 403);
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({ fare_agreed: true, status: "fare_agreed", updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
+      if (saved.error) return json({ success: false, error: "Could not confirm the fare." }, 500);
+      const recipient = role === "rider" ? trip.passenger_user_id : (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id;
+      if (recipient) await sendSokoniPush(admin, recipient, {
+        title: "I|ONE Boda Yangu • Nauli imekubaliwa", body: "Nauli ya TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " imekubaliwa.",
+        url: "./?ionePushDestination=sokoni", tag: "ione-passenger-fare-" + tripId
+      });
+      return json({ success: true, message: "Nauli imekubaliwa. Malipo yatafanyika moja kwa moja kati yenu." });
+    }
+
+    if (action === "passenger_trip_status") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const tripId = String(body?.trip_id || "").trim();
+      const next = String(body?.status || "").trim();
+      const { data: trip } = await admin.from("ione_sokoni_passenger_trips").select("*").eq("id", tripId).maybeSingle();
+      if (!trip) return json({ success: false, error: "Safari haipatikani." }, 404);
+      const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
+      let patch: any = {};
+      if (rider?.id === trip.rider_id && next === "picked_up" && trip.status === "fare_agreed" && trip.fare_agreed) patch = { status: "picked_up" };
+      else if (trip.passenger_user_id === user.id && next === "completed" && trip.status === "picked_up") patch = { status: "completed", completed_at: new Date().toISOString() };
+      else if (trip.passenger_user_id === user.id && next === "cancelled" && ["requested", "accepted", "fare_proposed", "fare_countered"].includes(trip.status)) patch = { status: "cancelled" };
+      else return json({ success: false, error: "Huwezi kubadilisha hali ya safari hii kwa hatua hiyo." }, 403);
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
+      if (saved.error) return json({ success: false, error: "Could not update passenger trip." }, 500);
+      const recipient = next === "picked_up" ? trip.passenger_user_id : next === "completed" ? (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id : null;
+      if (recipient) await sendSokoniPush(admin, recipient, {
+        title: next === "picked_up" ? "I|ONE Boda Yangu • Abiria amechukuliwa" : "I|ONE Boda Yangu • Safari imekamilika",
+        body: next === "picked_up" ? "Dereva amekuchukua." : "Abiria amethibitisha kuwa safari imekamilika.",
+        url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + tripId
+      });
+      return json({ success: true, message: next === "picked_up" ? "Umemchukua abiria." : next === "completed" ? "Safari imekamilika." : "Ombi la safari limeghairiwa." });
+    }
+
     if (action === "rider_open_deliveries") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
@@ -498,11 +698,13 @@ Deno.serve(async (req) => {
       if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
         return json({ success: false, error: "Turn on your availability to see delivery requests." }, 403);
       }
-      const { data, error } = await admin.from("ione_sokoni_deliveries")
-        .select("id,created_at")
-        .eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100);
-      if (error) return json({ success: false, error: "Could not load delivery requests." }, 500);
-      return json({ success: true, deliveries: data || [] });
+      const [{ data, error }, passengerTrips] = await Promise.all([
+        admin.from("ione_sokoni_deliveries").select("id,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
+        admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status")
+          .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100)
+      ]);
+      if (error || passengerTrips.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
+      return json({ success: true, deliveries: data || [], passenger_trips: passengerTrips.data || [] });
     }
 
     if (action === "accept_delivery") {
@@ -712,13 +914,15 @@ Deno.serve(async (req) => {
         }
         const riderApplications = await Promise.all((riderAppsResult.data || []).map(async (application: any) => {
           let identityDocumentUrl = null;
+          let profilePhotoUrl = null;
+          if (application.profile_path) profilePhotoUrl = admin.storage.from("ione-sokoni-rider-profiles").getPublicUrl(application.profile_path).data?.publicUrl || null;
           if (application.identity_document_path) {
             const signed = await admin.storage.from("ione-sokoni-rider-documents")
               .createSignedUrl(application.identity_document_path, 600);
             if (!signed.error) identityDocumentUrl = signed.data.signedUrl;
           }
           const { identity_document_path: _privatePath, ...safeApplication } = application;
-          return { ...safeApplication, identity_document_url: identityDocumentUrl };
+          return { ...safeApplication, identity_document_url: identityDocumentUrl, profile_photo_url: profilePhotoUrl };
         }));
         return json({
           success: true,
@@ -761,6 +965,7 @@ Deno.serve(async (req) => {
         }
         const riderWrite = await admin.from("ione_sokoni_riders").upsert({
           user_id: application.user_id, rider_name: application.rider_name, phone_number: application.phone_number,
+          profile_path: application.profile_path || null,
           status: "active", available: false, verified_at: now, updated_at: now
         }, { onConflict: "user_id" }).select("id").single();
         if (riderWrite.error) {
