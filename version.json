@@ -1,5 +1,5 @@
 {
-  "version": "1.0.183",
-  "message": "Keep expert credentials inside Authority Press and open Client Info without cover animation",
+  "version": "1.0.184",
+  "message": "Speed up Client Info and clarify Sokoni seller, buyer and rider panels",
   "force": true
 }
