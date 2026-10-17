@@ -215,7 +215,7 @@
     loadPublicRiders();
     loadRiderStatus();
     if (sokoniRefreshHandle) clearInterval(sokoniRefreshHandle);
-    sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); invoke("rider_heartbeat").catch(() => {}); } }, 20000);
+    sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); invoke("rider_heartbeat").catch(() => {}); if ($("isRiderDashboard").style.display !== "none") loadOpenTrips(); } }, 20000);
   }
   function close() {
     overlay.style.display = "none";
@@ -430,6 +430,7 @@
   let riderWatchId = null;
   let sokoniRefreshHandle = null;
   let currentRiderId = null;
+  let selectedMapTripId = null;
   function openOrderForm(product) {
     selectedOrderProduct = product;
     $("isOrderPanel").style.display = "block";
@@ -628,7 +629,8 @@
   }
   function renderDeliveryMap(trip, isRider) {
     const map = $("isLiveMap");
-    if (!trip) { map.style.display = "none"; map.replaceChildren(); return; }
+    if (!trip) { selectedMapTripId = null; map.style.display = "none"; map.replaceChildren(); return; }
+    selectedMapTripId = trip.id;
     const hasLive = Number.isFinite(Number(trip.rider_lat)) && Number.isFinite(Number(trip.rider_lng)) && !trip.location_stale;
     const lat = hasLive ? Number(trip.rider_lat) : (trip.status === "picked_up" ? Number(trip.dropoff_lat) : Number(trip.pickup_lat));
     const lng = hasLive ? Number(trip.rider_lng) : (trip.status === "picked_up" ? Number(trip.dropoff_lng) : Number(trip.pickup_lng));
@@ -696,6 +698,10 @@
         }
         box.appendChild(row);
       });
+      if (selectedMapTripId) {
+        const current = trips.find((trip) => trip.id === selectedMapTripId);
+        if (current) renderDeliveryMap(current, current.is_rider);
+      }
     } catch (e) { box.textContent = e.message || "Safari hazipatikani."; }
   }
   function startRiderGps(trip) {
