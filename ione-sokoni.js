@@ -1426,6 +1426,12 @@
     const tile = document.getElementById("openSokoni");
     if (tile) tile.addEventListener("click", open);
     installAuthorityDashboard();
+    try {
+      if (new URLSearchParams(window.location.search).get("ionePushDestination") === "sokoni") {
+        window.history.replaceState({}, "", window.location.pathname + window.location.hash);
+        window.setTimeout(open, 350);
+      }
+    } catch (_) {}
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wireTile, { once: true });
   else wireTile();
