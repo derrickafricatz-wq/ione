@@ -1,5 +1,5 @@
 {
-  "version": "1.0.174",
-  "message": "Add Authority Press Company Recovery Vault",
+  "version": "1.0.175",
+  "message": "Add isolated Sokoni vendor onboarding and Authority dashboard",
   "force": true
 }
