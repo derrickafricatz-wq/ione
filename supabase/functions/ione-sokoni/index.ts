@@ -613,7 +613,7 @@ Deno.serve(async (req) => {
       [...(buyer.data || []), ...(seller.data || []), ...(rider.data || [])].forEach((row: any) => map.set(row.id, row));
       const nowMs = Date.now();
       const deliveries = [...map.values()].map((d: any) => {
-        const fresh = !!d.location_updated_at && nowMs - Date.parse(d.location_updated_at) <= 120000;
+        const fresh = ["accepted", "picked_up"].includes(d.status) && !!d.location_updated_at && nowMs - Date.parse(d.location_updated_at) <= 120000;
         return {
           id: d.id, order_id: d.order_id, is_buyer: d.buyer_user_id === user.id, is_seller: d.seller_user_id === user.id,
           is_rider: d.rider_user_id === user.id, rider_assigned: !!d.rider_user_id,
