@@ -81,8 +81,8 @@
   function close() { if (root) { root.style.display = "none"; root.setAttribute("aria-hidden", "true"); } document.body.style.overflow = ""; }
   function open() { ensureOverlay().style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh(); }
   async function invoke(action, extra = {}) {
-    if (!window.heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
-    const result = await window.heavensSupabase.functions.invoke("ione-expert", { body: { action, ...extra } });
+    if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
+    const result = await heavensSupabase.functions.invoke("ione-expert", { body: { action, ...extra } });
     if (result.error) {
       let message = result.data?.error || result.error.message || "Request failed.";
       try { const payload = await result.error.context?.clone?.().json(); message = payload?.error || payload?.message || message; } catch (_) {}
@@ -126,12 +126,12 @@
       if (file.size > 5 * 1024 * 1024) throw new Error("File must be 5 MB or smaller.");
       const allowed = ["image/jpeg","image/png","image/webp","application/pdf"];
       if (!allowed.includes(file.type)) throw new Error("Use PDF, JPG, PNG or WEBP.");
-      const session = await window.heavensSupabase.auth.getSession();
+      const session = await heavensSupabase.auth.getSession();
       const userId = session.data?.session?.user?.id;
       if (!userId) throw new Error("Sign in again before applying.");
       const ext = ({ "image/jpeg":"jpg", "image/png":"png", "image/webp":"webp", "application/pdf":"pdf" })[file.type];
       path = userId + "/" + ((crypto.randomUUID && crypto.randomUUID()) || (Date.now() + "-" + Math.random().toString(36).slice(2))) + "." + ext;
-      const upload = await window.heavensSupabase.storage.from("ione-expert-credentials").upload(path, file, { contentType: file.type, upsert: false });
+      const upload = await heavensSupabase.storage.from("ione-expert-credentials").upload(path, file, { contentType: file.type, upsert: false });
       if (upload.error) throw new Error("Private credential upload failed. Please retry.");
       const result = await invoke("apply", {
         full_name: $("ioneExpertFullName", root).value.trim(),
@@ -142,7 +142,7 @@
       });
       status("ioneExpertApplicationStatus", result.message || "Application sent."); $("ioneExpertApplyForm", root).reset(); await refresh();
     } catch (error) {
-      if (path) try { await window.heavensSupabase.storage.from("ione-expert-credentials").remove([path]); } catch (_) {}
+      if (path) try { await heavensSupabase.storage.from("ione-expert-credentials").remove([path]); } catch (_) {}
       status("ioneExpertApplicationStatus", error.message || "Application failed.", true);
     } finally { button.disabled = false; }
   }
