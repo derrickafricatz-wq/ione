@@ -402,6 +402,24 @@ Deno.serve(async (req) => {
       return json({ success: true, available: saved.data.available, message: available ? "You are now available for Boda Yangu requests." : "You are now off duty." });
     }
 
+    if (action === "rider_heartbeat") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const now = new Date().toISOString();
+      const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available")
+        .eq("user_id", user.id).maybeSingle();
+      if (error || !rider || rider.status !== "active") return json({ success: false, error: "Verified rider profile not found." }, 403);
+      if (!rider.available) return json({ success: true, available: false });
+      const active = await admin.from("ione_sokoni_deliveries").select("id")
+        .eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]).limit(1);
+      if (active.error) return json({ success: false, error: "Could not check your active trip." }, 500);
+      const update = await admin.from("ione_sokoni_riders").update({
+        last_seen_at: now, updated_at: now
+      }).eq("id", rider.id).eq("available", true);
+      if (update.error) return json({ success: false, error: "Could not refresh availability." }, 500);
+      return json({ success: true, available: true, has_active_trip: !!active.data?.length, last_seen_at: now });
+    }
+
     if (action === "public_riders") {
       const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data, error } = await admin.from("ione_sokoni_riders")
