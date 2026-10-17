@@ -25,3 +25,8 @@ jobs:
           node-version: 20
       - name: Run Sokoni isolation and regression checks
         run: node tests/sokoni-checks.cjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check the Sokoni Edge Function
+        run: deno check supabase/functions/ione-sokoni/index.ts
