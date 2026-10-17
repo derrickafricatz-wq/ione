@@ -348,6 +348,7 @@ Deno.serve(async (req) => {
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const name = String(body?.rider_name || "").trim().replace(/\s+/g, " ");
       const phone = normalizeTanzaniaPhone(body?.phone_number);
+      const profilePath = String(body?.profile_path || "").trim();
       const documentType = String(body?.identity_document_type || "").trim();
       const documentPath = String(body?.identity_document_path || "").trim();
       const plate = String(body?.motorcycle_plate || "").trim().toUpperCase().replace(/\s+/g, " ");
@@ -358,6 +359,15 @@ Deno.serve(async (req) => {
           !allowedDocumentTypes.includes(documentType) || plate.length < 4 || plate.length > 24 ||
           groupName.length < 2 || groupName.length > 140 || !validPhone(chairmanPhone)) {
         return json({ success: false, error: "Enter your full name, valid phone numbers, one identity document, motorcycle plate and rider group details." }, 400);
+      }
+      const profileParts = profilePath.split("/");
+      if (profileParts.length !== 2 || profileParts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(profileParts[1]) ||
+          !/\.(jpg|png|webp)$/i.test(profileParts[1])) {
+        return json({ success: false, error: "The rider profile photo is invalid. Please upload it again." }, 400);
+      }
+      const profileListed = await admin.storage.from("ione-sokoni-rider-profiles").list(user.id, { search: profileParts[1], limit: 20 });
+      if (profileListed.error || !(profileListed.data || []).some((item: any) => item.name === profileParts[1])) {
+        return json({ success: false, error: "The rider profile photo could not be verified. Upload it again." }, 400);
       }
       const pathParts = documentPath.split("/");
       if (pathParts.length !== 2 || pathParts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(pathParts[1]) ||
@@ -375,7 +385,7 @@ Deno.serve(async (req) => {
       if (pending) return json({ success: true, already_pending: true, message: "Your rider application is already waiting for Authority Press." });
       const result = await admin.from("ione_sokoni_rider_applications").insert({
         user_id: user.id, rider_name: name, phone_number: phone, identity_document_type: documentType,
-        identity_document_path: documentPath, motorcycle_plate: plate, rider_group_name: groupName,
+        identity_document_path: documentPath, profile_path: profilePath, motorcycle_plate: plate, rider_group_name: groupName,
         chairman_phone: chairmanPhone, status: "pending"
       }).select("id,status,created_at").single();
       if (result.error) return json({ success: false, error: "Could not submit the rider application. Please retry." }, 500);
@@ -451,10 +461,14 @@ Deno.serve(async (req) => {
     if (action === "public_riders") {
       const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data, error } = await admin.from("ione_sokoni_riders")
-        .select("id,rider_name").eq("status", "active").eq("available", true).gt("last_seen_at", freshSince)
+        .select("id,rider_name,profile_path").eq("status", "active").eq("available", true).gt("last_seen_at", freshSince)
         .order("last_seen_at", { ascending: false }).limit(100);
       if (error) return json({ success: false, error: "Could not load the available rider board." }, 500);
-      return json({ success: true, riders: data || [] });
+      const riders = (data || []).map((rider: any) => ({
+        id: rider.id, rider_name: rider.rider_name,
+        profile_url: rider.profile_path ? admin.storage.from("ione-sokoni-rider-profiles").getPublicUrl(rider.profile_path).data?.publicUrl || null : null
+      }));
+      return json({ success: true, riders });
     }
 
     if (action === "request_delivery") {
@@ -712,13 +726,15 @@ Deno.serve(async (req) => {
         }
         const riderApplications = await Promise.all((riderAppsResult.data || []).map(async (application: any) => {
           let identityDocumentUrl = null;
+          let profilePhotoUrl = null;
+          if (application.profile_path) profilePhotoUrl = admin.storage.from("ione-sokoni-rider-profiles").getPublicUrl(application.profile_path).data?.publicUrl || null;
           if (application.identity_document_path) {
             const signed = await admin.storage.from("ione-sokoni-rider-documents")
               .createSignedUrl(application.identity_document_path, 600);
             if (!signed.error) identityDocumentUrl = signed.data.signedUrl;
           }
           const { identity_document_path: _privatePath, ...safeApplication } = application;
-          return { ...safeApplication, identity_document_url: identityDocumentUrl };
+          return { ...safeApplication, identity_document_url: identityDocumentUrl, profile_photo_url: profilePhotoUrl };
         }));
         return json({
           success: true,
@@ -761,6 +777,7 @@ Deno.serve(async (req) => {
         }
         const riderWrite = await admin.from("ione_sokoni_riders").upsert({
           user_id: application.user_id, rider_name: application.rider_name, phone_number: application.phone_number,
+          profile_path: application.profile_path || null,
           status: "active", available: false, verified_at: now, updated_at: now
         }, { onConflict: "user_id" }).select("id").single();
         if (riderWrite.error) {
