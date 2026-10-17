@@ -273,6 +273,7 @@
       const observer = new MutationObserver(() => {
         if (panel.getAttribute("aria-hidden") === "false" || getComputedStyle(panel).display !== "none") {
           ensureAuthorityPanel();
+          loadAuthority();
         }
       });
       observer.observe(panel, { attributes: true, attributeFilter: ["aria-hidden", "style"] });
