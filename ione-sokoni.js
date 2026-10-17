@@ -104,6 +104,15 @@
       <section class="is-card" id="isSellerTools" style="display:none">
         <h2>Bidhaa zangu</h2>
         <p class="is-muted">Weka picha halisi ya bidhaa, bei, kipimo na kiasi kilichopo. Orodha itaonekana kwa wanunuzi baada ya kuhifadhi.</p>
+        <h3>Mahali pa kuchukulia bidhaa</h3>
+        <p class="is-muted">Anwani na eneo hili litaonekana tu kwenye ombi la Boda Yangu linalohusiana na oda.</p>
+        <form class="is-form" id="isPickupForm">
+          <div><label for="isPickupAddress">Anwani ya kuchukulia</label><input id="isPickupAddress" maxlength="240" required placeholder="Jina la soko, mtaa au alama ya karibu"></div>
+          <button class="is-button" type="button" id="isPickupGps">Tumia eneo langu sasa</button>
+          <div class="is-muted" id="isPickupCoordinates">Eneo halijachaguliwa.</div>
+          <button class="is-button" type="submit">Hifadhi eneo la kuchukulia</button>
+        </form>
+        <div class="is-status" id="isPickupStatus" role="status" aria-live="polite"></div>
         <form class="is-form" id="isProductForm">
           <div><label for="isProductName">Jina la bidhaa</label><input id="isProductName" maxlength="140" required placeholder="Mfano: Nyanya"></div>
           <div><label for="isProductPhoto">Picha ya bidhaa (JPG, PNG au WebP; hadi MB 5)</label><input id="isProductPhoto" type="file" accept="image/jpeg,image/png,image/webp"></div>
@@ -141,6 +150,12 @@
           <div><label for="isBuyerPhone">Namba ya simu</label><input id="isBuyerPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
           <div><label for="isOrderQuantity">Kiasi unachohitaji</label><input id="isOrderQuantity" type="number" min="0.001" step="0.001" value="1" required></div>
           <div><label for="isOrderNote">Maelezo ya ziada (si lazima)</label><input id="isOrderNote" maxlength="500" placeholder="Mfano: rangi, ukubwa au muda wa kuchukua"></div>
+          <label style="display:flex;align-items:center;gap:10px"><input id="isWantsDelivery" type="checkbox" style="width:20px;min-height:20px"> Nahitaji bodaboda kuleta bidhaa</label>
+          <div id="isDeliveryDestinationFields" style="display:none">
+            <label for="isDeliveryAddress">Anwani ya kupeleka</label><input id="isDeliveryAddress" maxlength="240" placeholder="Mtaa, eneo na alama ya karibu">
+            <button class="is-button" type="button" id="isBuyerGps">Tumia GPS yangu kwa eneo la kupeleka</button>
+            <div class="is-muted" id="isBuyerCoordinates">Eneo la kupeleka halijachaguliwa.</div>
+          </div>
           <button class="is-button primary" type="submit" id="isOrderSubmit">Tuma ombi kwa muuzaji</button>
           <button class="is-button" type="button" id="isOrderCancel">Ghairi</button>
         </form>
@@ -151,6 +166,32 @@
         <p class="is-muted">Oda ulizotuma na hali yake zitaonekana hapa.</p>
         <button class="is-button" type="button" id="isRefreshBuyerOrders">Sasisha oda zangu</button>
         <div class="is-vendors" id="isBuyerOrders"><p class="is-muted">Oda zako zitaonekana hapa.</p></div>
+      </section>
+      <section class="is-card">
+        <h2>Boda Yangu</h2>
+        <p class="is-muted">Waendesha bodaboda huanza kupokea safari baada ya kuthibitishwa na Authority Press. Ada ya safari itaonyeshwa tofauti na bei ya bidhaa, na muuzaji pamoja na mnunuzi lazima waikubali kabla ya kuchukua bidhaa.</p>
+        <button class="is-button" type="button" id="isRefreshRiders">Angalia bodaboda waliopo</button>
+        <div class="is-vendors" id="isPublicRiders"><p class="is-muted">Orodha ya bodaboda itasasishwa hapa.</p></div>
+        <h3 style="margin-top:22px">Jiunge kama dereva wa bodaboda</h3>
+        <p class="is-muted">Jaza jina na namba ya simu pekee. Authority Press itathibitisha maombi yako.</p>
+        <form class="is-form" id="isRiderForm">
+          <div><label for="isRiderName">Jina lako</label><input id="isRiderName" maxlength="120" required placeholder="Andika jina lako"></div>
+          <div><label for="isRiderPhone">Namba ya simu</label><input id="isRiderPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
+          <button class="is-button primary" type="submit" id="isRiderSubmit">Tuma ombi la bodaboda</button>
+        </form>
+        <div class="is-status" id="isRiderApplyStatus" role="status" aria-live="polite"></div>
+        <div id="isRiderDashboard" style="display:none;margin-top:16px">
+          <h3>Eneo la dereva</h3>
+          <div class="is-status" id="isRiderStatus" role="status" aria-live="polite"></div>
+          <button class="is-button" type="button" id="isRiderAvailability">Washa upatikanaji</button>
+          <button class="is-button" type="button" id="isRefreshOpenTrips">Sasisha maombi ya safari</button>
+          <div class="is-vendors" id="isOpenTrips"></div>
+        </div>
+        <h3 style="margin-top:22px">Safari zangu</h3>
+        <button class="is-button" type="button" id="isRefreshDeliveries">Sasisha safari</button>
+        <div class="is-vendors" id="isMyDeliveries"><p class="is-muted">Safari ulizohusika nazo zitaonekana hapa.</p></div>
+        <div id="isLiveMap" style="display:none;width:100%;height:300px;border-radius:14px;overflow:hidden;margin-top:14px;background:#dce8df"></div>
+        <div class="is-status" id="isMapStatus" role="status" aria-live="polite"></div>
       </section>
       <p class="is-footer">I|ONE Sokoni • Soko la karibu, kwa uwazi na uaminifu.</p>
     </main>`;
