@@ -105,9 +105,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v262/);
+assert.match(sw, /ione-app-v263/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.197$/);
+assert.match(version.version, /^1\.0\.198$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
@@ -130,3 +130,7 @@ assert.match(edge, /Passenger trip push dispatch/);
 assert.match(edge, /Keep accepted passenger negotiation in the central board/);
 assert.match(expertSource, /ioneExpertAuthorityApplications/);
 console.log("PASS: passenger ride requests, fare negotiation, expert moderation, official advice and updated PWA versioning");
+
+assert.match(moduleSource, /textContent = "Piga Abiria"/);
+assert.match(moduleSource, /trip\.status === "picked_up"[\s\S]*?textContent = "Imekamilika"/);
+console.log("PASS: passenger rider call and trip-completion controls are present");
