@@ -61,6 +61,11 @@ assert.match(edge, /myPassengerResult/);
 assert.match(edge, /fare_proposed_tzs,fare_proposed_by,fare_agreed/);
 assert.match(moduleSource, /Safari ya abiria inayoendelea/);
 assert.match(moduleSource, /Kubali nauli ya abiria/);
+assert.match(moduleSource, /Niko tayari kumchukua abiria/);
+assert.match(moduleSource, /is-boda-section/);
+assert.match(moduleSource, /rider_ready: "Dereva yuko tayari kumchukua"/);
+assert.match(edge, /next === "rider_ready"/);
+assert.match(edge, /"rider_ready", "picked_up"/);
 assert.match(moduleSource, /Replace the visible board only after a successful refresh/);
 assert.match(edge, /access_payment_confirmed/);
 assert.match(moduleSource, /id="isRiderDashboard"/);
@@ -90,9 +95,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v254/);
+assert.match(sw, /ione-app-v255/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.189$/);
+assert.match(version.version, /^1\.0\.190$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
