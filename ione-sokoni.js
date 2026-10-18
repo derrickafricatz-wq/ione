@@ -991,7 +991,7 @@
         row.append(title, status);
         if (trip.rider_name) {
           const rider = document.createElement("p"); rider.textContent = "Dereva: " + trip.rider_name; row.appendChild(rider);
-          if (trip.is_passenger && trip.rider_phone && ["accepted","fare_proposed","fare_countered","fare_agreed","picked_up"].includes(trip.status)) {
+          if (trip.is_passenger && trip.rider_phone && ["accepted","fare_proposed","fare_countered","fare_agreed","rider_ready","picked_up"].includes(trip.status)) {
             const call = document.createElement("a"); call.className = "is-button"; call.href = "tel:" + String(trip.rider_phone).replace(/[^+0-9]/g, ""); call.textContent = "Piga simu kwa dereva"; call.style.display = "inline-flex"; call.style.textDecoration = "none"; row.appendChild(call);
           }
         }
@@ -1018,6 +1018,12 @@
           row.appendChild(agree);
         }
         if (trip.is_rider && trip.status === "fare_agreed") {
+          const ready = document.createElement("button"); ready.type = "button"; ready.className = "is-button primary"; ready.textContent = "Niko tayari kumchukua abiria";
+          ready.addEventListener("click", async () => { ready.disabled = true; try { const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "rider_ready" }); setStatus("isPassengerTripStatus", result.message); await loadPassengerTrips(); } catch (e) { setStatus("isPassengerTripStatus", e.message || "Imeshindikana kumjulisha abiria.", true); ready.disabled = false; } });
+          row.appendChild(ready);
+        }
+        if (trip.is_rider && trip.status === "rider_ready") {
+          const readyNote = document.createElement("p"); readyNote.textContent = "Abiria amearifiwa kuwa uko tayari kumchukua."; row.appendChild(readyNote);
           const pickup = document.createElement("button"); pickup.type = "button"; pickup.className = "is-button primary"; pickup.textContent = "Nimemchukua abiria";
           pickup.addEventListener("click", async () => { pickup.disabled = true; try { const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "picked_up" }); setStatus("isPassengerTripStatus", result.message); await loadPassengerTrips(); } catch (e) { setStatus("isPassengerTripStatus", e.message || "Hali haikubadilika.", true); pickup.disabled = false; } });
           row.appendChild(pickup);
