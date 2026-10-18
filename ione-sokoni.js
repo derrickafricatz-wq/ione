@@ -1070,23 +1070,28 @@
         renderDeliveryMap(null, false); return;
       }
       trips.forEach((trip) => {
-        const row = document.createElement("article"); row.className = "is-vendor";
+        const row = document.createElement("article"); row.className = "is-vendor"; row.dataset.deliveryId = trip.id;
         const title = document.createElement("strong"); title.textContent = "Boda Yangu • " + (trip.status === "accepted" ? (trip.route_accepted ? "Dereva amekubali safari" : "Inasubiri makubaliano ya ada") : ({requested:"Inasubiri bodaboda",picked_up:"Bidhaa imechukuliwa",delivered:"Imefikishwa",completed:"Safari imekamilika",cancelled:"Safari imeghairiwa"})[trip.status] || trip.status);
         const fee = document.createElement("small"); fee.textContent = "Ada ya safari: " + (trip.delivery_fee_tzs == null ? "Bado haijawekwa" : "TZS " + Number(trip.delivery_fee_tzs).toLocaleString("sw-TZ")) + " • Hali ya ada: " + (trip.buyer_fee_confirmed && trip.seller_fee_confirmed ? (trip.route_accepted ? "Imekubaliwa na wote • Dereva ameanza safari" : "Imekubaliwa na wote • Dereva anasubiri kukubali safari") : "Inasubiri makubaliano");
         row.append(title, fee);
+        if (trip.is_rider && trip.seller_phone && ["accepted","picked_up"].includes(trip.status)) { const callSeller=document.createElement("a"); callSeller.className="is-button"; callSeller.href="tel:"+String(trip.seller_phone).replace(/[^+0-9]/g,""); callSeller.textContent="Piga simu kwa Mama Sokoni"; row.appendChild(callSeller); }
         if (trip.status === "accepted" && trip.is_rider && trip.delivery_fee_tzs == null) {
           const feeInput = document.createElement("input"); feeInput.type="number"; feeInput.min="0"; feeInput.step="1"; feeInput.placeholder="Ada ya safari kwa TZS"; feeInput.setAttribute("aria-label","Ada ya safari kwa TZS");
           const propose = document.createElement("button"); propose.type="button"; propose.className="is-button"; propose.textContent="Pendekeza ada";
           propose.addEventListener("click", async()=>{ propose.disabled=true; try { await invoke("set_delivery_fee",{delivery_id:trip.id,delivery_fee_tzs:Number(feeInput.value)}); await loadMyDeliveries(); } catch(e){setStatus("isMapStatus",e.message,true);propose.disabled=false;} });
           row.append(feeInput,propose);
         }
-        if (trip.status === "accepted" && (trip.is_buyer || trip.is_seller) && trip.delivery_fee_tzs != null) {
+        if (trip.status === "accepted" && trip.is_buyer && trip.delivery_fee_tzs != null && !trip.buyer_fee_confirmed && trip.seller_fee_confirmed) {
           const alreadyConfirmed = trip.is_buyer ? trip.buyer_fee_confirmed : trip.seller_fee_confirmed;
           if (alreadyConfirmed) { const confirmed = document.createElement("small"); confirmed.textContent = "Umeshakubali ada ya safari."; row.appendChild(confirmed); }
-          else { const confirm = document.createElement("button"); confirm.type="button"; confirm.className="is-button primary"; confirm.textContent="Kubali ada ya safari";
+          else { const confirm = document.createElement("button"); confirm.type="button"; confirm.className="is-button primary"; confirm.textContent="Kubali ada ya dereva";
             confirm.addEventListener("click",async()=>{confirm.disabled=true;try{const result=await invoke("confirm_delivery_fee",{delivery_id:trip.id});setStatus("isMapStatus",result.message || "Ada imethibitishwa.");await loadMyDeliveries();}catch(e){setStatus("isMapStatus",e.message,true);confirm.disabled=false;}});
             row.appendChild(confirm); }
+            const counterInput=document.createElement("input");counterInput.type="number";counterInput.min="0";counterInput.max="10000000";counterInput.step="100";counterInput.placeholder="Pendekeza ada nyingine (TZS)";
+            const counter=document.createElement("button");counter.type="button";counter.className="is-button";counter.textContent="Pendekeza ada nyingine";
+            counter.addEventListener("click",async()=>{const value=Number(counterInput.value);if(!Number.isSafeInteger(value)||value<0||value>10000000){setStatus("isMapStatus","Weka ada halali kwa TZS.",true);return;}counter.disabled=true;try{const result=await invoke("counter_delivery_fee",{delivery_id:trip.id,delivery_fee_tzs:value});setStatus("isMapStatus",result.message||"Pendekezo limetumwa.");await loadMyDeliveries();}catch(e){setStatus("isMapStatus",e.message,true);counter.disabled=false;}});row.append(counterInput,counter);
         }
+        if(trip.status==="accepted"&&trip.is_rider&&trip.delivery_fee_tzs!=null&&trip.buyer_fee_confirmed&&!trip.seller_fee_confirmed){const agree=document.createElement("button");agree.type="button";agree.className="is-button primary";agree.textContent="Kubali pendekezo la mnunuzi";agree.addEventListener("click",async()=>{agree.disabled=true;try{await invoke("confirm_delivery_fee",{delivery_id:trip.id});await loadMyDeliveries();}catch(e){setStatus("isMapStatus",e.message,true);agree.disabled=false;}});row.appendChild(agree);}
         if (trip.status === "accepted" && trip.is_rider && trip.buyer_fee_confirmed && trip.seller_fee_confirmed && !trip.route_accepted) {
           const acceptRoute=document.createElement("button");acceptRoute.type="button";acceptRoute.className="is-button primary";acceptRoute.textContent="Kubali safari na uanze";
           acceptRoute.addEventListener("click",async()=>{acceptRoute.disabled=true;try{const result=await invoke("accept_delivery_route",{delivery_id:trip.id});setStatus("isMapStatus",result.message || "Safari imekubaliwa.");await Promise.all([loadMyDeliveries(),loadRiderStatus(),loadOpenTrips()]);}catch(e){setStatus("isMapStatus",e.message,true);acceptRoute.disabled=false;}});
@@ -1673,9 +1678,11 @@
     if (tile) tile.addEventListener("click", open);
     installAuthorityDashboard();
     try {
-      if (new URLSearchParams(window.location.search).get("ionePushDestination") === "sokoni") {
+      const pushParams=new URLSearchParams(window.location.search);
+      if (pushParams.get("ionePushDestination") === "sokoni") {
+        window.__ioneSokoniTargetDeliveryId=pushParams.get("ioneDeliveryId")||null;
         const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.delete("ionePushDestination");
+        currentUrl.searchParams.delete("ionePushDestination"); currentUrl.searchParams.delete("ioneDeliveryId");
         window.history.replaceState({}, "", currentUrl.pathname + currentUrl.search + currentUrl.hash);
         window.setTimeout(open, 350);
       }
