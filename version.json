@@ -1,5 +1,5 @@
 {
-  "version": "1.0.191",
-  "message": "Separate Sokoni panels, show rider fare counteroffers, and notify passenger when rider is ready",
+  "version": "1.0.192",
+  "message": "Preview rider identity documents inside Authority Press and reset test rider registration",
   "force": true
 }
