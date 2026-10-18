@@ -52,7 +52,9 @@
   .is-product p{font-size:12px;color:#b7d1c0;line-height:1.5;margin:5px 0}
   .is-product-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
   .is-product-actions button{border:1px solid #477d61;border-radius:8px;background:#10271c;color:#effff4;padding:8px 10px;font-weight:800}
-
+  .is-trip-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #274d36}
+  .is-trip-actions .is-button{display:inline-flex;align-items:center;justify-content:center;flex:1 1 150px;min-width:0;text-align:center;margin:0;white-space:normal;line-height:1.3}
+  .is-trip-actions .is-button.primary{background:#245b3b;border-color:#5e9a70}
   .is-vendor strong{display:block}
   .is-vendor small{color:#b7d1c0}
   .is-footer{font-size:11px;color:#91b39d;text-align:center;margin:24px 0 8px;line-height:1.6}
@@ -873,7 +875,13 @@ if (order.status === "new" || order.status === "accepted") {
       const riderTripAlertsReady = window.__ioneSokoniRiderTripAlertsReady === true;
       passengerTrips.forEach((trip) => {
         if (riderTripAlertsReady && !seenPassengerRequests[trip.id] && typeof Notification !== "undefined" && Notification.permission === "granted") {
-          try { new Notification("I|ONE Boda Yangu • Abiria mpya", { body: trip.pickup_area + " → " + trip.destination_area }); } catch (_) {}
+          const notification = { body: trip.pickup_area + " → " + trip.destination_area + ". Fungua Sokoni kuona ombi.", tag: "ione-passenger-trip-" + trip.id, renotify: false };
+          if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+            navigator.serviceWorker.ready.then((registration) => registration.showNotification("I|ONE Boda Yangu • Abiria mpya", notification))
+              .catch(() => { try { new Notification("I|ONE Boda Yangu • Abiria mpya", notification); } catch (_) {} });
+          } else {
+            try { new Notification("I|ONE Boda Yangu • Abiria mpya", notification); } catch (_) {}
+          }
         }
         seenPassengerRequests[trip.id] = true;
       });
@@ -889,7 +897,8 @@ if (order.status === "new" || order.status === "accepted") {
         const pickup = document.createElement("small"); pickup.textContent = "Chukua: " + (trip.pickup_location || "Thibitisha kwa simu") + " • Peleka: " + (trip.dropoff_location || "Eneo la mnunuzi");
         const date = document.createElement("small"); date.textContent = "Safari mpya • " + new Date(trip.created_at).toLocaleString("sw-TZ");
         row.append(title, details, pickup, date);
-        const addCall = (label, phone) => { if (!phone) return; const call = document.createElement("a"); call.className = "is-button"; call.href = "tel:" + String(phone).replace(/[^+0-9]/g, ""); call.textContent = label; call.style.display = "inline-flex"; call.style.textDecoration = "none"; row.appendChild(call); };
+        const actions = document.createElement("div"); actions.className = "is-trip-actions";
+        const addCall = (label, phone) => { if (!phone) return; const call = document.createElement("a"); call.className = "is-button"; call.href = "tel:" + String(phone).replace(/[^+0-9]/g, ""); call.textContent = label; call.style.display = "inline-flex"; call.style.textDecoration = "none"; actions.appendChild(call); };
         addCall("Piga simu kwa Mama Sokoni", trip.phone_number);
         addCall("Piga simu kwa mnunuzi", trip.buyer_phone);
         const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Anza Safari";
@@ -898,7 +907,7 @@ if (order.status === "new" || order.status === "accepted") {
           try { const result = await invoke("accept_delivery", { delivery_id: trip.id }); setStatus("isRiderStatus", result.message || "Umeanza safari."); await Promise.all([loadOpenTrips(), loadMyDeliveries(), loadRiderStatus()]); }
           catch (e) { setStatus("isRiderStatus", e.message || "Safari haikuanza.", true); accept.disabled = false; }
         });
-        row.appendChild(accept); box.appendChild(row);
+        actions.appendChild(accept); row.appendChild(actions); box.appendChild(row);
       });
       passengerTrips.forEach((trip) => {
         const row = document.createElement("article"); row.className = "is-vendor";
@@ -977,7 +986,9 @@ if (order.status === "new" || order.status === "accepted") {
     try {
       const data = await invoke("passenger_trip_list");
       box.replaceChildren();
-      const trips = data.trips || [];
+      // This lower panel belongs to the passenger's own trip history. Rider-side
+      // negotiation is shown only in the central open-trip board above.
+      const trips = (data.trips || []).filter((trip) => trip.is_passenger);
       if (!trips.length) { const empty = document.createElement("p"); empty.className = "is-muted"; empty.textContent = "Bado hakuna ombi la safari ya abiria."; box.appendChild(empty); return; }
       const labels = { requested: "Inasubiri dereva", accepted: "Dereva amepatikana • jadilianeni nauli", fare_proposed: "Nauli imependekezwa • jibu", fare_countered: "Nauli imejadiliwa upya • jibu", fare_agreed: "Nauli imekubaliwa • dereva anajiandaa", rider_ready: "Dereva amekubali safari na yuko njiani", picked_up: "Abiria amechukuliwa", completed: "Safari imekamilika", cancelled: "Safari imeghairiwa" };
       trips.forEach((trip) => {
