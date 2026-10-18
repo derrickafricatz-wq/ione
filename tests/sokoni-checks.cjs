@@ -28,9 +28,9 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=5/);
+assert.match(html, /ione-sokoni\\.js\\?v=7/);
 assert.match(html, /ione-expert\.js\?v=1/);
-assert.match(html, /sw\.js\?v=134/);
+assert.match(html, /sw\\.js\\?v=135/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
@@ -50,7 +50,7 @@ assert.match(riderMigration, /ione-sokoni-rider-documents/);
 assert.match(riderMigration, /create policy "Sokoni riders upload own verification documents"/);
 console.log("PASS: private rider identity upload and verification fields");
 
-for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "delete_product", "place_order", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_update_profile", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "confirm_delivery_fee", "accept_delivery_route", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "passenger_trip_request", "passenger_trip_list", "passenger_trip_accept", "passenger_trip_offer_fare", "passenger_trip_agree_fare", "passenger_trip_status", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
+for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "delete_product", "place_order", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_update_profile", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "counter_delivery_fee", "confirm_delivery_fee", "accept_delivery_route", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "passenger_trip_request", "passenger_trip_list", "passenger_trip_accept", "passenger_trip_offer_fare", "passenger_trip_agree_fare", "passenger_trip_status", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
   assert.ok(edge.includes('action === "' + action + '"'), "Missing Edge Function action: " + action);
 }
 assert.match(edge, /validAuthoritySession\(admin, rawSession\)/);
@@ -96,13 +96,15 @@ assert.match(moduleSource, /isRiderIdentityFile/);
 assert.match(moduleSource, /motorcycle_plate/);
 assert.match(moduleSource, /smart-grid #openSokoni\{order:1\}/);
 assert.match(edge, /Reserve this rider first/);
+assert.match(edge, /action===\"counter_delivery_fee\"/);
+assert.match(edge, /deliveryCreated/);
 assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v258/);
+assert.match(sw, /ione-app-v259/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.193$/);
+assert.match(version.version, /^1\\.0\\.194$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
