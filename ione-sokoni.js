@@ -1335,6 +1335,66 @@
   });
 
   // Add a protected Sokoni dashboard inside Authority Press without altering its existing panels.
+  function openRiderIdentityPreview(url, riderName, documentType) {
+    if (!url) return;
+    let modal = document.getElementById("isRiderIdentityPreview");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "isRiderIdentityPreview";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "isRiderIdentityPreviewTitle");
+      modal.style.cssText = "position:fixed;inset:0;z-index:200000;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(12,20,15,.82);";
+      modal.innerHTML = `
+        <section style="display:flex;flex-direction:column;width:min(100%,1000px);height:min(94dvh,900px);background:#fffdfa;border:1px solid #d7c8b8;border-radius:16px;overflow:hidden;box-shadow:0 18px 70px rgba(0,0,0,.35)">
+          <header style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;background:#f8eddf;border-bottom:1px solid #e8d6c2">
+            <div style="min-width:0"><strong id="isRiderIdentityPreviewTitle" style="display:block;color:#3d2b20">Hati ya dereva</strong><small id="isRiderIdentityPreviewSubtitle" style="color:#725b4b">Mwonekano wa faragha ndani ya Authority Press</small></div>
+            <button type="button" id="isRiderIdentityPreviewClose" style="flex:0 0 auto;border:1px solid #b9d4a3;border-radius:9px;padding:10px 13px;background:#e7f2d9;color:#31583a;font-weight:800;cursor:pointer">Funga</button>
+          </header>
+          <div id="isRiderIdentityPreviewBody" style="display:flex;align-items:center;justify-content:center;flex:1;min-height:0;background:#242824;overflow:auto"></div>
+        </section>`;
+      document.body.appendChild(modal);
+      const closePreview = () => {
+        modal.style.display = "none";
+        const body = modal.querySelector("#isRiderIdentityPreviewBody");
+        if (body) body.replaceChildren();
+      };
+      modal.querySelector("#isRiderIdentityPreviewClose").addEventListener("click", closePreview);
+      modal.addEventListener("click", (event) => { if (event.target === modal) closePreview(); });
+      document.addEventListener("keydown", (event) => { if (event.key === "Escape" && modal.style.display !== "none") closePreview(); });
+    }
+    const title = modal.querySelector("#isRiderIdentityPreviewTitle");
+    const subtitle = modal.querySelector("#isRiderIdentityPreviewSubtitle");
+    const body = modal.querySelector("#isRiderIdentityPreviewBody");
+    title.textContent = "Kitambulisho • " + String(riderName || "Dereva");
+    const labels = { national_id: "Kitambulisho cha Taifa", driving_license: "Leseni ya udereva", rider_group_id: "Kitambulisho cha kikundi" };
+    subtitle.textContent = (labels[documentType] || "Hati ya utambulisho") + " • Mwonekano wa faragha ndani ya Authority Press";
+    body.replaceChildren();
+    let extension = "";
+    try { extension = new URL(url, window.location.href).pathname.split(".").pop().toLowerCase(); } catch (_) {}
+    if (extension === "pdf") {
+      const frame = document.createElement("iframe");
+      frame.src = url;
+      frame.title = "PDF ya kitambulisho cha " + String(riderName || "dereva");
+      frame.referrerPolicy = "no-referrer";
+      frame.style.cssText = "width:100%;height:100%;min-height:0;border:0;background:#fff";
+      body.appendChild(frame);
+    } else if (["jpg", "jpeg", "png", "webp"].includes(extension)) {
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = "Kitambulisho cha " + String(riderName || "dereva");
+      image.style.cssText = "display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain";
+      body.appendChild(image);
+    } else {
+      const note = document.createElement("p");
+      note.textContent = "Aina hii ya faili haiwezi kuonyeshwa hapa.";
+      note.style.cssText = "padding:24px;color:#fff";
+      body.appendChild(note);
+    }
+    modal.style.display = "flex";
+    modal.querySelector("#isRiderIdentityPreviewClose").focus();
+  }
+
   function installAuthorityDashboard() {
     const host = document.querySelector("#authorityPressPanel .authority-panel-inner");
     if (!host || $("ioneSokoniAuthoritySection")) return;
@@ -1482,12 +1542,11 @@
         date.textContent = "Tarehe ya ombi: " + new Date(application.created_at).toLocaleString("en-GB");
         row.append(name, status, phone, plate, group, chairman, docType, date);
         if (application.identity_document_url) {
-          const doc = document.createElement("a");
-          doc.href = application.identity_document_url;
-          doc.target = "_blank";
-          doc.rel = "noopener noreferrer";
-          doc.textContent = "Fungua kitambulisho cha faragha";
-          doc.style.cssText = "display:inline-block;margin:6px 0;color:#a54d2b;font-weight:800;overflow-wrap:anywhere";
+          const doc = document.createElement("button");
+          doc.type = "button";
+          doc.textContent = "ANGALIA KITAMBULISHO HAPA";
+          doc.style.cssText = "display:inline-block;margin:6px 0;border:1px solid #b9d4a3;border-radius:9px;padding:10px 13px;background:#e7f2d9;color:#31583a;font-weight:800;cursor:pointer";
+          doc.addEventListener("click", () => openRiderIdentityPreview(application.identity_document_url, application.rider_name, application.identity_document_type));
           row.appendChild(doc);
         } else {
           const missing = document.createElement("p");
