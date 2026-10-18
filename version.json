@@ -1,5 +1,5 @@
 {
-  "version": "1.0.195",
-  "message": "Automatic Sokoni rider dispatch, phone negotiation and one-tap trip completion",
+  "version": "1.0.196",
+  "message": "Passenger trip notifications, single rider negotiation panel, and tidy delivery actions",
   "force": true
 }
