@@ -360,8 +360,8 @@ Deno.serve(async (req) => {
         let deliveryCreated=false,deliveryId:string|null=null;
         if(order.wants_delivery===true&&order.delivery_address&&Number.isFinite(Number(order.dropoff_lat))&&Number.isFinite(Number(order.dropoff_lng))){
           const pickupLocation=String(vendor.pickup_location||"").trim()||"Eneo la kuchukulia litathibitishwa kwa simu";
-          const pickupLat=Number.isFinite(Number(vendor.pickup_lat))?Number(vendor.pickup_lat):null;
-          const pickupLng=Number.isFinite(Number(vendor.pickup_lng))?Number(vendor.pickup_lng):null;
+          const pickupLat=vendor.pickup_lat!==null&&vendor.pickup_lat!==undefined&&vendor.pickup_lat!==""&&Number.isFinite(Number(vendor.pickup_lat))?Number(vendor.pickup_lat):null;
+          const pickupLng=vendor.pickup_lng!==null&&vendor.pickup_lng!==undefined&&vendor.pickup_lng!==""&&Number.isFinite(Number(vendor.pickup_lng))?Number(vendor.pickup_lng):null;
           const created=await admin.from("ione_sokoni_deliveries").insert({order_id:order.id,buyer_user_id:order.buyer_user_id,seller_user_id:order.seller_user_id,vendor_id:order.vendor_id,pickup_location:pickupLocation,pickup_lat:pickupLat,pickup_lng:pickupLng,dropoff_location:order.delivery_address,dropoff_lat:order.dropoff_lat,dropoff_lng:order.dropoff_lng,status:"requested"}).select("id").single();
           if(created.error&&created.error.code!=="23505")console.error("Automatic delivery request failed:",created.error.message);
           let finalDeliveryId=created.data?.id||null;
