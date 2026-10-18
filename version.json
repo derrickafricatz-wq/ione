@@ -1,5 +1,5 @@
 {
-  "version": "1.0.192",
-  "message": "Preview rider identity documents inside Authority Press and reset test rider registration",
+  "version": "1.0.193",
+  "message": "Simplify Sokoni delivery fee agreement, route acceptance and rider completion flow",
   "force": true
 }
