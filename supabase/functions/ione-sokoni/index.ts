@@ -45,18 +45,20 @@ async function sendSokoniPush(admin: any, userId: string, payload: any) {
   try {
     const { data: config, error: configError } = await admin.from("ione_push_config")
       .select("vapid_public_key,vapid_private_key,vapid_subject").eq("id", true).maybeSingle();
-    if (configError || !config?.vapid_public_key || !config?.vapid_private_key) return 0;
+    if (configError || !config?.vapid_public_key || !config?.vapid_private_key) { console.warn("Sokoni push configuration unavailable:", configError?.message || "missing VAPID keys"); return 0; }
     webpush.setVapidDetails(config.vapid_subject || "mailto:notifications@ione.app", config.vapid_public_key, config.vapid_private_key);
     const { data: subscriptions, error } = await admin.from("ione_push_subscriptions")
       .select("id,endpoint,p256dh,auth").eq("user_id", userId).eq("active", true);
-    if (error) return 0;
+    if (error) { console.warn("Sokoni push subscriptions could not be loaded:", error.message); return 0; }
     let delivered = 0;
+    if (!(subscriptions || []).length) console.warn("Sokoni push has no active subscription for user:", userId);
     for (const sub of subscriptions || []) {
       try {
         await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload));
         delivered++;
       } catch (pushError: any) {
         const statusCode = Number(pushError?.statusCode || 0);
+        console.warn("Sokoni push delivery failed:", { user_id: userId, status_code: statusCode, message: String(pushError?.message || pushError).slice(0, 240) });
         if (statusCode === 404 || statusCode === 410) {
           await admin.from("ione_push_subscriptions").update({ active: false, updated_at: new Date().toISOString() }).eq("id", sub.id);
         }
@@ -361,8 +363,7 @@ Deno.serve(async (req) => {
             const created=await admin.from("ione_sokoni_deliveries").insert({order_id:order.id,buyer_user_id:order.buyer_user_id,seller_user_id:order.seller_user_id,vendor_id:order.vendor_id,pickup_location:vendor.pickup_location,pickup_lat:vendor.pickup_lat,pickup_lng:vendor.pickup_lng,dropoff_location:order.delivery_address,dropoff_lat:order.dropoff_lat,dropoff_lng:order.dropoff_lng,status:"requested"}).select("id").single();
             if(created.error&&created.error.code!=="23505")console.error("Automatic delivery request failed:",created.error.message);
             if(created.data?.id){deliveryCreated=true;deliveryId=created.data.id;
-              const freshSince=new Date(Date.now()-180000).toISOString();
-              const {data:riders}=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).gte("last_seen_at",freshSince).limit(100);
+              const {data:riders}=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).limit(100);
               await Promise.allSettled((riders||[]).map((r:any)=>sendSokoniPush(admin,r.user_id,{title:"I|ONE Boda Yangu • Oda mpya ya bidhaa",body:order.product_name+" • "+order.quantity+" "+order.unit_name+". Fungua Sokoni kuona maelezo.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-delivery-"+deliveryId})));
               await sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Mama Sokoni amekubali "+order.product_name+". Ombi la Boda Yangu limetumwa kwa madereva.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-order-status-"+order.id});
             }
@@ -583,10 +584,9 @@ Deno.serve(async (req) => {
 
       // Notify the seller as well as every currently available, recently active verified rider.
       // The rider board remains the source of truth; push is an additional alert.
-      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const [{ data: availableRiders, error: ridersError }, { data: product }] = await Promise.all([
         admin.from("ione_sokoni_riders").select("user_id")
-          .eq("status", "active").eq("available", true).gte("last_seen_at", freshSince).limit(100),
+          .eq("status", "active").eq("access_payment_confirmed", true).gt("access_expires_at", new Date().toISOString()).eq("available", true).limit(100),
         admin.from("ione_sokoni_products").select("product_name").eq("id", order.product_id).maybeSingle()
       ]);
       if (ridersError) console.warn("Could not load available riders for delivery alerts:", ridersError.message);
@@ -603,8 +603,10 @@ Deno.serve(async (req) => {
         body: "Mteja ameomba boda kwa oda ya " + productName + ".",
         url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-delivery-" + created.data.id
       });
-      await Promise.allSettled([...riderAlerts, sellerAlert]);
-      return json({ success: true, delivery: created.data, message: "Ombi la boda limetumwa kwa Mama Sokoni na bodaboda waliopo tayari. Ada ya delivery itaonyeshwa kando na lazima ikubaliwe na pande zote mbili." });
+      const pushResults = await Promise.allSettled([...riderAlerts, sellerAlert]);
+      const riderPushDelivered = pushResults.slice(0, riderAlerts.length).reduce((n: number, r: any) => n + (r.status === "fulfilled" ? Number(r.value || 0) : 0), 0);
+      console.info("Sokoni delivery notification result:", { delivery_id: created.data.id, eligible_riders: (availableRiders || []).length, rider_push_delivered: riderPushDelivered, seller_push_delivered: pushResults[riderAlerts.length]?.status === "fulfilled" ? Number((pushResults[riderAlerts.length] as any).value || 0) : 0 });
+      return json({ success: true, delivery: created.data, notified_riders: riderPushDelivered, eligible_riders: (availableRiders || []).length, message: "Ombi la boda limetumwa kwa Mama Sokoni na bodaboda walioidhinishwa na walio kwenye zamu. Ada ya delivery itaonyeshwa kando na lazima ikubaliwe na pande zote mbili." });
     }
 
     if (action === "passenger_trip_request") {
@@ -773,7 +775,7 @@ Deno.serve(async (req) => {
       ]);
       if(orders.error||vendors.error)return json({success:false,error:"Could not load product details for delivery requests."},500);
       const orderMap=new Map((orders.data||[]).map((o:any)=>[o.id,o])),vendorMap=new Map((vendors.data||[]).map((v:any)=>[v.id,v]));
-      const deliveries=openRows.map((d:any)=>({...d,...(orderMap.get(d.order_id)||{}),...(vendorMap.get(d.vendor_id)||{})}));
+      const deliveries=openRows.map((d:any)=>({ ...d, ...(orderMap.get(d.order_id)||{}), ...(vendorMap.get(d.vendor_id)||{}), id: d.id, order_id: d.order_id, vendor_id: d.vendor_id, created_at: d.created_at }));
       return json({ success: true, deliveries, passenger_trips: passengerTrips });
     }
 
