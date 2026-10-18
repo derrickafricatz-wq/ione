@@ -105,9 +105,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v261/);
+assert.match(sw, /ione-app-v262/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.196$/);
+assert.match(version.version, /^1\.0\.197$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
@@ -119,6 +119,10 @@ assert.match(expertMigration, /ione_expert_replies/);
 assert.match(expertMigration, /ione-expert-credentials/);
 assert.match(expertSource, /openIoneExpert/);
 assert.match(moduleSource, /is-trip-actions/);
+assert.match(moduleSource, /isProductRows/);
+assert.match(moduleSource, /Hifadhi bidhaa zote/);
+assert.doesNotMatch(moduleSource, /Jumla ya bidhaa: TZS/);
+assert.doesNotMatch(edge, /unit_name,total_tzs,buyer_name,buyer_phone/);
 assert.match(moduleSource, /filter\(\(trip\) => trip\.is_passenger\)/);
 assert.match(moduleSource, /registration\.showNotification/);
 assert.match(edge, /delivered_subscriptions: notifiedRiders/);
