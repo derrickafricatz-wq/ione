@@ -894,7 +894,7 @@
       }
       deliveries.forEach((trip) => {
         const row = document.createElement("article"); row.className = "is-vendor";
-        const title = document.createElement("strong"); title.textContent = "Ombi la kupeleka bidhaa ya Sokoni";
+        const title = document.createElement("strong"); title.textContent = (trip.product_name || "Bidhaa ya Sokoni") + " • " + (trip.quantity == null ? "" : trip.quantity + " " + (trip.unit_name || "") + " • ") + (trip.dropoff_location || "Eneo la mnunuzi");
         const date = document.createElement("small"); date.textContent = "Limetumwa: " + new Date(trip.created_at).toLocaleString("sw-TZ");
         const accept = document.createElement("button"); accept.type = "button"; accept.className = "is-button primary"; accept.textContent = "Kubali uwasilishaji";
         accept.addEventListener("click", async () => {
