@@ -357,20 +357,29 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_orders").update({ status: "new", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "accepted");
           return json({ success: false, error: "Stock changed while accepting. Refresh the order and try again." }, 409);
         }
-        let deliveryCreated=false,deliveryId:string|null=null,deliveryNeedsPickup=false;
+        let deliveryCreated=false,deliveryId:string|null=null;
         if(order.wants_delivery===true&&order.delivery_address&&Number.isFinite(Number(order.dropoff_lat))&&Number.isFinite(Number(order.dropoff_lng))){
-          if(vendor.pickup_location&&Number.isFinite(Number(vendor.pickup_lat))&&Number.isFinite(Number(vendor.pickup_lng))){
-            const created=await admin.from("ione_sokoni_deliveries").insert({order_id:order.id,buyer_user_id:order.buyer_user_id,seller_user_id:order.seller_user_id,vendor_id:order.vendor_id,pickup_location:vendor.pickup_location,pickup_lat:vendor.pickup_lat,pickup_lng:vendor.pickup_lng,dropoff_location:order.delivery_address,dropoff_lat:order.dropoff_lat,dropoff_lng:order.dropoff_lng,status:"requested"}).select("id").single();
-            if(created.error&&created.error.code!=="23505")console.error("Automatic delivery request failed:",created.error.message);
-            if(created.data?.id){deliveryCreated=true;deliveryId=created.data.id;
-              const {data:riders}=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).limit(100);
-              await Promise.allSettled((riders||[]).map((r:any)=>sendSokoniPush(admin,r.user_id,{title:"I|ONE Boda Yangu • Oda mpya ya bidhaa",body:order.product_name+" • "+order.quantity+" "+order.unit_name+". Fungua Sokoni kuona maelezo.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-delivery-"+deliveryId})));
-              await sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Mama Sokoni amekubali "+order.product_name+". Ombi la Boda Yangu limetumwa kwa madereva.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-order-status-"+order.id});
-            }
-          }else deliveryNeedsPickup=true;
+          const pickupLocation=String(vendor.pickup_location||"").trim()||"Eneo la kuchukulia litathibitishwa kwa simu";
+          const pickupLat=Number.isFinite(Number(vendor.pickup_lat))?Number(vendor.pickup_lat):null;
+          const pickupLng=Number.isFinite(Number(vendor.pickup_lng))?Number(vendor.pickup_lng):null;
+          const created=await admin.from("ione_sokoni_deliveries").insert({order_id:order.id,buyer_user_id:order.buyer_user_id,seller_user_id:order.seller_user_id,vendor_id:order.vendor_id,pickup_location:pickupLocation,pickup_lat:pickupLat,pickup_lng:pickupLng,dropoff_location:order.delivery_address,dropoff_lat:order.dropoff_lat,dropoff_lng:order.dropoff_lng,status:"requested"}).select("id").single();
+          if(created.error&&created.error.code!=="23505")console.error("Automatic delivery request failed:",created.error.message);
+          let finalDeliveryId=created.data?.id||null;
+          if(!finalDeliveryId&&created.error?.code==="23505"){const prior=await admin.from("ione_sokoni_deliveries").select("id").eq("order_id",order.id).maybeSingle();finalDeliveryId=prior.data?.id||null;}
+          if(finalDeliveryId){
+            deliveryCreated=true;deliveryId=finalDeliveryId;
+            const {data:riders,error:riderQueryError}=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).limit(100);
+            if(riderQueryError)console.warn("Could not load eligible riders after order acceptance:",riderQueryError.message);
+            const pushResults=await Promise.allSettled((riders||[]).map((r:any)=>sendSokoniPush(admin,r.user_id,{title:"I|ONE Boda Yangu • Safari mpya",body:order.product_name+" • "+order.quantity+" "+order.unit_name+" • "+order.delivery_address+". Fungua Sokoni kuona maelezo na kupiga simu.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-delivery-"+deliveryId})));
+            console.info("Automatic delivery alerts after seller acceptance:",{delivery_id:deliveryId,eligible_riders:(riders||[]).length,push_attempts:pushResults.length});
+            await Promise.allSettled([
+              sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Mama Sokoni amekubali "+order.product_name+". Madereva wanaarifiwa moja kwa moja.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-order-status-"+order.id}),
+              sendSokoniPush(admin,order.seller_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Ombi la uwasilishaji limetumwa moja kwa moja kwa madereva wanaopatikana.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-seller-delivery-"+order.id})
+            ]);
+          }
         }
-        if(!deliveryCreated)await sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:deliveryNeedsPickup?"Oda imekubaliwa. Mama Sokoni anahitaji kuhifadhi eneo la kuchukulia bidhaa kabla ya kutuma Boda Yangu.":"Muuzaji amekubali oda yako ya "+order.product_name+".",url:"./?ionePushDestination=sokoni",tag:"ione-sokoni-order-status-"+order.id});
-        return json({success:true,delivery_id:deliveryId,delivery_created:deliveryCreated,message:deliveryCreated?"Oda imekubaliwa. Ombi la Boda Yangu limetumwa kwa madereva waliopo tayari.":deliveryNeedsPickup?"Oda imekubaliwa, lakini Mama Sokoni lazima ahifadhi eneo la kuchukulia bidhaa ili kutuma Boda Yangu.":"Order accepted and stock updated."});
+        if(!deliveryCreated)await sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Oda imekubaliwa, lakini ombi la delivery halikuweza kutengenezwa. Tafadhali wasiliana na Mama Sokoni.",url:"./?ionePushDestination=sokoni",tag:"ione-sokoni-order-status-"+order.id});
+        return json({success:true,delivery_id:deliveryId,delivery_created:deliveryCreated,message:deliveryCreated?"Oda imekubaliwa. Safari imetumwa moja kwa moja kwa madereva walio tayari; hakuna haja ya kuomba boda tena.":"Oda imekubaliwa, lakini ombi la delivery halikuweza kutengenezwa. Wasiliana na I|ONE Support."});
       }
       const update = await admin.from("ione_sokoni_orders").update({ status: nextStatus, updated_at: new Date().toISOString() })
         .eq("id", order.id).eq("status", order.status).select("id").maybeSingle();
@@ -754,13 +763,12 @@ Deno.serve(async (req) => {
     if (action === "rider_open_deliveries") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
-      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
-      if (riderError || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now() || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now() || !rider.available) {
         return json({ success: false, error: "Turn on your Authority-approved, active Boda Yangu access to see trip requests." }, 403);
       }
       const [deliveriesResult, openPassengerResult, myPassengerResult] = await Promise.all([
-        admin.from("ione_sokoni_deliveries").select("id,order_id,vendor_id,dropoff_location,dropoff_lat,dropoff_lng,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
+        admin.from("ione_sokoni_deliveries").select("id,order_id,vendor_id,pickup_location,dropoff_location,dropoff_lat,dropoff_lng,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
         admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
           .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100),
         admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
@@ -770,7 +778,7 @@ Deno.serve(async (req) => {
       const passengerTrips = [...(openPassengerResult.data || []), ...(myPassengerResult.data || [])];
       const openRows=deliveriesResult.data||[], orderIds=[...new Set(openRows.map((d:any)=>d.order_id).filter(Boolean))], vendorIds=[...new Set(openRows.map((d:any)=>d.vendor_id).filter(Boolean))];
       const [orders,vendors]=await Promise.all([
-        orderIds.length?admin.from("ione_sokoni_orders").select("id,product_name,quantity,unit_name,total_tzs").in("id",orderIds):Promise.resolve({data:[],error:null}),
+        orderIds.length?admin.from("ione_sokoni_orders").select("id,product_name,quantity,unit_name,total_tzs,buyer_name,buyer_phone").in("id",orderIds):Promise.resolve({data:[],error:null}),
         vendorIds.length?admin.from("ione_sokoni_vendors").select("id,vendor_name,phone_number").in("id",vendorIds):Promise.resolve({data:[],error:null})
       ]);
       if(orders.error||vendors.error)return json({success:false,error:"Could not load product details for delivery requests."},500);
@@ -783,19 +791,26 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const deliveryId = String(body?.delivery_id || "").trim();
-      const freshSince = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,last_seen_at")
-        .eq("user_id", user.id).maybeSingle();
-      if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.last_seen_at || rider.last_seen_at < freshSince) {
-        return json({ success: false, error: "Only available, verified riders with a recent heartbeat can accept trips." }, 403);
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now()) return json({ success: false, error: "Washa upatikanaji na hakikisha ruhusa ya Boda Yangu bado inatumika." }, 403);
+      const active = await admin.from("ione_sokoni_deliveries").select("id,status").eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]);
+      if (active.error) return json({ success: false, error: "Imeshindikana kuthibitisha safari nyingine." }, 500);
+      if ((active.data || []).length) return json({ success: false, error: "Maliza safari uliyoanza kabla ya kukubali nyingine." }, 409);
+      const now = new Date().toISOString();
+      const reserved = await admin.from("ione_sokoni_riders").update({ available: false, updated_at: now }).eq("id", rider.id).eq("available", true).select("id").maybeSingle();
+      if (reserved.error || !reserved.data) return json({ success: false, error: "Upatikanaji umebadilika. Sasisha orodha na ujaribu tena." }, 409);
+      const claimed = await admin.from("ione_sokoni_deliveries").update({ rider_user_id: user.id, status: "accepted", route_accepted: true, updated_at: now }).eq("id", deliveryId).eq("status", "requested").is("rider_user_id", null).select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,status,route_accepted").maybeSingle();
+      if (claimed.error || !claimed.data) {
+        await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: now, updated_at: now }).eq("id", rider.id).eq("available", false);
+        return json({ success: false, error: "Safari hii imechukuliwa na dereva mwingine. Unaweza kuchagua safari nyingine." }, 409);
       }
-      const active = await admin.from("ione_sokoni_deliveries").select("id,status,route_accepted").eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]);
-      if (active.error) return json({ success: false, error: "Could not check your active trip." }, 500);
-      if ((active.data || []).some((d: any) => d.status === "picked_up" || d.status === "delivered" || (d.status === "accepted" && d.route_accepted === true))) return json({ success: false, error: "Kamilisha safari uliyoanza kabla ya kukubali nyingine." }, 409);
-      if ((active.data || []).some((d: any) => d.status === "accepted" && d.route_accepted !== true)) return json({ success: false, error: "Tayari una ombi moja. Malizeni makubaliano ya ada kwanza." }, 409);
-      const claimed = await admin.from("ione_sokoni_deliveries").update({ rider_user_id: user.id, status: "accepted", route_accepted: false, updated_at: new Date().toISOString() }).eq("id", deliveryId).eq("status", "requested").is("rider_user_id", null).select("id,order_id,pickup_location,pickup_lat,pickup_lng,dropoff_location,dropoff_lat,dropoff_lng,delivery_fee_tzs,status,route_accepted").maybeSingle();
-      if (claimed.error || !claimed.data) return json({ success: false, error: "Ombi hili limechukuliwa na dereva mwingine. Sasisha orodha." }, 409);
-      return json({ success: true, delivery: claimed.data, message: "Ombi limehifadhiwa kwako. Pendekeza ada; upatikanaji wako utaendelea kuwashwa hadi ukubali safari baada ya wote kukubali ada." });
+      const { data: order } = await admin.from("ione_sokoni_orders").select("product_name").eq("id", claimed.data.order_id).maybeSingle();
+      const { data: delivery } = await admin.from("ione_sokoni_deliveries").select("buyer_user_id,seller_user_id").eq("id", deliveryId).maybeSingle();
+      if (delivery) await Promise.allSettled([delivery.buyer_user_id, delivery.seller_user_id].filter(Boolean).map((recipient: string) => sendSokoniPush(admin, recipient, {
+        title: "I|ONE Sokoni • Dereva ameanza safari", body: "Dereva amekubali kupeleka " + String(order?.product_name || "bidhaa yako") + ". Anaweza kuwasiliana nawe kwa simu.",
+        url: "./?ionePushDestination=sokoni&ioneDeliveryId=" + deliveryId, tag: "ione-delivery-started-" + deliveryId
+      })));
+      return json({ success: true, delivery: claimed.data, message: "Umeanza safari. Upatikanaji wako utawashwa tena utakapobonyeza Kazi Imekamilika." });
     }
 
     if (action === "set_delivery_fee") {
@@ -871,14 +886,15 @@ Deno.serve(async (req) => {
       const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("*")
         .eq("id", deliveryId).maybeSingle();
       if (error || !delivery || delivery.rider_user_id !== user.id) return json({ success: false, error: "This trip is not assigned to your rider account." }, 404);
-      if (next === "picked_up" && (delivery.status !== "accepted" || !delivery.route_accepted || !delivery.buyer_fee_confirmed || !delivery.seller_fee_confirmed)) {
-        return json({ success: false, error: "Pickup is locked until both buyer and seller confirm the delivery fee." }, 409);
+      if (next === "picked_up" && (delivery.status !== "accepted" || !delivery.route_accepted)) {
+        return json({ success: false, error: "Anza safari kabla ya kuthibitisha kuwa umechukua bidhaa." }, 409);
       }
       if (next === "delivered" && delivery.status !== "picked_up") return json({ success: false, error: "Mark the parcel picked up before marking it delivered." }, 409);
       const updated = await admin.from("ione_sokoni_deliveries").update({ status: next, updated_at: new Date().toISOString() })
         .eq("id", delivery.id).eq("status", delivery.status).eq("rider_user_id", user.id).select("id").maybeSingle();
       if (updated.error || !updated.data) return json({ success: false, error: "Trip status changed elsewhere. Refresh and try again." }, 409);
-      return json({ success: true, message: next === "picked_up" ? "Pickup confirmed. Customer can now follow the delivery." : "Marked delivered. Buyer or seller can confirm completion." });
+      for (const recipient of [delivery.buyer_user_id, delivery.seller_user_id]) if (recipient) await sendSokoniPush(admin, recipient, { title: next === "picked_up" ? "I|ONE Sokoni • Bidhaa imechukuliwa" : "I|ONE Sokoni • Bidhaa imefikishwa", body: next === "picked_up" ? "Dereva amechukua bidhaa na yuko njiani." : "Dereva amesema bidhaa imefikishwa.", url: "./?ionePushDestination=sokoni&ioneDeliveryId=" + delivery.id, tag: "ione-delivery-status-" + delivery.id + "-" + next });
+      return json({ success: true, message: next === "picked_up" ? "Umechukua bidhaa. Endelea kumfikishia mnunuzi." : "Umefikisha bidhaa. Bonyeza Kazi Imekamilika ili uwe tayari kwa safari nyingine." });
     }
 
     if (action === "update_rider_location") {
@@ -953,8 +969,9 @@ Deno.serve(async (req) => {
       const { data: delivery, error } = await admin.from("ione_sokoni_deliveries").select("id,status,buyer_user_id,seller_user_id,rider_user_id").eq("id", deliveryId).maybeSingle();
       const isRider = !!delivery && delivery.rider_user_id === user.id;
       const isBuyerOrSeller = !!delivery && (delivery.buyer_user_id === user.id || delivery.seller_user_id === user.id);
-      if (error || !delivery || delivery.status !== "delivered" || (!isRider && !isBuyerOrSeller)) return json({ success: false, error: "Safari lazima iwe imefikishwa kabla ya kufungwa." }, 403);
-      const done = await admin.from("ione_sokoni_deliveries").update({ status: "completed", rider_lat: null, rider_lng: null, location_updated_at: null, updated_at: new Date().toISOString() }).eq("id", delivery.id).eq("status", "delivered").select("id").maybeSingle();
+      const allowedStatus = !!delivery && (delivery.status === "delivered" || (isRider && delivery.status === "picked_up"));
+      if (error || !delivery || !allowedStatus || (!isRider && !isBuyerOrSeller)) return json({ success: false, error: "Safari lazima iwe imefikishwa kabla ya kufungwa." }, 403);
+      const done = await admin.from("ione_sokoni_deliveries").update({ status: "completed", rider_lat: null, rider_lng: null, location_updated_at: null, updated_at: new Date().toISOString() }).eq("id", delivery.id).eq("status", delivery.status).select("id").maybeSingle();
       if (done.error || !done.data) return json({ success: false, error: "Safari haikukamilika. Sasisha kisha ujaribu tena." }, 500);
       if (delivery.rider_user_id) await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), location_lat: null, location_lng: null, location_updated_at: null, updated_at: new Date().toISOString() }).eq("user_id", delivery.rider_user_id);
       for (const recipient of [delivery.buyer_user_id, delivery.seller_user_id]) if (recipient && recipient !== user.id) await sendSokoniPush(admin, recipient, { title: "I|ONE Sokoni • Uwasilishaji umekamilika", body: "Dereva amekamilisha safari ya bidhaa yako.", url: "./?ionePushDestination=sokoni", tag: "ione-delivery-done-" + delivery.id });
