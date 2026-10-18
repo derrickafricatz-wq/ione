@@ -1,5 +1,5 @@
 {
-  "version": "1.0.197",
-  "message": "Hide buyer order totals from riders and support multi-product listings with one photo selection",
+  "version": "1.0.198",
+  "message": "Restore passenger rider call and completion actions; improve stuck-trip availability",
   "force": true
 }
