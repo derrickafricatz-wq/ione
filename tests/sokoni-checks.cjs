@@ -28,7 +28,7 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=4/);
+assert.match(html, /ione-sokoni\.js\?v=5/);
 assert.match(html, /ione-expert\.js\?v=1/);
 assert.match(html, /sw\.js\?v=134/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
