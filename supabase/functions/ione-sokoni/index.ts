@@ -917,13 +917,23 @@ Deno.serve(async (req) => {
       if (buyer.error || seller.error || rider.error) return json({ success: false, error: "Could not load your delivery trips." }, 500);
       const map = new Map<string, any>();
       [...(buyer.data || []), ...(seller.data || []), ...(rider.data || [])].forEach((row: any) => map.set(row.id, row));
+      const rows=[...map.values()],orderIds=[...new Set(rows.map((d:any)=>d.order_id).filter(Boolean))],vendorIds=[...new Set(rows.map((d:any)=>d.vendor_id).filter(Boolean))],riderIds=[...new Set(rows.map((d:any)=>d.rider_user_id).filter(Boolean))];
+      const [ordersResult,vendorsResult,ridersResult]=await Promise.all([
+        orderIds.length?admin.from("ione_sokoni_orders").select("id,product_name,quantity,unit_name,buyer_name,buyer_phone").in("id",orderIds):Promise.resolve({data:[],error:null}),
+        vendorIds.length?admin.from("ione_sokoni_vendors").select("id,phone_number,vendor_name").in("id",vendorIds):Promise.resolve({data:[],error:null}),
+        riderIds.length?admin.from("ione_sokoni_riders").select("user_id,rider_name,phone_number").in("user_id",riderIds):Promise.resolve({data:[],error:null})
+      ]);
+      if(ordersResult.error||vendorsResult.error||ridersResult.error)return json({success:false,error:"Could not load delivery contact details."},500);
+      const orderMap=new Map((ordersResult.data||[]).map((x:any)=>[x.id,x])),vendorMap=new Map((vendorsResult.data||[]).map((x:any)=>[x.id,x])),riderMap=new Map((ridersResult.data||[]).map((x:any)=>[x.user_id,x]));
       const nowMs = Date.now();
-      const deliveries = [...map.values()].map((d: any) => {
+      const deliveries = rows.map((d: any) => {
         const fresh = ["accepted", "picked_up"].includes(d.status) && !!d.location_updated_at && nowMs - Date.parse(d.location_updated_at) <= 120000;
+        const order=orderMap.get(d.order_id)||{},vendor=vendorMap.get(d.vendor_id)||{},rider=riderMap.get(d.rider_user_id)||{};
         return {
           id: d.id, order_id: d.order_id, is_buyer: d.buyer_user_id === user.id, is_seller: d.seller_user_id === user.id,
           is_rider: d.rider_user_id === user.id, rider_assigned: !!d.rider_user_id,
-          rider_user_id: d.rider_user_id, pickup_location: d.pickup_location, pickup_lat: d.pickup_lat, pickup_lng: d.pickup_lng,
+          rider_user_id:d.rider_user_id,product_name:order.product_name||"Bidhaa ya Sokoni",quantity:order.quantity??null,unit_name:order.unit_name||"",buyer_name:order.buyer_name||"",buyer_phone:order.buyer_phone||"",seller_phone:vendor.phone_number||"",seller_name:vendor.vendor_name||"",rider_name:rider.rider_name||"",rider_phone:rider.phone_number||"",
+          pickup_location: d.pickup_location, pickup_lat: d.pickup_lat, pickup_lng: d.pickup_lng,
           dropoff_location: d.dropoff_location, dropoff_lat: d.dropoff_lat, dropoff_lng: d.dropoff_lng,
           delivery_fee_tzs: d.delivery_fee_tzs, buyer_fee_confirmed: d.buyer_fee_confirmed,
           seller_fee_confirmed: d.seller_fee_confirmed, route_accepted: d.route_accepted === true, status: d.status,
