@@ -86,6 +86,9 @@ assert.match(moduleSource, /Piga simu kwa Mama Sokoni/);
 assert.match(moduleSource, /nominatim\.openstreetmap\.org\/reverse/);
 assert.match(moduleSource, /passenger_trip_offer_fare/);
 assert.match(edge, /createSignedUrl\(application\.identity_document_path, 600\)/);
+assert.match(moduleSource, /openRiderIdentityPreview/);
+assert.match(moduleSource, /ANGALIA KITAMBULISHO HAPA/);
+assert.doesNotMatch(moduleSource, /doc\.target = "_blank"/);
 assert.match(edge, /riderApplications,/);
 assert.match(moduleSource, /isRiderIdentityFile/);
 assert.match(moduleSource, /motorcycle_plate/);
@@ -95,9 +98,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v256/);
+assert.match(sw, /ione-app-v257/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.191$/);
+assert.match(version.version, /^1\.0\.192$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
