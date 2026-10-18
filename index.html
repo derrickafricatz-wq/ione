@@ -903,7 +903,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       if(status){
         if(!pushResult)status.textContent="PUBLISHED • PUSH RESULT UNAVAILABLE";
         else if(pushResult.success&&Number(pushResult.delivered||0)>0)status.textContent="PUBLISHED • PUSH SENT TO "+Number(pushResult.delivered)+" DEVICE(S)";
-        else if(pushResult.success)status.textContent="PUBLISHED • NO PUSH DELIVERED ("+Number(pushResult.failed||0)+" FAILED • "+Number(pushResult.removed||0)+" EXPIRED)";
+        else if(pushResult.success) { const details=Array.isArray(pushResult.failureDetails)?pushResult.failureDetails.map(x=>{const code=Number(x?.statusCode||0);const reason=String(x?.reason||"").replace(/[<>]/g,"").slice(0,110);return (code?"HTTP "+code+": ":"")+reason;}).filter(Boolean).slice(0,2).join(" | "):""; status.textContent="PUBLISHED • NO PUSH DELIVERED ("+Number(pushResult.failed||0)+" FAILED • "+Number(pushResult.removed||0)+" EXPIRED)"+(details?" • "+details:""); }
         else status.textContent="PUBLISHED • PUSH ERROR: "+String(pushResult.error||"UNKNOWN ERROR").slice(0,100);
       }
 }catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
