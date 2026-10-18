@@ -34,14 +34,48 @@ const lessonHints = [
   }
 
   async function getPushConfig(){
-    if(!vapidPublicKey){
-      try{ vapidPublicKey=localStorage.getItem("ioneVapidPublicKey") || ""; }catch(_){}
-    }
-    if(vapidPublicKey) return {success:true,publicKey:vapidPublicKey,cached:true};
+    // Always read the live key. A stale cached VAPID key can leave this device
+    // subscribed with a public key that no longer matches the server's signer.
     const data=await callPush({action:"config"});
-    vapidPublicKey=data.publicKey;
+    const nextKey=String(data?.publicKey || "").trim();
+    if(!nextKey) throw new Error("I|ONE push configuration did not return a public key.");
+    if(vapidPublicKey && vapidPublicKey !== nextKey){
+      console.warn("I|ONE VAPID public key changed; refreshing this device subscription.");
+    }
+    vapidPublicKey=nextKey;
     try{ localStorage.setItem("ioneVapidPublicKey",vapidPublicKey); }catch(_){}
     return data;
+  }
+
+  function sameApplicationServerKey(subscription, publicKey){
+    try{
+      const existing=subscription?.options?.applicationServerKey;
+      if(!existing) return false;
+      const a=new Uint8Array(existing);
+      const b=uint8FromBase64Url(publicKey);
+      if(a.length!==b.length) return false;
+      for(let i=0;i<a.length;i++) if(a[i]!==b[i]) return false;
+      return true;
+    }catch(_){ return false; }
+  }
+
+  async function getOrRefreshBrowserSubscription(registration){
+    let subscription=await registration.pushManager.getSubscription();
+    if(subscription && !sameApplicationServerKey(subscription,vapidPublicKey)){
+      const oldEndpoint=subscription.endpoint;
+      try{ await callPush({action:"unsubscribe",endpoint:oldEndpoint}); }
+      catch(e){ console.warn("I|ONE old push subscription cleanup:",e); }
+      try{ await subscription.unsubscribe(); }
+      catch(e){ console.warn("I|ONE old browser push subscription cleanup:",e); }
+      subscription=null;
+    }
+    if(!subscription){
+      subscription=await registration.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:uint8FromBase64Url(vapidPublicKey)
+      });
+    }
+    return subscription;
   }
 
   async function pushUserId(){
@@ -69,13 +103,7 @@ const lessonHints = [
     if(Notification.permission !== "granted") return false;
     await getPushConfig();
     const registration=await navigator.serviceWorker.ready;
-    let subscription=await registration.pushManager.getSubscription();
-    if(!subscription){
-      subscription=await registration.pushManager.subscribe({
-        userVisibleOnly:true,
-        applicationServerKey:uint8FromBase64Url(vapidPublicKey)
-      });
-    }
+    const subscription=await getOrRefreshBrowserSubscription(registration);
     await savePushSubscription(subscription);
     localStorage.setItem("ionePushEnabled","1");
     return true;
@@ -98,14 +126,7 @@ const lessonHints = [
     await getPushConfig();
 
     const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
-
-    if(!subscription){
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly:true,
-        applicationServerKey:uint8FromBase64Url(vapidPublicKey)
-      });
-    }
+    const subscription=await getOrRefreshBrowserSubscription(registration);
 
     await savePushSubscription(subscription);
 
@@ -119,13 +140,7 @@ const lessonHints = [
       if(Notification.permission !== "granted") return;
       await getPushConfig();
       const registration = await navigator.serviceWorker.ready;
-      let subscription = await registration.pushManager.getSubscription();
-      if(!subscription){
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly:true,
-          applicationServerKey:uint8FromBase64Url(vapidPublicKey)
-        });
-      }
+      const subscription=await getOrRefreshBrowserSubscription(registration);
       await savePushSubscription(subscription);
       localStorage.setItem("ionePushEnabled","1");
     }catch(e){
