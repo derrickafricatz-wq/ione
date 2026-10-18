@@ -728,19 +728,21 @@ Deno.serve(async (req) => {
       if (!trip) return json({ success: false, error: "Safari haipatikani." }, 404);
       const { data: rider } = await admin.from("ione_sokoni_riders").select("id").eq("user_id", user.id).maybeSingle();
       let patch: any = {};
-      if (rider?.id === trip.rider_id && next === "picked_up" && trip.status === "fare_agreed" && trip.fare_agreed) patch = { status: "picked_up" };
+      if (rider?.id === trip.rider_id && next === "rider_ready" && trip.status === "fare_agreed" && trip.fare_agreed) patch = { status: "rider_ready" };
+      else if (rider?.id === trip.rider_id && next === "picked_up" && ["rider_ready", "fare_agreed"].includes(trip.status) && trip.fare_agreed) patch = { status: "picked_up" };
       else if (trip.passenger_user_id === user.id && next === "completed" && trip.status === "picked_up") patch = { status: "completed", completed_at: new Date().toISOString() };
-      else if (trip.passenger_user_id === user.id && next === "cancelled" && ["requested", "accepted", "fare_proposed", "fare_countered"].includes(trip.status)) patch = { status: "cancelled" };
+      else if (trip.passenger_user_id === user.id && next === "cancelled" && ["requested", "accepted", "fare_proposed", "fare_countered", "fare_agreed", "rider_ready"].includes(trip.status)) patch = { status: "cancelled" };
       else return json({ success: false, error: "Huwezi kubadilisha hali ya safari hii kwa hatua hiyo." }, 403);
       const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
       if (saved.error) return json({ success: false, error: "Could not update passenger trip." }, 500);
-      const recipient = next === "picked_up" ? trip.passenger_user_id : next === "completed" ? (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id : null;
+      const riderUser = next === "completed" ? (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id : null;
+      const recipient = ["rider_ready", "picked_up"].includes(next) ? trip.passenger_user_id : next === "completed" ? riderUser : null;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: next === "picked_up" ? "I|ONE Boda Yangu • Abiria amechukuliwa" : "I|ONE Boda Yangu • Safari imekamilika",
-        body: next === "picked_up" ? "Dereva amekuchukua." : "Abiria amethibitisha kuwa safari imekamilika.",
+        title: next === "rider_ready" ? "I|ONE Boda Yangu • Dereva yuko tayari" : next === "picked_up" ? "I|ONE Boda Yangu • Abiria amechukuliwa" : "I|ONE Boda Yangu • Safari imekamilika",
+        body: next === "rider_ready" ? "Dereva yuko tayari kukuchukua. Tafadhali wasiliana naye kwa simu." : next === "picked_up" ? "Dereva amekuchukua." : "Abiria amethibitisha kuwa safari imekamilika.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + tripId
       });
-      return json({ success: true, message: next === "picked_up" ? "Umemchukua abiria." : next === "completed" ? "Safari imekamilika." : "Ombi la safari limeghairiwa." });
+      return json({ success: true, message: next === "rider_ready" ? "Abiria amearifiwa kuwa uko tayari kumchukua." : next === "picked_up" ? "Umemchukua abiria." : next === "completed" ? "Safari imekamilika." : "Ombi la safari limeghairiwa." });
     }
 
     if (action === "rider_open_deliveries") {
@@ -756,7 +758,7 @@ Deno.serve(async (req) => {
         admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
           .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100),
         admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
-          .eq("rider_id", rider.id).in("status", ["accepted", "fare_proposed", "fare_countered", "fare_agreed", "picked_up"]).order("created_at", { ascending: false }).limit(50)
+          .eq("rider_id", rider.id).in("status", ["accepted", "fare_proposed", "fare_countered", "fare_agreed", "rider_ready", "picked_up"]).order("created_at", { ascending: false }).limit(50)
       ]);
       if (deliveriesResult.error || openPassengerResult.error || myPassengerResult.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
       const passengerTrips = [...(openPassengerResult.data || []), ...(myPassengerResult.data || [])];
