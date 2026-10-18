@@ -812,7 +812,7 @@ Deno.serve(async (req) => {
       const passengerTrips = [...(openPassengerResult.data || []), ...(myPassengerResult.data || [])];
       const openRows=deliveriesResult.data||[], orderIds=[...new Set(openRows.map((d:any)=>d.order_id).filter(Boolean))], vendorIds=[...new Set(openRows.map((d:any)=>d.vendor_id).filter(Boolean))];
       const [orders,vendors]=await Promise.all([
-        orderIds.length?admin.from("ione_sokoni_orders").select("id,product_name,quantity,unit_name,total_tzs,buyer_name,buyer_phone").in("id",orderIds):Promise.resolve({data:[],error:null}),
+        orderIds.length?admin.from("ione_sokoni_orders").select("id,product_name,quantity,unit_name,buyer_name,buyer_phone").in("id",orderIds):Promise.resolve({data:[],error:null}),
         vendorIds.length?admin.from("ione_sokoni_vendors").select("id,vendor_name,phone_number").in("id",vendorIds):Promise.resolve({data:[],error:null})
       ]);
       if(orders.error||vendors.error)return json({success:false,error:"Could not load product details for delivery requests."},500);
