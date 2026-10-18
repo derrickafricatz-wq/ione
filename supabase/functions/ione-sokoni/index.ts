@@ -758,7 +758,7 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Turn on your Authority-approved, active Boda Yangu access to see trip requests." }, 403);
       }
       const [deliveriesResult, openPassengerResult, myPassengerResult] = await Promise.all([
-        admin.from("ione_sokoni_deliveries").select("id,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
+        admin.from("ione_sokoni_deliveries").select("id,order_id,vendor_id,dropoff_location,dropoff_lat,dropoff_lng,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100),
         admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
           .eq("status", "requested").is("rider_id", null).order("created_at", { ascending: true }).limit(100),
         admin.from("ione_sokoni_passenger_trips").select("id,passenger_name,passenger_phone,pickup_area,pickup_lat,pickup_lng,destination_area,passenger_note,created_at,status,rider_id,proposed_fare_tzs,fare_proposed_by,fare_agreed")
@@ -766,7 +766,15 @@ Deno.serve(async (req) => {
       ]);
       if (deliveriesResult.error || openPassengerResult.error || myPassengerResult.error) return json({ success: false, error: "Could not load delivery and passenger requests." }, 500);
       const passengerTrips = [...(openPassengerResult.data || []), ...(myPassengerResult.data || [])];
-      return json({ success: true, deliveries: deliveriesResult.data || [], passenger_trips: passengerTrips });
+      const openRows=deliveriesResult.data||[], orderIds=[...new Set(openRows.map((d:any)=>d.order_id).filter(Boolean))], vendorIds=[...new Set(openRows.map((d:any)=>d.vendor_id).filter(Boolean))];
+      const [orders,vendors]=await Promise.all([
+        orderIds.length?admin.from("ione_sokoni_orders").select("id,product_name,quantity,unit_name,total_tzs").in("id",orderIds):Promise.resolve({data:[],error:null}),
+        vendorIds.length?admin.from("ione_sokoni_vendors").select("id,vendor_name,phone_number").in("id",vendorIds):Promise.resolve({data:[],error:null})
+      ]);
+      if(orders.error||vendors.error)return json({success:false,error:"Could not load product details for delivery requests."},500);
+      const orderMap=new Map((orders.data||[]).map((o:any)=>[o.id,o])),vendorMap=new Map((vendors.data||[]).map((v:any)=>[v.id,v]));
+      const deliveries=openRows.map((d:any)=>({...d,...(orderMap.get(d.order_id)||{}),...(vendorMap.get(d.vendor_id)||{})}));
+      return json({ success: true, deliveries, passenger_trips: passengerTrips });
     }
 
     if (action === "accept_delivery") {
