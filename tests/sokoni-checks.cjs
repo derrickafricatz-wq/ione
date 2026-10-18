@@ -28,9 +28,9 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\\.js\\?v=7/);
+assert.match(html, /ione-sokoni\.js\?v=7/);
 assert.match(html, /ione-expert\.js\?v=1/);
-assert.match(html, /sw\\.js\\?v=135/);
+assert.match(html, /sw\.js\?v=135/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
@@ -104,7 +104,7 @@ assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokon
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(sw, /ione-app-v259/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\\.0\\.194$/);
+assert.match(version.version, /^1\.0\.194$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
