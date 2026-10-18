@@ -890,13 +890,22 @@ window.ioneEnsureBookPdfLibraries = async function(){
     if(button)button.disabled=true;if(status)status.textContent="PUBLISHING "+title+"…";
     try{
       const body={action:"update",banners:ioneBannersCache,word_of_day:ioneWordOfDayCache,word_of_day_style:ioneWordOfDayStyle,top_trending:ioneTopTrendingCache,new_books:ioneNewBooksCache,ione_update:ioneUpdateCache,important_notice:ioneImportantNoticeCache};
-      body[field]=value;body["pass"+"word"]=secret;
+      body[field]=value;
+      // Explicitly request a push for this publication, even if the same notice text is republished.
+      body.notify_events=[field];body["pass"+"word"]=secret;
       const r=await heavensSupabase.functions.invoke("ione-app-banners",{body});
       if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not publish "+title+".");
       ioneUpdateCache=String(r.data.ione_update||ioneUpdateCache).trim();
       ioneImportantNoticeCache=String(r.data.important_notice||ioneImportantNoticeCache).trim();
       const saved=document.getElementById(inputId);if(saved)saved.value=field==="ione_update"?ioneUpdateCache:ioneImportantNoticeCache;
-      if(status)status.textContent="PUBLISHED • LIVE";
+      const pushEntry=Array.isArray(r.data.push)?r.data.push.find(x=>x&&x.event===field):null;
+      const pushResult=pushEntry&&pushEntry.result;
+      if(status){
+        if(!pushResult)status.textContent="PUBLISHED • PUSH RESULT UNAVAILABLE";
+        else if(pushResult.success&&Number(pushResult.delivered||0)>0)status.textContent="PUBLISHED • PUSH SENT TO "+Number(pushResult.delivered)+" DEVICE(S)";
+        else if(pushResult.success)status.textContent="PUBLISHED • NO PUSH DELIVERED ("+Number(pushResult.failed||0)+" FAILED • "+Number(pushResult.removed||0)+" EXPIRED)";
+        else status.textContent="PUBLISHED • PUSH ERROR: "+String(pushResult.error||"UNKNOWN ERROR").slice(0,100);
+      }
 }catch(e){if(status)status.textContent=e?.message||"Could not publish "+title+".";}
     finally{if(button)button.disabled=false;}
   }
