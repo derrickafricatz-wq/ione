@@ -1,5 +1,5 @@
 {
-  "version": "1.0.189",
-  "message": "Keep passenger trips visible, add rider fare responses, and fix Sokoni Authority dashboard",
+  "version": "1.0.190",
+  "message": "Separate Boda Yangu panels, improve rider fare replies, and notify passengers when riders are ready",
   "force": true
 }
