@@ -167,13 +167,11 @@
         </form>
         <div class="is-status" id="isPickupStatus" role="status" aria-live="polite"></div>
         <form class="is-form" id="isProductForm">
-          <div><label for="isProductName">Jina la bidhaa</label><input id="isProductName" maxlength="140" required placeholder="Mfano: Nyanya"></div>
-          <div><label for="isProductPhoto">Picha ya bidhaa (JPG, PNG au WebP; hadi MB 5)</label><input id="isProductPhoto" type="file" accept="image/jpeg,image/png,image/webp"></div>
-          <div><label for="isProductDescription">Maelezo (si lazima)</label><input id="isProductDescription" maxlength="1200" placeholder="Maelezo mafupi"></div>
-          <div><label for="isProductPrice">Bei kwa TZS</label><input id="isProductPrice" type="number" min="0" step="1" inputmode="numeric" required placeholder="Bei"></div>
-          <div><label for="isProductUnit">Kipimo</label><input id="isProductUnit" maxlength="40" required placeholder="Mfano: kilo, fungu, kreti, sahani"></div>
-          <div><label for="isProductStock">Kiasi kilichopo</label><input id="isProductStock" type="number" min="0" step="0.1" required placeholder="Mfano: 10"></div>
-          <button class="is-button primary" type="submit" id="isProductSave">Hifadhi bidhaa</button>
+          <p class="is-muted">Ongeza bidhaa nyingi na bei zake kwa pamoja. Picha moja itatumika kwenye bidhaa zote unazohifadhi kwenye fomu hii.</p>
+          <div id="isProductRows"></div>
+          <button class="is-button" type="button" id="isAddProductRow">+ Ongeza bidhaa nyingine</button>
+          <div><label for="isProductPhoto">Picha ya pamoja ya bidhaa (JPG, PNG au WebP; hadi MB 5)</label><input id="isProductPhoto" type="file" accept="image/jpeg,image/png,image/webp"></div>
+          <button class="is-button primary" type="submit" id="isProductSave">Hifadhi bidhaa zote</button>
           <button class="is-button" type="button" id="isProductCancel" style="display:none">Ghairi uhariri</button>
         </form>
         <div class="is-status" id="isProductStatus" role="status" aria-live="polite"></div>
@@ -482,13 +480,20 @@
     }
   }
   let editingProductId = null;
-  function resetProductForm() {
-    editingProductId = null;
-    $("isProductForm").reset();
-    $("isProductSave").textContent = "Hifadhi bidhaa";
-    $("isProductCancel").style.display = "none";
-    setStatus("isProductStatus", "");
+  function makeProductEntry(product) {
+    const row=document.createElement("fieldset"); row.className="is-product-entry";
+    row.style.cssText="border:1px solid #3b654a;border-radius:12px;padding:12px;margin:0 0 10px;min-width:0";
+    if(product?.id) row.dataset.productId=product.id;
+    const legend=document.createElement("legend"); legend.className="is-muted"; legend.textContent="Bidhaa "+($("isProductRows").children.length+1); row.appendChild(legend);
+    const field=(labelText,key,placeholder,type)=>{const wrap=document.createElement("div");wrap.style.marginBottom="9px";const label=document.createElement("label");label.textContent=labelText;const input=document.createElement("input");input.dataset.field=key;input.placeholder=placeholder||"";input.required=key!=="description";input.maxLength=key==="product_name"?140:key==="description"?1200:key==="unit_name"?40:30;if(type)input.type=type;if(key==="price_tzs"){input.min="0";input.step="1";input.inputMode="numeric";}if(key==="stock_quantity"){input.min="0";input.step="0.1";input.inputMode="decimal";}if(product)input.value=product[key]==null?"":String(product[key]);wrap.append(label,input);row.appendChild(wrap);};
+    field("Jina la bidhaa","product_name","Mfano: Nyanya");field("Maelezo (si lazima)","description","Maelezo mafupi");field("Bei kwa TZS","price_tzs","Bei","number");field("Kipimo","unit_name","Mfano: kilo, fungu, kreti");field("Kiasi kilichopo","stock_quantity","Mfano: 10","number");
+    if($("isProductRows").children.length>0||product?.id){const remove=document.createElement("button");remove.type="button";remove.className="is-button";remove.textContent="Ondoa bidhaa hii";remove.addEventListener("click",()=>{row.remove();renumberProductEntries();});row.appendChild(remove);}
+    return row;
   }
+  function renumberProductEntries(){[...$("isProductRows").children].forEach((row,i)=>{const legend=row.querySelector("legend");if(legend)legend.textContent="Bidhaa "+(i+1);});}
+  function addProductEntry(product){const row=makeProductEntry(product);$("isProductRows").appendChild(row);renumberProductEntries();return row;}
+  function resetProductForm(){editingProductId=null;$("isProductForm").reset();$("isProductRows").replaceChildren();addProductEntry();$("isProductSave").textContent="Hifadhi bidhaa zote";$("isProductCancel").style.display="none";$("isAddProductRow").style.display="";setStatus("isProductStatus","");}
+  function fillProductEntry(product){$("isProductRows").replaceChildren();const row=addProductEntry(product);row.dataset.productId=product.id;editingProductId=product.id;$("isProductPhoto").value="";$("isProductSave").textContent="Hifadhi mabadiliko";$("isProductCancel").style.display="inline-block";$("isAddProductRow").style.display="none";}
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -549,15 +554,7 @@
         edit.type = "button";
         edit.textContent = "Hariri";
         edit.addEventListener("click", () => {
-          editingProductId = product.id;
-          $("isProductName").value = product.product_name || "";
-          $("isProductDescription").value = product.description || "";
-          $("isProductPrice").value = String(product.price_tzs ?? "");
-          $("isProductUnit").value = product.unit_name || "";
-          $("isProductStock").value = String(product.stock_quantity ?? "");
-          $("isProductPhoto").value = "";
-          $("isProductSave").textContent = "Hifadhi mabadiliko";
-          $("isProductCancel").style.display = "inline-block";
+          fillProductEntry(product);
           $("isProductForm").scrollIntoView({ behavior: "smooth", block: "start" });
         });
         const remove = document.createElement("button");
@@ -606,39 +603,19 @@
       renderProductRows(box, data.products || [], false);
     } catch (e) { box.textContent = e.message || "Bidhaa hazipatikani kwa sasa."; }
   }
-  async function saveProduct(event) {
-    event.preventDefault();
-    const button = $("isProductSave");
-    button.disabled = true;
-    setStatus("isProductStatus", "Inahifadhi bidhaa…");
-    try {
-      const photo = $("isProductPhoto").files?.[0];
-      let image_base64 = null;
-      let image_mime = null;
-      if (photo) {
-        if (photo.size > 5 * 1024 * 1024) throw new Error("Picha lazima iwe MB 5 au chini.");
-        if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) throw new Error("Tumia picha ya JPG, PNG au WebP.");
-        image_base64 = await fileToBase64(photo);
-        image_mime = photo.type;
-      }
-      const payload = {
-        product_name: $("isProductName").value.trim(),
-        description: $("isProductDescription").value.trim(),
-        price_tzs: Number($("isProductPrice").value),
-        unit_name: $("isProductUnit").value.trim(),
-        stock_quantity: Number($("isProductStock").value)
-      };
-      if (editingProductId) payload.product_id = editingProductId;
-      if (image_base64) { payload.image_base64 = image_base64; payload.image_mime = image_mime; }
-      const data = await invoke("save_product", payload);
-      setStatus("isProductStatus", data.message || "Bidhaa imehifadhiwa.");
-      resetProductForm();
-      await Promise.all([loadMyProducts(), loadProductCatalog()]);
-    } catch (e) {
-      setStatus("isProductStatus", e.message || "Bidhaa haikuhifadhiwa.", true);
-    } finally {
-      button.disabled = false;
-    }
+  async function saveProduct(event){
+    event.preventDefault();const button=$("isProductSave");button.disabled=true;setStatus("isProductStatus","Inahifadhi bidhaa…");
+    try{
+      const rows=[...$("isProductRows").querySelectorAll(".is-product-entry")];if(!rows.length)throw new Error("Ongeza angalau bidhaa moja.");
+      const entries=rows.map(row=>({product_id:row.dataset.productId||"",product_name:row.querySelector('[data-field="product_name"]').value.trim(),description:row.querySelector('[data-field="description"]').value.trim(),price_tzs:Number(row.querySelector('[data-field="price_tzs"]').value),unit_name:row.querySelector('[data-field="unit_name"]').value.trim(),stock_quantity:Number(row.querySelector('[data-field="stock_quantity"]').value)}));
+      if(entries.some(x=>x.product_name.length<2||!x.unit_name||!Number.isSafeInteger(x.price_tzs)||x.price_tzs<0||!Number.isFinite(x.stock_quantity)||x.stock_quantity<0))throw new Error("Kagua jina, bei, kipimo na kiasi cha kila bidhaa.");
+      if(editingProductId&&entries.length!==1)throw new Error("Hifadhi bidhaa iliyohaririwa peke yake.");
+      const photo=$("isProductPhoto").files?.[0];let image_base64=null,image_mime=null;
+      if(photo){if(photo.size>5*1024*1024)throw new Error("Picha lazima iwe MB 5 au chini.");if(!["image/jpeg","image/png","image/webp"].includes(photo.type))throw new Error("Tumia picha ya JPG, PNG au WebP.");image_base64=await fileToBase64(photo);image_mime=photo.type;}
+      let savedCount=0;
+      for(const entry of entries){const payload={product_name:entry.product_name,description:entry.description,price_tzs:entry.price_tzs,unit_name:entry.unit_name,stock_quantity:entry.stock_quantity};if(entry.product_id)payload.product_id=entry.product_id;if(image_base64){payload.image_base64=image_base64;payload.image_mime=image_mime;}await invoke("save_product",payload);savedCount++;}
+      setStatus("isProductStatus",savedCount+(savedCount===1?" bidhaa imehifadhiwa.":" bidhaa zimehifadhiwa."));resetProductForm();await Promise.all([loadMyProducts(),loadProductCatalog()]);
+    }catch(e){setStatus("isProductStatus",e.message||"Baadhi ya bidhaa hazikuhifadhiwa. Kagua orodha na ujaribu tena.",true);}finally{button.disabled=false;}
   }
 
   let selectedOrderProduct = null;
@@ -893,7 +870,7 @@ if (order.status === "new" || order.status === "accepted") {
       deliveries.forEach((trip) => {
         const row = document.createElement("article"); row.className = "is-vendor";
         const title = document.createElement("strong"); title.textContent = (trip.product_name || "Bidhaa ya Sokoni") + " • " + (trip.quantity == null ? "" : trip.quantity + " " + (trip.unit_name || "") + " • ") + (trip.dropoff_location || "Eneo la mnunuzi");
-        const details = document.createElement("p"); details.textContent = "Mama Sokoni: " + (trip.vendor_name || "Muuzaji") + " • Mnunuzi: " + (trip.buyer_name || "Mteja") + " • Jumla ya bidhaa: TZS " + Number(trip.total_tzs || 0).toLocaleString("sw-TZ");
+        const details = document.createElement("p"); details.textContent = "Mama Sokoni: " + (trip.vendor_name || "Muuzaji") + " • Mnunuzi: " + (trip.buyer_name || "Mteja");
         const pickup = document.createElement("small"); pickup.textContent = "Chukua: " + (trip.pickup_location || "Thibitisha kwa simu") + " • Peleka: " + (trip.dropoff_location || "Eneo la mnunuzi");
         const date = document.createElement("small"); date.textContent = "Safari mpya • " + new Date(trip.created_at).toLocaleString("sw-TZ");
         row.append(title, details, pickup, date);
@@ -1308,8 +1285,10 @@ if (order.status === "new" || order.status === "accepted") {
   $("isCheckStatus").addEventListener("click", loadStatus);
   $("isRefreshVendors").addEventListener("click", loadVendors);
   $("isRefreshProducts").addEventListener("click", loadProductCatalog);
-  $("isProductForm").addEventListener("submit", saveProduct);
-  $("isProductCancel").addEventListener("click", resetProductForm);
+  addProductEntry();
+  $("isAddProductRow").addEventListener("click",()=>addProductEntry());
+  $("isProductForm").addEventListener("submit",saveProduct);
+  $("isProductCancel").addEventListener("click",resetProductForm);
   $("isRefreshSellerOrders").addEventListener("click", loadMyOrders);
   $("isRefreshBuyerOrders").addEventListener("click", loadMyOrders);
   $("isOrderCancel").addEventListener("click", () => { $("isOrderPanel").style.display = "none"; setStatus("isOrderStatus", ""); });
