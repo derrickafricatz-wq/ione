@@ -368,10 +368,17 @@ Deno.serve(async (req) => {
           if(!finalDeliveryId&&created.error?.code==="23505"){const prior=await admin.from("ione_sokoni_deliveries").select("id").eq("order_id",order.id).maybeSingle();finalDeliveryId=prior.data?.id||null;}
           if(finalDeliveryId){
             deliveryCreated=true;deliveryId=finalDeliveryId;
-            const {data:riders,error:riderQueryError}=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).limit(100);
-            if(riderQueryError)console.warn("Could not load eligible riders after order acceptance:",riderQueryError.message);
-            const pushResults=await Promise.allSettled((riders||[]).map((r:any)=>sendSokoniPush(admin,r.user_id,{title:"I|ONE Boda Yangu • Safari mpya",body:order.product_name+" • "+order.quantity+" "+order.unit_name+" • "+order.delivery_address+". Fungua Sokoni kuona maelezo na kupiga simu.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-delivery-"+deliveryId})));
-            console.info("Automatic delivery alerts after seller acceptance:",{delivery_id:deliveryId,eligible_riders:(riders||[]).length,push_attempts:pushResults.length});
+            const riders:any[]=[];
+            let riderQueryError:any=null;
+            for(let offset=0;;offset+=1000){
+              const batch=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
+              if(batch.error){riderQueryError=batch.error;break;}
+              riders.push(...(batch.data||[]));
+              if((batch.data||[]).length<1000)break;
+            }
+            if(riderQueryError)console.warn("Could not load every eligible rider after order acceptance:",riderQueryError.message);
+            const pushResults=await Promise.allSettled(riders.map((r:any)=>sendSokoniPush(admin,r.user_id,{title:"I|ONE Boda Yangu • Safari mpya",body:order.product_name+" • "+order.quantity+" "+order.unit_name+" • "+order.delivery_address+". Fungua Sokoni kuona maelezo na kupiga simu.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-delivery-"+deliveryId})));
+            console.info("Automatic delivery alerts after seller acceptance:",{delivery_id:deliveryId,eligible_riders:riders.length,push_attempts:pushResults.length});
             await Promise.allSettled([
               sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Mama Sokoni amekubali "+order.product_name+". Madereva wanaarifiwa moja kwa moja.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-order-status-"+order.id}),
               sendSokoniPush(admin,order.seller_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Ombi la uwasilishaji limetumwa moja kwa moja kwa madereva wanaopatikana.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-seller-delivery-"+order.id})
