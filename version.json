@@ -1,5 +1,5 @@
 {
-  "version": "1.0.196",
-  "message": "Passenger trip notifications, single rider negotiation panel, and tidy delivery actions",
+  "version": "1.0.197",
+  "message": "Hide buyer order totals from riders and support multi-product listings with one photo selection",
   "force": true
 }
