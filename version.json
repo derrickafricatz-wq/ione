@@ -1,5 +1,5 @@
 {
-  "version": "1.0.194",
-  "message": "Automate Sokoni delivery requests and buyer-rider fee negotiation",
+  "version": "1.0.195",
+  "message": "Automatic Sokoni rider dispatch, phone negotiation and one-tap trip completion",
   "force": true
 }
