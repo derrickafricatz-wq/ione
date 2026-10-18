@@ -1,5 +1,5 @@
 {
-  "version": "1.0.201",
-  "message": "Fix Authority important-note push triggering and delivery status",
+  "version": "1.0.202",
+  "message": "Expose push delivery failure reasons for diagnosis",
   "force": true
 }
