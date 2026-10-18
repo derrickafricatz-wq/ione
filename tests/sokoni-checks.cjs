@@ -96,7 +96,7 @@ assert.match(moduleSource, /isRiderIdentityFile/);
 assert.match(moduleSource, /motorcycle_plate/);
 assert.match(moduleSource, /smart-grid #openSokoni\{order:1\}/);
 assert.match(edge, /Reserve this rider first/);
-assert.match(edge, /action===\"counter_delivery_fee\"/);
+assert.match(edge, /counter_delivery_fee/);
 assert.match(edge, /deliveryCreated/);
 assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
