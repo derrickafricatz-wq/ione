@@ -1,5 +1,5 @@
 {
-  "version": "1.0.190",
-  "message": "Separate Boda Yangu panels, improve rider fare replies, and notify passengers when riders are ready",
+  "version": "1.0.191",
+  "message": "Separate Sokoni panels, show rider fare counteroffers, and notify passenger when rider is ready",
   "force": true
 }
