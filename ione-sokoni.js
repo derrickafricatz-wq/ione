@@ -896,6 +896,15 @@ if (order.status === "new" || order.status === "accepted") {
         const tripLabels = { requested: "Inasubiri dereva", accepted: "Umekubali • jadilianeni nauli", fare_proposed: "Nauli imependekezwa", fare_countered: "Nauli imejadiliwa upya", fare_agreed: "Nauli imekubaliwa • anza safari", picked_up: "Abiria amechukuliwa" };
         tripStatus.textContent = "Hali: " + (tripLabels[trip.status] || trip.status);
         row.append(title, route, passenger, note, tripStatus);
+        if (trip.passenger_phone) {
+          const callPassenger = document.createElement("a");
+          callPassenger.className = "is-button";
+          callPassenger.href = "tel:" + String(trip.passenger_phone).replace(/[^+0-9]/g, "");
+          callPassenger.textContent = "Piga Abiria";
+          callPassenger.style.display = "inline-flex";
+          callPassenger.style.textDecoration = "none";
+          row.appendChild(callPassenger);
+        }
         if (Number.isFinite(Number(trip.pickup_lat)) && Number.isFinite(Number(trip.pickup_lng))) {
           const mapLink = document.createElement("a"); mapLink.href = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(trip.pickup_lat + "," + trip.pickup_lng) + "&travelmode=driving";
           mapLink.target = "_blank"; mapLink.rel = "noopener noreferrer"; mapLink.className = "is-button"; mapLink.textContent = "Fungua ramani ya eneo la abiria";
@@ -944,6 +953,26 @@ if (order.status === "new" || order.status === "accepted") {
           const pickup = document.createElement("button"); pickup.type = "button"; pickup.className = "is-button primary"; pickup.textContent = "Nimemchukua abiria";
           pickup.addEventListener("click", async () => { pickup.disabled = true; try { const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "picked_up" }); setStatus("isRiderStatus", result.message); await Promise.all([loadOpenTrips(), loadPassengerTrips()]); } catch (e) { setStatus("isRiderStatus", e.message || "Hali haikubadilika.", true); pickup.disabled = false; } });
           row.appendChild(pickup);
+        } else if (trip.status === "picked_up") {
+          const pickedUp = document.createElement("p");
+          pickedUp.textContent = "Abiria amechukuliwa. Baada ya kufikisha safari mwisho, bonyeza hapa kufunga safari na kuwasha upatikanaji wako tena.";
+          row.appendChild(pickedUp);
+          const complete = document.createElement("button");
+          complete.type = "button";
+          complete.className = "is-button primary";
+          complete.textContent = "Imekamilika";
+          complete.addEventListener("click", async () => {
+            complete.disabled = true;
+            try {
+              const result = await invoke("passenger_trip_status", { trip_id: trip.id, status: "completed" });
+              setStatus("isRiderStatus", result.message || "Safari imekamilika. Upatikanaji umewashwa tena.");
+              await Promise.all([loadOpenTrips(), loadPassengerTrips(), loadRiderStatus()]);
+            } catch (e) {
+              setStatus("isRiderStatus", e.message || "Safari haikufungwa. Jaribu tena.", true);
+              complete.disabled = false;
+            }
+          });
+          row.appendChild(complete);
         }
         row.style.marginBottom = "10px"; box.appendChild(row);
       });
