@@ -1,5 +1,5 @@
 {
-  "version": "1.0.202",
-  "message": "Expose push delivery failure reasons for diagnosis",
+  "version": "1.0.203",
+  "message": "Refresh stale push subscriptions against live VAPID key",
   "force": true
 }
