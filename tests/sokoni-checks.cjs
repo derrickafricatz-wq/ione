@@ -105,9 +105,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v260/);
+assert.match(sw, /ione-app-v261/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.195$/);
+assert.match(version.version, /^1\.0\.196$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
@@ -118,5 +118,11 @@ assert.match(expertMigration, /ione_expert_questions/);
 assert.match(expertMigration, /ione_expert_replies/);
 assert.match(expertMigration, /ione-expert-credentials/);
 assert.match(expertSource, /openIoneExpert/);
+assert.match(moduleSource, /is-trip-actions/);
+assert.match(moduleSource, /filter\(\(trip\) => trip\.is_passenger\)/);
+assert.match(moduleSource, /registration\.showNotification/);
+assert.match(edge, /delivered_subscriptions: notifiedRiders/);
+assert.match(edge, /Passenger trip push dispatch/);
+assert.match(edge, /Keep accepted passenger negotiation in the central board/);
 assert.match(expertSource, /ioneExpertAuthorityApplications/);
 console.log("PASS: passenger ride requests, fare negotiation, expert moderation, official advice and updated PWA versioning");
