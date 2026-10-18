@@ -1,5 +1,5 @@
 {
-  "version": "1.0.193",
-  "message": "Simplify Sokoni delivery fee agreement, route acceptance and rider completion flow",
+  "version": "1.0.194",
+  "message": "Automate Sokoni delivery requests and buyer-rider fee negotiation",
   "force": true
 }
