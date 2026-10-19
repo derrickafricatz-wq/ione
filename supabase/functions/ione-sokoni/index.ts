@@ -353,12 +353,10 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
           return json({ success: false, error: "Could not save all cart items. Please retry the order." }, 500);
         }
-        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, item_count: items.length });
+        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, vendor_user_id: vendor.user_id, item_count: items.length });
       }
       for (const order of createdOrders) {
-        const vendor: any = vendorMap.get(groups.keys().next().value);
-        const matchingVendor = [...vendorMap.values()].find((v: any) => v.vendor_name === order.vendor_name);
-        if (matchingVendor) await sendSokoniPush(admin, matchingVendor.user_id, {
+        await sendSokoniPush(admin, order.vendor_user_id, {
           title: "I|ONE Sokoni • Oda mpya",
           body: buyerName + " ametuma oda yenye bidhaa " + order.item_count + ".",
           url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + order.id
@@ -410,6 +408,14 @@ Deno.serve(async (req) => {
         dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null, status: "new"
       }).select("id,status,total_tzs,created_at").single();
       if (inserted.error) return json({ success: false, error: "Could not send your order request. Please retry." }, 500);
+      const lineInsert = await admin.from("ione_sokoni_order_items").insert([{
+        order_id: inserted.data.id, product_id: product.id, product_name: product.product_name,
+        unit_name: product.unit_name, quantity, unit_price_tzs: product.price_tzs, total_tzs: total
+      }]);
+      if (lineInsert.error) {
+        await admin.from("ione_sokoni_orders").delete().eq("id", inserted.data.id);
+        return json({ success: false, error: "Could not save order details. Please retry." }, 500);
+      }
       await sendSokoniPush(admin, vendor.user_id, {
         title: "I|ONE Sokoni • Oda mpya", body: body?.buyer_name + " ametuma oda ya " + product.product_name + ".",
         url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + inserted.data.id
@@ -428,6 +434,21 @@ Deno.serve(async (req) => {
           .eq("buyer_user_id", user.id).order("created_at", { ascending: false }).limit(100)
       ]);
       if (seller.error || buyer.error) return json({ success: false, error: "Could not load Sokoni order requests." }, 500);
+      const allOrderIds = [...new Set([...(seller.data || []), ...(buyer.data || [])].map((order: any) => order.id))];
+      const orderItemsById = new Map<string, any[]>();
+      if (allOrderIds.length) {
+        const { data: itemRows, error: itemError } = await admin.from("ione_sokoni_order_items")
+          .select("id,order_id,product_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs")
+          .in("order_id", allOrderIds).order("created_at", { ascending: true });
+        if (itemError) return json({ success: false, error: "Could not load order item details." }, 500);
+        for (const item of itemRows || []) {
+          const list = orderItemsById.get(item.order_id) || [];
+          list.push(item);
+          orderItemsById.set(item.order_id, list);
+        }
+      }
+      const sellerOrders = (seller.data || []).map((order: any) => ({ ...order, items: orderItemsById.get(order.id) || [] }));
+      const buyerOrdersWithItems = (buyer.data || []).map((order: any) => ({ ...order, items: orderItemsById.get(order.id) || [] }));
       const vendorIds = [...new Set((buyer.data || []).map((order: any) => order.vendor_id).filter(Boolean))];
       let sellerPhones = new Map<string, string>();
       if (vendorIds.length) {
@@ -435,8 +456,8 @@ Deno.serve(async (req) => {
         if (vendorContacts.error) return json({ success: false, error: "Could not load seller contact details." }, 500);
         sellerPhones = new Map((vendorContacts.data || []).map((vendor: any) => [vendor.id, vendor.phone_number]));
       }
-      const buyerOrders = (buyer.data || []).map((order: any) => ({ ...order, seller_phone: sellerPhones.get(order.vendor_id) || null }));
-      return json({ success: true, seller_orders: seller.data || [], buyer_orders: buyerOrders });
+      const buyerOrders = buyerOrdersWithItems.map((order: any) => ({ ...order, seller_phone: sellerPhones.get(order.vendor_id) || null }));
+      return json({ success: true, seller_orders: sellerOrders, buyer_orders: buyerOrders });
     }
 
     if (action === "update_order_status") {
