@@ -62,6 +62,13 @@ assert.match(moduleSource, /overscroll-behavior-x:contain/);
 assert.match(moduleSource, /touch-action:pan-x pan-y/);
 assert.match(moduleSource, /\.is-vendor-market\{position:relative;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden/);
 assert.match(moduleSource, /place_order_batch/);
+assert.match(moduleSource, /GPS ni hiari/);
+assert.match(moduleSource, /pickup_lat: sellerPickup \? sellerPickup\.latitude : null/);
+assert.match(moduleSource, /dropoff_lat: wantsDelivery && buyerDropoff \? buyerDropoff\.latitude : null/);
+assert.match(edge, /GPS coordinates are optional, but if supplied they must be valid/);
+assert.match(edge, /if\(order\.wants_delivery===true&&order\.delivery_address\)/);
+assert.match(edge, /!vendor\.pickup_location/);
+assert.match(moduleSource, /GPS haikutumika kwa safari hii/);
 assert.match(edge, /save_vendor_profile/);
 assert.match(edge, /save_vendor_presence/);
 assert.match(edge, /validAuthoritySession\(admin, rawSession\)/);
@@ -116,9 +123,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v270/);
+assert.match(sw, /ione-app-v271/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.205$/);
+assert.match(version.version, /^1\.0\.206$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
