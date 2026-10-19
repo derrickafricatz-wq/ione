@@ -123,7 +123,12 @@ Deno.serve(async (req) => {
       ]);
       if (vendorError || requestError) return json({ success: false, error: "Could not load your Sokoni status." }, 500);
       const active = !!vendor && vendor.status === "active" && Date.parse(vendor.paid_until) > Date.now();
-      return json({ success: true, active, vendor: vendor || null, requests: requests || [] });
+      let vendorProfilePhotoUrl = null;
+      if (vendor?.profile_photo_path) {
+        const signedProfile = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+        if (!signedProfile.error) vendorProfilePhotoUrl = signedProfile.data.signedUrl;
+      }
+      return json({ success: true, active, vendor: vendor ? { ...vendor, profile_photo_url: vendorProfilePhotoUrl } : null, requests: requests || [] });
     }
 
     if (action === "public_products") {
