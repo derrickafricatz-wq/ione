@@ -30,7 +30,7 @@ for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
 assert.match(html, /ione-sokoni\.js\?v=12/);
-assert.match(html, /ione-expert\.js\?v=1/);
+assert.match(html, /ione-expert\.js\?v=4/);
 assert.match(html, /sw\.js\?v=139/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
