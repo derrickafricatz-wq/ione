@@ -115,7 +115,7 @@ assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokon
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(sw, /ione-app-v263/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.198$/);
+assert.match(version.version, /^1\.0\.204$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
