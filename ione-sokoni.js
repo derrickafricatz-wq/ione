@@ -758,8 +758,8 @@
     setStatus("isOrderStatus", "Inatuma oda kwa wauzaji…");
     try {
       const wantsDelivery = $("isWantsDelivery").checked;
-      if (wantsDelivery && (!buyerDropoff || !$("isDeliveryAddress").value.trim())) {
-        throw new Error("Weka anwani ya kupeleka na bonyeza kitufe cha GPS kwanza.");
+      if (wantsDelivery && $("isDeliveryAddress").value.trim().length < 4) {
+        throw new Error("Weka anwani ya kupeleka kabla ya kutuma oda. GPS ni hiari.");
       }
       const data = await invoke("place_order_batch", {
         items: sokoniCart.map((item) => ({ product_id: item.id, quantity: Number(item.quantity) })),
@@ -768,8 +768,8 @@
         buyer_note: $("isOrderNote").value.trim(),
         wants_delivery: wantsDelivery,
         delivery_address: wantsDelivery ? $("isDeliveryAddress").value.trim() : "",
-        dropoff_lat: wantsDelivery ? buyerDropoff.latitude : null,
-        dropoff_lng: wantsDelivery ? buyerDropoff.longitude : null
+        dropoff_lat: wantsDelivery && buyerDropoff ? buyerDropoff.latitude : null,
+        dropoff_lng: wantsDelivery && buyerDropoff ? buyerDropoff.longitude : null
       });
       setStatus("isOrderStatus", data.message || "Oda zimetumwa.");
       $("isOrderForm").reset();
@@ -1439,13 +1439,17 @@ if (order.status === "new" || order.status === "accepted") {
   });
   $("isPickupForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!sellerPickup) { setStatus("isPickupStatus", "Chagua eneo kwa kutumia GPS kwanza.", true); return; }
+    if ($("isPickupAddress").value.trim().length < 4) {
+      setStatus("isPickupStatus", "Andika anwani ya kuchukulia yenye maelezo ya kutosha. GPS ni hiari.", true);
+      return;
+    }
     const button = $("isPickupForm").querySelector('button[type="submit"]');
     button.disabled = true;
     try {
       const result = await invoke("save_pickup_location", {
         pickup_location: $("isPickupAddress").value.trim(),
-        pickup_lat: sellerPickup.latitude, pickup_lng: sellerPickup.longitude
+        pickup_lat: sellerPickup ? sellerPickup.latitude : null,
+        pickup_lng: sellerPickup ? sellerPickup.longitude : null
       });
       setStatus("isPickupStatus", result.message || "Eneo limehifadhiwa.");
     } catch (e) { setStatus("isPickupStatus", e.message || "Eneo halikuhifadhiwa.", true); }
