@@ -277,9 +277,11 @@ Deno.serve(async (req) => {
       if (buyerName.length < 2 || buyerName.length > 120 || !validPhone(buyerPhone) || rawItems.length < 1 || rawItems.length > 30) {
         return json({ success: false, error: "Enter your name, valid phone number and add 1–30 products." }, 400);
       }
-      if (wantsDelivery && (deliveryAddress.length < 4 || !Number.isFinite(dropoffLat) || !Number.isFinite(dropoffLng) ||
-          dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)) {
-        return json({ success: false, error: "For Boda Yangu, enter the delivery address and share your current map location." }, 400);
+      const hasDropoffLat = Number.isFinite(dropoffLat);
+      const hasDropoffLng = Number.isFinite(dropoffLng);
+      if (wantsDelivery && (deliveryAddress.length < 4 || hasDropoffLat !== hasDropoffLng ||
+          (hasDropoffLat && (dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)))) {
+        return json({ success: false, error: "For Boda Yangu, enter the delivery address. GPS coordinates are optional, but if supplied they must be valid." }, 400);
       }
       const itemMap = new Map<string, number>();
       for (const raw of rawItems) {
@@ -338,7 +340,8 @@ Deno.serve(async (req) => {
           unit_price_tzs: items.length === 1 ? first.product.price_tzs : 0,
           total_tzs: total, buyer_name: buyerName, buyer_phone: buyerPhone, buyer_note: note,
           wants_delivery: wantsDelivery, delivery_address: wantsDelivery ? deliveryAddress : null,
-          dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null,
+          dropoff_lat: wantsDelivery && hasDropoffLat ? dropoffLat : null,
+          dropoff_lng: wantsDelivery && hasDropoffLng ? dropoffLng : null,
           order_group_id: groupId, status: "new"
         }).select("id,status,total_tzs,created_at,order_group_id").single();
         if (header.error || !header.data) {
@@ -383,9 +386,11 @@ Deno.serve(async (req) => {
           !validPhone(buyerPhone) || !Number.isFinite(quantity) || quantity <= 0 || quantity > 100000 || Math.round(quantity * 1000) !== quantity * 1000) {
         return json({ success: false, error: "Enter your name, valid phone number and a valid quantity." }, 400);
       }
-      if (wantsDelivery && (deliveryAddress.length < 4 || !Number.isFinite(dropoffLat) || !Number.isFinite(dropoffLng) ||
-          dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)) {
-        return json({ success: false, error: "For Boda Yangu, enter the delivery address and share your current map location." }, 400);
+      const hasDropoffLat = Number.isFinite(dropoffLat);
+      const hasDropoffLng = Number.isFinite(dropoffLng);
+      if (wantsDelivery && (deliveryAddress.length < 4 || hasDropoffLat !== hasDropoffLng ||
+          (hasDropoffLat && (dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)))) {
+        return json({ success: false, error: "For Boda Yangu, enter the delivery address. GPS coordinates are optional, but if supplied they must be valid." }, 400);
       }
       const { data: product, error: productError } = await admin.from("ione_sokoni_products")
         .select("id,vendor_id,user_id,product_name,unit_name,price_tzs,stock_quantity,available")
@@ -407,7 +412,8 @@ Deno.serve(async (req) => {
         unit_price_tzs: product.price_tzs, total_tzs: total, buyer_name: buyerName,
         buyer_phone: buyerPhone, buyer_note: note, wants_delivery: wantsDelivery,
         delivery_address: wantsDelivery ? deliveryAddress : null,
-        dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null, status: "new"
+        dropoff_lat: wantsDelivery && hasDropoffLat ? dropoffLat : null,
+        dropoff_lng: wantsDelivery && hasDropoffLng ? dropoffLng : null, status: "new"
       }).select("id,status,total_tzs,created_at").single();
       if (inserted.error) return json({ success: false, error: "Could not send your order request. Please retry." }, 500);
       const lineInsert = await admin.from("ione_sokoni_order_items").insert([{
@@ -523,7 +529,7 @@ Deno.serve(async (req) => {
           return json({ success: false, error: "Not enough stock remains for every item in this order. No stock was intentionally consumed; refresh and retry." }, 409);
         }
         let deliveryCreated=false,deliveryId:string|null=null;
-        if(order.wants_delivery===true&&order.delivery_address&&Number.isFinite(Number(order.dropoff_lat))&&Number.isFinite(Number(order.dropoff_lng))){
+        if(order.wants_delivery===true&&order.delivery_address){
           const pickupLocation=String(vendor.pickup_location||"").trim()||"Eneo la kuchukulia litathibitishwa kwa simu";
           const pickupLat=vendor.pickup_lat!==null&&vendor.pickup_lat!==undefined&&vendor.pickup_lat!==""&&Number.isFinite(Number(vendor.pickup_lat))?Number(vendor.pickup_lat):null;
           const pickupLng=vendor.pickup_lng!==null&&vendor.pickup_lng!==undefined&&vendor.pickup_lng!==""&&Number.isFinite(Number(vendor.pickup_lng))?Number(vendor.pickup_lng):null;
@@ -567,10 +573,15 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const label = String(body?.pickup_location || "").trim().slice(0, 240);
-      const lat = Number(body?.pickup_lat);
-      const lng = Number(body?.pickup_lng);
-      if (label.length < 4 || !Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
-        return json({ success: false, error: "Enter the pickup address and share its map location." }, 400);
+      const rawLat = body?.pickup_lat;
+      const rawLng = body?.pickup_lng;
+      const hasLat = rawLat !== null && rawLat !== undefined && String(rawLat).trim() !== "";
+      const hasLng = rawLng !== null && rawLng !== undefined && String(rawLng).trim() !== "";
+      const lat = hasLat ? Number(rawLat) : null;
+      const lng = hasLng ? Number(rawLng) : null;
+      if (label.length < 4 || hasLat !== hasLng ||
+          (hasLat && (!Number.isFinite(lat) || lat! < -90 || lat! > 90 || !Number.isFinite(lng) || lng! < -180 || lng! > 180))) {
+        return json({ success: false, error: "Enter a pickup address. GPS coordinates are optional, but if supplied they must be valid." }, 400);
       }
       const { data: vendor, error } = await admin.from("ione_sokoni_vendors").select("id,status,paid_until")
         .eq("user_id", user.id).maybeSingle();
@@ -742,15 +753,14 @@ Deno.serve(async (req) => {
       if (error || !order || (order.buyer_user_id !== user.id && order.seller_user_id !== user.id)) {
         return json({ success: false, error: "This order is not available in your account." }, 404);
       }
-      if (order.status !== "accepted" || !order.wants_delivery || !order.delivery_address ||
-          !Number.isFinite(Number(order.dropoff_lat)) || !Number.isFinite(Number(order.dropoff_lng))) {
-        return json({ success: false, error: "This accepted order does not have a valid delivery destination." }, 409);
+      if (order.status !== "accepted" || !order.wants_delivery || !order.delivery_address) {
+        return json({ success: false, error: "This accepted order does not have a delivery address." }, 409);
       }
       const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
         .select("id,status,paid_until,pickup_location,pickup_lat,pickup_lng").eq("id", order.vendor_id).maybeSingle();
       if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now() ||
-          !vendor.pickup_location || !Number.isFinite(Number(vendor.pickup_lat)) || !Number.isFinite(Number(vendor.pickup_lng))) {
-        return json({ success: false, error: "The seller must save a valid pickup address and map location before requesting Boda Yangu." }, 409);
+          !vendor.pickup_location) {
+        return json({ success: false, error: "The seller must save a pickup address before requesting Boda Yangu." }, 409);
       }
       const created = await admin.from("ione_sokoni_deliveries").insert({
         order_id: order.id, buyer_user_id: order.buyer_user_id, seller_user_id: order.seller_user_id, vendor_id: order.vendor_id,

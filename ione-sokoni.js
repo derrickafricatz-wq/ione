@@ -758,8 +758,8 @@
     setStatus("isOrderStatus", "Inatuma oda kwa wauzaji…");
     try {
       const wantsDelivery = $("isWantsDelivery").checked;
-      if (wantsDelivery && (!buyerDropoff || !$("isDeliveryAddress").value.trim())) {
-        throw new Error("Weka anwani ya kupeleka na bonyeza kitufe cha GPS kwanza.");
+      if (wantsDelivery && $("isDeliveryAddress").value.trim().length < 4) {
+        throw new Error("Weka anwani ya kupeleka kabla ya kutuma oda. GPS ni hiari.");
       }
       const data = await invoke("place_order_batch", {
         items: sokoniCart.map((item) => ({ product_id: item.id, quantity: Number(item.quantity) })),
@@ -768,8 +768,8 @@
         buyer_note: $("isOrderNote").value.trim(),
         wants_delivery: wantsDelivery,
         delivery_address: wantsDelivery ? $("isDeliveryAddress").value.trim() : "",
-        dropoff_lat: wantsDelivery ? buyerDropoff.latitude : null,
-        dropoff_lng: wantsDelivery ? buyerDropoff.longitude : null
+        dropoff_lat: wantsDelivery && buyerDropoff ? buyerDropoff.latitude : null,
+        dropoff_lng: wantsDelivery && buyerDropoff ? buyerDropoff.longitude : null
       });
       setStatus("isOrderStatus", data.message || "Oda zimetumwa.");
       $("isOrderForm").reset();
@@ -1183,11 +1183,23 @@ if (order.status === "new" || order.status === "accepted") {
     const map = $("isLiveMap");
     if (!trip) { selectedMapTripId = null; map.style.display = "none"; map.replaceChildren(); return; }
     selectedMapTripId = trip.id;
-    const hasLive = Number.isFinite(Number(trip.rider_lat)) && Number.isFinite(Number(trip.rider_lng)) && !trip.location_stale;
-    const lat = hasLive ? Number(trip.rider_lat) : (trip.status === "picked_up" ? Number(trip.dropoff_lat) : Number(trip.pickup_lat));
-    const lng = hasLive ? Number(trip.rider_lng) : (trip.status === "picked_up" ? Number(trip.dropoff_lng) : Number(trip.pickup_lng));
+    const validCoordinates = (latitude, longitude) =>
+      latitude !== null && latitude !== undefined && String(latitude).trim() !== "" &&
+      longitude !== null && longitude !== undefined && String(longitude).trim() !== "" &&
+      Number.isFinite(Number(latitude)) && Number(latitude) >= -90 && Number(latitude) <= 90 &&
+      Number.isFinite(Number(longitude)) && Number(longitude) >= -180 && Number(longitude) <= 180;
+    const hasLive = validCoordinates(trip.rider_lat, trip.rider_lng) && !trip.location_stale;
+    const fallbackLat = trip.status === "picked_up" ? trip.dropoff_lat : trip.pickup_lat;
+    const fallbackLng = trip.status === "picked_up" ? trip.dropoff_lng : trip.pickup_lng;
+    const lat = hasLive ? Number(trip.rider_lat) : Number(fallbackLat);
+    const lng = hasLive ? Number(trip.rider_lng) : Number(fallbackLng);
     map.style.display = "block"; map.replaceChildren();
     const status = document.createElement("p"); status.className = "is-muted";
+    if (!hasLive && !validCoordinates(fallbackLat, fallbackLng)) {
+      status.textContent = "GPS haikutumika kwa safari hii. Tumia anwani zilizoandikwa na piga simu kuthibitisha eneo kabla ya kuanza safari.";
+      map.appendChild(status);
+      return;
+    }
     status.textContent = hasLive ? "Eneo la bodaboda limesasishwa " + new Date(trip.location_updated_at).toLocaleTimeString("sw-TZ") : "Eneo la moja kwa moja halijapatikana au limepitwa na wakati. Ramani inaonyesha eneo la safari, si mwendo wa sasa.";
     const iframe = document.createElement("iframe");
     iframe.title = "Ramani ya safari ya Boda Yangu";
@@ -1439,13 +1451,17 @@ if (order.status === "new" || order.status === "accepted") {
   });
   $("isPickupForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!sellerPickup) { setStatus("isPickupStatus", "Chagua eneo kwa kutumia GPS kwanza.", true); return; }
+    if ($("isPickupAddress").value.trim().length < 4) {
+      setStatus("isPickupStatus", "Andika anwani ya kuchukulia yenye maelezo ya kutosha. GPS ni hiari.", true);
+      return;
+    }
     const button = $("isPickupForm").querySelector('button[type="submit"]');
     button.disabled = true;
     try {
       const result = await invoke("save_pickup_location", {
         pickup_location: $("isPickupAddress").value.trim(),
-        pickup_lat: sellerPickup.latitude, pickup_lng: sellerPickup.longitude
+        pickup_lat: sellerPickup ? sellerPickup.latitude : null,
+        pickup_lng: sellerPickup ? sellerPickup.longitude : null
       });
       setStatus("isPickupStatus", result.message || "Eneo limehifadhiwa.");
     } catch (e) { setStatus("isPickupStatus", e.message || "Eneo halikuhifadhiwa.", true); }
