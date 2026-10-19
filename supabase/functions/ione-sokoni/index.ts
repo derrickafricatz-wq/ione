@@ -256,6 +256,112 @@ Deno.serve(async (req) => {
       return json({ success: true, message: "Product removed." });
     }
 
+    if (action === "place_order_batch") {
+      const buyer = await getVerifiedUser(admin, req);
+      if (!buyer) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const buyerName = String(body?.buyer_name || "").trim().replace(/\\s+/g, " ");
+      const buyerPhone = normalizeTanzaniaPhone(body?.buyer_phone);
+      const note = String(body?.buyer_note || "").trim().slice(0, 500);
+      const wantsDelivery = body?.wants_delivery === true;
+      const deliveryAddress = String(body?.delivery_address || "").trim().slice(0, 240);
+      const dropoffLat = body?.dropoff_lat === null || body?.dropoff_lat === undefined || body?.dropoff_lat === "" ? NaN : Number(body.dropoff_lat);
+      const dropoffLng = body?.dropoff_lng === null || body?.dropoff_lng === undefined || body?.dropoff_lng === "" ? NaN : Number(body.dropoff_lng);
+      const rawItems = Array.isArray(body?.items) ? body.items : [];
+      if (buyerName.length < 2 || buyerName.length > 120 || !validPhone(buyerPhone) || rawItems.length < 1 || rawItems.length > 30) {
+        return json({ success: false, error: "Enter your name, valid phone number and add 1–30 products." }, 400);
+      }
+      if (wantsDelivery && (deliveryAddress.length < 4 || !Number.isFinite(dropoffLat) || !Number.isFinite(dropoffLng) ||
+          dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)) {
+        return json({ success: false, error: "For Boda Yangu, enter the delivery address and share your current map location." }, 400);
+      }
+      const itemMap = new Map<string, number>();
+      for (const raw of rawItems) {
+        const productId = String(raw?.product_id || "").trim();
+        const quantity = Number(raw?.quantity);
+        if (!/^[0-9a-f-]{36}$/i.test(productId) || itemMap.has(productId) || !Number.isFinite(quantity) ||
+            quantity <= 0 || quantity > 100000 || Math.round(quantity * 1000) !== quantity * 1000) {
+          return json({ success: false, error: "One or more cart items are invalid. Review quantities and try again." }, 400);
+        }
+        itemMap.set(productId, quantity);
+      }
+      const productIds = [...itemMap.keys()];
+      const { data: productRows, error: productsError } = await admin.from("ione_sokoni_products")
+        .select("id,vendor_id,user_id,product_name,unit_name,price_tzs,stock_quantity,available")
+        .in("id", productIds);
+      if (productsError || (productRows || []).length !== productIds.length) {
+        return json({ success: false, error: "One or more products are no longer available. Refresh the market and try again." }, 409);
+      }
+      for (const product of productRows || []) {
+        const quantity = itemMap.get(product.id) || 0;
+        if (!product.available || Number(product.stock_quantity) < quantity) {
+          return json({ success: false, error: product.product_name + " is unavailable or has insufficient stock." }, 409);
+        }
+        if (product.user_id === buyer.id) return json({ success: false, error: "You cannot order your own listing." }, 400);
+      }
+      const vendorIds = [...new Set((productRows || []).map((p: any) => p.vendor_id))];
+      const { data: vendorRows, error: vendorsError } = await admin.from("ione_sokoni_vendors")
+        .select("id,vendor_name,status,paid_until,user_id").in("id", vendorIds);
+      if (vendorsError) return json({ success: false, error: "Could not verify the sellers. Please retry." }, 500);
+      const now = Date.now();
+      const vendorMap = new Map((vendorRows || []).filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > now).map((v: any) => [v.id, v]));
+      if (vendorMap.size !== vendorIds.length) return json({ success: false, error: "A seller's Sokoni access has expired. Refresh the market and try again." }, 409);
+      const groups = new Map<string, any[]>();
+      for (const product of productRows || []) {
+        const vendorItems = groups.get(product.vendor_id) || [];
+        const quantity = itemMap.get(product.id) || 0;
+        vendorItems.push({ product, quantity, total: Number(product.price_tzs) * quantity });
+        groups.set(product.vendor_id, vendorItems);
+      }
+      const createdOrderIds: string[] = [];
+      const createdOrders: any[] = [];
+      for (const [vendorId, items] of groups) {
+        const vendor: any = vendorMap.get(vendorId);
+        const total = items.reduce((sum, item) => sum + item.total, 0);
+        if (!Number.isFinite(total) || total > 100000000000) {
+          if (createdOrderIds.length) await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
+          return json({ success: false, error: "Order total is too large." }, 400);
+        }
+        const groupId = crypto.randomUUID();
+        const first = items[0];
+        const header = await admin.from("ione_sokoni_orders").insert({
+          product_id: first.product.id, vendor_id: vendor.id, seller_user_id: vendor.user_id, buyer_user_id: buyer.id,
+          product_name: items.length === 1 ? first.product.product_name : "Oda ya bidhaa " + items.length,
+          unit_name: items.length === 1 ? first.product.unit_name : "bidhaa",
+          quantity: items.length === 1 ? first.quantity : 1,
+          unit_price_tzs: items.length === 1 ? first.product.price_tzs : 0,
+          total_tzs: total, buyer_name: buyerName, buyer_phone: buyerPhone, buyer_note: note,
+          wants_delivery: wantsDelivery, delivery_address: wantsDelivery ? deliveryAddress : null,
+          dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null,
+          order_group_id: groupId, status: "new"
+        }).select("id,status,total_tzs,created_at,order_group_id").single();
+        if (header.error || !header.data) {
+          if (createdOrderIds.length) await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
+          return json({ success: false, error: "Could not submit the complete cart. No earlier seller orders were kept; please retry." }, 500);
+        }
+        createdOrderIds.push(header.data.id);
+        const lines = items.map((item) => ({
+          order_id: header.data.id, product_id: item.product.id, product_name: item.product.product_name,
+          unit_name: item.product.unit_name, quantity: item.quantity, unit_price_tzs: item.product.price_tzs, total_tzs: item.total
+        }));
+        const savedLines = await admin.from("ione_sokoni_order_items").insert(lines);
+        if (savedLines.error) {
+          await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
+          return json({ success: false, error: "Could not save all cart items. Please retry the order." }, 500);
+        }
+        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, item_count: items.length });
+      }
+      for (const order of createdOrders) {
+        const vendor: any = vendorMap.get(groups.keys().next().value);
+        const matchingVendor = [...vendorMap.values()].find((v: any) => v.vendor_name === order.vendor_name);
+        if (matchingVendor) await sendSokoniPush(admin, matchingVendor.user_id, {
+          title: "I|ONE Sokoni • Oda mpya",
+          body: buyerName + " ametuma oda yenye bidhaa " + order.item_count + ".",
+          url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + order.id
+        });
+      }
+      return json({ success: true, orders: createdOrders, message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
+    }
+
     if (action === "place_order") {
       const buyer = await getVerifiedUser(admin, req);
       if (!buyer) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
