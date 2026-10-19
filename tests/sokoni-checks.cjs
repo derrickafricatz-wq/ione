@@ -29,7 +29,7 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=12/);
+assert.match(html, /ione-sokoni\.js\?v=13/);
 assert.match(html, /ione-expert\.js\?v=4/);
 assert.match(html, /sw\.js\?v=139/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
@@ -58,6 +58,9 @@ assert.match(profileMigration, /add column if not exists profile_photo_path/);
 assert.match(profileMigration, /add column if not exists is_at_market/);
 assert.match(profileMigration, /create table if not exists public\.ione_sokoni_order_items/);
 assert.match(moduleSource, /is-product-track/);
+assert.match(moduleSource, /overscroll-behavior-x:contain/);
+assert.match(moduleSource, /touch-action:pan-x pan-y/);
+assert.match(moduleSource, /\.is-vendor-market\{position:relative;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden/);
 assert.match(moduleSource, /place_order_batch/);
 assert.match(edge, /save_vendor_profile/);
 assert.match(edge, /save_vendor_presence/);
@@ -113,9 +116,9 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v269/);
+assert.match(sw, /ione-app-v270/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
-assert.match(version.version, /^1\.0\.204$/);
+assert.match(version.version, /^1\.0\.205$/);
 for (const action of ["my_status", "apply", "list_feed", "ask", "reply", "authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"]) {
   assert.ok(expertEdge.includes('action === "' + action + '"') || expertEdge.includes('"' + action + '"'), "Missing I|ONE Expert action: " + action);
 }
