@@ -106,7 +106,7 @@ assert.match(edge, /riderApplications,/);
 assert.match(moduleSource, /isRiderIdentityFile/);
 assert.match(moduleSource, /motorcycle_plate/);
 assert.match(moduleSource, /smart-grid #openSokoni\{order:1\}/);
-assert.match(edge, /Reserve this rider first/);
+assert.match(edge, /\.eq\("available", true\)\.select\("id"\)\.maybeSingle\(\)/);
 assert.match(edge, /counter_delivery_fee/);
 assert.match(edge, /deliveryCreated/);
 assert.match(edge, /rider_heartbeat/);
