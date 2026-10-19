@@ -52,7 +52,7 @@ assert.match(riderMigration, /create policy "Sokoni riders upload own verificati
 console.log("PASS: private rider identity upload and verification fields");
 
 for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "save_vendor_profile", "save_vendor_presence", "delete_product", "place_order", "place_order_batch", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_update_profile", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "counter_delivery_fee", "confirm_delivery_fee", "accept_delivery_route", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "passenger_trip_request", "passenger_trip_list", "passenger_trip_accept", "passenger_trip_offer_fare", "passenger_trip_agree_fare", "passenger_trip_status", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
-  assert.ok(edge.includes('action === "' + action + '"'), "Missing Edge Function action: " + action);
+  assert.ok(new RegExp('action\\s*===\\s*"' + action + '"').test(edge), "Missing Edge Function action: " + action);
 }
 assert.match(profileMigration, /add column if not exists profile_photo_path/);
 assert.match(profileMigration, /add column if not exists is_at_market/);
