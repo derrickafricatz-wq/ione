@@ -486,6 +486,20 @@
     setStatus("isMyStatus", "Inapakia hali yako…");
     try {
       const data = await invoke("my_status");
+      if (data.vendor) {
+        const preview = $("isVendorProfilePreview");
+        if (preview) {
+          if (data.vendor.profile_photo_url) { preview.src = data.vendor.profile_photo_url; preview.style.display = "block"; }
+          else { preview.removeAttribute("src"); preview.style.display = "none"; }
+        }
+        const presenceButton = $("isVendorPresenceToggle");
+        const presenceLabel = $("isVendorPresenceLabel");
+        if (presenceButton && presenceLabel) {
+          presenceButton.dataset.isAtMarket = data.vendor.is_at_market ? "true" : "false";
+          presenceLabel.textContent = data.vendor.is_at_market ? "🟢 Hali yako: Nipo sokoni" : "⚪ Hali yako: Sipo sokoni";
+          presenceButton.textContent = data.vendor.is_at_market ? "Weka: Sipo sokoni" : "Weka: Nipo sokoni";
+        }
+      }
       if (data.active) {
         const date = new Date(data.vendor.paid_until).toLocaleDateString("sw-TZ", { year: "numeric", month: "long", day: "numeric" });
         setStatus("isMyStatus", "Ruhusa yako inatumika. Inaisha tarehe " + date + ". Unaweza kuendelea kwenye Sokoni.");
@@ -802,8 +816,17 @@
           const title = document.createElement("strong");
           title.textContent = escText(order.product_name);
           const details = document.createElement("small");
-          details.textContent = "Kiasi: " + order.quantity + " " + order.unit_name + " • Jumla: TZS " + Number(order.total_tzs || 0).toLocaleString("en-TZ") + " • Hali: " + orderStatusSw(order.status);
+          details.textContent = "Jumla: TZS " + Number(order.total_tzs || 0).toLocaleString("en-TZ") + " • Hali: " + orderStatusSw(order.status);
           row.append(title, details);
+          if (order.items?.length) {
+            const itemList = document.createElement("p");
+            itemList.textContent = order.items.map((item) => item.product_name + " × " + item.quantity + " " + item.unit_name).join(" • ");
+            row.appendChild(itemList);
+          } else {
+            const legacyItems = document.createElement("p");
+            legacyItems.textContent = "Kiasi: " + order.quantity + " " + order.unit_name;
+            row.appendChild(legacyItems);
+          }
           if (order.status === "new" && order.seller_phone) {
             const call = document.createElement("a");
             call.className = "is-button";
@@ -829,12 +852,17 @@ buyerBox.appendChild(row);
           const row = document.createElement("div");
           row.className = "is-vendor";
           const title = document.createElement("strong");
-          title.textContent = escText(order.product_name) + " • " + order.quantity + " " + order.unit_name;
+          title.textContent = order.items?.length > 1 ? "Oda ya bidhaa " + order.items.length : escText(order.product_name) + " • " + order.quantity + " " + order.unit_name;
           const details = document.createElement("small");
           details.textContent = "Mnunuzi: " + escText(order.buyer_name) + " • " + escText(order.buyer_phone) + " • Jumla: TZS " + Number(order.total_tzs || 0).toLocaleString("en-TZ") + " • Hali: " + orderStatusSw(order.status);
           const note = document.createElement("p");
           note.textContent = order.buyer_note ? "Maelezo: " + order.buyer_note : "";
           row.append(title, details, note);
+          if (order.items?.length) {
+            const itemList = document.createElement("p");
+            itemList.textContent = order.items.map((item) => item.product_name + " × " + item.quantity + " " + item.unit_name + " — TZS " + Number(item.total_tzs || 0).toLocaleString("en-TZ")).join(" • ");
+            row.appendChild(itemList);
+          }
 if (order.status === "new" || order.status === "accepted") {
             const actions = document.createElement("div");
             actions.className = "is-product-actions";
@@ -1252,12 +1280,25 @@ if (order.status === "new" || order.status === "accepted") {
       }
       data.vendors.forEach((vendor) => {
         const item = document.createElement("div");
-        item.className = "is-vendor";
+        item.className = "is-vendor-market";
+        const head = document.createElement("div");
+        head.className = "is-vendor-market-head";
+        if (vendor.profile_photo_url) {
+          const avatar = document.createElement("img");
+          avatar.className = "is-vendor-avatar";
+          avatar.src = vendor.profile_photo_url;
+          avatar.alt = "Picha ya " + escText(vendor.vendor_name);
+          avatar.loading = "lazy";
+          head.appendChild(avatar);
+        }
+        const identity = document.createElement("div");
         const name = document.createElement("strong");
         name.textContent = escText(vendor.vendor_name);
         const state = document.createElement("small");
-        state.textContent = "Muuzaji aliyethibitishwa • Ruhusa inatumika";
-        item.append(name, state);
+        state.textContent = (vendor.is_at_market ? "🟢 Nipo sokoni" : "⚪ Sipo sokoni") + " • Muuzaji aliyethibitishwa";
+        identity.append(name, state);
+        head.appendChild(identity);
+        item.appendChild(head);
         list.appendChild(item);
       });
     } catch (e) {
@@ -1409,6 +1450,39 @@ if (order.status === "new" || order.status === "accepted") {
     finally { button.disabled = false; }
   });
   $("isClose").addEventListener("click", close);
+  $("isSaveVendorProfile").addEventListener("click", async () => {
+    const input = $("isVendorProfileFile");
+    const file = input?.files?.[0];
+    if (!file) { setStatus("isVendorProfileStatus", "Chagua picha kwanza.", true); return; }
+    if (file.size > 2097152) { setStatus("isVendorProfileStatus", "Picha lazima iwe 2 MB au chini.", true); return; }
+    const button = $("isSaveVendorProfile");
+    button.disabled = true;
+    try {
+      const image_base64 = await fileToBase64(file);
+      const result = await invoke("save_vendor_profile", { image_base64, mime_type: file.type });
+      setStatus("isVendorProfileStatus", result.message || "Picha imehifadhiwa.");
+      await loadStatus();
+      await loadVendors();
+      await loadProductCatalog();
+      input.value = "";
+    } catch (e) { setStatus("isVendorProfileStatus", e.message || "Picha haijahifadhiwa.", true); }
+    finally { button.disabled = false; }
+  });
+  $("isVendorPresenceToggle").addEventListener("click", async () => {
+    const button = $("isVendorPresenceToggle");
+    const next = button.dataset.isAtMarket !== "true";
+    button.disabled = true;
+    try {
+      const result = await invoke("save_vendor_presence", { is_at_market: next });
+      button.dataset.isAtMarket = result.is_at_market ? "true" : "false";
+      $("isVendorPresenceLabel").textContent = result.is_at_market ? "🟢 Hali yako: Nipo sokoni" : "⚪ Hali yako: Sipo sokoni";
+      button.textContent = result.is_at_market ? "Weka: Sipo sokoni" : "Weka: Nipo sokoni";
+      setStatus("isVendorProfileStatus", result.message || "Hali ya sokoni imesasishwa.");
+      await loadVendors();
+      await loadProductCatalog();
+    } catch (e) { setStatus("isVendorProfileStatus", e.message || "Hali ya sokoni haikuhifadhiwa.", true); }
+    finally { button.disabled = false; }
+  });
   $("isCheckStatus").addEventListener("click", loadStatus);
   $("isRefreshVendors").addEventListener("click", loadVendors);
   $("isRefreshProducts").addEventListener("click", loadProductCatalog);
