@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
     if (action === "place_order_batch") {
       const buyer = await getVerifiedUser(admin, req);
       if (!buyer) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
-      const buyerName = String(body?.buyer_name || "").trim().replace(/\\s+/g, " ");
+      const buyerName = String(body?.buyer_name || "").trim().replace(/\s+/g, " ");
       const buyerPhone = normalizeTanzaniaPhone(body?.buyer_phone);
       const note = String(body?.buyer_note || "").trim().slice(0, 500);
       const wantsDelivery = body?.wants_delivery === true;
@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
           url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + order.id
         });
       }
-      return json({ success: true, orders: createdOrders, message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
+      return json({ success: true, orders: createdOrders.map(({ vendor_user_id, ...order }: any) => order), message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
     }
 
     if (action === "place_order") {
