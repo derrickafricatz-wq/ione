@@ -56,7 +56,7 @@ for (const action of ["submit", "my_status", "public_vendors", "public_products"
 }
 assert.match(profileMigration, /add column if not exists profile_photo_path/);
 assert.match(profileMigration, /add column if not exists is_at_market/);
-assert.match(profileMigration, /create table if not exists public\\.ione_sokoni_order_items/);
+assert.match(profileMigration, /create table if not exists public\.ione_sokoni_order_items/);
 assert.match(moduleSource, /is-product-track/);
 assert.match(moduleSource, /place_order_batch/);
 assert.match(edge, /save_vendor_profile/);
