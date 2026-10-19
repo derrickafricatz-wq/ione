@@ -15,7 +15,7 @@ create index if not exists ione_sokoni_orders_group_idx
 create table if not exists public.ione_sokoni_order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid not null references public.ione_sokoni_orders(id) on delete cascade,
-  product_id uuid not null references public.ione_sokoni_products(id) on delete restrict,
+  product_id uuid not null,
   product_name text not null,
   unit_name text not null,
   quantity numeric not null check (quantity > 0),
