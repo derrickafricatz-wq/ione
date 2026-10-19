@@ -66,7 +66,7 @@ assert.match(edge, /action === "set_rider_access"/);
 assert.match(edge, /riders: ridersResult\.data \|\| \[\]/);
 assert.match(edge, /verifiedRiderCount, ridersResult\] = await Promise\.all/);
 assert.match(edge, /myPassengerResult/);
-assert.match(edge, /fare_proposed_tzs,fare_proposed_by,fare_agreed/);
+assert.match(edge, /proposed_fare_tzs,fare_proposed_by,fare_agreed/);
 assert.match(moduleSource, /Safari ya abiria inayoendelea/);
 assert.match(moduleSource, /Kubali nauli ya abiria/);
 assert.match(moduleSource, /Niko tayari kumchukua abiria/);
