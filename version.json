@@ -1,5 +1,5 @@
 {
-  "version": "1.0.203",
-  "message": "Refresh stale push subscriptions against live VAPID key",
+  "version": "1.0.204",
+  "message": "Sokoni multi-item cart, seller profile and market presence",
   "force": true
 }
