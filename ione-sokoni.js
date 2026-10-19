@@ -50,13 +50,15 @@
   .is-product img{width:82px;height:82px;object-fit:cover;border-radius:9px;background:#183323}
   .is-product strong{display:block;overflow-wrap:anywhere}
   .is-product p{font-size:12px;color:#b7d1c0;line-height:1.5;margin:5px 0}
-  .is-vendor-market{border:1px solid #315740;border-radius:14px;padding:12px;margin:10px 0;background:#0a1c12}
-  .is-vendor-market-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .is-vendor-market{position:relative;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;border:1px solid #315740;border-radius:14px;padding:12px;margin:10px 0;background:#0a1c12}
+  .is-vendor-market-head{display:flex;align-items:center;gap:10px;min-width:0;max-width:100%;margin-bottom:10px}
+  .is-vendor-market-head>div{min-width:0;overflow-wrap:anywhere}
   .is-vendor-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#183323;border:1px solid #477d61;flex:0 0 44px}
   .is-vendor-market-head small{display:block;color:#c5ded0;margin-top:4px}
-  .is-product-track{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x proximity}
-  .is-product-track>.is-product{flex:0 0 min(245px,78vw);min-width:0;display:block;scroll-snap-align:start}
-  .is-product-track>.is-product img{width:100%;height:125px;object-fit:cover;margin-bottom:8px}
+  /* Keep horizontal product swipes inside this seller's row on touch screens. */
+  .is-product-track{display:flex;gap:10px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;padding:2px 2px 10px;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-width:thin;scroll-snap-type:x proximity}
+  .is-product-track>.is-product{flex:0 0 min(245px,78vw);width:min(245px,78vw);max-width:100%;min-width:0;box-sizing:border-box;display:block;overflow:hidden;scroll-snap-align:start}
+  .is-product-track>.is-product img{display:block;width:100%;max-width:100%;height:125px;object-fit:cover;margin-bottom:8px}
   .is-cart-line{display:grid;grid-template-columns:minmax(0,1fr) 86px 80px;gap:8px;align-items:center;border-bottom:1px solid #274d36;padding:10px 0}
   .is-cart-line input{min-height:40px;min-width:0;width:100%}
   .is-cart-line button{min-height:38px;padding:7px}
