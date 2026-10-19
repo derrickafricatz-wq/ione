@@ -576,7 +576,7 @@
           const name = document.createElement("strong");
           name.textContent = product.vendor_name || "Mama Sokoni";
           const presence = document.createElement("small");
-          presence.textContent = product.vendor_is_at_market ? "🟢 Yupo sokoni • Nipo sokoni" : "⚪ Hayupo sokoni • Sipo sokoni";
+          presence.textContent = product.vendor_is_at_market ? "🟢 Yupo sokoni" : "⚪ Hayupo sokoni";
           identity.append(name, presence);
           head.append(avatar, identity);
           const track = document.createElement("div");
@@ -1295,7 +1295,7 @@ if (order.status === "new" || order.status === "accepted") {
         const name = document.createElement("strong");
         name.textContent = escText(vendor.vendor_name);
         const state = document.createElement("small");
-        state.textContent = (vendor.is_at_market ? "🟢 Nipo sokoni" : "⚪ Sipo sokoni") + " • Muuzaji aliyethibitishwa";
+        state.textContent = (vendor.is_at_market ? "🟢 Yupo sokoni" : "⚪ Hayupo sokoni") + " • Muuzaji aliyethibitishwa";
         identity.append(name, state);
         head.appendChild(identity);
         item.appendChild(head);
