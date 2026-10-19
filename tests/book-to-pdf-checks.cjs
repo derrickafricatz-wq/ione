@@ -31,7 +31,7 @@ assert.match(sw, /SUPABASE_JS_URL/);
 assert.match(sw, /"\.\/index\.html"/);
 assert.match(sw, /new URL\(url\.pathname, self\.location\.origin\)/);
 assert.match(html, /ioneOfflineCommunications/);
-assert.match(html, /sw\.js\?v=134/);
+assert.match(html, /sw\.js\?v=139/);
 assert.match(offline, /ioneOfflineBookDot/);
 assert.match(offline, /openSavedBooksPanel/);
 assert.match(offline, /SAVED BOOKS/);
