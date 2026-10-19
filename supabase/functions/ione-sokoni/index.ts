@@ -936,11 +936,21 @@ Deno.serve(async (req) => {
       else if (trip.passenger_user_id === user.id && next === "completed" && trip.status === "picked_up") patch = { status: "completed", completed_at: new Date().toISOString() };
       else if (trip.passenger_user_id === user.id && next === "cancelled" && ["requested", "accepted", "fare_proposed", "fare_countered", "fare_agreed", "rider_ready"].includes(trip.status)) patch = { status: "cancelled" };
       else return json({ success: false, error: "Huwezi kubadilisha hali ya safari hii kwa hatua hiyo." }, 403);
-      const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
-      if (saved.error) return json({ success: false, error: "Could not update passenger trip." }, 500);
+      // Reserve the rider before starting the route, so a failed reservation cannot
+      // leave the passenger trip showing "rider_ready" while the rider is still available.
       if (next === "rider_ready") {
-        const offDuty = await admin.from("ione_sokoni_riders").update({ available: false, updated_at: new Date().toISOString() }).eq("id", rider.id).eq("available", true).select("id").maybeSingle();
-        if (offDuty.error || !offDuty.data) return json({ success: false, error: "Safari imebadilika lakini upatikanaji haukuweza kusasishwa. Sasisha hali ya dereva." }, 500);
+        if (!rider || rider.id !== trip.rider_id) return json({ success: false, error: "Dereva wa safari hii hajathibitishwa." }, 403);
+        const reserved = await admin.from("ione_sokoni_riders")
+          .update({ available: false, updated_at: new Date().toISOString() })
+          .eq("id", rider.id).eq("available", true).select("id").maybeSingle();
+        if (reserved.error || !reserved.data) return json({ success: false, error: "Upatikanaji umebadilika. Sasisha safari na ujaribu tena." }, 409);
+      }
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
+      if (saved.error) {
+        if (next === "rider_ready" && rider?.id) {
+          await admin.from("ione_sokoni_riders").update({ available: true, updated_at: new Date().toISOString() }).eq("id", rider.id).eq("available", false);
+        }
+        return json({ success: false, error: "Could not update passenger trip." }, 500);
       }
       if (next === "completed" && trip.rider_id) await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), location_lat: null, location_lng: null, location_updated_at: null, updated_at: new Date().toISOString() }).eq("id", trip.rider_id);
       if (next === "cancelled" && trip.rider_id && trip.status !== "picked_up") await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", trip.rider_id);
