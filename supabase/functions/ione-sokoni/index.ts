@@ -145,6 +145,12 @@ Deno.serve(async (req) => {
       }
       const nowMs = Date.now();
       const vendorMap = new Map(vendorRows.filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > nowMs).map((v: any) => [v.id, v]));
+      const vendorPhotoMap = new Map<string, string | null>();
+      await Promise.all([...vendorMap.values()].map(async (vendor: any) => {
+        if (!vendor.profile_photo_path) { vendorPhotoMap.set(vendor.id, null); return; }
+        const signedVendorPhoto = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+        vendorPhotoMap.set(vendor.id, signedVendorPhoto.error ? null : signedVendorPhoto.data.signedUrl);
+      }));
       const products = await Promise.all((rows || []).filter((r: any) => vendorMap.has(r.vendor_id)).map(async (r: any) => {
         let photoUrl = null;
         if (r.photo_path) {
@@ -152,11 +158,7 @@ Deno.serve(async (req) => {
           if (!signed.error) photoUrl = signed.data.signedUrl;
         }
         const vendor = vendorMap.get(r.vendor_id);
-        let vendorPhotoUrl = null;
-        if (vendor.profile_photo_path) {
-          const signedVendorPhoto = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
-          if (!signedVendorPhoto.error) vendorPhotoUrl = signedVendorPhoto.data.signedUrl;
-        }
+        const vendorPhotoUrl = vendorPhotoMap.get(r.vendor_id) || null;
         return {
           id: r.id, vendor_id: r.vendor_id, product_name: r.product_name, description: r.description,
           price_tzs: r.price_tzs, unit_name: r.unit_name, stock_quantity: r.stock_quantity,
