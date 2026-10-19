@@ -226,7 +226,7 @@
         <form class="is-form" id="isOrderForm">
           <div><label for="isBuyerName">Jina lako</label><input id="isBuyerName" maxlength="120" required placeholder="Andika jina lako"></div>
           <div><label for="isBuyerPhone">Namba ya simu</label><input id="isBuyerPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
-          <div><label for="isOrderQuantity">Kiasi unachohitaji</label><input id="isOrderQuantity" type="number" min="0.001" step="0.001" value="1" required></div>
+          <p class="is-muted">Badili kiasi cha kila bidhaa moja kwa moja ndani ya kikapu kabla ya kutuma oda.</p><input id="isOrderQuantity" type="hidden" value="1">
           <div><label for="isOrderNote">Maelezo ya ziada (si lazima)</label><input id="isOrderNote" maxlength="500" placeholder="Mfano: rangi, ukubwa au muda wa kuchukua"></div>
           <label style="display:flex;align-items:center;gap:10px"><input id="isWantsDelivery" type="checkbox" style="width:20px;min-height:20px"> Nahitaji bodaboda kuleta bidhaa</label>
           <div id="isDeliveryDestinationFields" style="display:none">
