@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Please reload and try again." }, 401);
       const [{ data: vendor, error: vendorError }, { data: requests, error: requestError }] = await Promise.all([
-        admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until,approved_at").eq("user_id", user.id).maybeSingle(),
+        admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until,approved_at,profile_photo_path,is_at_market,presence_updated_at").eq("user_id", user.id).maybeSingle(),
         admin.from("ione_sokoni_payment_requests").select("id,status,amount_tzs,created_at,approved_at,admin_note")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(5)
       ]);
@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       const vendorIds = [...new Set((rows || []).map((r: any) => r.vendor_id))];
       let vendorRows: any[] = [];
       if (vendorIds.length) {
-        const result = await admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until").in("id", vendorIds);
+        const result = await admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until,profile_photo_path,is_at_market,presence_updated_at").in("id", vendorIds);
         if (result.error) return json({ success: false, error: "Could not load verified sellers." }, 500);
         vendorRows = result.data || [];
       }
@@ -146,10 +146,18 @@ Deno.serve(async (req) => {
           const signed = await admin.storage.from("ione-sokoni-products").createSignedUrl(r.photo_path, 3600);
           if (!signed.error) photoUrl = signed.data.signedUrl;
         }
+        const vendor = vendorMap.get(r.vendor_id);
+        let vendorPhotoUrl = null;
+        if (vendor.profile_photo_path) {
+          const signedVendorPhoto = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+          if (!signedVendorPhoto.error) vendorPhotoUrl = signedVendorPhoto.data.signedUrl;
+        }
         return {
           id: r.id, vendor_id: r.vendor_id, product_name: r.product_name, description: r.description,
           price_tzs: r.price_tzs, unit_name: r.unit_name, stock_quantity: r.stock_quantity,
-          photo_url: photoUrl, vendor_name: vendorMap.get(r.vendor_id).vendor_name, updated_at: r.updated_at
+          photo_url: photoUrl, vendor_name: vendor.vendor_name, vendor_profile_photo_url: vendorPhotoUrl,
+          vendor_is_at_market: vendor.is_at_market === true, vendor_presence_updated_at: vendor.presence_updated_at || null,
+          updated_at: r.updated_at
         };
       }));
       return json({ success: true, products });
@@ -1012,12 +1020,69 @@ Deno.serve(async (req) => {
       return json({ success: true, message: "Safari imekamilika. Upatikanaji wako umewashwa tena." });
     }
 
+    if (action === "save_vendor_presence") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      if (typeof body?.is_at_market !== "boolean") return json({ success: false, error: "Choose whether you are at the market." }, 400);
+      const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
+        .select("id,status,paid_until").eq("user_id", user.id).maybeSingle();
+      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
+        return json({ success: false, error: "Active Sokoni vendor access is required." }, 403);
+      }
+      const saved = await admin.from("ione_sokoni_vendors").update({
+        is_at_market: body.is_at_market, presence_updated_at: new Date().toISOString(), updated_at: new Date().toISOString()
+      }).eq("id", vendor.id).select("is_at_market,presence_updated_at").maybeSingle();
+      if (saved.error || !saved.data) return json({ success: false, error: "Could not update your market status." }, 500);
+      return json({ success: true, ...saved.data, message: saved.data.is_at_market ? "Hali yako: Nipo sokoni." : "Hali yako: Sipo sokoni." });
+    }
+
+    if (action === "save_vendor_profile") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const mime = String(body?.mime_type || "").toLowerCase();
+      const extension = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "";
+      const encoded = String(body?.image_base64 || "");
+      if (!extension || !encoded || encoded.length > 2800000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
+        return json({ success: false, error: "Choose a JPG, PNG or WebP profile photo under 2 MB." }, 400);
+      }
+      const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
+        .select("id,status,paid_until,profile_photo_path").eq("user_id", user.id).maybeSingle();
+      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
+        return json({ success: false, error: "Active Sokoni vendor access is required." }, 403);
+      }
+      let bytes: Uint8Array;
+      try { bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0)); }
+      catch (_) { return json({ success: false, error: "The profile image could not be read." }, 400); }
+      if (!bytes.length || bytes.length > 2097152) return json({ success: false, error: "Profile photos must be 2 MB or smaller." }, 400);
+      const path = user.id + "/" + crypto.randomUUID() + "." + extension;
+      const uploaded = await admin.storage.from("ione-sokoni-vendor-profiles").upload(path, bytes, { contentType: mime, upsert: false });
+      if (uploaded.error) return json({ success: false, error: "Could not upload the profile photo. Try again." }, 500);
+      const saved = await admin.from("ione_sokoni_vendors").update({ profile_photo_path: path, updated_at: new Date().toISOString() })
+        .eq("id", vendor.id).select("id").maybeSingle();
+      if (saved.error || !saved.data) {
+        await admin.storage.from("ione-sokoni-vendor-profiles").remove([path]);
+        return json({ success: false, error: "Could not save the profile photo." }, 500);
+      }
+      if (vendor.profile_photo_path) await admin.storage.from("ione-sokoni-vendor-profiles").remove([vendor.profile_photo_path]);
+      const signed = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(path, 3600);
+      return json({ success: true, profile_photo_url: signed.error ? null : signed.data.signedUrl, message: "Picha ya wasifu imehifadhiwa." });
+    }
+
     if (action === "public_vendors") {
       const { data, error } = await admin.from("ione_sokoni_vendors")
-        .select("id,vendor_name,paid_until").eq("status", "active").gt("paid_until", new Date().toISOString())
+        .select("id,vendor_name,paid_until,profile_photo_path,is_at_market,presence_updated_at").eq("status", "active").gt("paid_until", new Date().toISOString())
         .order("vendor_name", { ascending: true }).limit(200);
       if (error) return json({ success: false, error: "The market is temporarily unavailable." }, 500);
-      return json({ success: true, vendors: data || [] });
+      const vendors = await Promise.all((data || []).map(async (vendor: any) => {
+        let profile_photo_url = null;
+        if (vendor.profile_photo_path) {
+          const signed = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+          if (!signed.error) profile_photo_url = signed.data.signedUrl;
+        }
+        return { id: vendor.id, vendor_name: vendor.vendor_name, paid_until: vendor.paid_until,
+          profile_photo_url, is_at_market: vendor.is_at_market === true, presence_updated_at: vendor.presence_updated_at || null };
+      }));
+      return json({ success: true, vendors });
     }
 
     if (action === "authority_dashboard" || action === "approve" || action === "reject" || action === "approve_rider" || action === "reject_rider" || action === "set_rider_access") {
