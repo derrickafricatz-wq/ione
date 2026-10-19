@@ -483,19 +483,42 @@ Deno.serve(async (req) => {
         const claimed = await admin.from("ione_sokoni_orders").update({ status: "accepted", updated_at: new Date().toISOString() })
           .eq("id", order.id).eq("status", "new").select("id").maybeSingle();
         if (claimed.error || !claimed.data) return json({ success: false, error: "Another action already updated this order. Refresh and retry." }, 409);
-        const { data: product, error: productError } = await admin.from("ione_sokoni_products").select("stock_quantity")
-          .eq("id", order.product_id).eq("user_id", user.id).maybeSingle();
-        if (productError || !product || Number(product.stock_quantity) < Number(order.quantity)) {
+        const { data: orderItems, error: orderItemsError } = await admin.from("ione_sokoni_order_items")
+          .select("product_id,quantity").eq("order_id", order.id);
+        if (orderItemsError) {
           await admin.from("ione_sokoni_orders").update({ status: "new", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "accepted");
-          return json({ success: false, error: "Not enough stock remains to accept this order." }, 409);
+          return json({ success: false, error: "Could not verify order items. Refresh and try again." }, 500);
         }
-        const remaining = Number(product.stock_quantity) - Number(order.quantity);
-        const stockUpdate = await admin.from("ione_sokoni_products").update({
-          stock_quantity: remaining, available: remaining > 0, updated_at: new Date().toISOString()
-        }).eq("id", order.product_id).eq("user_id", user.id).eq("stock_quantity", product.stock_quantity).select("id").maybeSingle();
-        if (stockUpdate.error || !stockUpdate.data) {
+        const stockLines = (orderItems && orderItems.length) ? orderItems : [{ product_id: order.product_id, quantity: order.quantity }];
+        const deductions: Array<{ product_id: string; quantity: number }> = [];
+        let stockFailure = false;
+        for (const line of stockLines) {
+          const { data: product, error: productError } = await admin.from("ione_sokoni_products").select("stock_quantity")
+            .eq("id", line.product_id).eq("user_id", user.id).maybeSingle();
+          if (productError || !product || Number(product.stock_quantity) < Number(line.quantity)) {
+            stockFailure = true; break;
+          }
+          const remaining = Number(product.stock_quantity) - Number(line.quantity);
+          const stockUpdate = await admin.from("ione_sokoni_products").update({
+            stock_quantity: remaining, available: remaining > 0, updated_at: new Date().toISOString()
+          }).eq("id", line.product_id).eq("user_id", user.id).eq("stock_quantity", product.stock_quantity).select("id").maybeSingle();
+          if (stockUpdate.error || !stockUpdate.data) {
+            stockFailure = true; break;
+          }
+          deductions.push({ product_id: line.product_id, quantity: Number(line.quantity) });
+        }
+        if (stockFailure) {
+          for (const deduction of deductions) {
+            const { data: current } = await admin.from("ione_sokoni_products").select("stock_quantity")
+              .eq("id", deduction.product_id).eq("user_id", user.id).maybeSingle();
+            if (current) {
+              const restored = Number(current.stock_quantity) + deduction.quantity;
+              await admin.from("ione_sokoni_products").update({ stock_quantity: restored, available: restored > 0, updated_at: new Date().toISOString() })
+                .eq("id", deduction.product_id).eq("user_id", user.id).eq("stock_quantity", current.stock_quantity);
+            }
+          }
           await admin.from("ione_sokoni_orders").update({ status: "new", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "accepted");
-          return json({ success: false, error: "Stock changed while accepting. Refresh the order and try again." }, 409);
+          return json({ success: false, error: "Not enough stock remains for every item in this order. No stock was intentionally consumed; refresh and retry." }, 409);
         }
         let deliveryCreated=false,deliveryId:string|null=null;
         if(order.wants_delivery===true&&order.delivery_address&&Number.isFinite(Number(order.dropoff_lat))&&Number.isFinite(Number(order.dropoff_lng))){
