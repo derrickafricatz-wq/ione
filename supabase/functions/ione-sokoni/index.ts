@@ -117,13 +117,18 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Please reload and try again." }, 401);
       const [{ data: vendor, error: vendorError }, { data: requests, error: requestError }] = await Promise.all([
-        admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until,approved_at").eq("user_id", user.id).maybeSingle(),
+        admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until,approved_at,profile_photo_path,is_at_market,presence_updated_at").eq("user_id", user.id).maybeSingle(),
         admin.from("ione_sokoni_payment_requests").select("id,status,amount_tzs,created_at,approved_at,admin_note")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(5)
       ]);
       if (vendorError || requestError) return json({ success: false, error: "Could not load your Sokoni status." }, 500);
       const active = !!vendor && vendor.status === "active" && Date.parse(vendor.paid_until) > Date.now();
-      return json({ success: true, active, vendor: vendor || null, requests: requests || [] });
+      let vendorProfilePhotoUrl = null;
+      if (vendor?.profile_photo_path) {
+        const signedProfile = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+        if (!signedProfile.error) vendorProfilePhotoUrl = signedProfile.data.signedUrl;
+      }
+      return json({ success: true, active, vendor: vendor ? { ...vendor, profile_photo_url: vendorProfilePhotoUrl } : null, requests: requests || [] });
     }
 
     if (action === "public_products") {
@@ -134,22 +139,32 @@ Deno.serve(async (req) => {
       const vendorIds = [...new Set((rows || []).map((r: any) => r.vendor_id))];
       let vendorRows: any[] = [];
       if (vendorIds.length) {
-        const result = await admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until").in("id", vendorIds);
+        const result = await admin.from("ione_sokoni_vendors").select("id,vendor_name,status,paid_until,profile_photo_path,is_at_market,presence_updated_at").in("id", vendorIds);
         if (result.error) return json({ success: false, error: "Could not load verified sellers." }, 500);
         vendorRows = result.data || [];
       }
       const nowMs = Date.now();
       const vendorMap = new Map(vendorRows.filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > nowMs).map((v: any) => [v.id, v]));
+      const vendorPhotoMap = new Map<string, string | null>();
+      await Promise.all([...vendorMap.values()].map(async (vendor: any) => {
+        if (!vendor.profile_photo_path) { vendorPhotoMap.set(vendor.id, null); return; }
+        const signedVendorPhoto = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+        vendorPhotoMap.set(vendor.id, signedVendorPhoto.error ? null : signedVendorPhoto.data.signedUrl);
+      }));
       const products = await Promise.all((rows || []).filter((r: any) => vendorMap.has(r.vendor_id)).map(async (r: any) => {
         let photoUrl = null;
         if (r.photo_path) {
           const signed = await admin.storage.from("ione-sokoni-products").createSignedUrl(r.photo_path, 3600);
           if (!signed.error) photoUrl = signed.data.signedUrl;
         }
+        const vendor = vendorMap.get(r.vendor_id);
+        const vendorPhotoUrl = vendorPhotoMap.get(r.vendor_id) || null;
         return {
           id: r.id, vendor_id: r.vendor_id, product_name: r.product_name, description: r.description,
           price_tzs: r.price_tzs, unit_name: r.unit_name, stock_quantity: r.stock_quantity,
-          photo_url: photoUrl, vendor_name: vendorMap.get(r.vendor_id).vendor_name, updated_at: r.updated_at
+          photo_url: photoUrl, vendor_name: vendor.vendor_name, vendor_profile_photo_url: vendorPhotoUrl,
+          vendor_is_at_market: vendor.is_at_market === true, vendor_presence_updated_at: vendor.presence_updated_at || null,
+          updated_at: r.updated_at
         };
       }));
       return json({ success: true, products });
@@ -248,6 +263,110 @@ Deno.serve(async (req) => {
       return json({ success: true, message: "Product removed." });
     }
 
+    if (action === "place_order_batch") {
+      const buyer = await getVerifiedUser(admin, req);
+      if (!buyer) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const buyerName = String(body?.buyer_name || "").trim().replace(/\s+/g, " ");
+      const buyerPhone = normalizeTanzaniaPhone(body?.buyer_phone);
+      const note = String(body?.buyer_note || "").trim().slice(0, 500);
+      const wantsDelivery = body?.wants_delivery === true;
+      const deliveryAddress = String(body?.delivery_address || "").trim().slice(0, 240);
+      const dropoffLat = body?.dropoff_lat === null || body?.dropoff_lat === undefined || body?.dropoff_lat === "" ? NaN : Number(body.dropoff_lat);
+      const dropoffLng = body?.dropoff_lng === null || body?.dropoff_lng === undefined || body?.dropoff_lng === "" ? NaN : Number(body.dropoff_lng);
+      const rawItems = Array.isArray(body?.items) ? body.items : [];
+      if (buyerName.length < 2 || buyerName.length > 120 || !validPhone(buyerPhone) || rawItems.length < 1 || rawItems.length > 30) {
+        return json({ success: false, error: "Enter your name, valid phone number and add 1–30 products." }, 400);
+      }
+      if (wantsDelivery && (deliveryAddress.length < 4 || !Number.isFinite(dropoffLat) || !Number.isFinite(dropoffLng) ||
+          dropoffLat < -90 || dropoffLat > 90 || dropoffLng < -180 || dropoffLng > 180)) {
+        return json({ success: false, error: "For Boda Yangu, enter the delivery address and share your current map location." }, 400);
+      }
+      const itemMap = new Map<string, number>();
+      for (const raw of rawItems) {
+        const productId = String(raw?.product_id || "").trim();
+        const quantity = Number(raw?.quantity);
+        if (!/^[0-9a-f-]{36}$/i.test(productId) || itemMap.has(productId) || !Number.isFinite(quantity) ||
+            quantity <= 0 || quantity > 100000 || Math.round(quantity * 1000) !== quantity * 1000) {
+          return json({ success: false, error: "One or more cart items are invalid. Review quantities and try again." }, 400);
+        }
+        itemMap.set(productId, quantity);
+      }
+      const productIds = [...itemMap.keys()];
+      const { data: productRows, error: productsError } = await admin.from("ione_sokoni_products")
+        .select("id,vendor_id,user_id,product_name,unit_name,price_tzs,stock_quantity,available")
+        .in("id", productIds);
+      if (productsError || (productRows || []).length !== productIds.length) {
+        return json({ success: false, error: "One or more products are no longer available. Refresh the market and try again." }, 409);
+      }
+      for (const product of productRows || []) {
+        const quantity = itemMap.get(product.id) || 0;
+        if (!product.available || Number(product.stock_quantity) < quantity) {
+          return json({ success: false, error: product.product_name + " is unavailable or has insufficient stock." }, 409);
+        }
+        if (product.user_id === buyer.id) return json({ success: false, error: "You cannot order your own listing." }, 400);
+      }
+      const vendorIds = [...new Set((productRows || []).map((p: any) => p.vendor_id))];
+      const { data: vendorRows, error: vendorsError } = await admin.from("ione_sokoni_vendors")
+        .select("id,vendor_name,status,paid_until,user_id").in("id", vendorIds);
+      if (vendorsError) return json({ success: false, error: "Could not verify the sellers. Please retry." }, 500);
+      const now = Date.now();
+      const vendorMap = new Map((vendorRows || []).filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > now).map((v: any) => [v.id, v]));
+      if (vendorMap.size !== vendorIds.length) return json({ success: false, error: "A seller's Sokoni access has expired. Refresh the market and try again." }, 409);
+      const groups = new Map<string, any[]>();
+      for (const product of productRows || []) {
+        const vendorItems = groups.get(product.vendor_id) || [];
+        const quantity = itemMap.get(product.id) || 0;
+        vendorItems.push({ product, quantity, total: Number(product.price_tzs) * quantity });
+        groups.set(product.vendor_id, vendorItems);
+      }
+      const createdOrderIds: string[] = [];
+      const createdOrders: any[] = [];
+      for (const [vendorId, items] of groups) {
+        const vendor: any = vendorMap.get(vendorId);
+        const total = items.reduce((sum, item) => sum + item.total, 0);
+        if (!Number.isFinite(total) || total > 100000000000) {
+          if (createdOrderIds.length) await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
+          return json({ success: false, error: "Order total is too large." }, 400);
+        }
+        const groupId = crypto.randomUUID();
+        const first = items[0];
+        const header = await admin.from("ione_sokoni_orders").insert({
+          product_id: first.product.id, vendor_id: vendor.id, seller_user_id: vendor.user_id, buyer_user_id: buyer.id,
+          product_name: items.length === 1 ? first.product.product_name : "Oda ya bidhaa " + items.length,
+          unit_name: items.length === 1 ? first.product.unit_name : "bidhaa",
+          quantity: items.length === 1 ? first.quantity : 1,
+          unit_price_tzs: items.length === 1 ? first.product.price_tzs : 0,
+          total_tzs: total, buyer_name: buyerName, buyer_phone: buyerPhone, buyer_note: note,
+          wants_delivery: wantsDelivery, delivery_address: wantsDelivery ? deliveryAddress : null,
+          dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null,
+          order_group_id: groupId, status: "new"
+        }).select("id,status,total_tzs,created_at,order_group_id").single();
+        if (header.error || !header.data) {
+          if (createdOrderIds.length) await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
+          return json({ success: false, error: "Could not submit the complete cart. No earlier seller orders were kept; please retry." }, 500);
+        }
+        createdOrderIds.push(header.data.id);
+        const lines = items.map((item) => ({
+          order_id: header.data.id, product_id: item.product.id, product_name: item.product.product_name,
+          unit_name: item.product.unit_name, quantity: item.quantity, unit_price_tzs: item.product.price_tzs, total_tzs: item.total
+        }));
+        const savedLines = await admin.from("ione_sokoni_order_items").insert(lines);
+        if (savedLines.error) {
+          await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
+          return json({ success: false, error: "Could not save all cart items. Please retry the order." }, 500);
+        }
+        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, vendor_user_id: vendor.user_id, item_count: items.length });
+      }
+      for (const order of createdOrders) {
+        await sendSokoniPush(admin, order.vendor_user_id, {
+          title: "I|ONE Sokoni • Oda mpya",
+          body: buyerName + " ametuma oda yenye bidhaa " + order.item_count + ".",
+          url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + order.id
+        });
+      }
+      return json({ success: true, orders: createdOrders.map(({ vendor_user_id, ...order }: any) => order), message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
+    }
+
     if (action === "place_order") {
       const buyer = await getVerifiedUser(admin, req);
       if (!buyer) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
@@ -291,6 +410,14 @@ Deno.serve(async (req) => {
         dropoff_lat: wantsDelivery ? dropoffLat : null, dropoff_lng: wantsDelivery ? dropoffLng : null, status: "new"
       }).select("id,status,total_tzs,created_at").single();
       if (inserted.error) return json({ success: false, error: "Could not send your order request. Please retry." }, 500);
+      const lineInsert = await admin.from("ione_sokoni_order_items").insert([{
+        order_id: inserted.data.id, product_id: product.id, product_name: product.product_name,
+        unit_name: product.unit_name, quantity, unit_price_tzs: product.price_tzs, total_tzs: total
+      }]);
+      if (lineInsert.error) {
+        await admin.from("ione_sokoni_orders").delete().eq("id", inserted.data.id);
+        return json({ success: false, error: "Could not save order details. Please retry." }, 500);
+      }
       await sendSokoniPush(admin, vendor.user_id, {
         title: "I|ONE Sokoni • Oda mpya", body: body?.buyer_name + " ametuma oda ya " + product.product_name + ".",
         url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + inserted.data.id
@@ -309,6 +436,21 @@ Deno.serve(async (req) => {
           .eq("buyer_user_id", user.id).order("created_at", { ascending: false }).limit(100)
       ]);
       if (seller.error || buyer.error) return json({ success: false, error: "Could not load Sokoni order requests." }, 500);
+      const allOrderIds = [...new Set([...(seller.data || []), ...(buyer.data || [])].map((order: any) => order.id))];
+      const orderItemsById = new Map<string, any[]>();
+      if (allOrderIds.length) {
+        const { data: itemRows, error: itemError } = await admin.from("ione_sokoni_order_items")
+          .select("id,order_id,product_id,product_name,unit_name,quantity,unit_price_tzs,total_tzs")
+          .in("order_id", allOrderIds).order("created_at", { ascending: true });
+        if (itemError) return json({ success: false, error: "Could not load order item details." }, 500);
+        for (const item of itemRows || []) {
+          const list = orderItemsById.get(item.order_id) || [];
+          list.push(item);
+          orderItemsById.set(item.order_id, list);
+        }
+      }
+      const sellerOrders = (seller.data || []).map((order: any) => ({ ...order, items: orderItemsById.get(order.id) || [] }));
+      const buyerOrdersWithItems = (buyer.data || []).map((order: any) => ({ ...order, items: orderItemsById.get(order.id) || [] }));
       const vendorIds = [...new Set((buyer.data || []).map((order: any) => order.vendor_id).filter(Boolean))];
       let sellerPhones = new Map<string, string>();
       if (vendorIds.length) {
@@ -316,8 +458,8 @@ Deno.serve(async (req) => {
         if (vendorContacts.error) return json({ success: false, error: "Could not load seller contact details." }, 500);
         sellerPhones = new Map((vendorContacts.data || []).map((vendor: any) => [vendor.id, vendor.phone_number]));
       }
-      const buyerOrders = (buyer.data || []).map((order: any) => ({ ...order, seller_phone: sellerPhones.get(order.vendor_id) || null }));
-      return json({ success: true, seller_orders: seller.data || [], buyer_orders: buyerOrders });
+      const buyerOrders = buyerOrdersWithItems.map((order: any) => ({ ...order, seller_phone: sellerPhones.get(order.vendor_id) || null }));
+      return json({ success: true, seller_orders: sellerOrders, buyer_orders: buyerOrders });
     }
 
     if (action === "update_order_status") {
@@ -343,19 +485,42 @@ Deno.serve(async (req) => {
         const claimed = await admin.from("ione_sokoni_orders").update({ status: "accepted", updated_at: new Date().toISOString() })
           .eq("id", order.id).eq("status", "new").select("id").maybeSingle();
         if (claimed.error || !claimed.data) return json({ success: false, error: "Another action already updated this order. Refresh and retry." }, 409);
-        const { data: product, error: productError } = await admin.from("ione_sokoni_products").select("stock_quantity")
-          .eq("id", order.product_id).eq("user_id", user.id).maybeSingle();
-        if (productError || !product || Number(product.stock_quantity) < Number(order.quantity)) {
+        const { data: orderItems, error: orderItemsError } = await admin.from("ione_sokoni_order_items")
+          .select("product_id,quantity").eq("order_id", order.id);
+        if (orderItemsError) {
           await admin.from("ione_sokoni_orders").update({ status: "new", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "accepted");
-          return json({ success: false, error: "Not enough stock remains to accept this order." }, 409);
+          return json({ success: false, error: "Could not verify order items. Refresh and try again." }, 500);
         }
-        const remaining = Number(product.stock_quantity) - Number(order.quantity);
-        const stockUpdate = await admin.from("ione_sokoni_products").update({
-          stock_quantity: remaining, available: remaining > 0, updated_at: new Date().toISOString()
-        }).eq("id", order.product_id).eq("user_id", user.id).eq("stock_quantity", product.stock_quantity).select("id").maybeSingle();
-        if (stockUpdate.error || !stockUpdate.data) {
+        const stockLines = (orderItems && orderItems.length) ? orderItems : [{ product_id: order.product_id, quantity: order.quantity }];
+        const deductions: Array<{ product_id: string; quantity: number }> = [];
+        let stockFailure = false;
+        for (const line of stockLines) {
+          const { data: product, error: productError } = await admin.from("ione_sokoni_products").select("stock_quantity")
+            .eq("id", line.product_id).eq("user_id", user.id).maybeSingle();
+          if (productError || !product || Number(product.stock_quantity) < Number(line.quantity)) {
+            stockFailure = true; break;
+          }
+          const remaining = Number(product.stock_quantity) - Number(line.quantity);
+          const stockUpdate = await admin.from("ione_sokoni_products").update({
+            stock_quantity: remaining, available: remaining > 0, updated_at: new Date().toISOString()
+          }).eq("id", line.product_id).eq("user_id", user.id).eq("stock_quantity", product.stock_quantity).select("id").maybeSingle();
+          if (stockUpdate.error || !stockUpdate.data) {
+            stockFailure = true; break;
+          }
+          deductions.push({ product_id: line.product_id, quantity: Number(line.quantity) });
+        }
+        if (stockFailure) {
+          for (const deduction of deductions) {
+            const { data: current } = await admin.from("ione_sokoni_products").select("stock_quantity")
+              .eq("id", deduction.product_id).eq("user_id", user.id).maybeSingle();
+            if (current) {
+              const restored = Number(current.stock_quantity) + deduction.quantity;
+              await admin.from("ione_sokoni_products").update({ stock_quantity: restored, available: restored > 0, updated_at: new Date().toISOString() })
+                .eq("id", deduction.product_id).eq("user_id", user.id).eq("stock_quantity", current.stock_quantity);
+            }
+          }
           await admin.from("ione_sokoni_orders").update({ status: "new", updated_at: new Date().toISOString() }).eq("id", order.id).eq("status", "accepted");
-          return json({ success: false, error: "Stock changed while accepting. Refresh the order and try again." }, 409);
+          return json({ success: false, error: "Not enough stock remains for every item in this order. No stock was intentionally consumed; refresh and retry." }, 409);
         }
         let deliveryCreated=false,deliveryId:string|null=null;
         if(order.wants_delivery===true&&order.delivery_address&&Number.isFinite(Number(order.dropoff_lat))&&Number.isFinite(Number(order.dropoff_lng))){
@@ -771,11 +936,21 @@ Deno.serve(async (req) => {
       else if (trip.passenger_user_id === user.id && next === "completed" && trip.status === "picked_up") patch = { status: "completed", completed_at: new Date().toISOString() };
       else if (trip.passenger_user_id === user.id && next === "cancelled" && ["requested", "accepted", "fare_proposed", "fare_countered", "fare_agreed", "rider_ready"].includes(trip.status)) patch = { status: "cancelled" };
       else return json({ success: false, error: "Huwezi kubadilisha hali ya safari hii kwa hatua hiyo." }, 403);
-      const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
-      if (saved.error) return json({ success: false, error: "Could not update passenger trip." }, 500);
+      // Reserve the rider before starting the route, so a failed reservation cannot
+      // leave the passenger trip showing "rider_ready" while the rider is still available.
       if (next === "rider_ready") {
-        const offDuty = await admin.from("ione_sokoni_riders").update({ available: false, updated_at: new Date().toISOString() }).eq("id", rider.id).eq("available", true).select("id").maybeSingle();
-        if (offDuty.error || !offDuty.data) return json({ success: false, error: "Safari imebadilika lakini upatikanaji haukuweza kusasishwa. Sasisha hali ya dereva." }, 500);
+        if (!rider || rider.id !== trip.rider_id) return json({ success: false, error: "Dereva wa safari hii hajathibitishwa." }, 403);
+        const reserved = await admin.from("ione_sokoni_riders")
+          .update({ available: false, updated_at: new Date().toISOString() })
+          .eq("id", rider.id).eq("available", true).select("id").maybeSingle();
+        if (reserved.error || !reserved.data) return json({ success: false, error: "Upatikanaji umebadilika. Sasisha safari na ujaribu tena." }, 409);
+      }
+      const saved = await admin.from("ione_sokoni_passenger_trips").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", tripId).select("id").single();
+      if (saved.error) {
+        if (next === "rider_ready" && rider?.id) {
+          await admin.from("ione_sokoni_riders").update({ available: true, updated_at: new Date().toISOString() }).eq("id", rider.id).eq("available", false);
+        }
+        return json({ success: false, error: "Could not update passenger trip." }, 500);
       }
       if (next === "completed" && trip.rider_id) await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), location_lat: null, location_lng: null, location_updated_at: null, updated_at: new Date().toISOString() }).eq("id", trip.rider_id);
       if (next === "cancelled" && trip.rider_id && trip.status !== "picked_up") await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", trip.rider_id);
@@ -1012,12 +1187,69 @@ Deno.serve(async (req) => {
       return json({ success: true, message: "Safari imekamilika. Upatikanaji wako umewashwa tena." });
     }
 
+    if (action === "save_vendor_presence") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      if (typeof body?.is_at_market !== "boolean") return json({ success: false, error: "Choose whether you are at the market." }, 400);
+      const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
+        .select("id,status,paid_until").eq("user_id", user.id).maybeSingle();
+      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
+        return json({ success: false, error: "Active Sokoni vendor access is required." }, 403);
+      }
+      const saved = await admin.from("ione_sokoni_vendors").update({
+        is_at_market: body.is_at_market, presence_updated_at: new Date().toISOString(), updated_at: new Date().toISOString()
+      }).eq("id", vendor.id).select("is_at_market,presence_updated_at").maybeSingle();
+      if (saved.error || !saved.data) return json({ success: false, error: "Could not update your market status." }, 500);
+      return json({ success: true, ...saved.data, message: saved.data.is_at_market ? "Hali yako: Nipo sokoni." : "Hali yako: Sipo sokoni." });
+    }
+
+    if (action === "save_vendor_profile") {
+      const user = await getVerifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
+      const mime = String(body?.mime_type || "").toLowerCase();
+      const extension = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "";
+      const encoded = String(body?.image_base64 || "");
+      if (!extension || !encoded || encoded.length > 2800000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) {
+        return json({ success: false, error: "Choose a JPG, PNG or WebP profile photo under 2 MB." }, 400);
+      }
+      const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
+        .select("id,status,paid_until,profile_photo_path").eq("user_id", user.id).maybeSingle();
+      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
+        return json({ success: false, error: "Active Sokoni vendor access is required." }, 403);
+      }
+      let bytes: Uint8Array;
+      try { bytes = Uint8Array.from(atob(encoded), (char) => char.charCodeAt(0)); }
+      catch (_) { return json({ success: false, error: "The profile image could not be read." }, 400); }
+      if (!bytes.length || bytes.length > 2097152) return json({ success: false, error: "Profile photos must be 2 MB or smaller." }, 400);
+      const path = user.id + "/" + crypto.randomUUID() + "." + extension;
+      const uploaded = await admin.storage.from("ione-sokoni-vendor-profiles").upload(path, bytes, { contentType: mime, upsert: false });
+      if (uploaded.error) return json({ success: false, error: "Could not upload the profile photo. Try again." }, 500);
+      const saved = await admin.from("ione_sokoni_vendors").update({ profile_photo_path: path, updated_at: new Date().toISOString() })
+        .eq("id", vendor.id).select("id").maybeSingle();
+      if (saved.error || !saved.data) {
+        await admin.storage.from("ione-sokoni-vendor-profiles").remove([path]);
+        return json({ success: false, error: "Could not save the profile photo." }, 500);
+      }
+      if (vendor.profile_photo_path) await admin.storage.from("ione-sokoni-vendor-profiles").remove([vendor.profile_photo_path]);
+      const signed = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(path, 3600);
+      return json({ success: true, profile_photo_url: signed.error ? null : signed.data.signedUrl, message: "Picha ya wasifu imehifadhiwa." });
+    }
+
     if (action === "public_vendors") {
       const { data, error } = await admin.from("ione_sokoni_vendors")
-        .select("id,vendor_name,paid_until").eq("status", "active").gt("paid_until", new Date().toISOString())
+        .select("id,vendor_name,paid_until,profile_photo_path,is_at_market,presence_updated_at").eq("status", "active").gt("paid_until", new Date().toISOString())
         .order("vendor_name", { ascending: true }).limit(200);
       if (error) return json({ success: false, error: "The market is temporarily unavailable." }, 500);
-      return json({ success: true, vendors: data || [] });
+      const vendors = await Promise.all((data || []).map(async (vendor: any) => {
+        let profile_photo_url = null;
+        if (vendor.profile_photo_path) {
+          const signed = await admin.storage.from("ione-sokoni-vendor-profiles").createSignedUrl(vendor.profile_photo_path, 3600);
+          if (!signed.error) profile_photo_url = signed.data.signedUrl;
+        }
+        return { id: vendor.id, vendor_name: vendor.vendor_name, paid_until: vendor.paid_until,
+          profile_photo_url, is_at_market: vendor.is_at_market === true, presence_updated_at: vendor.presence_updated_at || null };
+      }));
+      return json({ success: true, vendors });
     }
 
     if (action === "authority_dashboard" || action === "approve" || action === "reject" || action === "approve_rider" || action === "reject_rider" || action === "set_rider_access") {
