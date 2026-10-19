@@ -10,6 +10,7 @@ const expertSource = fs.readFileSync("ione-expert.js", "utf8");
 const expertEdge = fs.readFileSync("supabase/functions/ione-expert/index.ts", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-sokoni/index.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20261017080000_ione_sokoni_vendor_access.sql", "utf8");
+const profileMigration = fs.readFileSync("supabase/migrations/20261019090000_ione_sokoni_profiles_and_order_items.sql", "utf8");
 const riderMigration = fs.readFileSync("supabase/migrations/20261017110000_ione_sokoni_rider_verification.sql", "utf8");
 const expertMigration = fs.readFileSync("supabase/migrations/20261017140000_ione_expert_passenger_rides_profiles.sql", "utf8");
 
@@ -28,9 +29,9 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=8/);
+assert.match(html, /ione-sokoni\.js\?v=11/);
 assert.match(html, /ione-expert\.js\?v=1/);
-assert.match(html, /sw\.js\?v=136/);
+assert.match(html, /sw\.js\?v=138/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
@@ -50,9 +51,16 @@ assert.match(riderMigration, /ione-sokoni-rider-documents/);
 assert.match(riderMigration, /create policy "Sokoni riders upload own verification documents"/);
 console.log("PASS: private rider identity upload and verification fields");
 
-for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "delete_product", "place_order", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_update_profile", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "counter_delivery_fee", "confirm_delivery_fee", "accept_delivery_route", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "passenger_trip_request", "passenger_trip_list", "passenger_trip_accept", "passenger_trip_offer_fare", "passenger_trip_agree_fare", "passenger_trip_status", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
+for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "save_vendor_profile", "save_vendor_presence", "delete_product", "place_order", "place_order_batch", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_update_profile", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "counter_delivery_fee", "confirm_delivery_fee", "accept_delivery_route", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "passenger_trip_request", "passenger_trip_list", "passenger_trip_accept", "passenger_trip_offer_fare", "passenger_trip_agree_fare", "passenger_trip_status", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
   assert.ok(edge.includes('action === "' + action + '"'), "Missing Edge Function action: " + action);
 }
+assert.match(profileMigration, /add column if not exists profile_photo_path/);
+assert.match(profileMigration, /add column if not exists is_at_market/);
+assert.match(profileMigration, /create table if not exists public\\.ione_sokoni_order_items/);
+assert.match(moduleSource, /is-product-track/);
+assert.match(moduleSource, /place_order_batch/);
+assert.match(edge, /save_vendor_profile/);
+assert.match(edge, /save_vendor_presence/);
 assert.match(edge, /validAuthoritySession\(admin, rawSession\)/);
 assert.match(edge, /action === "set_rider_access"/);
 assert.match(edge, /riders: ridersResult\.data \|\| \[\]/);
