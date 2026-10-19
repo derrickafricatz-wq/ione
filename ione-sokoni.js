@@ -1122,7 +1122,7 @@ if (order.status === "new" || order.status === "accepted") {
       // negotiation is shown only in the central open-trip board above.
       const trips = (data.trips || []).filter((trip) => trip.is_passenger);
       if (!trips.length) { const empty = document.createElement("p"); empty.className = "is-muted"; empty.textContent = "Bado hakuna ombi la safari ya abiria."; box.appendChild(empty); return; }
-      const labels = { requested: "Inasubiri dereva", accepted: "Dereva amepatikana • jadilianeni nauli", fare_proposed: "Nauli imependekezwa • jibu", fare_countered: "Nauli imejadiliwa upya • jibu", fare_agreed: "Nauli imekubaliwa • dereva anajiandaa", rider_ready: "Dereva amekubali safari na yuko njiani", picked_up: "Abiria amechukuliwa", completed: "Safari imekamilika", cancelled: "Safari imeghairiwa" };
+      const labels = { requested: "Inasubiri dereva", accepted: "Dereva amepatikana • jadilianeni nauli", fare_proposed: "Nauli imependekezwa • jibu", fare_countered: "Nauli imejadiliwa upya • jibu", fare_agreed: "Nauli imekubaliwa • dereva anajiandaa", rider_ready: "Dereva yuko tayari kumchukua", picked_up: "Abiria amechukuliwa", completed: "Safari imekamilika", cancelled: "Safari imeghairiwa" };
       trips.forEach((trip) => {
         const row = document.createElement("article"); row.className = "is-vendor";
         const title = document.createElement("strong"); title.textContent = trip.pickup_area + " → " + trip.destination_area;
