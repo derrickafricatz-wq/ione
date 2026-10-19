@@ -50,6 +50,17 @@
   .is-product img{width:82px;height:82px;object-fit:cover;border-radius:9px;background:#183323}
   .is-product strong{display:block;overflow-wrap:anywhere}
   .is-product p{font-size:12px;color:#b7d1c0;line-height:1.5;margin:5px 0}
+  .is-vendor-market{border:1px solid #315740;border-radius:14px;padding:12px;margin:10px 0;background:#0a1c12}
+  .is-vendor-market-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .is-vendor-avatar{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#183323;border:1px solid #477d61;flex:0 0 44px}
+  .is-vendor-market-head small{display:block;color:#c5ded0;margin-top:4px}
+  .is-product-track{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 10px;scroll-snap-type:x proximity}
+  .is-product-track>.is-product{flex:0 0 min(245px,78vw);min-width:0;display:block;scroll-snap-align:start}
+  .is-product-track>.is-product img{width:100%;height:125px;object-fit:cover;margin-bottom:8px}
+  .is-cart-line{display:grid;grid-template-columns:minmax(0,1fr) 86px 80px;gap:8px;align-items:center;border-bottom:1px solid #274d36;padding:10px 0}
+  .is-cart-line input{min-height:40px;min-width:0;width:100%}
+  .is-cart-line button{min-height:38px;padding:7px}
+  .is-cart-total{font-weight:900;font-size:18px;text-align:right;margin:12px 0}
   .is-product-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
   .is-product-actions button{border:1px solid #477d61;border-radius:8px;background:#10271c;color:#effff4;padding:8px 10px;font-weight:800}
   .is-trip-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid #274d36}
@@ -156,6 +167,20 @@
       </section>
       <section class="is-card" id="isSellerTools" style="display:none">
         <h2>Bidhaa zangu</h2>
+        <div class="is-vendor-market">
+          <strong>Wasifu wa Mama Sokoni</strong>
+          <p class="is-muted">Weka picha yako na sasisha hali yako ya sokoni ili wanunuzi wajue kama upo.</p>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0">
+            <img id="isVendorProfilePreview" class="is-vendor-avatar" alt="Picha ya wasifu wa muuzaji" style="width:64px;height:64px;flex-basis:64px">
+            <div style="flex:1;min-width:180px"><label for="isVendorProfileFile">Picha ya wasifu (JPG, PNG au WebP, hadi 2 MB)</label><input id="isVendorProfileFile" type="file" accept="image/jpeg,image/png,image/webp"></div>
+            <button class="is-button" type="button" id="isSaveVendorProfile">Hifadhi picha</button>
+          </div>
+          <div class="is-status" id="isVendorProfileStatus" role="status" aria-live="polite"></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <strong id="isVendorPresenceLabel">Hali ya sokoni haijachaguliwa</strong>
+            <button class="is-button" type="button" id="isVendorPresenceToggle">Weka: Nipo sokoni</button>
+          </div>
+        </div>
         <p class="is-muted">Weka picha halisi ya bidhaa, bei, kipimo na kiasi kilichopo. Orodha itaonekana kwa wanunuzi baada ya kuhifadhi.</p>
         <h3>Mahali pa kuchukulia bidhaa</h3>
         <p class="is-muted">Anwani na eneo hili litaonekana tu kwenye ombi la Boda Yangu linalohusiana na oda.</p>
@@ -195,7 +220,9 @@
       </section>
       <section class="is-card" id="isOrderPanel" style="display:none">
         <h2>Omba bidhaa</h2>
-        <p class="is-muted" id="isOrderProductLabel"></p>
+        <p class="is-muted" id="isOrderProductLabel">Bidhaa ulizochagua zitaonekana hapa.</p>
+        <div id="isCartItems" class="is-vendor-market"></div>
+        <div id="isCartTotal" class="is-cart-total">Jumla: TZS 0</div>
         <form class="is-form" id="isOrderForm">
           <div><label for="isBuyerName">Jina lako</label><input id="isBuyerName" maxlength="120" required placeholder="Andika jina lako"></div>
           <div><label for="isBuyerPhone">Namba ya simu</label><input id="isBuyerPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
@@ -514,7 +541,39 @@
       container.appendChild(empty);
       return;
     }
+    const vendorRows = new Map();
     products.forEach((product) => {
+      let target = container;
+      if (!own) {
+        const key = product.vendor_id || product.vendor_name || "seller";
+        let group = vendorRows.get(key);
+        if (!group) {
+          group = document.createElement("section");
+          group.className = "is-vendor-market";
+          const head = document.createElement("div");
+          head.className = "is-vendor-market-head";
+          const avatar = document.createElement("img");
+          avatar.className = "is-vendor-avatar";
+          avatar.alt = "Picha ya Mama Sokoni";
+          avatar.loading = "lazy";
+          if (product.vendor_profile_photo_url) avatar.src = product.vendor_profile_photo_url;
+          else avatar.style.display = "none";
+          const identity = document.createElement("div");
+          const name = document.createElement("strong");
+          name.textContent = product.vendor_name || "Mama Sokoni";
+          const presence = document.createElement("small");
+          presence.textContent = product.vendor_is_at_market ? "🟢 Yupo sokoni • Nipo sokoni" : "⚪ Hayupo sokoni • Sipo sokoni";
+          identity.append(name, presence);
+          head.append(avatar, identity);
+          const track = document.createElement("div");
+          track.className = "is-product-track";
+          group.append(head, track);
+          container.appendChild(group);
+          group = { root: group, track, presence };
+          vendorRows.set(key, group);
+        }
+        target = group.track;
+      }
       const card = document.createElement("div");
       card.className = "is-product";
       if (product.photo_url) {
@@ -525,7 +584,7 @@
         card.appendChild(img);
       } else {
         const placeholder = document.createElement("div");
-        placeholder.style.cssText = "width:82px;height:82px;border-radius:9px;background:#183323;display:grid;place-items:center;color:#b6e7c3;font-size:22px";
+        placeholder.style.cssText = "width:100%;height:82px;border-radius:9px;background:#183323;display:grid;place-items:center;color:#b6e7c3;font-size:22px";
         placeholder.textContent = "S";
         card.appendChild(placeholder);
       }
@@ -537,12 +596,7 @@
       const stock = document.createElement("p");
       stock.textContent = "Kiasi kilichopo: " + escText(product.stock_quantity);
       detail.append(title, price, stock);
-      if (product.vendor_name) {
-        const vendor = document.createElement("p");
-        vendor.textContent = "Muuzaji: " + escText(product.vendor_name);
-        detail.appendChild(vendor);
-      }
-      if (product.description) {
+      if (own && product.description) {
         const desc = document.createElement("p");
         desc.textContent = escText(product.description);
         detail.appendChild(desc);
@@ -574,15 +628,15 @@
       } else {
         const actions = document.createElement("div");
         actions.className = "is-product-actions";
-        const order = document.createElement("button");
-        order.type = "button";
-        order.textContent = "Omba bidhaa";
-        order.addEventListener("click", () => openOrderForm(product));
-        actions.appendChild(order);
+        const add = document.createElement("button");
+        add.type = "button";
+        add.textContent = "Ongeza kwenye kikapu";
+        add.addEventListener("click", () => addProductToCart(product));
+        actions.appendChild(add);
         detail.appendChild(actions);
       }
       card.appendChild(detail);
-      container.appendChild(card);
+      target.appendChild(card);
     });
   }
   async function loadMyProducts() {
@@ -619,6 +673,7 @@
   }
 
   let selectedOrderProduct = null;
+  let sokoniCart = [];
   let buyerDropoff = null;
   let sellerPickup = null;
   let passengerPickup = null;
@@ -626,46 +681,89 @@
   let sokoniRefreshHandle = null;
   let currentRiderId = null;
   let selectedMapTripId = null;
-  function openOrderForm(product) {
-    selectedOrderProduct = product;
+  function addProductToCart(product) {
+    const existing = sokoniCart.find((item) => item.id === product.id);
+    if (existing) {
+      existing.quantity = Math.round((existing.quantity + 1) * 1000) / 1000;
+    } else {
+      sokoniCart.push({ ...product, quantity: 1 });
+    }
+    renderSokoniCart();
     $("isOrderPanel").style.display = "block";
-    $("isOrderProductLabel").textContent = product.product_name + " • TZS " + Number(product.price_tzs || 0).toLocaleString("en-TZ") + " / " + product.unit_name + " • Muuzaji: " + product.vendor_name;
-    $("isOrderQuantity").value = "1";
-    setStatus("isOrderStatus", "");
     $("isOrderPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+    setStatus("isOrderStatus", product.product_name + " imeongezwa kwenye kikapu.");
   }
+  function renderSokoniCart() {
+    const box = $("isCartItems");
+    if (!box) return;
+    box.replaceChildren();
+    if (!sokoniCart.length) {
+      const empty = document.createElement("p");
+      empty.className = "is-muted";
+      empty.textContent = "Kikapu bado kiko tupu. Ongeza bidhaa kutoka sokoni.";
+      box.appendChild(empty);
+    }
+    let total = 0;
+    sokoniCart.forEach((item, index) => {
+      total += Number(item.price_tzs || 0) * Number(item.quantity || 0);
+      const line = document.createElement("div");
+      line.className = "is-cart-line";
+      const info = document.createElement("div");
+      const name = document.createElement("strong");
+      name.textContent = item.product_name;
+      const seller = document.createElement("small");
+      seller.style.display = "block";
+      seller.textContent = item.vendor_name + " • TZS " + Number(item.price_tzs || 0).toLocaleString("en-TZ") + " / " + item.unit_name;
+      info.append(name, seller);
+      const quantity = document.createElement("input");
+      quantity.type = "number"; quantity.min = "0.001"; quantity.step = "0.001"; quantity.value = String(item.quantity);
+      quantity.setAttribute("aria-label", "Kiasi cha " + item.product_name);
+      quantity.addEventListener("change", () => {
+        const next = Number(quantity.value);
+        if (!Number.isFinite(next) || next <= 0 || next > 100000) { quantity.value = String(item.quantity); return; }
+        item.quantity = Math.round(next * 1000) / 1000;
+        renderSokoniCart();
+      });
+      const remove = document.createElement("button");
+      remove.type = "button"; remove.textContent = "Ondoa";
+      remove.addEventListener("click", () => { sokoniCart.splice(index, 1); renderSokoniCart(); });
+      line.append(info, quantity, remove);
+      box.appendChild(line);
+    });
+    $("isCartTotal").textContent = "Jumla: TZS " + total.toLocaleString("en-TZ");
+    $("isOrderProductLabel").textContent = sokoniCart.length + " bidhaa • " + new Set(sokoniCart.map((item) => item.vendor_id)).size + " muuzaji/wauzaji";
+  }
+  function openOrderForm(product) { addProductToCart(product); }
   async function submitOrder(event) {
     event.preventDefault();
-    if (!selectedOrderProduct) return;
+    if (!sokoniCart.length) { setStatus("isOrderStatus", "Ongeza angalau bidhaa moja kwenye kikapu.", true); return; }
     const button = $("isOrderSubmit");
     button.disabled = true;
-    setStatus("isOrderStatus", "Inatuma ombi kwa muuzaji…");
+    setStatus("isOrderStatus", "Inatuma oda kwa wauzaji…");
     try {
       const wantsDelivery = $("isWantsDelivery").checked;
       if (wantsDelivery && (!buyerDropoff || !$("isDeliveryAddress").value.trim())) {
         throw new Error("Weka anwani ya kupeleka na bonyeza kitufe cha GPS kwanza.");
       }
-      const data = await invoke("place_order", {
-        product_id: selectedOrderProduct.id,
+      const data = await invoke("place_order_batch", {
+        items: sokoniCart.map((item) => ({ product_id: item.id, quantity: Number(item.quantity) })),
         buyer_name: $("isBuyerName").value.trim(),
         buyer_phone: $("isBuyerPhone").value.trim(),
-        quantity: Number($("isOrderQuantity").value),
         buyer_note: $("isOrderNote").value.trim(),
         wants_delivery: wantsDelivery,
         delivery_address: wantsDelivery ? $("isDeliveryAddress").value.trim() : "",
         dropoff_lat: wantsDelivery ? buyerDropoff.latitude : null,
         dropoff_lng: wantsDelivery ? buyerDropoff.longitude : null
       });
-      setStatus("isOrderStatus", data.message || "Ombi limetumwa.");
+      setStatus("isOrderStatus", data.message || "Oda zimetumwa.");
       $("isOrderForm").reset();
       $("isOrderPanel").style.display = "none";
-      selectedOrderProduct = null;
+      sokoniCart = [];
+      renderSokoniCart();
       await loadMyOrders();
-      if (data.order?.id) {
-        const buyerOrdersPanel = $("isBuyerOrders");
-        if (buyerOrdersPanel) buyerOrdersPanel.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    } catch (e) { setStatus("isOrderStatus", e.message || "Ombi halikutumwa.", true); }
+      const buyerOrdersPanel = $("isBuyerOrders");
+      if (buyerOrdersPanel) buyerOrdersPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) { setStatus("isOrderStatus", e.message || "Oda hazikutumwa.", true); }
     finally { button.disabled = false; }
   }
   async function loadMyOrders() {
