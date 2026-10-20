@@ -39,9 +39,11 @@ Deno.serve(async(req:Request)=>{
    if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
    const mime=String(body?.mime_type||"").toLowerCase().split(";")[0].trim();
    const size=Number(body?.file_size);
+   const duration=Number(body?.duration_seconds);
    const isVideo=["video/mp4","video/webm","video/quicktime"].includes(mime);
    if(!isVideo)return json({success:false,error:"Choose an MP4, WEBM or MOV video."},400);
-   if(!Number.isFinite(size)||size<=0||size>50*1024*1024)return json({success:false,error:"Video must be 50 MB or smaller."},400);
+   if(!Number.isFinite(size)||size<=0||size>50*1024*1024)return json({success:false,error:"For free hosting, compress the video to 50 MB or smaller."},400);
+   if(!Number.isFinite(duration)||duration<=0||duration>3600)return json({success:false,error:"Documentary videos can be up to 60 minutes."},400);
    const ext=mime==="video/webm"?"webm":mime==="video/quicktime"?"mov":"mp4";
    const path=`authority/${crypto.randomUUID()}.${ext}`;
    const signed=await admin.storage.from("ione-documentary-media").createSignedUploadUrl(path,{upsert:false});
