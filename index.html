@@ -11179,6 +11179,19 @@ function ioneRunBackgroundMediaPreload(){ return; }
     finally{if(btn)btn.disabled=false;}
   }
 
+  async function getDocumentaryVideoDuration(file){
+    const objectUrl=URL.createObjectURL(file);
+    try{
+      return await new Promise((resolve,reject)=>{
+        const probe=document.createElement("video");
+        probe.preload="metadata";
+        probe.onloadedmetadata=()=>{const duration=Number(probe.duration);probe.removeAttribute("src");probe.load();if(Number.isFinite(duration)&&duration>0)resolve(duration);else reject(new Error("Could not read the video duration. Export the video as MP4, WEBM or MOV and try again."));};
+        probe.onerror=()=>reject(new Error("Could not read the video duration. Export the video as MP4, WEBM or MOV and try again."));
+        probe.src=objectUrl;
+      });
+    }finally{URL.revokeObjectURL(objectUrl);}
+  }
+
   async function addVideo(file){
     if(!file)return;
     const mime=String(file.type||"").toLowerCase().split(";")[0].trim();
@@ -11186,12 +11199,15 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const types={"mp4":"video/mp4","webm":"video/webm","mov":"video/quicktime"};
     const videoMime=["video/mp4","video/webm","video/quicktime"].includes(mime)?mime:types[ext]||"";
     if(!videoMime){status("Choose an MP4, WEBM or MOV video.",true);return;}
-    if(file.size>50*1024*1024){status("Video must be 50 MB or smaller.",true);return;}
-    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("PREPARING VIDEO UPLOAD…");
+    if(file.size>50*1024*1024){status("For free hosting, compress the video to 50 MB or smaller. Videos can be up to 60 minutes.",true);return;}
+    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("CHECKING VIDEO DURATION…");
     try{
-      /* Prepare a short-lived signed upload, then send the binary file directly to Storage.
-         This avoids base64 expansion and sending a large video through the Edge Function. */
-      const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size});
+      const duration=await getDocumentaryVideoDuration(file);
+      if(duration>3600){throw new Error("Documentary videos can be up to 60 minutes. Please trim or split this video and try again.");}
+      /* Keep the existing free Supabase limit. Upload the binary directly to Storage,
+         after validating the duration; no paid service or new storage is introduced. */
+      status("PREPARING VIDEO UPLOAD…");
+      const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size,duration_seconds:duration});
       if(!prepared.path||!prepared.token)throw new Error("Could not prepare the video upload.");
       status("UPLOADING VIDEO… KEEP THIS SCREEN OPEN");
       const uploaded=await heavensSupabase.storage.from("ione-documentary-media")
@@ -11354,6 +11370,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<button type="button" id="ioneDocAddAudio" class="ione-doc-btn">+ ADD INSTRUMENTAL AUDIO</button>'+
         '<input id="ioneDocAudioFile" type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" hidden>'+
         '<button type="button" id="ioneDocAddVideo" class="ione-doc-btn">+ UPLOAD MUTED VIDEO</button>'+
+        '<p class="ione-doc-help">Videos up to 60 minutes. To keep hosting free, the compressed file must be 50 MB or smaller.</p>'+
         '<input id="ioneDocVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,video/*" hidden>'+
         '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
         '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">PUBLISH CHANGES</button>'+
