@@ -1,25 +1,25 @@
--- I|ONE: secure default privileges for future public objects.
--- Review branch only. Production application requires a database role authorized
--- to alter defaults for both object-creator roles and successful staging checks.
--- Existing objects, grants, RLS policies, rows, and application data are unchanged.
--- Future feature migrations must explicitly grant only the minimum required
--- access to anon/authenticated and explicitly grant service_role when needed.
+-- I|ONE: opt in to explicit grants for future public-schema objects.
+-- This changes default privileges only; it does not alter existing objects,
+-- existing grants, RLS policies, rows, or application data.
+-- Feature migrations must explicitly grant the minimum required privileges
+-- to anon/authenticated/service_role for each object they create.
+-- Both creator roles below exist in this project's role catalog.
 
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE ALL ON TABLES FROM anon, authenticated;
+  REVOKE ALL ON TABLES FROM anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+  REVOKE USAGE, SELECT ON SEQUENCES FROM anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public
-  REVOKE ALL ON FUNCTIONS FROM anon, authenticated;
--- PUBLIC's default function EXECUTE is global, so this revoke must be global too.
+  REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated, service_role;
+-- PUBLIC's global function default must be revoked without an IN SCHEMA clause.
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres
   REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
-  REVOKE ALL ON TABLES FROM anon, authenticated;
+  REVOKE ALL ON TABLES FROM anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
-  REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+  REVOKE USAGE, SELECT ON SEQUENCES FROM anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin IN SCHEMA public
-  REVOKE ALL ON FUNCTIONS FROM anon, authenticated;
+  REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin
   REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
