@@ -12599,15 +12599,17 @@ function ioneRunBackgroundMediaPreload(){ return; }
     clearOldGenerated();
     list.innerHTML='';
 
+    const ownerBrandResult=await heavensSupabase.from('afrilink_billboards').select('brand_name').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1).maybeSingle();
+    const ownerBrandName=String(ownerBrandResult?.data?.brand_name||'I|ONE').trim().toUpperCase();
     /* Open the book shell immediately. The cover is visible before any chat data is fetched. */
     const book=document.createElement('div');book.id='aflRealBrandBook';book.dataset.uid=uid;book.className='afl-real-book-shell';
     const cover=document.createElement('section');cover.className='afl-rbb-cover';
     const bg=document.createElement('div');bg.className='afl-rbb-cover-bg';
     const main=document.createElement('div');main.className='afl-rbb-cover-main';
-    const fallback=document.createElement('div');fallback.className='afl-rbb-cover-fallback';fallback.textContent=(aflFeedRows?.[0]?.billboard?.brand_name||'I|ONE').toUpperCase();main.appendChild(fallback);
+    const fallback=document.createElement('div');fallback.className='afl-rbb-cover-fallback';fallback.textContent=ownerBrandName;main.appendChild(fallback);
     const shine=document.createElement('div');shine.className='afl-rbb-cover-shine';
     const bottom=document.createElement('div');bottom.className='afl-rbb-cover-bottom';
-    const title=document.createElement('div');title.className='afl-rbb-cover-title';title.textContent=(aflFeedRows?.[0]?.billboard?.brand_name||'I|ONE').toUpperCase();
+    const title=document.createElement('div');title.className='afl-rbb-cover-title';title.textContent=ownerBrandName;
     const sub=document.createElement('div');sub.className='afl-rbb-cover-sub';sub.textContent='PRIVATE CLIENT BOOK • HOME OF MARKETING';
     const view=document.createElement('button');view.type='button';view.className='afl-rbb-view';view.textContent='VIEW INFOS';
     bottom.append(title,sub,view);cover.append(bg,main,shine,bottom);
