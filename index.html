@@ -5622,7 +5622,15 @@ async function aflPublish(){
         if(typeof window.ioneEnsurePushSubscription==="function") await window.ioneEnsurePushSubscription();
         const pushResult=await heavensSupabase.functions.invoke("ione-billboard-push",{body:{billboard_id:billboard.id}});
         if(pushResult.error||!pushResult.data?.success){
-          console.warn("I|ONE billboard push notification failed:",pushResult.error?.message||pushResult.data?.error||"unknown error");
+          const reason=pushResult.error?.message||pushResult.data?.error||"unknown error";
+          console.warn("I|ONE billboard push notification failed:",reason);
+          aflEditorStatus.textContent="BILLBOARD PUBLISHED ✓ • PUSH NOT SENT — "+String(reason).slice(0,110);
+        }else{
+          const delivered=Number(pushResult.data.delivered||0);
+          const failed=Number(pushResult.data.failed||0);
+          aflEditorStatus.textContent=delivered>0
+            ? `BILLBOARD PUBLISHED ✓ • PUSH SENT TO ${delivered} DEVICE${delivered===1?"":"S"}${failed>0?` • ${failed} FAILED`:""}`
+            : "BILLBOARD PUBLISHED ✓ • NO ACTIVE PUSH DEVICES FOUND";
         }
       }catch(pushError){console.warn("I|ONE billboard push notification failed:",pushError);}
     }
