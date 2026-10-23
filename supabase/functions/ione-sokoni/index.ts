@@ -46,7 +46,7 @@ async function sendSokoniSms(admin: any, idempotencyKey: string, eventType: stri
   const phone = normalizeTanzaniaPhone(rawPhone);
   if (!apiKey) return { status: "skipped", reason: "missing_api_key" };
   if (!validPhone(phone)) return { status: "skipped", reason: "invalid_phone" };
-  const message = String(rawMessage || "").replace(/\\s+/g, " ").trim().slice(0, 300);
+  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 150);
   if (!message) return { status: "skipped", reason: "empty_message" };
   const claim = await admin.from("ione_sokoni_sms_log").insert({
     idempotency_key: idempotencyKey, event_type: eventType, recipient_phone: phone, status: "pending"
@@ -57,6 +57,14 @@ async function sendSokoniSms(admin: any, idempotencyKey: string, eventType: stri
     return { status: "failed", reason: "log_write_failed" };
   }
   if (!claim.data?.id) return { status: "duplicate" };
+  const quota = await admin.rpc("reserve_ione_sokoni_sms_credit");
+  if (quota.error || quota.data !== true) {
+    await admin.from("ione_sokoni_sms_log").update({
+      status: "skipped", error_message: quota.error ? "SMS trial quota could not be reserved" : "Free trial SMS limit reached",
+      updated_at: new Date().toISOString()
+    }).eq("idempotency_key", idempotencyKey);
+    return { status: "skipped", reason: quota.error ? "quota_unavailable" : "trial_limit_reached" };
+  }
   try {
     const response = await fetch("https://dev.darsms.co.tz/api/v1/integrations/sms/send", {
       method: "POST",
