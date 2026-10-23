@@ -41,6 +41,52 @@ async function validAuthoritySession(admin: any, rawToken: unknown) {
   return !error && !!data;
 }
 
+async function sendSokoniSms(admin: any, idempotencyKey: string, eventType: string, rawPhone: unknown, rawMessage: string) {
+  const apiKey = Deno.env.get("DARSMS_API_KEY");
+  const phone = normalizeTanzaniaPhone(rawPhone);
+  if (!apiKey) return { status: "skipped", reason: "missing_api_key" };
+  if (!validPhone(phone)) return { status: "skipped", reason: "invalid_phone" };
+  const message = String(rawMessage || "").replace(/\\s+/g, " ").trim().slice(0, 300);
+  if (!message) return { status: "skipped", reason: "empty_message" };
+  const claim = await admin.from("ione_sokoni_sms_log").insert({
+    idempotency_key: idempotencyKey, event_type: eventType, recipient_phone: phone, status: "pending"
+  }).select("id").maybeSingle();
+  if (claim.error) {
+    if (claim.error.code === "23505") return { status: "duplicate" };
+    console.warn("Sokoni SMS log could not be claimed:", { event_type: eventType, code: claim.error.code });
+    return { status: "failed", reason: "log_write_failed" };
+  }
+  if (!claim.data?.id) return { status: "duplicate" };
+  try {
+    const response = await fetch("https://dev.darsms.co.tz/api/v1/integrations/sms/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+      body: JSON.stringify({ senderId: "DARSMS", to: [phone], message }),
+      signal: AbortSignal.timeout(12000)
+    });
+    let result: any = {};
+    try { result = await response.json(); } catch (_) {}
+    const success = response.ok && result?.success === true;
+    const ids = result?.data?.messageIds;
+    const providerMessageId = Array.isArray(ids) ? String(ids[0] || "") : String(ids || "");
+    await admin.from("ione_sokoni_sms_log").update({
+      status: success ? "queued" : "failed", provider_message_id: providerMessageId || null,
+      error_message: success ? null : String(result?.message || ("DARSMS HTTP " + response.status)).slice(0, 240),
+      provider_response: { http_status: response.status, success, message: String(result?.message || "").slice(0, 160) },
+      updated_at: new Date().toISOString()
+    }).eq("idempotency_key", idempotencyKey);
+    if (!success) console.warn("Sokoni SMS provider rejected a message:", { event_type: eventType, http_status: response.status });
+    return { status: success ? "queued" : "failed", providerMessageId: providerMessageId || null };
+  } catch (error) {
+    await admin.from("ione_sokoni_sms_log").update({
+      status: "failed", error_message: String((error as any)?.message || error).slice(0, 240),
+      updated_at: new Date().toISOString()
+    }).eq("idempotency_key", idempotencyKey);
+    console.warn("Sokoni SMS request failed:", { event_type: eventType });
+    return { status: "failed", reason: "network_error" };
+  }
+}
+
 async function sendSokoniPush(admin: any, userId: string, payload: any) {
   try {
     const { data: config, error: configError } = await admin.from("ione_push_config")
@@ -309,7 +355,7 @@ Deno.serve(async (req) => {
       }
       const vendorIds = [...new Set((productRows || []).map((p: any) => p.vendor_id))];
       const { data: vendorRows, error: vendorsError } = await admin.from("ione_sokoni_vendors")
-        .select("id,vendor_name,status,paid_until,user_id").in("id", vendorIds);
+        .select("id,vendor_name,status,paid_until,user_id,phone_number").in("id", vendorIds);
       if (vendorsError) return json({ success: false, error: "Could not verify the sellers. Please retry." }, 500);
       const now = Date.now();
       const vendorMap = new Map((vendorRows || []).filter((v: any) => v.status === "active" && Date.parse(v.paid_until) > now).map((v: any) => [v.id, v]));
@@ -358,7 +404,7 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
           return json({ success: false, error: "Could not save all cart items. Please retry the order." }, 500);
         }
-        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, vendor_user_id: vendor.user_id, item_count: items.length });
+        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, vendor_user_id: vendor.user_id, vendor_phone: vendor.phone_number, item_count: items.length });
       }
       for (const order of createdOrders) {
         await sendSokoniPush(admin, order.vendor_user_id, {
@@ -366,8 +412,12 @@ Deno.serve(async (req) => {
           body: buyerName + " ametuma oda yenye bidhaa " + order.item_count + ".",
           url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + order.id
         });
+        await sendSokoniSms(admin, "order:" + order.id + ":seller:new", "order_new_seller",
+          order.vendor_phone, "I|ONE Sokoni: Oda mpya kutoka " + buyerName + ". Fungua ione Sokoni kuangalia maelezo.");
       }
-      return json({ success: true, orders: createdOrders.map(({ vendor_user_id, ...order }: any) => order), message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
+      if (createdOrders.length) await sendSokoniSms(admin, "checkout:" + createdOrders[0].id + ":buyer:received", "order_received_buyer",
+        buyerPhone, "I|ONE Sokoni: Oda yako imepokelewa. Wauzaji wamejulishwa. Angalia hali ya oda ndani ya ione.");
+      return json({ success: true, orders: createdOrders.map(({ vendor_user_id, vendor_phone, ...order }: any) => order), message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
     }
 
     if (action === "place_order") {
@@ -400,7 +450,7 @@ Deno.serve(async (req) => {
       }
       if (product.user_id === buyer.id) return json({ success: false, error: "You cannot order your own listing." }, 400);
       const { data: vendor, error: vendorError } = await admin.from("ione_sokoni_vendors")
-        .select("id,vendor_name,status,paid_until,user_id").eq("id", product.vendor_id).maybeSingle();
+        .select("id,vendor_name,status,paid_until,user_id,phone_number").eq("id", product.vendor_id).maybeSingle();
       if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until) <= Date.now()) {
         return json({ success: false, error: "This seller's Sokoni access is not currently active." }, 409);
       }
@@ -413,7 +463,7 @@ Deno.serve(async (req) => {
         buyer_phone: buyerPhone, buyer_note: note, wants_delivery: wantsDelivery,
         delivery_address: wantsDelivery ? deliveryAddress : null,
         dropoff_lat: wantsDelivery && hasDropoffLat ? dropoffLat : null,
-        dropoff_lng: wantsDelivery && hasDropoffLng ? dropoffLng : null, status: "new"
+          dropoff_lng: wantsDelivery && hasDropoffLng ? dropoffLng : null, status: "new"
       }).select("id,status,total_tzs,created_at").single();
       if (inserted.error) return json({ success: false, error: "Could not send your order request. Please retry." }, 500);
       const lineInsert = await admin.from("ione_sokoni_order_items").insert([{
@@ -425,9 +475,15 @@ Deno.serve(async (req) => {
         return json({ success: false, error: "Could not save order details. Please retry." }, 500);
       }
       await sendSokoniPush(admin, vendor.user_id, {
-        title: "I|ONE Sokoni • Oda mpya", body: body?.buyer_name + " ametuma oda ya " + product.product_name + ".",
+        title: "I|ONE Sokoni • Oda mpya", body: buyerName + " ametuma oda ya " + product.product_name + ".",
         url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + inserted.data.id
       });
+      await Promise.allSettled([
+        sendSokoniSms(admin, "order:" + inserted.data.id + ":seller:new", "order_new_seller",
+          vendor.phone_number, "I|ONE Sokoni: Oda mpya kutoka " + buyerName + " ya " + product.product_name + ". Fungua ione Sokoni."),
+        sendSokoniSms(admin, "order:" + inserted.data.id + ":buyer:received", "order_received_buyer",
+          buyerPhone, "I|ONE Sokoni: Oda yako ya " + product.product_name + " imepokelewa. Angalia hali ndani ya ione.")
+      ]);
       return json({ success: true, order: inserted.data,
         message: "Ombi limetumwa kwa muuzaji. Muuzaji atapitia ombi na kuwasiliana nawe kwa namba uliyotoa." });
     }
@@ -542,13 +598,17 @@ Deno.serve(async (req) => {
             const riders:any[]=[];
             let riderQueryError:any=null;
             for(let offset=0;;offset+=1000){
-              const batch=await admin.from("ione_sokoni_riders").select("user_id").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
+              const batch=await admin.from("ione_sokoni_riders").select("user_id,phone_number").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
               if(batch.error){riderQueryError=batch.error;break;}
               riders.push(...(batch.data||[]));
               if((batch.data||[]).length<1000)break;
             }
             if(riderQueryError)console.warn("Could not load every eligible rider after order acceptance:",riderQueryError.message);
             const pushResults=await Promise.allSettled(riders.map((r:any)=>sendSokoniPush(admin,r.user_id,{title:"I|ONE Boda Yangu • Safari mpya",body:order.product_name+" • "+order.quantity+" "+order.unit_name+" • "+order.delivery_address+". Fungua Sokoni kuona maelezo na kupiga simu.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-delivery-"+deliveryId})));
+            await Promise.allSettled(riders.map((r:any)=>sendSokoniSms(admin,"delivery:"+deliveryId+":rider:"+r.user_id,"delivery_request_rider",r.phone_number,
+              "I|ONE Boda Yangu: Safari mpya ya kuchukua " + String(order.product_name || "bidhaa") + ". Fungua ione Sokoni kuona maelezo.")));
+            await sendSokoniSms(admin,"delivery:"+deliveryId+":buyer:accepted","order_accepted_buyer",order.buyer_phone,
+              "I|ONE Sokoni: Muuzaji amekubali oda yako. Ombi la boda limetumwa kwa madereva walio tayari.");
             console.info("Automatic delivery alerts after seller acceptance:",{delivery_id:deliveryId,eligible_riders:riders.length,push_attempts:pushResults.length});
             await Promise.allSettled([
               sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Mama Sokoni amekubali "+order.product_name+". Madereva wanaarifiwa moja kwa moja.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-order-status-"+order.id}),
@@ -566,6 +626,10 @@ Deno.serve(async (req) => {
         title: "I|ONE Sokoni • Oda imekataliwa", body: "Muuzaji hakuweza kukubali oda yako ya " + order.product_name + ".",
         url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-status-" + order.id
       });
+      if (nextStatus === "rejected") await sendSokoniSms(admin, "order:" + order.id + ":buyer:rejected", "order_rejected_buyer",
+        order.buyer_phone, "I|ONE Sokoni: Samahani, oda yako ya " + order.product_name + " haikukubaliwa. Fungua ione kuona maelezo.");
+      if (nextStatus === "completed") await sendSokoniSms(admin, "order:" + order.id + ":buyer:completed", "order_completed_buyer",
+        order.buyer_phone, "I|ONE Sokoni: Oda yako ya " + order.product_name + " imekamilika. Asante kwa kutumia ione.");
       return json({ success: true, message: nextStatus === "completed" ? "Order marked completed." : "Order request rejected." });
     }
 
@@ -776,7 +840,7 @@ Deno.serve(async (req) => {
       // Notify the seller as well as every currently available, recently active verified rider.
       // The rider board remains the source of truth; push is an additional alert.
       const [{ data: availableRiders, error: ridersError }, { data: product }] = await Promise.all([
-        admin.from("ione_sokoni_riders").select("user_id")
+        admin.from("ione_sokoni_riders").select("user_id,phone_number")
           .eq("status", "active").eq("access_payment_confirmed", true).gt("access_expires_at", new Date().toISOString()).eq("available", true).limit(100),
         admin.from("ione_sokoni_products").select("product_name").eq("id", order.product_id).maybeSingle()
       ]);
@@ -795,6 +859,12 @@ Deno.serve(async (req) => {
         url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-delivery-" + created.data.id
       });
       const pushResults = await Promise.allSettled([...riderAlerts, sellerAlert]);
+      await Promise.allSettled((availableRiders || []).map((rider: any) =>
+        sendSokoniSms(admin, "delivery:" + created.data.id + ":rider:" + rider.user_id, "delivery_request_rider",
+          rider.phone_number, "I|ONE Boda Yangu: Safari mpya ya " + productName + " inasubiri dereva. Fungua ione Sokoni kuona maelezo.")));
+      const { data: sellerContact } = await admin.from("ione_sokoni_vendors").select("phone_number").eq("id", order.vendor_id).maybeSingle();
+      await sendSokoniSms(admin, "delivery:" + created.data.id + ":seller:requested", "delivery_request_seller",
+        sellerContact?.phone_number, "I|ONE Sokoni: Mteja ameomba boda kwa oda ya " + productName + ". Madereva walio tayari wamearifiwa.");
       const riderPushDelivered = pushResults.slice(0, riderAlerts.length).reduce((n: number, r: any) => n + (r.status === "fulfilled" ? Number(r.value || 0) : 0), 0);
       console.info("Sokoni delivery notification result:", { delivery_id: created.data.id, eligible_riders: (availableRiders || []).length, rider_push_delivered: riderPushDelivered, seller_push_delivered: pushResults[riderAlerts.length]?.status === "fulfilled" ? Number((pushResults[riderAlerts.length] as any).value || 0) : 0 });
       return json({ success: true, delivery: created.data, notified_riders: riderPushDelivered, eligible_riders: (availableRiders || []).length, message: "Ombi la boda limetumwa kwa Mama Sokoni na bodaboda walioidhinishwa na walio kwenye zamu. Ada ya delivery itaonyeshwa kando na lazima ikubaliwe na pande zote mbili." });
@@ -823,7 +893,7 @@ Deno.serve(async (req) => {
       const availableRiders: any[] = [];
       for (let offset = 0; ; offset += 1000) {
         const { data: riderBatch, error: ridersError } = await admin.from("ione_sokoni_riders")
-          .select("user_id")
+          .select("user_id,phone_number")
           .eq("status", "active").eq("access_payment_confirmed", true)
           .gt("access_expires_at", notifiedAt).eq("available", true)
           .not("user_id", "is", null).order("id", { ascending: true }).range(offset, offset + 999);
@@ -840,6 +910,11 @@ Deno.serve(async (req) => {
           url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + saved.data.id
         })
       ));
+      await Promise.allSettled(availableRiders.map((rider: any) =>
+        sendSokoniSms(admin, "passenger-trip:" + saved.data.id + ":rider:" + rider.user_id, "passenger_trip_request_rider",
+          rider.phone_number, "I|ONE Boda Yangu: Ombi jipya la safari " + pickupArea + " kwenda " + destinationArea + ". Fungua ione Sokoni.")));
+      await sendSokoniSms(admin, "passenger-trip:" + saved.data.id + ":passenger:received", "passenger_trip_received",
+        passengerPhone, "I|ONE Boda Yangu: Ombi lako la safari limepokelewa. Madereva walio tayari wamejulishwa.");
       const notifiedRiders = pushResults.reduce((sum: number, count: number) => sum + Number(count || 0), 0);
       console.info("Passenger trip push dispatch:", { trip_id: saved.data.id, eligible_riders: availableRiders.length, delivered_subscriptions: notifiedRiders });
       return json({
@@ -1113,6 +1188,17 @@ Deno.serve(async (req) => {
         .eq("id", delivery.id).eq("status", delivery.status).eq("rider_user_id", user.id).select("id").maybeSingle();
       if (updated.error || !updated.data) return json({ success: false, error: "Trip status changed elsewhere. Refresh and try again." }, 409);
       for (const recipient of [delivery.buyer_user_id, delivery.seller_user_id]) if (recipient) await sendSokoniPush(admin, recipient, { title: next === "picked_up" ? "I|ONE Sokoni • Bidhaa imechukuliwa" : "I|ONE Sokoni • Bidhaa imefikishwa", body: next === "picked_up" ? "Dereva amechukua bidhaa na yuko njiani." : "Dereva amesema bidhaa imefikishwa.", url: "./?ionePushDestination=sokoni&ioneDeliveryId=" + delivery.id, tag: "ione-delivery-status-" + delivery.id + "-" + next });
+      const [{ data: orderContact }, { data: vendorContact }] = await Promise.all([
+        admin.from("ione_sokoni_orders").select("buyer_phone,product_name").eq("id", delivery.order_id).maybeSingle(),
+        admin.from("ione_sokoni_vendors").select("phone_number").eq("id", delivery.vendor_id).maybeSingle()
+      ]);
+      const smsStatusMessage = next === "picked_up"
+        ? "I|ONE Sokoni: Dereva amechukua " + String(orderContact?.product_name || "bidhaa") + " na yuko njiani."
+        : "I|ONE Sokoni: Uwasilishaji wa " + String(orderContact?.product_name || "bidhaa") + " umewekwa kuwa umekamilika na dereva.";
+      await Promise.allSettled([
+        sendSokoniSms(admin, "delivery:" + delivery.id + ":buyer:" + next, "delivery_" + next + "_buyer", orderContact?.buyer_phone, smsStatusMessage),
+        sendSokoniSms(admin, "delivery:" + delivery.id + ":seller:" + next, "delivery_" + next + "_seller", vendorContact?.phone_number, smsStatusMessage)
+      ]);
       return json({ success: true, message: next === "picked_up" ? "Umechukua bidhaa. Endelea kumfikishia mnunuzi." : "Umefikisha bidhaa. Bonyeza Kazi Imekamilika ili uwe tayari kwa safari nyingine." });
     }
 
