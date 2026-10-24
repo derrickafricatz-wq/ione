@@ -330,6 +330,31 @@
     overlay.style.display = "block";
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    try {
+      const rawDraft = localStorage.getItem("ioneSokoniOfflineOrderDraftV1");
+      const draft = rawDraft ? JSON.parse(rawDraft) : null;
+      const draftAge = draft && draft.saved_at ? Date.now() - Date.parse(draft.saved_at) : Infinity;
+      if (draft && draftAge >= 0 && draftAge < 7 * 24 * 60 * 60 * 1000) {
+        if (!sokoniCart.length && Array.isArray(draft.items)) {
+          sokoniCart = draft.items.filter((item) => item && item.product_id && Number(item.quantity) > 0).map((item) => ({
+            id: String(item.product_id), product_name: String(item.product_name || "Bidhaa"),
+            quantity: Number(item.quantity), unit_name: String(item.unit_name || ""),
+            price_tzs: Number(item.price_tzs || 0), vendor_name: String(item.vendor_name || "Mama Sokoni")
+          }));
+          persistSokoniCart();
+          renderSokoniCart();
+        }
+        if (!$("isBuyerName").value) $("isBuyerName").value = String(draft.buyer_name || "");
+        if (!$("isBuyerPhone").value) $("isBuyerPhone").value = String(draft.buyer_phone || "");
+        if (!$("isOrderNote").value) $("isOrderNote").value = String(draft.buyer_note || "");
+        if ($("isWantsDelivery")) $("isWantsDelivery").checked = !!draft.wants_delivery;
+        if (draft.wants_delivery && $("isDeliveryAddress")) $("isDeliveryAddress").value = String(draft.delivery_address || "");
+        if (sokoniCart.length) {
+          $("isOrderPanel").style.display = "block";
+          setStatus("isOrderStatus", "Rasimu ya oda imehifadhiwa kwenye simu hii. Kagua bidhaa na taarifa, kisha bonyeza Tuma oda ukiwa na intaneti.");
+        }
+      } else if (rawDraft) localStorage.removeItem("ioneSokoniOfflineOrderDraftV1");
+    } catch (_) {}
     loadStatus();
     loadProductCatalog();
     loadMyOrders();
