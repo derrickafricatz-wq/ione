@@ -11220,8 +11220,20 @@ function ioneRunBackgroundMediaPreload(){ return; }
       status("STARTING VIDEO UPLOAD…");
       /* TUS resumable upload sends small chunks and retries transient network failures.
          The signed token remains server-issued; no service-role key reaches the browser. */
-      const tusModule=await import("https://esm.sh/tus-js-client@4.3.1");
-      const TusUpload=tusModule.Upload||tusModule.default?.Upload;
+      /* Load the browser UMD build explicitly. The ESM CDN can resolve a Node stream
+         adapter in some environments, which rejects browser File objects with
+         "source object may only be an instance of Buffer or Readable". */
+      if(!window.tus?.Upload){
+        await new Promise((resolve,reject)=>{
+          const script=document.createElement("script");
+          script.src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js";
+          script.async=true;
+          script.onload=()=>window.tus?.Upload?resolve():reject(new Error("Resumable upload library loaded without its browser API."));
+          script.onerror=()=>reject(new Error("Could not load the browser upload library. Check the connection and retry."));
+          document.head.appendChild(script);
+        });
+      }
+      const TusUpload=window.tus?.Upload;
       if(!TusUpload)throw new Error("Resumable upload library could not be loaded. Check the connection and retry.");
       const projectUrl=String(heavensSupabase.supabaseUrl||"");
       const projectHost=new URL(projectUrl).hostname;
