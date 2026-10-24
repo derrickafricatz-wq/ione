@@ -41,7 +41,7 @@ Deno.serve(async(req:Request)=>{
    const size=Number(body?.file_size);
    const isVideo=["video/mp4","video/webm","video/quicktime"].includes(mime);
    if(!isVideo)return json({success:false,error:"Choose an MP4, WEBM or MOV video."},400);
-   if(!Number.isFinite(size)||size<=0||size>50*1024*1024)return json({success:false,error:"Video must be 50 MB or smaller."},400);
+   if(!Number.isFinite(size)||size<=0||size>1024*1024*1024)return json({success:false,error:"Video file must be 1 GB or smaller."},400);
    const ext=mime==="video/webm"?"webm":mime==="video/quicktime"?"mov":"mp4";
    const path=`authority/${crypto.randomUUID()}.${ext}`;
    const signed=await admin.storage.from("ione-documentary-media").createSignedUploadUrl(path,{upsert:false});
