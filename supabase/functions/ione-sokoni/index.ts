@@ -627,13 +627,18 @@ Deno.serve(async (req) => {
             await sendSokoniSms(admin,"delivery:"+deliveryId+":buyer:accepted","order_accepted_buyer",order.buyer_phone,
               "I|ONE Sokoni: Muuzaji amekubali oda yako. Ombi la boda limetumwa kwa madereva walio tayari.");
             console.info("Automatic delivery alerts after seller acceptance:",{delivery_id:deliveryId,eligible_riders:riders.length,push_attempts:pushResults.length});
-            await Promise.allSettled([
-              sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Mama Sokoni amekubali "+order.product_name+". Madereva wanaarifiwa moja kwa moja.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-order-status-"+order.id}),
-              sendSokoniPush(admin,order.seller_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Ombi la uwasilishaji limetumwa moja kwa moja kwa madereva wanaopatikana.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-seller-delivery-"+order.id})
-            ]);
+            await sendSokoniPush(admin,order.seller_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Ombi la uwasilishaji limetumwa moja kwa moja kwa madereva wanaopatikana.",url:"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId,tag:"ione-sokoni-seller-delivery-"+order.id});
           }
         }
-        if(!deliveryCreated)await sendSokoniPush(admin,order.buyer_user_id,{title:"I|ONE Sokoni • Oda imekubaliwa",body:"Oda imekubaliwa, lakini ombi la delivery halikuweza kutengenezwa. Tafadhali wasiliana na Mama Sokoni.",url:"./?ionePushDestination=sokoni",tag:"ione-sokoni-order-status-"+order.id});
+        const buyerAcceptancePush = await sendSokoniPush(admin,order.buyer_user_id,{
+          title:"I|ONE Sokoni • Oda imekubaliwa",
+          body:deliveryCreated
+            ? "Mama Sokoni amekubali oda yako ya "+order.product_name+". Madereva wanaarifiwa moja kwa moja."
+            : "Mama Sokoni amekubali oda yako ya "+order.product_name+". Wasiliana na muuzaji kupanga kuchukua bidhaa.",
+          url:deliveryCreated&&deliveryId?"./?ionePushDestination=sokoni&ioneDeliveryId="+deliveryId:"./?ionePushDestination=sokoni",
+          tag:"ione-sokoni-order-status-"+order.id
+        });
+        console.info("Sokoni buyer acceptance notification result:",{order_id:order.id,push_delivered:buyerAcceptancePush,delivery_created:deliveryCreated});
         return json({success:true,delivery_id:deliveryId,delivery_created:deliveryCreated,message:deliveryCreated?"Oda imekubaliwa. Safari imetumwa moja kwa moja kwa madereva walio tayari; hakuna haja ya kuomba boda tena.":"Oda imekubaliwa, lakini ombi la delivery halikuweza kutengenezwa. Wasiliana na I|ONE Support."});
       }
       const update = await admin.from("ione_sokoni_orders").update({ status: nextStatus, updated_at: new Date().toISOString() })
@@ -645,8 +650,17 @@ Deno.serve(async (req) => {
       });
       if (nextStatus === "rejected") await sendSokoniSms(admin, "order:" + order.id + ":buyer:rejected", "order_rejected_buyer",
         order.buyer_phone, "I|ONE Sokoni: Samahani, oda yako ya " + order.product_name + " haikukubaliwa. Fungua ione kuona maelezo.");
-      if (nextStatus === "completed") await sendSokoniSms(admin, "order:" + order.id + ":buyer:completed", "order_completed_buyer",
-        order.buyer_phone, "I|ONE Sokoni: Oda yako ya " + order.product_name + " imekamilika. Asante kwa kutumia ione.");
+      if (nextStatus === "completed") {
+        await sendSokoniSms(admin, "order:" + order.id + ":buyer:completed", "order_completed_buyer",
+          order.buyer_phone, "I|ONE Sokoni: Oda yako ya " + order.product_name + " imekamilika. Asante kwa kutumia ione.");
+        const completionPush = await sendSokoniPush(admin, order.buyer_user_id, {
+          title: "I|ONE Sokoni • Oda imekamilika",
+          body: "Oda yako ya " + order.product_name + " imekamilika. Asante kwa kutumia I|ONE Sokoni.",
+          url: "./?ionePushDestination=sokoni",
+          tag: "ione-sokoni-order-completed-" + order.id
+        });
+        console.info("Sokoni buyer completion notification result:", { order_id: order.id, push_delivered: completionPush });
+      }
       return json({ success: true, message: nextStatus === "completed" ? "Order marked completed." : "Order request rejected." });
     }
 
