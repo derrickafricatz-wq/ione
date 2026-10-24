@@ -412,7 +412,16 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_orders").delete().in("id", createdOrderIds);
           return json({ success: false, error: "Could not save all cart items. Please retry the order." }, 500);
         }
-        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, vendor_user_id: vendor.user_id, vendor_phone: vendor.phone_number, item_count: items.length });
+        const smsItems = items.map((item: any) => String(item.product.product_name || "Bidhaa") + "x" + String(item.quantity));
+        const smsBase = "I1 Sokoni " + String(buyerName).slice(0, 24) + " " + String(buyerPhone).slice(-13) + " ";
+        const smsTail = " TZS" + String(total) + " #" + String(header.data.id).slice(0, 6);
+        const smsRoom = Math.max(12, 150 - smsBase.length - smsTail.length);
+        let smsItemText = smsItems.join(",");
+        if (smsItemText.length > smsRoom) {
+          smsItemText = smsItemText.slice(0, Math.max(0, smsRoom - 4)).replace(/[, ]+$/, "") + "...";
+        }
+        const sellerSms = (smsBase + smsItemText + smsTail).slice(0, 150);
+        createdOrders.push({ ...header.data, vendor_name: vendor.vendor_name, vendor_user_id: vendor.user_id, vendor_phone: vendor.phone_number, item_count: items.length, seller_sms: sellerSms });
       }
       for (const order of createdOrders) {
         await sendSokoniPush(admin, order.vendor_user_id, {
@@ -421,11 +430,11 @@ Deno.serve(async (req) => {
           url: "./?ionePushDestination=sokoni", tag: "ione-sokoni-order-" + order.id
         });
         await sendSokoniSms(admin, "order:" + order.id + ":seller:new", "order_new_seller",
-          order.vendor_phone, "I|ONE Sokoni: Oda mpya kutoka " + buyerName + ". Fungua ione Sokoni kuangalia maelezo.");
+          order.vendor_phone, order.seller_sms || ("I1 Sokoni oda kutoka " + buyerName + " " + buyerPhone + " #" + String(order.id).slice(0, 6)));
       }
       if (createdOrders.length) await sendSokoniSms(admin, "checkout:" + createdOrders[0].id + ":buyer:received", "order_received_buyer",
         buyerPhone, "I|ONE Sokoni: Oda yako imepokelewa. Wauzaji wamejulishwa. Angalia hali ya oda ndani ya ione.");
-      return json({ success: true, orders: createdOrders.map(({ vendor_user_id, vendor_phone, ...order }: any) => order), message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
+      return json({ success: true, orders: createdOrders.map(({ vendor_user_id, vendor_phone, seller_sms, ...order }: any) => order), message: "Oda imetumwa kwa kila muuzaji. Kila muuzaji ataona bidhaa zake kwenye oda moja." });
     }
 
     if (action === "place_order") {
