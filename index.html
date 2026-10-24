@@ -11242,7 +11242,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
       await new Promise((resolve,reject)=>{
         const upload=new TusUpload(file,{
           endpoint,
-          headers:{"x-signature":prepared.token},
+          headers:{"apikey":HEAVENS_SUPABASE_ANON_KEY,"authorization":"Bearer "+HEAVENS_SUPABASE_ANON_KEY,"x-signature":prepared.token},
           uploadDataDuringCreation:true,
           removeFingerprintOnSuccess:true,
           chunkSize:6*1024*1024,
