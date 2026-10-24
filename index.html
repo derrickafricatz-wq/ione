@@ -11187,6 +11187,19 @@ function ioneRunBackgroundMediaPreload(){ return; }
     finally{if(btn)btn.disabled=false;}
   }
 
+  async function documentaryVideoDuration(file){
+    const objectUrl=URL.createObjectURL(file);
+    try{
+      return await new Promise((resolve,reject)=>{
+        const video=document.createElement("video");
+        video.preload="metadata";
+        video.onloadedmetadata=()=>{const duration=video.duration;video.removeAttribute("src");video.load();resolve(duration);};
+        video.onerror=()=>reject(new Error("Could not read this video's duration. Try an MP4 or WEBM file."));
+        video.src=objectUrl;
+      });
+    }finally{URL.revokeObjectURL(objectUrl);}
+  }
+
   async function addVideo(file){
     if(!file)return;
     const mime=String(file.type||"").toLowerCase().split(";")[0].trim();
@@ -11194,22 +11207,46 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const types={"mp4":"video/mp4","webm":"video/webm","mov":"video/quicktime"};
     const videoMime=["video/mp4","video/webm","video/quicktime"].includes(mime)?mime:types[ext]||"";
     if(!videoMime){status("Choose an MP4, WEBM or MOV video.",true);return;}
-    if(file.size>50*1024*1024){status("Video must be 50 MB or smaller.",true);return;}
-    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("PREPARING VIDEO UPLOAD…");
+    const MAX_VIDEO_BYTES=1024*1024*1024;
+    if(file.size<=0||file.size>MAX_VIDEO_BYTES){status("Video file must be 1 GB or smaller. Compress it if necessary.",true);return;}
+    const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("CHECKING VIDEO DURATION…");
     try{
-      /* Prepare a short-lived signed upload, then send the binary file directly to Storage.
-         This avoids base64 expansion and sending a large video through the Edge Function. */
+      const duration=await documentaryVideoDuration(file);
+      if(!Number.isFinite(duration)||duration<=0)throw new Error("Could not read this video's duration.");
+      if(duration>3600){throw new Error("Documentary videos can be up to 1 hour (60 minutes).");}
+      status("PREPARING SECURE RESUMABLE UPLOAD…");
       const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size});
       if(!prepared.path||!prepared.token)throw new Error("Could not prepare the video upload.");
-      status("UPLOADING VIDEO… KEEP THIS SCREEN OPEN");
-      const uploaded=await heavensSupabase.storage.from("ione-documentary-media")
-        .uploadToSignedUrl(prepared.path,prepared.token,file,{contentType:videoMime,cacheControl:"31536000"});
-      if(uploaded.error)throw uploaded.error;
+      status("STARTING VIDEO UPLOAD…");
+      /* TUS resumable upload sends small chunks and retries transient network failures.
+         The signed token remains server-issued; no service-role key reaches the browser. */
+      const tusModule=await import("https://esm.sh/tus-js-client@4.3.1");
+      const TusUpload=tusModule.Upload||tusModule.default?.Upload;
+      if(!TusUpload)throw new Error("Resumable upload library could not be loaded. Check the connection and retry.");
+      const projectUrl=String(heavensSupabase.supabaseUrl||"");
+      const projectHost=new URL(projectUrl).hostname;
+      const storageHost=projectHost.endsWith(".supabase.co")?projectHost.replace(/\.supabase\.co$/,".storage.supabase.co"):projectHost;
+      const endpoint="https://"+storageHost+"/storage/v1/upload/resumable";
+      await new Promise((resolve,reject)=>{
+        const upload=new TusUpload(file,{
+          endpoint,
+          headers:{"x-signature":prepared.token},
+          uploadDataDuringCreation:true,
+          removeFingerprintOnSuccess:true,
+          chunkSize:6*1024*1024,
+          retryDelays:[0,3000,5000,10000,20000],
+          metadata:{bucketName:"ione-documentary-media",objectName:prepared.path,contentType:videoMime,cacheControl:"31536000"},
+          onError:error=>reject(error),
+          onProgress:(uploaded,total)=>status("UPLOADING VIDEO… "+Math.floor(uploaded/total*100)+"% • KEEP THIS SCREEN OPEN"),
+          onSuccess:()=>resolve()
+        });
+        upload.start();
+      });
       const publicUrl=heavensSupabase.storage.from("ione-documentary-media").getPublicUrl(prepared.path);
       if(!publicUrl.data?.publicUrl)throw new Error("The video upload did not return a URL.");
-      blocks.push({type:"video",url:publicUrl.data.publicUrl,title:file.name||"Muted documentary video"});
-      renderBlocks();status("MUTED VIDEO ADDED • POSITION "+blocks.length);
-    }catch(e){status(e?.message||"Could not upload video.",true);}
+      blocks.push({type:"video",url:publicUrl.data.publicUrl,title:file.name||"Muted documentary video",duration_seconds:Math.round(duration)});
+      renderBlocks();status("VIDEO UPLOADED • "+Math.floor(duration/60)+" MINUTES • POSITION "+blocks.length);
+    }catch(e){status(e?.message||"Could not upload video. Check the Storage upload-size limit and try again.",true);}
     finally{if(btn)btn.disabled=false;}
   }
 
