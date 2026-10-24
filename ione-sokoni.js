@@ -929,6 +929,18 @@ buyerBox.appendChild(row);
           const note = document.createElement("p");
           note.textContent = order.buyer_note ? "Maelezo: " + order.buyer_note : "";
           row.append(title, details, note);
+          if (order.buyer_phone) {
+            const callBuyer = document.createElement("a");
+            callBuyer.className = "is-button";
+            callBuyer.href = "tel:" + String(order.buyer_phone).replace(/[^+0-9]/g, "");
+            callBuyer.textContent = "Piga simu kwa mnunuzi";
+            callBuyer.style.display = "inline-flex";
+            callBuyer.style.alignItems = "center";
+            callBuyer.style.justifyContent = "center";
+            callBuyer.style.textDecoration = "none";
+            callBuyer.style.marginTop = "8px";
+            row.appendChild(callBuyer);
+          }
           if (order.items?.length) {
             const itemList = document.createElement("p");
             itemList.textContent = order.items.map((item) => item.product_name + " × " + item.quantity + " " + item.unit_name + " — TZS " + Number(item.total_tzs || 0).toLocaleString("en-TZ")).join(" • ");
