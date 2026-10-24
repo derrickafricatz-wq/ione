@@ -670,8 +670,23 @@
     box.textContent = "Inapakia bidhaa…";
     try {
       const data = await invoke("public_products");
-      renderProductRows(box, data.products || [], false);
-    } catch (e) { box.textContent = e.message || "Bidhaa hazipatikani kwa sasa."; }
+      const products = data.products || [];
+      try { localStorage.setItem("ioneSokoniCachedProductsV1", JSON.stringify({ saved_at: Date.now(), products })); } catch (_) {}
+      renderProductRows(box, products, false);
+    } catch (e) {
+      let cached = [];
+      try {
+        const saved = JSON.parse(localStorage.getItem("ioneSokoniCachedProductsV1") || "{}");
+        if (Array.isArray(saved.products) && Date.now() - Number(saved.saved_at || 0) < 7 * 24 * 60 * 60 * 1000) cached = saved.products;
+      } catch (_) {}
+      if (cached.length) {
+        renderProductRows(box, cached, false);
+        const note = document.createElement("p");
+        note.className = "is-muted";
+        note.textContent = "Unaona bidhaa zilizohifadhiwa awali. Hali ya bei, upatikanaji na muuzaji inaweza kuwa imebadilika; lazima uungane na intaneti ili kutuma oda.";
+        box.prepend(note);
+      } else box.textContent = e.message || "Bidhaa hazipatikani kwa sasa. Fungua Sokoni ukiwa na intaneti ili kuhifadhi bidhaa kwa matumizi ya baadaye.";
+    }
   }
   async function saveProduct(event){
     event.preventDefault();const button=$("isProductSave");button.disabled=true;setStatus("isProductStatus","Inahifadhi bidhaa…");
@@ -690,6 +705,17 @@
 
   let selectedOrderProduct = null;
   let sokoniCart = [];
+  const SOKONI_CART_KEY = "ioneSokoniCartDraftV1";
+  function persistSokoniCart() {
+    try { localStorage.setItem(SOKONI_CART_KEY, JSON.stringify(sokoniCart)); } catch (_) {}
+  }
+  try {
+    const savedCart = JSON.parse(localStorage.getItem(SOKONI_CART_KEY) || "[]");
+    if (Array.isArray(savedCart)) sokoniCart = savedCart.filter((item) =>
+      item && typeof item.id === "string" && typeof item.product_name === "string" &&
+      Number.isFinite(Number(item.quantity)) && Number(item.quantity) > 0
+    ).slice(0, 100);
+  } catch (_) { sokoniCart = []; }
   let buyerDropoff = null;
   let sellerPickup = null;
   let passengerPickup = null;
@@ -704,6 +730,7 @@
     } else {
       sokoniCart.push({ ...product, quantity: 1 });
     }
+    persistSokoniCart();
     renderSokoniCart();
     $("isOrderPanel").style.display = "block";
     $("isOrderPanel").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -738,11 +765,12 @@
         const next = Number(quantity.value);
         if (!Number.isFinite(next) || next <= 0 || next > 100000) { quantity.value = String(item.quantity); return; }
         item.quantity = Math.round(next * 1000) / 1000;
+        persistSokoniCart();
         renderSokoniCart();
       });
       const remove = document.createElement("button");
       remove.type = "button"; remove.textContent = "Ondoa";
-      remove.addEventListener("click", () => { sokoniCart.splice(index, 1); renderSokoniCart(); });
+      remove.addEventListener("click", () => { sokoniCart.splice(index, 1); persistSokoniCart(); renderSokoniCart(); });
       line.append(info, quantity, remove);
       box.appendChild(line);
     });
@@ -758,6 +786,20 @@
     setStatus("isOrderStatus", "Inatuma oda kwa wauzaji…");
     try {
       const wantsDelivery = $("isWantsDelivery").checked;
+      if (!navigator.onLine) {
+        try {
+          localStorage.setItem("ioneSokoniOfflineOrderDraftV1", JSON.stringify({
+            saved_at: new Date().toISOString(),
+            buyer_name: $("isBuyerName").value.trim(),
+            buyer_phone: $("isBuyerPhone").value.trim(),
+            buyer_note: $("isOrderNote").value.trim(),
+            wants_delivery: wantsDelivery,
+            delivery_address: wantsDelivery ? $("isDeliveryAddress").value.trim() : "",
+            items: sokoniCart.map((item) => ({ product_id: item.id, product_name: item.product_name, quantity: Number(item.quantity), unit_name: item.unit_name, price_tzs: Number(item.price_tzs), vendor_name: item.vendor_name }))
+          }));
+        } catch (_) {}
+        throw new Error("Huna intaneti kwa sasa. Kikapu kimehifadhiwa kwenye simu hii; oda HAIJAtumwa kwa muuzaji. Unganisha intaneti kisha bonyeza Tuma oda tena.");
+      }
       if (wantsDelivery && $("isDeliveryAddress").value.trim().length < 4) {
         throw new Error("Weka anwani ya kupeleka kabla ya kutuma oda. GPS ni hiari.");
       }
@@ -775,6 +817,8 @@
       $("isOrderForm").reset();
       $("isOrderPanel").style.display = "none";
       sokoniCart = [];
+      persistSokoniCart();
+      try { localStorage.removeItem("ioneSokoniOfflineOrderDraftV1"); } catch (_) {}
       renderSokoniCart();
       await loadMyOrders();
       const buyerOrdersPanel = $("isBuyerOrders");
@@ -829,7 +873,7 @@
             legacyItems.textContent = "Kiasi: " + order.quantity + " " + order.unit_name;
             row.appendChild(legacyItems);
           }
-          if (order.status === "new" && order.seller_phone) {
+          if (order.seller_phone) {
             const call = document.createElement("a");
             call.className = "is-button";
             call.href = "tel:" + String(order.seller_phone).replace(/[^+0-9]/g, "");
