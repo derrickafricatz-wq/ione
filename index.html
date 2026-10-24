@@ -11207,8 +11207,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const types={"mp4":"video/mp4","webm":"video/webm","mov":"video/quicktime"};
     const videoMime=["video/mp4","video/webm","video/quicktime"].includes(mime)?mime:types[ext]||"";
     if(!videoMime){status("Choose an MP4, WEBM or MOV video.",true);return;}
-    const MAX_VIDEO_BYTES=1024*1024*1024;
-    if(file.size<=0||file.size>MAX_VIDEO_BYTES){status("Video file must be 1 GB or smaller. Compress it if necessary.",true);return;}
+    const MAX_VIDEO_BYTES=50*1024*1024;
+    if(file.size<=0||file.size>MAX_VIDEO_BYTES){status("This I|ONE project is on Supabase Free, which allows at most 50 MB per video. Compress the video to 50 MB or less, then retry.",true);return;}
     const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("CHECKING VIDEO DURATION…");
     try{
       const duration=await documentaryVideoDuration(file);
