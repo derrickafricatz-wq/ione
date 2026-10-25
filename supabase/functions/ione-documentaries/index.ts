@@ -78,8 +78,26 @@ Deno.serve(async(req:Request)=>{
   let body:any={};try{body=await req.json();}catch{}
   const action=String(body?.action||"list").trim().toLowerCase();
 
+  if(action==="view"){
+   const id=cleanText(body?.id,100);
+   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))return json({success:false,error:"Valid documentary id is required."},400);
+   const viewerKey=cleanText(body?.viewer_key,100);
+   if(!/^[a-z0-9-]{16,100}$/i.test(viewerKey))return json({success:false,error:"Viewer session is required."},400);
+   const {data:doc,error:docError}=await admin.from("ione_documentaries").select("id,view_count").eq("id",id).eq("published",true).maybeSingle();
+   if(docError)return json({success:false,error:"Could not record documentary view."},500);
+   if(!doc)return json({success:false,error:"Documentary not found."},404);
+   const ip=cleanText(req.headers.get("cf-connecting-ip")||(req.headers.get("x-forwarded-for")||"").split(",")[0]||"unknown",100);
+   const userAgent=cleanText(req.headers.get("user-agent")||"unknown",300);
+   const fingerprint=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(viewerKey+"|"+ip+"|"+userAgent));
+   const viewerHash=Array.from(new Uint8Array(fingerprint),b=>b.toString(16).padStart(2,"0")).join("");
+   const {data:record,error:recordError}=await admin.rpc("record_ione_documentary_view",{p_documentary_id:id,p_viewer_hash:viewerHash});
+   if(recordError)return json({success:false,error:"Could not record documentary view."},500);
+   const row=Array.isArray(record)?record[0]:record;
+   return json({success:true,counted:Boolean(row?.counted),view_count:Number(row?.view_count??doc.view_count??0)});
+  }
+
   if(action==="list"||action==="get"){
-   let query=admin.from("ione_documentaries").select("id,title,short_description,cover_image_url,content,sort_order,published,created_at,updated_at");
+   let query=admin.from("ione_documentaries").select("id,title,short_description,cover_image_url,content,sort_order,published,view_count,created_at,updated_at");
    if(action==="list"){const authorityView=await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"));if(!authorityView)query=query.eq("published",true);query=query.order("sort_order",{ascending:true}).order("created_at",{ascending:true});}
    else {const id=cleanText(body?.id,100);if(!id)return json({success:false,error:"Documentary id is required."},400);query=query.eq("id",id).maybeSingle();}
    const {data,error}=await query;if(error)return json({success:false,error:"Could not load the documentary."},500);
@@ -154,7 +172,7 @@ Deno.serve(async(req:Request)=>{
    const firstImage=content.find((x:any)=>x.type==="image"&&x.url)?.url||"",requestedCover=cleanText(body?.cover_image_url,2000),cover_image_url=requestedCover||firstImage||null;
    if(published&&!cover_image_url)return json({success:false,error:"A starting image is required before publishing."},400);
    const record:any={title,short_description,cover_image_url,content,sort_order,published,updated_at:new Date().toISOString()};
-   const result=id?await admin.from("ione_documentaries").update(record).eq("id",id).select("id,title,short_description,cover_image_url,content,sort_order,published,created_at,updated_at").single():await admin.from("ione_documentaries").insert(record).select("id,title,short_description,cover_image_url,content,sort_order,published,created_at,updated_at").single();
+   const result=id?await admin.from("ione_documentaries").update(record).eq("id",id).select("id,title,short_description,cover_image_url,content,sort_order,published,view_count,created_at,updated_at").single():await admin.from("ione_documentaries").insert(record).select("id,title,short_description,cover_image_url,content,sort_order,published,view_count,created_at,updated_at").single();
    if(result.error)return json({success:false,error:"Could not save the documentary."},500);
    return json({success:true,documentary:result.data});
   }
