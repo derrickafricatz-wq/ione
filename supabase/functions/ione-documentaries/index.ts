@@ -107,7 +107,7 @@ Deno.serve(async(req:Request)=>{
    if(!Number.isFinite(size)||size<=0||size>1024*1024*1024)return json({success:false,error:"Video file must be 1 GB or smaller."},400);
    const ext=mime==="video/webm"?"webm":mime==="video/quicktime"?"mov":"mp4";
    const path=`authority/${crypto.randomUUID()}.${ext}`;let cfg:any;
-   try{cfg=b2Client();const cors_repaired=await ensureDocumentaryUploadCors(cfg.client,cfg.bucket);const uploadUrl=await getSignedUrl(cfg.client,new PutObjectCommand({Bucket:cfg.bucket,Key:path,ContentType:mime}),{expiresIn:900});return json({success:true,path,upload_url:uploadUrl,object_url:`b2://${path}`,mime_type:mime,expires_in:900,cors_repaired});}
+   try{cfg=b2Client();let cors_repaired=false;let cors_repair_error="";try{cors_repaired=await ensureDocumentaryUploadCors(cfg.client,cfg.bucket);}catch(corsError){cors_repair_error=corsError instanceof Error?corsError.message:"Bucket CORS could not be updated.";console.error("I|ONE documentary upload CORS repair failed:",cors_repair_error);}const uploadUrl=await getSignedUrl(cfg.client,new PutObjectCommand({Bucket:cfg.bucket,Key:path,ContentType:mime}),{expiresIn:900});return json({success:true,path,upload_url:uploadUrl,object_url:`b2://${path}`,mime_type:mime,expires_in:900,cors_repaired,cors_repair_error:cors_repair_error||undefined});}
    catch(e){return json({success:false,error:"Could not prepare the Backblaze video upload.",detail:e instanceof Error?e.message:"B2 signing failed."},502);}
    finally{cfg?.client?.destroy();}
   }
