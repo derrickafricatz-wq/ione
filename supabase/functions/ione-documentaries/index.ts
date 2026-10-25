@@ -78,6 +78,14 @@ Deno.serve(async(req:Request)=>{
   let body:any={};try{body=await req.json();}catch{}
   const action=String(body?.action||"list").trim().toLowerCase();
 
+  if(action==="list_moderation_comments"){
+   if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+   const {data:rows,error}=await admin.from("ione_documentary_comments").select("id,documentary_id,display_name,comment_text,created_at,expires_at").gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false}).limit(100);
+   if(error)return json({success:false,error:"Could not load moderation comments."},500);
+   const ids=[...new Set((rows||[]).map(row=>row.documentary_id))];let titles={};
+   if(ids.length){const {data:docs,error:docsError}=await admin.from("ione_documentaries").select("id,title").in("id",ids);if(docsError)return json({success:false,error:"Could not load documentary titles."},500);titles=Object.fromEntries((docs||[]).map(doc=>[doc.id,doc.title]));}
+   return json({success:true,comments:(rows||[]).map(row=>({...row,documentary_title:titles[row.documentary_id]||"Documentary"}))});
+  }
   if(action==="list_comments"||action==="add_comment"||action==="delete_comment"){
    // Expired comments are invisible immediately and physically removed during comment traffic;
    // pg_cron also performs a daily cleanup in production.
