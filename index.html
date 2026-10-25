@@ -11410,7 +11410,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
         '<input id="ioneDocImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden>'+
         '<button type="button" id="ioneDocAddAudio" class="ione-doc-btn">+ ADD INSTRUMENTAL AUDIO</button>'+
         '<input id="ioneDocAudioFile" type="file" accept="audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,audio/webm,audio/x-m4a" hidden>'+
-        '<button type="button" id="ioneDocAddVideo" class="ione-doc-btn">+ UPLOAD MUTED VIDEO</button>'+
+        '<button type="button" id="ioneDocAddVideo" class="ione-doc-btn">+ UPLOAD MUTED VIDEO</button>
+        '<button type="button" id="ioneDocTestB2" class="ione-doc-btn">TEST BACKBLAZE B2 UPLOAD</button>'+'+
         '<input id="ioneDocVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,video/*" hidden>'+
         '<button type="button" id="ioneDocNew" class="ione-doc-btn">NEW</button>'+
         '<button type="button" id="ioneDocSave" class="ione-doc-btn">SAVE DRAFT</button><button type="button" id="ioneDocPublishNow" class="ione-doc-btn primary">PUBLISH CHANGES</button>'+
@@ -11514,6 +11515,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     document.getElementById("ioneDocAddAudio").onclick=function(){document.getElementById("ioneDocAudioFile").click();};
     document.getElementById("ioneDocAudioFile").onchange=function(){const file=this.files?.[0];this.value="";addAudio(file);};
     document.getElementById("ioneDocAddVideo").onclick=function(){document.getElementById("ioneDocVideoFile").click();};
+    document.getElementById("ioneDocTestB2").onclick=async function(){const b=this;b.disabled=true;status("TESTING BACKBLAZE B2 UPLOAD…");try{const result=await invoke("b2_test_upload",{});status(result.message||"BACKBLAZE B2 TEST SUCCEEDED.");}catch(e){status(e?.message||"BACKBLAZE B2 TEST FAILED.",true);}finally{b.disabled=false;}};
     document.getElementById("ioneDocVideoFile").onchange=function(){const file=this.files?.[0];this.value="";addVideo(file);};
     document.getElementById("ioneDocNew").onclick=reset;
     document.getElementById("ioneDocToggleActive").onclick=function(){const pub=document.getElementById("ioneDocPublished"),btn=this;if(!pub)return;pub.checked=!pub.checked;const active=pub.checked;btn.textContent=active?"ACTIVE • TAP TO DEACTIVATE":"INACTIVE • TAP TO ACTIVATE";btn.setAttribute("aria-pressed",String(active));btn.classList.toggle("is-active",active);status(active?"ACTIVE SELECTED • PRESS PUBLISH CHANGES TO APPLY":"INACTIVE SELECTED • PRESS PUBLISH CHANGES TO REMOVE FROM PUBLIC LIST");};
