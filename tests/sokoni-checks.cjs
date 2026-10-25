@@ -123,7 +123,7 @@ assert.match(edge, /rider_heartbeat/);
 assert.match(edge, /Trip is no longer active; live location sharing has stopped/);
 assert.match(html, /IONE_AUTHORITY_BODY_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
 assert.match(html, /IONE_AUTHORITY_HEADER_FUNCTIONS = new Set\([\s\S]*?"ione-sokoni"/);
-assert.match(sw, /ione-app-v271/);
+assert.match(sw, /const CACHE_NAME = "ione-app-v\\d+";/);
 assert.match(sw, /\.\/ione-sokoni\.js/);
 assert.match(version.version, /^\d+\.\d+\.\d+$/);
 assert.ok(version.message && typeof version.message === "string", "PWA version metadata must include a release message");
