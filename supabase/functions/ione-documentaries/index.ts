@@ -21,8 +21,10 @@ async function ensureDocumentaryUploadCors(bucket:string){
  const authRes=await fetch("https://api.backblazeb2.com/b2api/v3/b2_authorize_account",{headers:{Authorization:"Basic "+basic}});
  if(!authRes.ok)throw new Error("B2 Native API authorization failed ("+authRes.status+").");
  const auth=await authRes.json();
+ const nativeApiUrl=String(auth.apiInfo?.storageApi?.apiUrl||auth.apiUrl||"").replace(/\/$/,"");
+ if(!/^https:\/\//i.test(nativeApiUrl))throw new Error("B2 authorization response did not include a valid Native API URL.");
  const call=async(name:string,payload:any)=>{
-  const r=await fetch(String(auth.apiUrl).replace(/\/$/,"")+"/b2api/v3/"+name,{method:"POST",headers:{Authorization:auth.authorizationToken,"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const r=await fetch(nativeApiUrl+"/b2api/v3/"+name,{method:"POST",headers:{Authorization:auth.authorizationToken,"Content-Type":"application/json"},body:JSON.stringify(payload)});
   const raw=await r.text();let parsed:any={};try{parsed=JSON.parse(raw);}catch{}
   if(!r.ok)throw new Error(name+" failed ("+r.status+"): "+String(parsed.message||raw||"B2 Native API error").slice(0,300));
   return parsed;
