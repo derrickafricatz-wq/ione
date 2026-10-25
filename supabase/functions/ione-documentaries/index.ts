@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, GetBucketCorsCommand, PutBucketCorsCommand } from "npm:@aws-sdk/client-s3@3.750.0";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "npm:@aws-sdk/client-s3@3.750.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.750.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type, x-ione-authority-session","Access-Control-Allow-Methods":"POST, OPTIONS"};
@@ -14,23 +14,41 @@ function b2Client(){
  if(!regionMatch)throw new Error("B2 endpoint format is invalid.");
  return {bucket,client:new S3Client({region:regionMatch[1],endpoint,forcePathStyle:true,credentials:{accessKeyId,secretAccessKey}})};
 }
-async function ensureDocumentaryUploadCors(client:S3Client,bucket:string){
+async function b2NativeAuth(){
+ const keyId=Deno.env.get("B2_KEY_ID"),applicationKey=Deno.env.get("B2_APPLICATION_KEY");
+ if(!keyId||!applicationKey)throw new Error("Backblaze B2 key secrets are missing.");
+ const response=await fetch("https://api.backblazeb2.com/b2api/v3/b2_authorize_account",{headers:{Authorization:"Basic "+btoa(keyId+":"+applicationKey)}});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error("Backblaze authorization failed ("+response.status+"): "+String(data.message||data.code||"Check B2 key permissions."));
+ const apiUrl=String(data?.apiInfo?.storageApi?.apiUrl||"");
+ if(!apiUrl)throw new Error("Backblaze authorization did not return a storage API URL.");
+ return {data,apiUrl,token:String(data.authorizationToken||"")};
+}
+async function b2NativeCall(apiUrl:string,token:string,operation:string,body:any){
+ const response=await fetch(apiUrl+"/b2api/v3/"+operation,{method:"POST",headers:{Authorization:token,"Content-Type":"application/json"},body:JSON.stringify(body)});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(operation+" failed ("+response.status+"): "+String(data.message||data.code||"Backblaze API error."));
+ return data;
+}
+async function ensureDocumentaryUploadCorsNative(bucket:string){
  const origin="https://intoione.space";
- let rules:any[]=[];
- try{
-  const current=await client.send(new GetBucketCorsCommand({Bucket:bucket}));
-  rules=Array.isArray(current.CORSRules)?current.CORSRules:[];
- }catch(e){
-  const name=String((e as any)?.name||"");
-  const code=String((e as any)?.Code||(e as any)?.code||"");
-  const message=String((e as any)?.message||"");
-  if(name!=="NoSuchCORSConfiguration"&&code!=="NoSuchCORSConfiguration"&&!/cors configuration does not exist|no cors configuration/i.test(message))throw e;
- }
- const hasRule=rules.some((r:any)=>(r.AllowedOrigins||[]).includes(origin)&&(r.AllowedMethods||[]).includes("PUT")&&(r.AllowedHeaders||[]).some((h:string)=>h==="*"||h.toLowerCase()==="content-type"));
- if(hasRule)return false;
- const next=[...rules,{AllowedOrigins:[origin],AllowedMethods:["PUT"],AllowedHeaders:["*"],ExposeHeaders:["ETag"],MaxAgeSeconds:3600}];
- await client.send(new PutBucketCorsCommand({Bucket:bucket,CORSConfiguration:{CORSRules:next}}));
+ const auth=await b2NativeAuth();
+ const listed=await b2NativeCall(auth.apiUrl,auth.token,"b2_list_buckets",{accountId:auth.data.accountId,bucketName:bucket});
+ const found=(Array.isArray(listed.buckets)?listed.buckets:[]).find((b:any)=>b.bucketName===bucket);
+ if(!found?.bucketId)throw new Error("Backblaze bucket was not found for Native API CORS setup.");
+ const rules=Array.isArray(found.corsRules)?found.corsRules:[];
+ const headers=["authorization","x-bz-file-name","x-bz-content-sha1","content-type"];
+ const matches=rules.some((r:any)=>Array.isArray(r.allowedOrigins)&&r.allowedOrigins.includes(origin)&&Array.isArray(r.allowedOperations)&&r.allowedOperations.includes("b2_upload_file")&&headers.every(h=>Array.isArray(r.allowedHeaders)&&r.allowedHeaders.some((x:string)=>String(x).toLowerCase()===h||x==="*")));
+ if(matches)return false;
+ const next=[...rules.filter((r:any)=>r.corsRuleName!=="ione-documentary-upload"),{corsRuleName:"ione-documentary-upload",allowedOrigins:[origin],allowedOperations:["b2_upload_file"],allowedHeaders:headers,exposeHeaders:["x-bz-file-name","x-bz-content-sha1","x-bz-file-id"],maxAgeSeconds:3600}];
+ await b2NativeCall(auth.apiUrl,auth.token,"b2_update_bucket",{accountId:auth.data.accountId,bucketId:found.bucketId,corsRules:next});
  return true;
+}
+async function prepareNativeVideoUpload(bucket:string,path:string){
+ const auth=await b2NativeAuth();
+ const details=await b2NativeCall(auth.apiUrl,auth.token,"b2_get_upload_url",{bucketId:(await b2NativeCall(auth.apiUrl,auth.token,"b2_list_buckets",{accountId:auth.data.accountId,bucketName:bucket})).buckets?.find((b:any)=>b.bucketName===bucket)?.bucketId});
+ if(!details?.uploadUrl||!details?.authorizationToken)throw new Error("Backblaze did not return a Native upload URL and token.");
+ return {upload_url:details.uploadUrl,upload_token:details.authorizationToken,path};
 }
 
 async function presentDocumentary(doc:any,client:S3Client,bucket:string){
@@ -103,8 +121,12 @@ Deno.serve(async(req:Request)=>{
    if(!Number.isFinite(size)||size<=0||size>1024*1024*1024)return json({success:false,error:"Video file must be 1 GB or smaller."},400);
    const ext=mime==="video/webm"?"webm":mime==="video/quicktime"?"mov":"mp4";
    const path=`authority/${crypto.randomUUID()}.${ext}`;let cfg:any;
-   try{cfg=b2Client();let cors_repaired=false;let cors_repair_error="";try{cors_repaired=await ensureDocumentaryUploadCors(cfg.client,cfg.bucket);}catch(corsError){cors_repair_error=corsError instanceof Error?corsError.message:"Bucket CORS could not be updated.";console.error("I|ONE documentary upload CORS repair failed:",cors_repair_error);}const uploadUrl=await getSignedUrl(cfg.client,new PutObjectCommand({Bucket:cfg.bucket,Key:path,ContentType:mime}),{expiresIn:900});return json({success:true,path,upload_url:uploadUrl,object_url:`b2://${path}`,mime_type:mime,expires_in:900,cors_repaired,cors_repair_error:cors_repair_error||undefined});}
-   catch(e){return json({success:false,error:"Could not prepare the Backblaze video upload.",detail:e instanceof Error?e.message:"B2 signing failed."},502);}
+   try{
+    cfg=b2Client();
+    await ensureDocumentaryUploadCorsNative(cfg.bucket);
+    const native=await prepareNativeVideoUpload(cfg.bucket,path);
+    return json({success:true,path,upload_url:native.upload_url,upload_token:native.upload_token,object_url:`b2://${path}`,mime_type:mime,upload_api:"native",expires_in:86400});
+   }catch(e){return json({success:false,error:"Could not prepare the Backblaze Native video upload.",detail:e instanceof Error?e.message:"B2 Native API setup failed."},502);}
    finally{cfg?.client?.destroy();}
   }
 
