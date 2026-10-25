@@ -9089,21 +9089,7 @@ printBtn.onclick = () => {
 
     html += "<hr><p>Heaven On Earth</p>";
 
-    html += "<script id="ioneDocumentaryCommentModerationLogic">
-(function(){
-  const $=id=>document.getElementById(id),toggle=$("ioneDocumentaryCommentModerationToggle"),panel=$("ioneDocumentaryCommentModerationPanel"),status=$("ioneDocumentaryCommentModerationStatus"),list=$("ioneDocumentaryCommentModerationList");
-  if(!toggle||!panel||!status||!list)return;
-  function render(items){list.replaceChildren();if(!items.length){const empty=document.createElement("div");empty.className="authority-section-note";empty.textContent="No active comments. Expired comments are automatically cleaned.";list.appendChild(empty);return;}
-    items.forEach(item=>{const card=document.createElement("article");card.className="ione-doc-comment-authority-row";const title=document.createElement("div");title.className="ione-doc-comment-authority-title";title.textContent=String(item.documentary_title||"Documentary");const name=document.createElement("strong");name.textContent=String(item.display_name||"Viewer");const body=document.createElement("div");body.className="ione-doc-comment-authority-text";body.textContent=String(item.comment_text||"");const date=document.createElement("div");date.className="ione-doc-comment-authority-meta";const stamp=Date.parse(item.created_at||"");date.textContent=Number.isFinite(stamp)?new Date(stamp).toLocaleString():"Recently";const remove=document.createElement("button");remove.type="button";remove.className="ione-doc-comment-authority-remove";remove.textContent="DELETE COMMENT";
-    remove.addEventListener("click",async()=>{if(!confirm("Permanently delete this public comment?"))return;remove.disabled=true;try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"delete_comment",comment_id:item.id}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not delete comment.");card.remove();status.textContent="Comment deleted.";if(!list.querySelector(".ione-doc-comment-authority-row")){const empty=document.createElement("div");empty.className="authority-section-note";empty.textContent="No active comments.";list.appendChild(empty);}}catch(error){remove.disabled=false;status.textContent=error?.message||"Could not delete comment.";}});card.append(title,name,body,date,remove);list.appendChild(card);});
-  }
-  async function refresh(){const token=sessionStorage.getItem("ioneAuthoritySession"),expires=Date.parse(sessionStorage.getItem("ioneAuthoritySessionExpiresAt")||"");if(!token||(Number.isFinite(expires)&&Date.now()>=expires)){status.textContent="Authority session expired. Unlock Authority Press again.";return;}status.textContent="Loading recent comments…";list.replaceChildren();try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"list_moderation_comments"}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not load comments.");render(Array.isArray(out.data.comments)?out.data.comments:[]);status.textContent=(out.data.comments||[]).length+" recent comments";}catch(error){status.textContent=error?.message||"Could not load comments.";}}
-  function open(){panel.classList.add("is-open");panel.setAttribute("aria-hidden","false");toggle.setAttribute("aria-expanded","true");refresh();}function close(){panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");toggle.setAttribute("aria-expanded","false");}
-  toggle.addEventListener("click",()=>panel.classList.contains("is-open")?close():open());$("ioneDocumentaryCommentModerationRefresh")?.addEventListener("click",refresh);$("ioneDocumentaryCommentModerationClose")?.addEventListener("click",close);
-})();
-</script>
-
-</body></html>";
+    html += "</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
@@ -11790,6 +11776,20 @@ function ioneRunBackgroundMediaPreload(){ return; }
 </script>
 
 
+
+<script id="ioneDocumentaryCommentModerationLogic">
+(function(){
+  const $=id=>document.getElementById(id),toggle=$("ioneDocumentaryCommentModerationToggle"),panel=$("ioneDocumentaryCommentModerationPanel"),status=$("ioneDocumentaryCommentModerationStatus"),list=$("ioneDocumentaryCommentModerationList");
+  if(!toggle||!panel||!status||!list)return;
+  function render(items){list.replaceChildren();if(!items.length){const empty=document.createElement("div");empty.className="authority-section-note";empty.textContent="No active comments. Expired comments are automatically cleaned.";list.appendChild(empty);return;}
+    items.forEach(item=>{const card=document.createElement("article");card.className="ione-doc-comment-authority-row";const title=document.createElement("div");title.className="ione-doc-comment-authority-title";title.textContent=String(item.documentary_title||"Documentary");const name=document.createElement("strong");name.textContent=String(item.display_name||"Viewer");const body=document.createElement("div");body.className="ione-doc-comment-authority-text";body.textContent=String(item.comment_text||"");const date=document.createElement("div");date.className="ione-doc-comment-authority-meta";const stamp=Date.parse(item.created_at||"");date.textContent=Number.isFinite(stamp)?new Date(stamp).toLocaleString():"Recently";const remove=document.createElement("button");remove.type="button";remove.className="ione-doc-comment-authority-remove";remove.textContent="DELETE COMMENT";
+    remove.addEventListener("click",async()=>{if(!confirm("Permanently delete this public comment?"))return;remove.disabled=true;try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"delete_comment",comment_id:item.id}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not delete comment.");card.remove();status.textContent="Comment deleted.";if(!list.querySelector(".ione-doc-comment-authority-row")){const empty=document.createElement("div");empty.className="authority-section-note";empty.textContent="No active comments.";list.appendChild(empty);}}catch(error){remove.disabled=false;status.textContent=error?.message||"Could not delete comment.";}});card.append(title,name,body,date,remove);list.appendChild(card);});
+  }
+  async function refresh(){const token=sessionStorage.getItem("ioneAuthoritySession"),expires=Date.parse(sessionStorage.getItem("ioneAuthoritySessionExpiresAt")||"");if(!token||(Number.isFinite(expires)&&Date.now()>=expires)){status.textContent="Authority session expired. Unlock Authority Press again.";return;}status.textContent="Loading recent comments…";list.replaceChildren();try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"list_moderation_comments"}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not load comments.");render(Array.isArray(out.data.comments)?out.data.comments:[]);status.textContent=(out.data.comments||[]).length+" recent comments";}catch(error){status.textContent=error?.message||"Could not load comments.";}}
+  function open(){panel.classList.add("is-open");panel.setAttribute("aria-hidden","false");toggle.setAttribute("aria-expanded","true");refresh();}function close(){panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");toggle.setAttribute("aria-expanded","false");}
+  toggle.addEventListener("click",()=>panel.classList.contains("is-open")?close():open());$("ioneDocumentaryCommentModerationRefresh")?.addEventListener("click",refresh);$("ioneDocumentaryCommentModerationClose")?.addEventListener("click",close);
+})();
+</script>
 
 </body>
 </html>
