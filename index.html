@@ -11216,15 +11216,18 @@ function ioneRunBackgroundMediaPreload(){ return; }
       if(duration>3600)throw new Error("Documentary videos can be up to 1 hour (60 minutes).");
       status("PREPARING PRIVATE BACKBLAZE UPLOAD…");
       const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size});
-      if(!prepared.upload_url||!prepared.object_url)throw new Error("Backblaze did not return a secure upload link.");
+      if(!prepared.upload_url||!prepared.upload_token||!prepared.object_url||prepared.upload_api!=="native")throw new Error("Backblaze did not return a complete Native upload authorization.");
       status("UPLOADING VIDEO TO PRIVATE BACKBLAZE STORAGE… 0%");
       await new Promise((resolve,reject)=>{
         const xhr=new XMLHttpRequest();
-        xhr.open("PUT",prepared.upload_url,true);
+        xhr.open("POST",prepared.upload_url,true);
+        xhr.setRequestHeader("Authorization",prepared.upload_token);
+        xhr.setRequestHeader("X-Bz-File-Name",encodeURIComponent(prepared.path));
+        xhr.setRequestHeader("X-Bz-Content-Sha1","do_not_verify");
         xhr.setRequestHeader("Content-Type",videoMime);
         xhr.upload.onprogress=(event)=>{if(event.lengthComputable)status("UPLOADING TO BACKBLAZE… "+Math.floor(event.loaded/event.total*100)+"% • KEEP THIS SCREEN OPEN");};
-        xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300)resolve();else reject(new Error("Backblaze upload failed (HTTP "+xhr.status+"). Check bucket CORS settings and retry."));};
-        xhr.onerror=()=>reject(new Error("Could not reach Backblaze. Check your connection and the bucket CORS rule, then retry."));
+        xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300){resolve();}else{let detail="";try{const response=JSON.parse(xhr.responseText||"{}");detail=response.message||response.code||"";}catch(_){}reject(new Error("Backblaze Native upload failed (HTTP "+xhr.status+")"+(detail?": "+detail:". Check the Native API CORS rule and B2 key permissions.")));}};
+        xhr.onerror=()=>reject(new Error("The browser could not reach Backblaze Native upload. Check that the Native API CORS rule allows b2_upload_file."));
         xhr.onabort=()=>reject(new Error("Upload was cancelled."));
         xhr.send(file);
       });
