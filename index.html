@@ -3122,6 +3122,25 @@ body.ione-gentle-boot #ioneTopActions{animation-delay:.58s!important;animation-d
 .ione-doc-comment-note{font-size:10px;line-height:1.5;color:#9db6ba}
 .ione-doc-comment-status{min-height:16px;color:#aaf4ed;font-size:12px;line-height:1.5}
 </style>
+<style id="ione-documentary-comment-panels">
+.ione-doc-comments{margin:18px 0 8px;padding:0;border:0;background:transparent;color:#f3fbfc}
+.ione-doc-comments-toggle{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:46px;padding:12px 16px;border:1px solid rgba(120,220,225,.28);border-radius:13px;background:linear-gradient(120deg,rgba(12,49,55,.96),rgba(9,30,38,.96));color:#eaffff;font:800 13px/1.2 Arial,sans-serif;letter-spacing:.3px;cursor:pointer}
+.ione-doc-comments-toggle svg{width:18px;height:18px;flex:none}
+.ione-doc-comments-panel{display:none;margin-top:10px;padding:14px 12px;border:1px solid rgba(120,220,225,.22);border-radius:16px;background:linear-gradient(145deg,rgba(13,35,41,.96),rgba(5,17,21,.96))}
+.ione-doc-comments-panel.is-open{display:block}
+.ione-doc-comments-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.ione-doc-comments-title{font-size:16px;font-weight:850;letter-spacing:.2px;margin:0}
+.ione-doc-comments-close{border:1px solid rgba(160,220,225,.25);border-radius:9px;background:rgba(255,255,255,.05);color:#d9f4f5;font-size:11px;font-weight:800;padding:8px 10px}
+.ione-doc-comment-authority-button{display:flex;align-items:center;gap:8px}
+.ione-doc-comment-authority-panel{display:none;margin-top:12px}
+.ione-doc-comment-authority-panel.is-open{display:block}
+.ione-doc-comment-authority-row{display:grid;gap:7px;padding:12px;margin:10px 0;border-radius:12px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}
+.ione-doc-comment-authority-title{font-size:11px;color:#aaf4ed;font-weight:800}
+.ione-doc-comment-authority-text{font-size:13px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere;color:#f3fbfc}
+.ione-doc-comment-authority-meta{font-size:10px;color:#a3b9bd}
+.ione-doc-comment-authority-remove{justify-self:end;border:1px solid rgba(255,140,140,.4);border-radius:8px;background:transparent;color:#ffb5b5;font-size:10px;font-weight:800;padding:8px 10px}
+.ione-doc-comment-authority-status{font-size:12px;color:#aaf4ed;line-height:1.5}
+</style>
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true">
@@ -3547,6 +3566,15 @@ function getMedia(id){
 
 <div id="authorityPressPanel" aria-hidden="true">
   <div class="authority-panel-inner">
+    <section class="authority-panel-section" id="ioneDocumentaryCommentModerationSection">
+      <div class="authority-section-kicker">COMMUNITY SAFETY</div>
+      <button type="button" id="ioneDocumentaryCommentModerationToggle" class="authority-save-button ione-doc-comment-authority-button"><span aria-hidden="true">☏</span> DOCUMENTARY COMMENTS</button>
+      <div id="ioneDocumentaryCommentModerationPanel" class="ione-doc-comment-authority-panel" aria-hidden="true">
+        <div id="ioneDocumentaryCommentModerationStatus" class="ione-doc-comment-authority-status" role="status" aria-live="polite">Open to review recent public comments.</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button type="button" id="ioneDocumentaryCommentModerationRefresh" class="authority-save-button">REFRESH COMMENTS</button><button type="button" id="ioneDocumentaryCommentModerationClose" class="authority-save-button">CLOSE</button></div>
+        <div id="ioneDocumentaryCommentModerationList" style="display:grid;gap:8px"></div>
+      </div>
+    </section>
     <div class="authority-panel-head">
       <h2>AUTHORITY PRESS</h2>
       <button type="button" id="authorityPressClose">CLOSE</button>
@@ -9824,16 +9852,24 @@ function openIonePublicDocumentary(d){
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";markPrintable(section,i);const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
     const commentsSection=document.createElement("section");commentsSection.className="ione-doc-comments";commentsSection.setAttribute("aria-label","Documentary comments");
-    const commentsTitle=document.createElement("h2");commentsTitle.className="ione-doc-comments-title";commentsTitle.textContent="Comments";commentsSection.appendChild(commentsTitle);
+    const commentsToggle=document.createElement("button");commentsToggle.type="button";commentsToggle.className="ione-doc-comments-toggle";commentsToggle.setAttribute("aria-expanded","false");commentsToggle.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 8.7 3.9a8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/></svg><span>COMMENTS</span>';
+    const commentsPanel=document.createElement("div");commentsPanel.className="ione-doc-comments-panel";
+    const commentsPanelHead=document.createElement("div");commentsPanelHead.className="ione-doc-comments-panel-head";
+    const commentsTitle=document.createElement("h2");commentsTitle.className="ione-doc-comments-title";commentsTitle.textContent="Comments";commentsPanelHead.appendChild(commentsTitle);
+    const commentsClose=document.createElement("button");commentsClose.type="button";commentsClose.className="ione-doc-comments-close";commentsClose.textContent="CLOSE";commentsPanelHead.appendChild(commentsClose);commentsPanel.appendChild(commentsPanelHead);
     const commentsList=document.createElement("div");commentsList.className="ione-doc-comments-list";commentsList.setAttribute("aria-live","polite");
-    const commentsEmpty=document.createElement("div");commentsEmpty.className="ione-doc-comment-empty";commentsEmpty.textContent="Loading comments…";commentsList.appendChild(commentsEmpty);commentsSection.appendChild(commentsList);
+    const commentsEmpty=document.createElement("div");commentsEmpty.className="ione-doc-comment-empty";commentsEmpty.textContent="Open comments to see the discussion.";commentsList.appendChild(commentsEmpty);commentsPanel.appendChild(commentsList);
     const commentForm=document.createElement("form");commentForm.className="ione-doc-comment-form";commentForm.innerHTML='<input name="display_name" maxlength="40" autocomplete="nickname" placeholder="Your display name" aria-label="Your display name" required><textarea name="comment_text" maxlength="1000" placeholder="Share your thoughts about this documentary…" aria-label="Your comment" required></textarea><button class="ione-doc-comment-submit" type="submit">POST COMMENT</button><div class="ione-doc-comment-status" role="status" aria-live="polite"></div><div class="ione-doc-comment-note">Be respectful. Comments are public and automatically expire after 7 days. Spam and abusive content may be removed.</div>';
-    commentsSection.appendChild(commentForm);scroll.appendChild(commentsSection);
+    commentsPanel.appendChild(commentForm);commentsSection.append(commentsToggle,commentsPanel);scroll.appendChild(commentsSection);
+    let commentsLoaded=false,commentsLoading=false;
+    const openComments=async()=>{commentsPanel.classList.add("is-open");commentsToggle.setAttribute("aria-expanded","true");if(!commentsLoaded&&!commentsLoading){commentsLoading=true;commentsList.firstElementChild.textContent="Loading comments…";try{await loadComments();commentsLoaded=true;}catch(error){commentsList.firstElementChild&&(commentsList.firstElementChild.textContent="Comments are temporarily unavailable. Please try again.");console.warn("I|ONE documentary comments unavailable:",error);}finally{commentsLoading=false;}}};
+    const closeComments=()=>{commentsPanel.classList.remove("is-open");commentsToggle.setAttribute("aria-expanded","false");};
+    commentsToggle.addEventListener("click",()=>{if(commentsPanel.classList.contains("is-open"))closeComments();else openComments();});
+    commentsClose.addEventListener("click",closeComments);
     const commentName=commentForm.elements.namedItem("display_name"),commentText=commentForm.elements.namedItem("comment_text"),commentSubmit=commentForm.querySelector("button"),commentStatus=commentForm.querySelector(".ione-doc-comment-status");
     try{commentName.value=localStorage.getItem("ione_documentary_display_name")||"";}catch(_){}
-    const canModerate=()=>{try{return !!sessionStorage.getItem("ioneAuthoritySession");}catch(_){return false;}};
     const renderComments=items=>{
-      commentsList.replaceChildren();commentsTitle.textContent="Comments ("+items.length+")";
+      commentsList.replaceChildren();commentsTitle.textContent="Comments ("+items.length+")";commentsToggle.querySelector("span").textContent="COMMENTS ("+items.length+")";
       if(!items.length){const empty=document.createElement("div");empty.className="ione-doc-comment-empty";empty.textContent="Be the first to share a thought about this documentary.";commentsList.appendChild(empty);return;}
       items.forEach(item=>{
         const card=document.createElement("article");card.className="ione-doc-comment";
@@ -9841,7 +9877,6 @@ function openIonePublicDocumentary(d){
         const name=document.createElement("span");name.className="ione-doc-comment-name";name.textContent=String(item.display_name||"Viewer");
         const meta=document.createElement("span");meta.className="ione-doc-comment-date";const date=Date.parse(item.created_at||"");meta.textContent=Number.isFinite(date)?new Date(date).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}):"Recently";
         top.append(name,meta);
-        if(canModerate()){const del=document.createElement("button");del.type="button";del.className="ione-doc-comment-delete";del.textContent="REMOVE";del.setAttribute("aria-label","Remove comment");del.onclick=async()=>{if(!confirm("Remove this public comment?"))return;del.disabled=true;try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"delete_comment",comment_id:item.id}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not remove comment.");await loadComments();}catch(error){del.disabled=false;commentStatus.textContent=error?.message||"Could not remove comment.";}};top.appendChild(del);}
         const body=document.createElement("div");body.className="ione-doc-comment-body";body.textContent=String(item.comment_text||"");card.append(top,body);commentsList.appendChild(card);
       });
     };
@@ -9851,7 +9886,6 @@ function openIonePublicDocumentary(d){
       if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not load comments.");
       renderComments(Array.isArray(out.data.comments)?out.data.comments:[]);
     }
-    loadComments().catch(error=>{commentsList.replaceChildren();const empty=document.createElement("div");empty.className="ione-doc-comment-empty";empty.textContent="Comments are temporarily unavailable. Please try again.";commentsList.appendChild(empty);console.warn("I|ONE documentary comments unavailable:",error);});
     commentForm.addEventListener("submit",async event=>{
       event.preventDefault();const displayName=String(commentName.value||"").trim(),textValue=String(commentText.value||"").trim();
       if(displayName.length<2||textValue.length<2){commentStatus.textContent="Enter your display name and a comment.";return;}
@@ -11742,6 +11776,20 @@ function ioneRunBackgroundMediaPreload(){ return; }
 </script>
 
 
+
+<script id="ioneDocumentaryCommentModerationLogic">
+(function(){
+  const $=id=>document.getElementById(id),toggle=$("ioneDocumentaryCommentModerationToggle"),panel=$("ioneDocumentaryCommentModerationPanel"),status=$("ioneDocumentaryCommentModerationStatus"),list=$("ioneDocumentaryCommentModerationList");
+  if(!toggle||!panel||!status||!list)return;
+  function render(items){list.replaceChildren();if(!items.length){const empty=document.createElement("div");empty.className="authority-section-note";empty.textContent="No active comments. Expired comments are automatically cleaned.";list.appendChild(empty);return;}
+    items.forEach(item=>{const card=document.createElement("article");card.className="ione-doc-comment-authority-row";const title=document.createElement("div");title.className="ione-doc-comment-authority-title";title.textContent=String(item.documentary_title||"Documentary");const name=document.createElement("strong");name.textContent=String(item.display_name||"Viewer");const body=document.createElement("div");body.className="ione-doc-comment-authority-text";body.textContent=String(item.comment_text||"");const date=document.createElement("div");date.className="ione-doc-comment-authority-meta";const stamp=Date.parse(item.created_at||"");date.textContent=Number.isFinite(stamp)?new Date(stamp).toLocaleString():"Recently";const remove=document.createElement("button");remove.type="button";remove.className="ione-doc-comment-authority-remove";remove.textContent="DELETE COMMENT";
+    remove.addEventListener("click",async()=>{if(!confirm("Permanently delete this public comment?"))return;remove.disabled=true;try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"delete_comment",comment_id:item.id}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not delete comment.");card.remove();status.textContent="Comment deleted.";if(!list.querySelector(".ione-doc-comment-authority-row")){const empty=document.createElement("div");empty.className="authority-section-note";empty.textContent="No active comments.";list.appendChild(empty);}}catch(error){remove.disabled=false;status.textContent=error?.message||"Could not delete comment.";}});card.append(title,name,body,date,remove);list.appendChild(card);});
+  }
+  async function refresh(){const token=sessionStorage.getItem("ioneAuthoritySession"),expires=Date.parse(sessionStorage.getItem("ioneAuthoritySessionExpiresAt")||"");if(!token||(Number.isFinite(expires)&&Date.now()>=expires)){status.textContent="Authority session expired. Unlock Authority Press again.";return;}status.textContent="Loading recent comments…";list.replaceChildren();try{const out=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"list_moderation_comments"}});if(out.error||!out.data?.success)throw out.error||new Error(out.data?.error||"Could not load comments.");render(Array.isArray(out.data.comments)?out.data.comments:[]);status.textContent=(out.data.comments||[]).length+" recent comments";}catch(error){status.textContent=error?.message||"Could not load comments.";}}
+  function open(){panel.classList.add("is-open");panel.setAttribute("aria-hidden","false");toggle.setAttribute("aria-expanded","true");refresh();}function close(){panel.classList.remove("is-open");panel.setAttribute("aria-hidden","true");toggle.setAttribute("aria-expanded","false");}
+  toggle.addEventListener("click",()=>panel.classList.contains("is-open")?close():open());$("ioneDocumentaryCommentModerationRefresh")?.addEventListener("click",refresh);$("ioneDocumentaryCommentModerationClose")?.addEventListener("click",close);
+})();
+</script>
 
 </body>
 </html>
