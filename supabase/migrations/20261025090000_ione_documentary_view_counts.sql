@@ -22,11 +22,11 @@ BEGIN
   IF p_viewer_hash IS NULL OR p_viewer_hash !~ '^[0-9a-f]{64}$' THEN RAISE EXCEPTION 'Invalid viewer hash'; END IF;
   SELECT d.view_count INTO v_count FROM public.ione_documentaries AS d WHERE d.id=p_documentary_id AND d.published=true;
   IF NOT FOUND THEN RETURN; END IF;
-  INSERT INTO public.ione_documentary_view_keys(documentary_id,viewer_hash,last_counted_at)
+  INSERT INTO public.ione_documentary_view_keys AS existing(documentary_id,viewer_hash,last_counted_at)
   VALUES (p_documentary_id,p_viewer_hash,clock_timestamp())
   ON CONFLICT (documentary_id,viewer_hash) DO UPDATE
     SET last_counted_at=clock_timestamp()
-    WHERE public.ione_documentary_view_keys.last_counted_at <= clock_timestamp()-interval '30 minutes'
+    WHERE existing.last_counted_at <= clock_timestamp()-interval '30 minutes'
   RETURNING true INTO v_counted;
   v_counted := COALESCE(v_counted,false);
   IF v_counted THEN
