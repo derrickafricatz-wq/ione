@@ -9818,7 +9818,7 @@ function openIonePublicDocumentary(d){
           if(video._ioneFadeRaf){cancelAnimationFrame(video._ioneFadeRaf);video._ioneFadeRaf=0;}
           try{video.volume=1;}catch(_){}video.muted=false;video.defaultMuted=false;video.removeAttribute("muted");video.setAttribute("data-audio-active","true");activeDocumentaryVideo=video;
           video.play().catch(()=>{video.muted=true;video.defaultMuted=true;activeDocumentaryVideo=null;});
-        },260);
+        },320);
       });documentaryVideos.push(video);wrap.appendChild(video);scroll.appendChild(wrap);if(videoVisibilityObserver)videoVisibilityObserver.observe(video);else video.play().catch(()=>{});}
       else if(x?.type==="image"&&x.url){const fig=document.createElement("figure");fig.className="ione-doc-reader-block ione-doc-reader-image-wrap";fig.style.margin="0 auto";markPrintable(fig,i);const img=document.createElement("img");img.className="ione-doc-reader-image";img.src=String(x.url);img.alt=String(x.alt||d.title||"Documentary image");img.loading=i===0?"eager":"lazy";fig.appendChild(img);const caption=String(x.alt||"").trim();if(caption&&!/^\d{6,}$/.test(caption)&&!/^image\s*\d*$/i.test(caption)&&!/^\d{8,}\.[a-z0-9]+$/i.test(caption)){const cap=document.createElement("figcaption");cap.className="ione-doc-reader-caption";cap.textContent=caption;fig.appendChild(cap);}scroll.appendChild(fig);}
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";markPrintable(section,i);const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
