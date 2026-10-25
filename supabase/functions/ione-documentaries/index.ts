@@ -78,6 +78,51 @@ Deno.serve(async(req:Request)=>{
   let body:any={};try{body=await req.json();}catch{}
   const action=String(body?.action||"list").trim().toLowerCase();
 
+  if(action==="list_comments"||action==="add_comment"||action==="delete_comment"){
+   // Expired comments are invisible immediately and physically removed during comment traffic;
+   // pg_cron also performs a daily cleanup in production.
+   await admin.from("ione_documentary_comments").delete().lte("expires_at",new Date().toISOString());
+   if(action==="delete_comment"){
+    if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+    const commentId=cleanText(body?.comment_id,100);
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(commentId))return json({success:false,error:"Valid comment id is required."},400);
+    const {error}=await admin.from("ione_documentary_comments").delete().eq("id",commentId);
+    if(error)return json({success:false,error:"Could not remove this comment."},500);
+    return json({success:true});
+   }
+   const id=cleanText(body?.id,100);
+   if(!/^[0-9a-f]{8}-[0-9a-f]{3,4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))return json({success:false,error:"Valid documentary id is required."},400);
+   const {data:doc,error:docError}=await admin.from("ione_documentaries").select("id").eq("id",id).eq("published",true).maybeSingle();
+   if(docError)return json({success:false,error:"Could not verify the documentary."},500);
+   if(!doc)return json({success:false,error:"Documentary not found."},404);
+   if(action==="list_comments"){
+    const {data,error}=await admin.from("ione_documentary_comments").select("id,display_name,comment_text,created_at").eq("documentary_id",id).gt("expires_at",new Date().toISOString()).order("created_at",{ascending:false}).limit(50);
+    if(error)return json({success:false,error:"Could not load comments."},500);
+    return json({success:true,comments:data||[]});
+   }
+   const displayName=cleanText(body?.display_name,40).replace(/[<>\u0000-\u001f]/g,"").trim();
+   const commentText=String(body?.comment_text||"").replace(/\u0000/g,"").trim();
+   const viewerKey=cleanText(body?.viewer_key,100);
+   if(displayName.length<2||displayName.length>40)return json({success:false,error:"Display name must be 2–40 characters."},400);
+   if(commentText.length<2||commentText.length>1000)return json({success:false,error:"Comment must be 2–1,000 characters."},400);
+   if(!/^[a-z0-9-]{16,100}$/i.test(viewerKey))return json({success:false,error:"Please refresh the page and try again."},400);
+   if(/https?:\/\/|www\./i.test(commentText))return json({success:false,error:"Links are not allowed in comments."},400);
+   const ip=cleanText(req.headers.get("cf-connecting-ip")||(req.headers.get("x-forwarded-for")||"").split(",")[0]||"unknown",100);
+   const ua=cleanText(req.headers.get("user-agent")||"unknown",300);
+   const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(viewerKey+"|"+ip+"|"+ua));
+   const authorHash=Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,"0")).join("");
+   const now=new Date();
+   const {count,error:rateError}=await admin.from("ione_documentary_comments").select("id",{count:"exact",head:true}).eq("author_hash",authorHash).gt("created_at",new Date(now.getTime()-60*60*1000).toISOString());
+   if(rateError)return json({success:false,error:"Could not verify comment rate."},500);
+   if(Number(count||0)>=5)return json({success:false,error:"Please wait before posting more comments. The limit is 5 per hour."},429);
+   const {data:recent,error:recentError}=await admin.from("ione_documentary_comments").select("id").eq("author_hash",authorHash).gt("created_at",new Date(now.getTime()-20*1000).toISOString()).limit(1);
+   if(recentError)return json({success:false,error:"Could not verify comment rate."},500);
+   if(recent?.length)return json({success:false,error:"Please wait a few seconds before posting another comment."},429);
+   const {data:created,error}=await admin.from("ione_documentary_comments").insert({documentary_id:id,display_name:displayName,comment_text:commentText,author_hash:authorHash,expires_at:new Date(now.getTime()+7*24*60*60*1000).toISOString()}).select("id,display_name,comment_text,created_at").single();
+   if(error)return json({success:false,error:"Could not publish your comment."},500);
+   return json({success:true,comment:created});
+  }
+
   if(action==="view"){
    const id=cleanText(body?.id,100);
    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))return json({success:false,error:"Valid documentary id is required."},400);
