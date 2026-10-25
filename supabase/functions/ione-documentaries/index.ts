@@ -32,8 +32,8 @@ async function ensureDocumentaryUploadCors(bucket:string){
  if(!found)throw new Error("Bucket was not found by the B2 Native API.");
  const rules=Array.isArray(found.corsRules)?found.corsRules:[];
  const origin="https://intoione.space";
- const operations=["s3_put_object"];
- const hasRule=rules.some((r:any)=>(r.allowedOrigins||[]).includes(origin)&&(r.allowedOperations||[]).includes("s3_put_object")&&(r.allowedHeaders||[]).some((h:string)=>h==="*"||h.toLowerCase()==="content-type"));
+ const operations=["S3 Put Object"];
+ const hasRule=rules.some((r:any)=>(r.allowedOrigins||[]).includes(origin)&&(r.allowedOperations||[]).includes("S3 Put Object")&&(r.allowedHeaders||[]).some((h:string)=>h==="*"||h.toLowerCase()==="content-type"));
  if(hasRule)return false;
  const next=rules.filter((r:any)=>r.corsRuleName!=="ioneUpload");
  next.push({corsRuleName:"ioneUpload",allowedOrigins:[origin],allowedOperations:operations,allowedHeaders:["*"],exposeHeaders:["etag"],maxAgeSeconds:3600});
