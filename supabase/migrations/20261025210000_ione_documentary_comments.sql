@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS public.ione_documentary_comments (
 );
 
 CREATE INDEX IF NOT EXISTS ione_documentary_comments_public_idx
-  ON public.ione_documentary_comments (documentary_id, created_at DESC)
-  WHERE expires_at > now();
+  ON public.ione_documentary_comments (documentary_id, expires_at, created_at DESC);
 CREATE INDEX IF NOT EXISTS ione_documentary_comments_author_rate_idx
   ON public.ione_documentary_comments (author_hash, created_at DESC);
 CREATE INDEX IF NOT EXISTS ione_documentary_comments_expiry_idx
