@@ -54,7 +54,7 @@
 .ione-home-doc-copy{gap:10px;padding:18px 18px}
 .ione-home-doc-kicker{font-size:10px;letter-spacing:2px}
 .ione-home-doc-title{font-size:clamp(18px,4.5vw,24px);line-height:1.25}
-.ione-home-doc-desc{font-size:14px;line-height:1.6;color:#c0d1d5}
+.ione-home-doc-desc{font-size:14px;line-height:1.6;color:#c0d1d5}.ione-home-doc-views{display:inline-flex;align-self:flex-start;align-items:center;margin-top:3px;padding:6px 9px;border:1px solid rgba(140,220,230,.22);border-radius:999px;background:rgba(4,18,22,.42);color:#b7d9df;font-size:11px;font-weight:700;letter-spacing:.35px}.ione-doc-reader-head-views{display:block;margin-top:4px;color:#a8c7cd;font-size:11px;letter-spacing:.4px}
 .ione-home-doc-empty{min-height:170px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:28px;border:1px solid rgba(124,230,243,.2);border-radius:20px;background:radial-gradient(ellipse at 20% 0%,rgba(0,196,209,.12),transparent 55%),linear-gradient(145deg,rgba(20,42,48,.92),rgba(10,22,28,.96));color:#c3d7da;font:14px/1.8 Arial,sans-serif;text-align:center}
 .ione-doc-reader-live{background:radial-gradient(ellipse at 50% 0%,#132b31 0%,#091418 44%,#060b0e 100%)}
 .ione-doc-reader-head{background:linear-gradient(115deg,rgba(14,35,41,.99),rgba(7,17,21,.99));box-shadow:0 6px 24px rgba(0,0,0,.22)}
@@ -9582,6 +9582,38 @@ async function openHeavensBookstore(){
 }
 
 
+function formatIoneDocumentaryViews(value){
+  const n=Math.max(0,Math.floor(Number(value)||0));
+  if(n>=1000000)return (n>=10000000?(n/1000000).toFixed(0):(n/1000000).toFixed(1)).replace(/\.0$/,"")+"M views";
+  if(n>=1000)return (n>=10000?(n/1000).toFixed(0):(n/1000).toFixed(1)).replace(/\.0$/,"")+"K views";
+  return n+" "+(n===1?"view":"views");
+}
+function getIoneDocumentaryViewerKey(){
+  const keyName="ione_documentary_viewer_v1";
+  try{
+    let key=localStorage.getItem(keyName);
+    if(!/^[a-z0-9-]{16,100}$/i.test(key||"")){
+      key=window.crypto&&typeof window.crypto.randomUUID==="function"?window.crypto.randomUUID():"ione-"+Array.from(window.crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");
+      localStorage.setItem(keyName,key);
+    }
+    return key;
+  }catch(_){
+    try{
+      let key=sessionStorage.getItem(keyName);
+      if(!/^[a-z0-9-]{16,100}$/i.test(key||"")){key="ione-"+Array.from(window.crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");sessionStorage.setItem(keyName,key);}
+      return key;
+    }catch(__){return "ione-"+Array.from(window.crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,"0")).join("");}
+  }
+}
+function updateIoneDocumentaryViewCount(documentaryId,viewCount){
+  const id=String(documentaryId||"");
+  if(Array.isArray(ioneHomeDocumentaryCache))ioneHomeDocumentaryCache=ioneHomeDocumentaryCache.map(doc=>String(doc.id||"")===id?{...doc,view_count:viewCount}:doc);
+  document.querySelectorAll(".ione-home-doc-card").forEach(card=>{
+    if(card.dataset.documentaryId!==id)return;
+    const label=card.querySelector(".ione-home-doc-views");
+    if(label)label.textContent=formatIoneDocumentaryViews(viewCount);
+  });
+}
 let ioneHomeDocumentaryCache = null;
 let ioneHomeDocumentaryFetch = null;
 
@@ -9595,12 +9627,12 @@ function loadIoneHomeDocumentaries(list){
       const blocks=Array.isArray(d.content)?d.content:[];
       const first=blocks.find(x=>x&&x.type==="image"&&x.url);
       const cover=String(first?.url||d.cover_image_url||"").trim();if(!cover)return;
-      const card=document.createElement("button");card.type="button";card.className="ione-home-doc-card";card.setAttribute("aria-label","Read documentary: "+String(d.title||"Documentary"));
+      const card=document.createElement("button");card.type="button";card.className="ione-home-doc-card";card.dataset.documentaryId=String(d.id||"");card.setAttribute("aria-label","Read documentary: "+String(d.title||"Documentary"));
       const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading=index===0?"eager":"lazy";img.decoding="async";if(index===0)img.fetchPriority="high";
       const copy=document.createElement("span");copy.className="ione-home-doc-copy";
       const kicker=document.createElement("span");kicker.className="ione-home-doc-kicker";kicker.textContent="DOCUMENTARY";
       const title=document.createElement("strong");title.className="ione-home-doc-title";title.textContent=String(d.title||"Untitled documentary");copy.append(kicker,title);
-      const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("span");p.className="ione-home-doc-desc";p.textContent=desc;copy.appendChild(p);}
+      const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("span");p.className="ione-home-doc-desc";p.textContent=desc;copy.appendChild(p);}const views=document.createElement("span");views.className="ione-home-doc-views";views.textContent=formatIoneDocumentaryViews(d.view_count);views.setAttribute("aria-label",formatIoneDocumentaryViews(d.view_count));copy.appendChild(views);
       img.onerror=()=>{card.remove();if(!list.querySelector(".ione-home-doc-card")){list.replaceChildren();const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="Documentary covers could not be loaded. Please try again.";list.appendChild(e);}};
       card.append(img,copy);card.addEventListener("click",()=>openIonePublicDocumentary(d));list.appendChild(card);
     });
@@ -9633,7 +9665,7 @@ function openIonePublicDocumentary(d){
   let frame=0,last=0,playing=false,rotated=false,speed=24,audioStartTimer=0,audioFadeTimer=0,audioCloseTimer=0;
   let documentaryPermissions={allow_copy:true,allow_download:true,allow_print:true};
   const reader=document.createElement("section");reader.id="ioneDocReaderLive";reader.className="ione-doc-reader-live";reader.setAttribute("role","dialog");reader.setAttribute("aria-modal","true");reader.setAttribute("aria-label","Documentary reader");
-  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-download">↓ DOWNLOAD</button><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
+  reader.innerHTML='<header class="ione-doc-reader-head"><button type="button" class="ione-doc-reader-back" aria-label="Back to documentaries">‹</button><div class="ione-doc-reader-head-title"><span class="ione-doc-reader-kicker">I|ONE • DOCUMENTARY</span><span class="ione-doc-reader-head-name">Loading documentary…</span><span class="ione-doc-reader-head-views"></span></div></header><div class="ione-doc-reader-scroll"><div class="ione-doc-reader-state">Loading the full story…</div></div><footer class="ione-doc-reader-toolbar"><button type="button" class="ione-doc-reader-play primary">▶ PLAY SCROLL</button><label class="ione-doc-speed">SPEED <input class="ione-doc-reader-speed" type="range" min="8" max="90" step="2" value="24" aria-label="Automatic scroll speed"></label><button type="button" class="ione-doc-reader-download">↓ DOWNLOAD</button><button type="button" class="ione-doc-reader-print">▣ PRINT</button><button type="button" class="ione-doc-reader-rotate">↻ ROTATE</button></footer>';
   document.body.appendChild(reader);
   const scroll=reader.querySelector(".ione-doc-reader-scroll"),play=reader.querySelector(".ione-doc-reader-play");
   let soundtrack=null;
@@ -9691,7 +9723,7 @@ function openIonePublicDocumentary(d){
   };
   try{
     if(!d||!Array.isArray(d.content))throw new Error("This documentary could not be opened. Return to the documentary list and try again.");
-    reader.querySelector(".ione-doc-reader-head-name").textContent=String(d.title||"Documentary");scroll.replaceChildren();
+    reader.querySelector(".ione-doc-reader-head-name").textContent=String(d.title||"Documentary");reader.querySelector(".ione-doc-reader-head-views").textContent=formatIoneDocumentaryViews(d.view_count);scroll.replaceChildren();
     const intro=document.createElement("div");intro.className="ione-doc-reader-intro";const h=document.createElement("h1");h.textContent=String(d.title||"Documentary");intro.appendChild(h);
     const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("p");p.textContent=desc;intro.appendChild(p);}scroll.appendChild(intro);
     const audioBlock=d.content.find(x=>x?.type==="audio"&&x.url);
@@ -9753,6 +9785,18 @@ function openIonePublicDocumentary(d){
       else if(x?.type==="text"&&String(x.text||"").trim()){const section=document.createElement("section");section.className="ione-doc-reader-block";markPrintable(section,i);const p=document.createElement("p");p.className="ione-doc-reader-text";p.textContent=String(x.text);section.appendChild(p);scroll.appendChild(section);}
     });
     scroll.scrollTop=0;
+    window.setTimeout(async()=>{
+      if(!reader.isConnected||document.hidden||!d?.id)return;
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-documentaries",{body:{action:"view",id:String(d.id),viewer_key:getIoneDocumentaryViewerKey()}});
+        if(result.error||!result.data?.success)throw result.error||new Error(result.data?.error||"View count unavailable");
+        const count=Math.max(0,Number(result.data.view_count)||0);
+        d.view_count=count;
+        updateIoneDocumentaryViewCount(d.id,count);
+        const readerViews=reader.querySelector(".ione-doc-reader-head-views");
+        if(readerViews)readerViews.textContent=formatIoneDocumentaryViews(count);
+      }catch(error){console.warn("I|ONE documentary view count could not be recorded:",error);}
+    },3000);
   }catch(error){scroll.replaceChildren();const msg=document.createElement("div");msg.className="ione-doc-reader-state";msg.textContent=error?.message||"Could not load this documentary.";scroll.appendChild(msg);}
 }
 
