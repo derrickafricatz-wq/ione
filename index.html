@@ -11207,58 +11207,30 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const types={"mp4":"video/mp4","webm":"video/webm","mov":"video/quicktime"};
     const videoMime=["video/mp4","video/webm","video/quicktime"].includes(mime)?mime:types[ext]||"";
     if(!videoMime){status("Choose an MP4, WEBM or MOV video.",true);return;}
-    const MAX_VIDEO_BYTES=50*1024*1024;
-    if(file.size<=0||file.size>MAX_VIDEO_BYTES){status("This I|ONE project is on Supabase Free, which allows at most 50 MB per video. Compress the video to 50 MB or less, then retry.",true);return;}
+    const MAX_VIDEO_BYTES=1024*1024*1024;
+    if(file.size<=0||file.size>MAX_VIDEO_BYTES){status("Video must be 1 GB or smaller. Choose a compressed file that fits your phone's connection and available storage.",true);return;}
     const btn=document.getElementById("ioneDocAddVideo");if(btn)btn.disabled=true;status("CHECKING VIDEO DURATION…");
     try{
       const duration=await documentaryVideoDuration(file);
       if(!Number.isFinite(duration)||duration<=0)throw new Error("Could not read this video's duration.");
-      if(duration>3600){throw new Error("Documentary videos can be up to 1 hour (60 minutes).");}
-      status("PREPARING SECURE RESUMABLE UPLOAD…");
+      if(duration>3600)throw new Error("Documentary videos can be up to 1 hour (60 minutes).");
+      status("PREPARING PRIVATE BACKBLAZE UPLOAD…");
       const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size});
-      if(!prepared.path||!prepared.token)throw new Error("Could not prepare the video upload.");
-      status("STARTING VIDEO UPLOAD…");
-      /* TUS resumable upload sends small chunks and retries transient network failures.
-         The signed token remains server-issued; no service-role key reaches the browser. */
-      /* Load the browser UMD build explicitly. The ESM CDN can resolve a Node stream
-         adapter in some environments, which rejects browser File objects with
-         "source object may only be an instance of Buffer or Readable". */
-      if(!window.tus?.Upload){
-        await new Promise((resolve,reject)=>{
-          const script=document.createElement("script");
-          script.src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js";
-          script.async=true;
-          script.onload=()=>window.tus?.Upload?resolve():reject(new Error("Resumable upload library loaded without its browser API."));
-          script.onerror=()=>reject(new Error("Could not load the browser upload library. Check the connection and retry."));
-          document.head.appendChild(script);
-        });
-      }
-      const TusUpload=window.tus?.Upload;
-      if(!TusUpload)throw new Error("Resumable upload library could not be loaded. Check the connection and retry.");
-      const projectUrl=String(heavensSupabase.supabaseUrl||"");
-      const projectHost=new URL(projectUrl).hostname;
-      const storageHost=projectHost.endsWith(".supabase.co")?projectHost.replace(/\.supabase\.co$/,".storage.supabase.co"):projectHost;
-      const endpoint="https://"+storageHost+"/storage/v1/upload/resumable";
+      if(!prepared.upload_url||!prepared.object_url)throw new Error("Backblaze did not return a secure upload link.");
+      status("UPLOADING VIDEO TO PRIVATE BACKBLAZE STORAGE… 0%");
       await new Promise((resolve,reject)=>{
-        const upload=new TusUpload(file,{
-          endpoint,
-          headers:{"apikey":HEAVENS_SUPABASE_ANON_KEY,"authorization":"Bearer "+HEAVENS_SUPABASE_ANON_KEY,"x-signature":prepared.token},
-          uploadDataDuringCreation:true,
-          removeFingerprintOnSuccess:true,
-          chunkSize:6*1024*1024,
-          retryDelays:[0,3000,5000,10000,20000],
-          metadata:{bucketName:"ione-documentary-media",objectName:prepared.path,contentType:videoMime,cacheControl:"31536000"},
-          onError:error=>reject(error),
-          onProgress:(uploaded,total)=>status("UPLOADING VIDEO… "+Math.floor(uploaded/total*100)+"% • KEEP THIS SCREEN OPEN"),
-          onSuccess:()=>resolve()
-        });
-        upload.start();
+        const xhr=new XMLHttpRequest();
+        xhr.open("PUT",prepared.upload_url,true);
+        xhr.setRequestHeader("Content-Type",videoMime);
+        xhr.upload.onprogress=(event)=>{if(event.lengthComputable)status("UPLOADING TO BACKBLAZE… "+Math.floor(event.loaded/event.total*100)+"% • KEEP THIS SCREEN OPEN");};
+        xhr.onload=()=>{if(xhr.status>=200&&xhr.status<300)resolve();else reject(new Error("Backblaze upload failed (HTTP "+xhr.status+"). Check bucket CORS settings and retry."));};
+        xhr.onerror=()=>reject(new Error("Could not reach Backblaze. Check your connection and the bucket CORS rule, then retry."));
+        xhr.onabort=()=>reject(new Error("Upload was cancelled."));
+        xhr.send(file);
       });
-      const publicUrl=heavensSupabase.storage.from("ione-documentary-media").getPublicUrl(prepared.path);
-      if(!publicUrl.data?.publicUrl)throw new Error("The video upload did not return a URL.");
-      blocks.push({type:"video",url:publicUrl.data.publicUrl,title:file.name||"Muted documentary video",duration_seconds:Math.round(duration)});
-      renderBlocks();status("VIDEO UPLOADED • "+Math.floor(duration/60)+" MINUTES • POSITION "+blocks.length);
-    }catch(e){status(e?.message||"Could not upload video. Check the Storage upload-size limit and try again.",true);}
+      blocks.push({type:"video",url:prepared.object_url,title:file.name||"Muted documentary video",duration_seconds:Math.round(duration)});
+      renderBlocks();status("VIDEO UPLOADED TO PRIVATE BACKBLAZE • "+Math.floor(duration/60)+" MINUTES • POSITION "+blocks.length);
+    }catch(e){status(e?.message||"Could not upload video to Backblaze. Check the connection and retry.",true);}
     finally{if(btn)btn.disabled=false;}
   }
 
