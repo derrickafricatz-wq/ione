@@ -1,5 +1,5 @@
 {
-  "version": "1.0.250",
-  "message": "Clean Explore book card content and prevent cover cropping",
+  "version": "1.0.251",
+  "message": "Style book cover background with I|ONE branding",
   "force": true
 }
