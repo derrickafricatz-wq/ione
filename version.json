@@ -1,5 +1,5 @@
 {
-  "version": "1.0.239",
-  "message": "Fix documentary card CSS placement and full-panel cover",
+  "version": "1.0.240",
+  "message": "Apply final overriding documentary cover layout",
   "force": true
 }
