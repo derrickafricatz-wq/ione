@@ -9020,7 +9020,7 @@ topBar.appendChild(exitBtn);
   const list=document.createElement("div"); list.id="topicsList";
 
   // Let the Discover screen paint before requesting published documentaries.
-  requestAnimationFrame(()=>loadIoneHomeDocumentaries(list));
+  requestAnimationFrame(()=>loadIoneHomeDocumentaries(list,categoryBar));
 
   topics.appendChild(topBar);
   topics.appendChild(categoryBar);
@@ -9682,8 +9682,8 @@ function updateIoneDocumentaryViewCount(documentaryId,viewCount){
 let ioneHomeDocumentaryCache = null;
 let ioneHomeDocumentaryFetch = null;
 
-function loadIoneHomeDocumentaries(list){
-  if(!list)return;
+function loadIoneHomeDocumentaries(list,categoryBar){
+  if(!list||!categoryBar)return;
   let allDocumentariesForFilter=[];
   let selectedDocumentaryCategory="ALL";
   const renderDocs=(docs,replaceSource=true)=>{
