@@ -1,5 +1,5 @@
 {
-  "version": "1.0.238",
-  "message": "Finalize documentary full-cover split card styling",
+  "version": "1.0.239",
+  "message": "Fix documentary card CSS placement and full-panel cover",
   "force": true
 }
