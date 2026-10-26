@@ -150,7 +150,7 @@ Deno.serve(async(req:Request)=>{
   }
 
   if(action==="list"||action==="get"){
-   let query=admin.from("ione_documentaries").select("id,title,short_description,cover_image_url,content,sort_order,published,view_count,created_at,updated_at");
+   let query=admin.from("ione_documentaries").select("id,title,short_description,documented_by,category,cover_image_url,content,sort_order,published,view_count,created_at,updated_at");
    if(action==="list"){const authorityView=await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"));if(!authorityView)query=query.eq("published",true);query=query.order("sort_order",{ascending:true}).order("created_at",{ascending:true});}
    else {const id=cleanText(body?.id,100);if(!id)return json({success:false,error:"Documentary id is required."},400);query=query.eq("id",id).maybeSingle();}
    const {data,error}=await query;if(error)return json({success:false,error:"Could not load the documentary."},500);
@@ -219,13 +219,13 @@ Deno.serve(async(req:Request)=>{
   if(action==="save"||action==="delete"){
    if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session"))))return json({success:false,error:"Authority Press session expired. Unlock again."},401);
    if(action==="delete"){const id=cleanText(body?.id,100);if(!id)return json({success:false,error:"Documentary id is required."},400);const {error}=await admin.from("ione_documentaries").delete().eq("id",id);if(error)return json({success:false,error:"Could not delete the documentary."},500);return json({success:true});}
-   const id=cleanText(body?.id,100),title=cleanText(body?.title,120),short_description=cleanText(body?.short_description,500),content=normalizeContent(body?.content),published=Boolean(body?.published),sort_order=Number.isFinite(Number(body?.sort_order))?Math.max(0,Math.floor(Number(body?.sort_order))):0;
+   const id=cleanText(body?.id,100),title=cleanText(body?.title,120),short_description=cleanText(body?.short_description,500),documented_by=cleanText(body?.documented_by,120),requestedCategory=cleanText(body?.category,40),allowedCategories=["Culture","Education","History","Nature","Science & Technology","Society","Business","Faith & Beliefs","Other","General"],category=allowedCategories.includes(requestedCategory)?requestedCategory:"General",content=normalizeContent(body?.content),published=Boolean(body?.published),sort_order=Number.isFinite(Number(body?.sort_order))?Math.max(0,Math.floor(Number(body?.sort_order))):0;
    if(!title)return json({success:false,error:"Documentary title is required."},400);
    if(published){const e=validContent(content);if(e)return json({success:false,error:e},400);}
    const firstImage=content.find((x:any)=>x.type==="image"&&x.url)?.url||"",requestedCover=cleanText(body?.cover_image_url,2000),cover_image_url=requestedCover||firstImage||null;
    if(published&&!cover_image_url)return json({success:false,error:"A starting image is required before publishing."},400);
-   const record:any={title,short_description,cover_image_url,content,sort_order,published,updated_at:new Date().toISOString()};
-   const result=id?await admin.from("ione_documentaries").update(record).eq("id",id).select("id,title,short_description,cover_image_url,content,sort_order,published,view_count,created_at,updated_at").single():await admin.from("ione_documentaries").insert(record).select("id,title,short_description,cover_image_url,content,sort_order,published,view_count,created_at,updated_at").single();
+   const record:any={title,short_description,documented_by,category,cover_image_url,content,sort_order,published,updated_at:new Date().toISOString()};
+   const result=id?await admin.from("ione_documentaries").update(record).eq("id",id).select("id,title,short_description,documented_by,category,cover_image_url,content,sort_order,published,view_count,created_at,updated_at").single():await admin.from("ione_documentaries").insert(record).select("id,title,short_description,documented_by,category,cover_image_url,content,sort_order,published,view_count,created_at,updated_at").single();
    if(result.error)return json({success:false,error:"Could not save the documentary."},500);
    return json({success:true,documentary:result.data});
   }
