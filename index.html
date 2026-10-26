@@ -12045,7 +12045,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(explore)explore.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var b=document.getElementById("openHealth");if(b)b.click();}});
     ["pointerdown","touchstart","wheel","keydown"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=true;pause();},{passive:true});});
     ["pointerup","pointercancel","touchend","touchcancel"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=false;pause();},{passive:true});});
-    viewport.addEventListener("scroll",function(){pause();},{passive:true});
+    /* Programmatic auto-scroll must not pause itself; pointer/touch/wheel handlers pause only for user interaction. */
     viewport.addEventListener("pointerleave",function(){dragging=false;pause();});
     var cached=[];try{cached=JSON.parse(localStorage.getItem("ioneBookCardMetadataV1")||"[]");}catch(_){}
     if(Array.isArray(cached)&&cached.length)build(cached);
