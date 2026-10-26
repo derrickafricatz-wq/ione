@@ -3566,17 +3566,17 @@ function getMedia(id){
   </div>
 </section>
 <style id="ione-books-showcase-style-v1">
-#ioneBooksShowcase{display:block;margin:16px 0 20px;padding:14px 0 12px;border-top:1px solid rgba(113,220,220,.16);border-bottom:1px solid rgba(113,220,220,.13);overflow:hidden}
+#ioneBooksShowcase{display:block;position:relative;flex:0 0 auto;width:100%;max-width:100%;min-width:0;box-sizing:border-box;align-self:stretch;margin:16px 0 20px;padding:14px 0 12px;border:1px solid rgba(113,220,220,.16);border-left:0;border-right:0;border-radius:0;background:linear-gradient(180deg,rgba(13,34,39,.72),rgba(7,17,21,.48));overflow:hidden}
 #ioneBooksShowcase[hidden]{display:none!important}
 .ione-books-showcase-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 13px}
 .ione-books-showcase-head h2{margin:3px 0 2px;color:#f1fbfc;font-size:clamp(19px,5vw,24px);font-weight:900;letter-spacing:.2px}
 .ione-books-showcase-head p{margin:0;color:#9eb8be;font-size:11px;line-height:1.4}
 .ione-books-showcase-kicker{color:#55dfdc;font-size:9px;font-weight:900;letter-spacing:1.7px}
 #ioneBooksShowcaseExplore{flex:0 0 auto;border:1px solid rgba(73,220,213,.45);border-radius:999px;padding:10px 12px;background:linear-gradient(135deg,#103f43,#0b252d);color:#cffffc;font-size:10px;font-weight:900;letter-spacing:.4px}
-.ione-books-showcase-window{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x;cursor:grab;scroll-behavior:auto;padding:1px 14px 7px}
+.ione-books-showcase-window{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x;cursor:grab;scroll-behavior:auto;padding:1px 14px 7px;scroll-padding-inline:14px;-webkit-overflow-scrolling:touch}
 .ione-books-showcase-window::-webkit-scrollbar{display:none}
 .ione-books-showcase-window:active{cursor:grabbing}
-.ione-books-showcase-track{display:flex;align-items:stretch;gap:12px;width:max-content;will-change:scroll-position}
+.ione-books-showcase-track{display:flex;align-items:stretch;gap:12px;width:max-content;min-width:100%;padding:0 1px;will-change:scroll-position}
 .ione-books-showcase-card{display:flex;flex-direction:column;flex:0 0 112px;width:112px;min-width:0;gap:7px;border:0;background:transparent;color:#f2f7f8;text-align:left;padding:0;cursor:pointer}
 .ione-books-showcase-cover{position:relative;width:112px;height:154px;overflow:hidden;border-radius:9px;border:1px solid rgba(137,220,220,.3);background:linear-gradient(145deg,#18343a,#081116);box-shadow:0 6px 15px rgba(0,0,0,.28)}
 .ione-books-showcase-cover img{display:block;width:100%;height:100%;object-fit:cover}
