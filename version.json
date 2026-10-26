@@ -1,5 +1,5 @@
 {
-  "version": "1.0.232",
-  "message": "Restore feature navigation after documentary style fix",
+  "version": "1.0.233",
+  "message": "Restore documentary and feature navigation",
   "force": true
 }
