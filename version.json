@@ -1,5 +1,5 @@
 {
-  "version": "1.0.249",
-  "message": "Reduce Explore book cards to compact size",
+  "version": "1.0.250",
+  "message": "Clean Explore book card content and prevent cover cropping",
   "force": true
 }
