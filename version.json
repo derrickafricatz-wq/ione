@@ -1,5 +1,5 @@
 {
-  "version": "1.0.233",
-  "message": "Restore documentary and feature navigation",
+  "version": "1.0.234",
+  "message": "Refresh PWA assets and restore feature navigation",
   "force": true
 }
