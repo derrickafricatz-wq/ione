@@ -110,10 +110,18 @@ Deno.serve(async (req: Request) => {
       const paymentReference = clean(body.payment_reference, 120);
       const expectedPrefix = `/storage/v1/object/public/ione-smart-ads/${user.id}/`;
       let creativePath = "";
-      try { creativePath = new URL(creative_url).pathname; } catch {}
+      let creativeOrigin = "";
+      try {
+        const parsedCreative = new URL(creative_url);
+        creativePath = parsedCreative.pathname;
+        creativeOrigin = parsedCreative.origin;
+      } catch {}
+      let expectedOrigin = "";
+      try { expectedOrigin = new URL(url).origin; } catch {}
       if (advertiser_name.length < 2 || contact_phone.length < 5 || title.length < 3 ||
           !validHttps(creative_url) || !validHttps(destination_url) || !plan ||
           !["image","video"].includes(mediaType) || !paymentReference ||
+          !expectedOrigin || creativeOrigin !== expectedOrigin ||
           !creativePath.startsWith(expectedPrefix) ||
           (mediaType === "video" && (!Number.isFinite(mediaDuration) || mediaDuration <= 0 || mediaDuration > 120)) ||
           (mediaType === "image" && mediaDuration !== 0)) {
