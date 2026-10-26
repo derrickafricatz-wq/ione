@@ -3555,6 +3555,38 @@ function getMedia(id){
 <div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
 <div id="ioneHomeShell">
 <section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText" class="ione-word-loading">Loading today's word…</div></section>
+
+<section id="ioneBooksShowcase" aria-label="Discover published books" hidden>
+  <div class="ione-books-showcase-head">
+    <div><div class="ione-books-showcase-kicker">THE I|ONE BOOKSHELF</div><h2>Discover Books</h2><p>Fresh stories and knowledge from our authors</p></div>
+    <button type="button" id="ioneBooksShowcaseExplore">EXPLORE ALL</button>
+  </div>
+  <div class="ione-books-showcase-window" id="ioneBooksShowcaseWindow" tabindex="0" aria-label="Books carousel. Swipe or scroll to browse books">
+    <div class="ione-books-showcase-track" id="ioneBooksShowcaseTrack"></div>
+  </div>
+</section>
+<style id="ione-books-showcase-style-v1">
+#ioneBooksShowcase{display:block;margin:16px 0 20px;padding:14px 0 12px;border-top:1px solid rgba(113,220,220,.16);border-bottom:1px solid rgba(113,220,220,.13);overflow:hidden}
+#ioneBooksShowcase[hidden]{display:none!important}
+.ione-books-showcase-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px 13px}
+.ione-books-showcase-head h2{margin:3px 0 2px;color:#f1fbfc;font-size:clamp(19px,5vw,24px);font-weight:900;letter-spacing:.2px}
+.ione-books-showcase-head p{margin:0;color:#9eb8be;font-size:11px;line-height:1.4}
+.ione-books-showcase-kicker{color:#55dfdc;font-size:9px;font-weight:900;letter-spacing:1.7px}
+#ioneBooksShowcaseExplore{flex:0 0 auto;border:1px solid rgba(73,220,213,.45);border-radius:999px;padding:10px 12px;background:linear-gradient(135deg,#103f43,#0b252d);color:#cffffc;font-size:10px;font-weight:900;letter-spacing:.4px}
+.ione-books-showcase-window{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;overscroll-behavior-x:contain;touch-action:pan-x;cursor:grab;scroll-behavior:auto;padding:1px 14px 7px}
+.ione-books-showcase-window::-webkit-scrollbar{display:none}
+.ione-books-showcase-window:active{cursor:grabbing}
+.ione-books-showcase-track{display:flex;align-items:stretch;gap:12px;width:max-content;will-change:scroll-position}
+.ione-books-showcase-card{display:flex;flex-direction:column;flex:0 0 112px;width:112px;min-width:0;gap:7px;border:0;background:transparent;color:#f2f7f8;text-align:left;padding:0;cursor:pointer}
+.ione-books-showcase-cover{position:relative;width:112px;height:154px;overflow:hidden;border-radius:9px;border:1px solid rgba(137,220,220,.3);background:linear-gradient(145deg,#18343a,#081116);box-shadow:0 6px 15px rgba(0,0,0,.28)}
+.ione-books-showcase-cover img{display:block;width:100%;height:100%;object-fit:cover}
+.ione-books-showcase-cover-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:10px;color:#d5fffb;text-align:center;font-size:13px;font-weight:900;line-height:1.25;overflow-wrap:anywhere}
+.ione-books-showcase-book-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:#eef8f8;font-size:11px;font-weight:800;line-height:1.35}
+.ione-books-showcase-author{display:block;overflow:hidden;color:#8faeb4;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
+@media(min-width:700px){.ione-books-showcase-card{flex-basis:136px;width:136px}.ione-books-showcase-cover{width:136px;height:184px}.ione-books-showcase-head{padding-left:20px;padding-right:20px}.ione-books-showcase-window{padding-left:20px;padding-right:20px}}
+@media(prefers-reduced-motion:reduce){.ione-books-showcase-track{will-change:auto}}
+</style>
+
 <section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div><div class="smart-grid">
 <button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>AUTHOR'S STUDIO</strong><small>RECORD • WRITE • CREATE BOOKS</small></button>
@@ -11957,6 +11989,74 @@ function ioneRunBackgroundMediaPreload(){ return; }
 </style>
 
 
+
+
+<script id="ione-books-showcase-runtime-v1">
+(function(){
+  if(window.__ioneBooksShowcaseInstalled)return;
+  window.__ioneBooksShowcaseInstalled=true;
+  var root,viewport,track,raf=0,last=0,pausedUntil=0,dragging=false,reduceMotion=false,frameItems=[];
+  function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
+  function bookKey(b){return String(b.supabaseId||b.id||b.title||"");}
+  function paintBook(b){
+    var card=el("button","ione-books-showcase-card");card.type="button";
+    card.setAttribute("aria-label","Explore "+String(b.title||"book"));
+    var cover=el("span","ione-books-showcase-cover");
+    if(b.frontCover){
+      var img=document.createElement("img");img.src=b.frontCover;img.alt="";img.loading="lazy";img.decoding="async";
+      img.onerror=function(){cover.innerHTML="";cover.appendChild(el("span","ione-books-showcase-cover-fallback",b.title||"BOOK"));};
+      cover.appendChild(img);
+    }else cover.appendChild(el("span","ione-books-showcase-cover-fallback",b.title||"BOOK"));
+    card.appendChild(cover);
+    card.appendChild(el("span","ione-books-showcase-book-title",b.title||"Untitled book"));
+    card.appendChild(el("span","ione-books-showcase-author",b.authorName||"Independent author"));
+    card.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var btn=document.getElementById("openHealth");if(btn)btn.click();}});
+    return card;
+  }
+  function stop(){if(raf)cancelAnimationFrame(raf);raf=0;last=0;}
+  function animate(now){
+    if(!viewport||!track||!root||!root.isConnected){stop();return;}
+    if(!reduceMotion&&!dragging&&now>pausedUntil&&document.visibilityState==="visible"){
+      if(last){var dt=Math.min(40,now-last);viewport.scrollLeft+=dt*0.027;}
+      var loopWidth=track.scrollWidth/2;
+      if(loopWidth>0&&viewport.scrollLeft>=loopWidth)viewport.scrollLeft-=loopWidth;
+    }
+    last=now;raf=requestAnimationFrame(animate);
+  }
+  function start(){stop();if(viewport&&track&&track.children.length>1){raf=requestAnimationFrame(animate);}}
+  function build(books){
+    root=document.getElementById("ioneBooksShowcase");viewport=document.getElementById("ioneBooksShowcaseWindow");track=document.getElementById("ioneBooksShowcaseTrack");
+    if(!root||!viewport||!track)return;
+    var unique=[],seen=new Set();
+    (books||[]).forEach(function(b){var k=bookKey(b);if(k&&!seen.has(k)&&b&&b.title){seen.add(k);unique.push(b);}});
+    if(!unique.length){root.hidden=true;stop();return;}
+    root.hidden=false;track.innerHTML="";
+    unique.forEach(function(b){track.appendChild(paintBook(b));});
+    /* Duplicate one complete run for seamless looping; duplicate cards remain manually scrollable. */
+    unique.forEach(function(b){var clone=paintBook(b);clone.setAttribute("aria-hidden","true");track.appendChild(clone);});
+    reduceMotion=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    viewport.scrollLeft=0;start();
+  }
+  function pause(){pausedUntil=performance.now()+4500;}
+  function install(){
+    root=document.getElementById("ioneBooksShowcase");viewport=document.getElementById("ioneBooksShowcaseWindow");
+    var explore=document.getElementById("ioneBooksShowcaseExplore");
+    if(!root||!viewport)return;
+    if(explore)explore.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var b=document.getElementById("openHealth");if(b)b.click();}});
+    ["pointerdown","touchstart","wheel","keydown"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=true;pause();},{passive:true});});
+    ["pointerup","pointercancel","touchend","touchcancel"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=false;pause();},{passive:true});});
+    viewport.addEventListener("scroll",function(){pause();},{passive:true});
+    viewport.addEventListener("pointerleave",function(){dragging=false;pause();});
+    var cached=[];try{cached=JSON.parse(localStorage.getItem("ioneBookCardMetadataV1")||"[]");}catch(_){}
+    if(Array.isArray(cached)&&cached.length)build(cached);
+    if(typeof window.loadHeavensServerBooks==="function"){
+      window.loadHeavensServerBooks().then(function(books){if(books&&books.length)build(books);}).catch(function(){});
+    }
+    document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")pause();});
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
+})();
+</script>
 
 </body>
 
