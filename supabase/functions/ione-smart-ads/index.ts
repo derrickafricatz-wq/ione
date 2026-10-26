@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     if (action === "public_list") {
       const now = new Date().toISOString();
       const { data, error } = await admin.from("ione_smart_ads_campaigns")
-        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at")
+        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status")
         .eq("status", "approved").lte("starts_at", now).gte("ends_at", now).order("created_at", { ascending: false }).limit(30);
       if (error) throw error;
       return json({ success: true, campaigns: data || [] });
@@ -98,20 +98,43 @@ Deno.serve(async (req: Request) => {
       const destination_url = clean(body.destination_url, 2048);
       const city = clean(body.city || "Tanzania", 100);
       const objective = ["website","contact","awareness"].includes(body.objective) ? body.objective : "website";
-      const ends = new Date(body.ends_at);
-      if (advertiser_name.length < 2 || contact_phone.length < 5 || title.length < 3 || !validHttps(creative_url) || !validHttps(destination_url) || !Number.isFinite(ends.getTime())) {
-        return json({ success: false, error: "Check the advertiser name, phone, title, HTTPS image URL, destination link, and end date." }, 400);
+      const planCode = clean(body.plan_code, 20);
+      const plans: Record<string, {price:number;days:number}> = {
+        weekly: { price: 2000, days: 7 },
+        monthly: { price: 5000, days: 30 },
+        quarterly: { price: 10000, days: 90 },
+      };
+      const plan = plans[planCode];
+      const mediaType = clean(body.media_type, 10);
+      const mediaDuration = Number(body.media_duration_seconds || 0);
+      const paymentReference = clean(body.payment_reference, 120);
+      const expectedPrefix = `/storage/v1/object/public/ione-smart-ads/${user.id}/`;
+      let creativePath = "";
+      try { creativePath = new URL(creative_url).pathname; } catch {}
+      if (advertiser_name.length < 2 || contact_phone.length < 5 || title.length < 3 ||
+          !validHttps(creative_url) || !validHttps(destination_url) || !plan ||
+          !["image","video"].includes(mediaType) || !paymentReference ||
+          !creativePath.startsWith(expectedPrefix) ||
+          (mediaType === "video" && (!Number.isFinite(mediaDuration) || mediaDuration <= 0 || mediaDuration > 120)) ||
+          (mediaType === "image" && mediaDuration !== 0)) {
+        return json({ success: false, error: "Check advertiser details, uploaded media, package, payment reference, and destination link. Videos must be no longer than 2 minutes." }, 400);
       }
       const now = new Date();
-      if (ends.getTime() <= now.getTime() || ends.getTime() > now.getTime() + 90 * 24 * 60 * 60 * 1000) {
-        return json({ success: false, error: "Choose an end date within the next 90 days." }, 400);
-      }
+      const { count, error: countError } = await admin.from("ione_smart_ads_campaigns")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", user.id).gte("created_at", new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString());
+      if (countError) throw countError;
+      if ((count || 0) >= 3) return json({ success: false, error: "The limit is 3 ad submissions per account in any 7-day period. Try again when an earlier submission is more than 7 days old." }, 429);
       const { data, error } = await admin.from("ione_smart_ads_campaigns").insert({
         owner_id: user.id, advertiser_name, contact_phone, title, description, creative_url, destination_url, city,
-        objective, status: "pending", starts_at: now.toISOString(), ends_at: ends.toISOString()
-      }).select("id,title,status,created_at,ends_at").single();
+        objective, status: "pending", starts_at: now.toISOString(),
+        ends_at: new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000).toISOString(),
+        plan_code: planCode, price_tzs: plan.price, duration_days: plan.days,
+        payment_status: "pending", payment_reference: paymentReference,
+        media_type: mediaType, media_duration_seconds: mediaDuration
+      }).select("id,title,status,created_at,ends_at,plan_code,price_tzs,payment_status").single();
       if (error) throw error;
-      return json({ success: true, campaign: data, message: "Campaign submitted. Authority Press must approve it before it appears publicly." });
+      return json({ success: true, campaign: data, message: "Advertisement submitted. Payment is pending Authority verification; the campaign starts only after verification and approval." });
     }
 
     if (action === "my_campaigns") {
@@ -153,14 +176,40 @@ Deno.serve(async (req: Request) => {
         const stats = metrics(await eventRows(admin, campaigns.map((c: any) => c.id)));
         return json({ success: true, campaigns: campaigns.map((c: any) => ({ ...c, metrics: stats[c.id] || { impressions:0,clicks:0,contacts:0,conversions:0 } })) });
       }
+      if (action === "authority_payment") {
+        const id = clean(body.campaign_id, 80);
+        const status = clean(body.payment_status, 20);
+        if (!/^[0-9a-f-]{36}$/i.test(id) || !["verified","rejected"].includes(status)) {
+          return json({ success: false, error: "Invalid payment verification action." }, 400);
+        }
+        const { data, error } = await admin.from("ione_smart_ads_campaigns").update({
+          payment_status: status, updated_at: new Date().toISOString()
+        }).eq("id", id).select("id,payment_status,status,price_tzs,payment_reference").single();
+        if (error) throw error;
+        return json({ success: true, campaign: data, message: status === "verified" ? "Payment verified. Review the advertisement and approve it separately to activate the campaign." : "Payment marked as rejected. The campaign remains inactive." });
+      }
       if (action === "authority_review") {
         const id = clean(body.campaign_id, 80);
         const status = clean(body.status, 20);
         const review_note = clean(body.review_note, 500);
         if (!/^[0-9a-f-]{36}$/i.test(id) || !["approved","rejected","paused"].includes(status)) return json({ success: false, error: "Invalid review action." }, 400);
-        const { data, error } = await admin.from("ione_smart_ads_campaigns").update({
-          status, review_note, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString()
-        }).eq("id", id).select("id,status,review_note").single();
+        const { data: existing, error: existingError } = await admin.from("ione_smart_ads_campaigns")
+          .select("id,payment_status,duration_days").eq("id", id).maybeSingle();
+        if (existingError) throw existingError;
+        if (!existing) return json({ success: false, error: "Campaign not found." }, 404);
+        if (status === "approved" && existing.payment_status !== "verified") {
+          return json({ success: false, error: "Verify the manual payment before approving this advertisement." }, 409);
+        }
+        const now = new Date();
+        const update: Record<string, unknown> = {
+          status, review_note, reviewed_at: now.toISOString(), updated_at: now.toISOString()
+        };
+        if (status === "approved") {
+          update.starts_at = now.toISOString();
+          update.ends_at = new Date(now.getTime() + Number(existing.duration_days || 7) * 24 * 60 * 60 * 1000).toISOString();
+        }
+        const { data, error } = await admin.from("ione_smart_ads_campaigns").update(update)
+          .eq("id", id).select("id,status,review_note,starts_at,ends_at").single();
         if (error) throw error;
         return json({ success: true, campaign: data });
       }
