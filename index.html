@@ -13824,3 +13824,31 @@ function ioneRunBackgroundMediaPreload(){ return; }
 }
 </style>
 
+
+
+<style id="ione-explore-book-card-content-cleanup-v1">
+/* Content-only cleanup: preserve the current compact card dimensions and layout. */
+#heavensBookstore .hb-card-title,
+#heavensBookstore .hb-meta,
+#heavensBookstore .hb-lock,
+#heavensBookstore .hb-insight-kicker{
+  display:none!important;
+}
+/* Show the complete book-cover artwork without cropping, filling the existing cover panel. */
+#heavensBookstore .hb-cover{
+  overflow:hidden!important;
+  background:#101514!important;
+}
+#heavensBookstore .hb-cover img{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:100%!important;
+  max-height:100%!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  background:#101514!important;
+}
+</style>
