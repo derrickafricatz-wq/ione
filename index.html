@@ -11455,7 +11455,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     try{
       const duration=await documentaryVideoDuration(file);
       if(!Number.isFinite(duration)||duration<=0)throw new Error("Could not read this video's duration.");
-      if(duration>3600)throw new Error("Documentary videos can be up to 1 hour (60 minutes).");
+      if(duration>7800)throw new Error("Documentary videos can be up to 2 hours and 10 minutes (130 minutes).");
       status("PREPARING PRIVATE BACKBLAZE UPLOAD…");
       const prepared=await invoke("prepare_video_upload",{mime_type:videoMime,file_size:file.size});
       if(!prepared.upload_url||!prepared.upload_token||!prepared.object_url||prepared.upload_api!=="native")throw new Error("Backblaze did not return a complete Native upload authorization.");
