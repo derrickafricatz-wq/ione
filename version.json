@@ -1,5 +1,5 @@
 {
-  "version": "1.0.254",
-  "message": "Add SMART ADS campaign review inside Authority Press",
+  "version": "1.0.255",
+  "message": "Paid SMART ADS uploads and manual payment verification",
   "force": true
 }
