@@ -11995,12 +11995,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
 (function(){
   if(window.__ioneBooksShowcaseInstalled)return;
   window.__ioneBooksShowcaseInstalled=true;
-  var root,viewport,track,raf=0,last=0,pausedUntil=0,dragging=false,reduceMotion=false,frameItems=[];
+  var root,viewport,track,raf=0,last=0,pausedUntil=0,dragging=false,reduceMotion=false,loopWidth=0;
+  var currentBooks=[];
   function el(tag,cls,text){var n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;}
-  function bookKey(b){return String(b.supabaseId||b.id||b.title||"");}
-  function paintBook(b){
+  function bookKey(b){return String((b&&(b.supabaseId||b.id))||"").trim()||String((b&&b.title)||"").trim().toLowerCase();}
+  function paintBook(b,isClone){
     var card=el("button","ione-books-showcase-card");card.type="button";
     card.setAttribute("aria-label","Explore "+String(b.title||"book"));
+    if(isClone){card.setAttribute("aria-hidden","true");card.setAttribute("tabindex","-1");}
     var cover=el("span","ione-books-showcase-cover");
     if(b.frontCover){
       var img=document.createElement("img");img.src=b.frontCover;img.alt="";img.loading="lazy";img.decoding="async";
@@ -12010,34 +12012,55 @@ function ioneRunBackgroundMediaPreload(){ return; }
     card.appendChild(cover);
     card.appendChild(el("span","ione-books-showcase-book-title",b.title||"Untitled book"));
     card.appendChild(el("span","ione-books-showcase-author",b.authorName||"Independent author"));
-    card.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var btn=document.getElementById("openHealth");if(btn)btn.click();}});
+    card.addEventListener("click",function(){if(isClone)return;if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var btn=document.getElementById("openHealth");if(btn)btn.click();}});
     return card;
   }
   function stop(){if(raf)cancelAnimationFrame(raf);raf=0;last=0;}
+  function measureLoop(){
+    loopWidth=0;
+    if(!track||!currentBooks.length||track.children.length<currentBooks.length*2)return;
+    var first=track.children[0],cloneFirst=track.children[currentBooks.length];
+    if(first&&cloneFirst)loopWidth=cloneFirst.offsetLeft-first.offsetLeft;
+  }
   function animate(now){
     if(!viewport||!track||!root||!root.isConnected){stop();return;}
     if(!reduceMotion&&!dragging&&now>pausedUntil&&document.visibilityState==="visible"){
-      if(last){var dt=Math.min(40,now-last);viewport.scrollLeft+=dt*0.027;}
-      var loopWidth=track.scrollWidth/2;
+      if(last){var dt=Math.min(40,now-last);viewport.scrollLeft+=dt*0.035;}
       if(loopWidth>0&&viewport.scrollLeft>=loopWidth)viewport.scrollLeft-=loopWidth;
+      else if(loopWidth>0&&viewport.scrollLeft<0)viewport.scrollLeft+=loopWidth;
     }
     last=now;raf=requestAnimationFrame(animate);
   }
-  function start(){stop();if(viewport&&track&&track.children.length>1){raf=requestAnimationFrame(animate);}}
+  function start(){stop();measureLoop();if(viewport&&track&&currentBooks.length>1&&loopWidth>0)raf=requestAnimationFrame(animate);}
   function build(books){
     root=document.getElementById("ioneBooksShowcase");viewport=document.getElementById("ioneBooksShowcaseWindow");track=document.getElementById("ioneBooksShowcaseTrack");
     if(!root||!viewport||!track)return;
     var unique=[],seen=new Set();
-    (books||[]).forEach(function(b){var k=bookKey(b);if(k&&!seen.has(k)&&b&&b.title){seen.add(k);unique.push(b);}});
+    (Array.isArray(books)?books:[]).forEach(function(b){
+      if(!b||!String(b.title||"").trim())return;
+      var k=bookKey(b);if(!k||seen.has(k))return;
+      seen.add(k);unique.push(b);
+    });
+    currentBooks=unique;
     if(!unique.length){root.hidden=true;stop();return;}
     root.hidden=false;track.innerHTML="";
-    unique.forEach(function(b){track.appendChild(paintBook(b));});
-    /* Duplicate one complete run for seamless looping; duplicate cards remain manually scrollable. */
-    unique.forEach(function(b){var clone=paintBook(b);clone.setAttribute("aria-hidden","true");track.appendChild(clone);});
+    unique.forEach(function(b){track.appendChild(paintBook(b,false));});
+    unique.forEach(function(b){track.appendChild(paintBook(b,true));});
     reduceMotion=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    viewport.scrollLeft=0;start();
+    viewport.scrollLeft=0;
+    requestAnimationFrame(start);
   }
-  function pause(){pausedUntil=performance.now()+4500;}
+  function mergeBooks(cached,server){
+    var merged=[],positions=new Map();
+    (Array.isArray(cached)?cached:[]).concat(Array.isArray(server)?server:[]).forEach(function(b){
+      if(!b||!String(b.title||"").trim())return;
+      var k=bookKey(b);if(!k)return;
+      if(positions.has(k)){var i=positions.get(k);merged[i]=Object.assign({},merged[i],b);return;}
+      positions.set(k,merged.length);merged.push(b);
+    });
+    return merged;
+  }
+  function pause(){pausedUntil=performance.now()+2500;}
   function install(){
     root=document.getElementById("ioneBooksShowcase");viewport=document.getElementById("ioneBooksShowcaseWindow");
     var explore=document.getElementById("ioneBooksShowcaseExplore");
@@ -12045,12 +12068,14 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(explore)explore.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var b=document.getElementById("openHealth");if(b)b.click();}});
     ["pointerdown","touchstart","wheel","keydown"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=true;pause();},{passive:true});});
     ["pointerup","pointercancel","touchend","touchcancel"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=false;pause();},{passive:true});});
-    /* Programmatic auto-scroll must not pause itself; pointer/touch/wheel handlers pause only for user interaction. */
     viewport.addEventListener("pointerleave",function(){dragging=false;pause();});
+    window.addEventListener("resize",function(){measureLoop();});
     var cached=[];try{cached=JSON.parse(localStorage.getItem("ioneBookCardMetadataV1")||"[]");}catch(_){}
     if(Array.isArray(cached)&&cached.length)build(cached);
     if(typeof window.loadHeavensServerBooks==="function"){
-      window.loadHeavensServerBooks().then(function(books){if(books&&books.length)build(books);}).catch(function(){});
+      window.loadHeavensServerBooks().then(function(books){
+        if(books&&books.length)build(mergeBooks(cached,books));
+      }).catch(function(){});
     }
     document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")pause();});
   }
