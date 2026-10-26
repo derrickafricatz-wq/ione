@@ -11917,6 +11917,45 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @media(prefers-reduced-motion:reduce){#topicsList .ione-home-doc-card{transition:none!important}}
 </style>
 
+
+<style id="ione-documentary-cover-full-image-v3">
+/* Keep the existing documentary card dimensions; make the original cover fill its whole image panel. */
+#topicsList .ione-home-doc-cover-backdrop{display:none!important;visibility:hidden!important}
+#topicsList .ione-home-doc-cover-wrap{position:relative!important;overflow:hidden!important;background:#071014!important}
+#topicsList .ione-home-doc-cover-wrap:after{
+  content:""!important;position:absolute!important;inset:0!important;z-index:1!important;pointer-events:none!important;
+  background:linear-gradient(180deg,rgba(0,0,0,0) 48%,rgba(0,0,0,.12) 64%,rgba(0,0,0,.48) 100%)!important
+}
+#topicsList .ione-home-doc-cover-wrap .ione-home-doc-cover{
+  position:absolute!important;inset:0!important;z-index:0!important;display:block!important;
+  width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;
+  min-width:100%!important;min-height:100%!important;object-fit:cover!important;object-position:center center!important;
+  padding:0!important;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;
+  filter:none!important;box-shadow:none!important
+}
+#topicsList .ione-home-doc-credit{
+  top:68%!important;left:8px!important;right:8px!important;bottom:auto!important;
+  transform:translateY(-50%)!important;z-index:2!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:0!important;gap:5px!important;border:0!important;border-radius:0!important;
+  background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;
+  text-align:center!important
+}
+#topicsList .ione-home-doc-credit-label{
+  font:900 clamp(7px,2vw,10px)/1.25 Arial,sans-serif!important;letter-spacing:1.2px!important;
+  color:#fff!important;text-shadow:0 2px 5px #000,0 0 8px rgba(0,0,0,.9)!important
+}
+#topicsList .ione-home-doc-credit strong{
+  font:800 clamp(15px,3.8vw,22px)/1.2 Georgia,serif!important;color:#ffe6a1!important;
+  letter-spacing:.1px!important;text-align:center!important;text-shadow:0 2px 6px #000,0 0 10px rgba(0,0,0,.9)!important
+}
+@media(max-width:420px){
+ #topicsList .ione-home-doc-credit{left:5px!important;right:5px!important;gap:4px!important}
+ #topicsList .ione-home-doc-credit-label{font-size:7px!important;letter-spacing:.7px!important}
+ #topicsList .ione-home-doc-credit strong{font-size:clamp(14px,4vw,18px)!important}
+}
+</style>
+
 </body>
 </html>
 <script>
