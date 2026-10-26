@@ -1,5 +1,5 @@
 {
-  "version": "1.0.245",
-  "message": "Remove duplicate Bookshelf covers and style author names",
+  "version": "1.0.246",
+  "message": "Simplify documentary controls and compact Explore book cards",
   "force": true
 }
