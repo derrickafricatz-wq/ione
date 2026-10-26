@@ -81,6 +81,15 @@
 .ione-home-doc-title{color:#fff;font:800 16px/1.28 Georgia,serif;overflow-wrap:anywhere}
 .ione-home-doc-desc{color:#a9b9bd;font:12px/1.5 Arial,sans-serif;white-space:pre-wrap;overflow-wrap:anywhere}
 .ione-home-doc-empty{padding:18px 12px;border:1px dashed rgba(0,255,255,.24);border-radius:14px;color:#9aadb2;font:12px/1.6 Arial,sans-serif;text-align:center}
+#ioneDocCategoryFilters{display:flex;gap:8px;overflow-x:auto;padding:3px 1px 12px;scrollbar-width:thin;overscroll-behavior-x:contain}
+#ioneDocCategoryFilters .ione-doc-category-chip{flex:0 0 auto;min-height:38px;padding:9px 14px;border:1px solid rgba(126,235,245,.26);border-radius:999px;background:linear-gradient(145deg,#142b32,#09171c);color:#c7e4e8;font:900 10px Arial,sans-serif;letter-spacing:.65px;white-space:nowrap;cursor:pointer}
+#ioneDocCategoryFilters .ione-doc-category-chip.is-selected{background:linear-gradient(135deg,#8efff7,#00d6d8 60%,#0786b6);color:#052329;border-color:#a5fff7;box-shadow:0 3px 0 #07556a}
+.ione-home-doc-cover-wrap{position:relative;display:block;flex:0 0 112px;width:112px;min-height:118px;overflow:hidden;background:#020607}
+.ione-home-doc-cover-wrap .ione-home-doc-cover{display:block;width:100%;height:100%;min-height:118px;object-fit:cover;background:#020607}
+.ione-home-doc-credit{position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:3px;padding:23px 7px 8px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.92));box-sizing:border-box;text-align:left}
+.ione-home-doc-credit-label{color:#d9f8f6;font:900 7px/1.2 Arial,sans-serif;letter-spacing:1.1px;text-shadow:0 1px 3px #000}
+.ione-home-doc-credit strong{color:#ffe7a6;font:italic 800 11px/1.15 Georgia,serif;letter-spacing:.15px;text-shadow:0 2px 5px rgba(0,0,0,.95);overflow-wrap:anywhere}
+@media(max-width:420px){.ione-home-doc-cover-wrap{flex-basis:94px;width:94px;min-height:108px}.ione-home-doc-cover-wrap .ione-home-doc-cover{min-height:108px}.ione-home-doc-credit{padding:20px 5px 6px}.ione-home-doc-credit-label{font-size:6px;letter-spacing:.6px}.ione-home-doc-credit strong{font-size:9px}}
 .ione-doc-reader-toolbar{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(6,13,16,.98);border-top:1px solid rgba(0,255,255,.25)}
 .ione-doc-reader-toolbar button{min-height:38px;border:1px solid rgba(0,255,255,.4);border-radius:10px;padding:9px 12px;background:#102126;color:#eafcff;font:900 10px Arial,sans-serif;letter-spacing:.4px}
 .ione-doc-reader-toolbar button.primary{background:linear-gradient(135deg,#00ffff,#0088c9);color:#001115;border-color:#8fffff}
@@ -9007,12 +9016,14 @@ topBar.style.setProperty("justify-content","space-between","important");
 topBar.appendChild(bookstoreBtn);
 topBar.appendChild(exitBtn);
 
+  const categoryBar=document.createElement("div");categoryBar.id="ioneDocCategoryFilters";categoryBar.setAttribute("aria-label","Filter documentaries by category");
   const list=document.createElement("div"); list.id="topicsList";
 
   // Let the Discover screen paint before requesting published documentaries.
   requestAnimationFrame(()=>loadIoneHomeDocumentaries(list));
 
   topics.appendChild(topBar);
+  topics.appendChild(categoryBar);
   topics.appendChild(list);
   c.appendChild(topics);
 
@@ -9673,22 +9684,38 @@ let ioneHomeDocumentaryFetch = null;
 
 function loadIoneHomeDocumentaries(list){
   if(!list)return;
-  const renderDocs=(docs)=>{
+  let allDocumentariesForFilter=[];
+  let selectedDocumentaryCategory="ALL";
+  const renderDocs=(docs,replaceSource=true)=>{
     if(!list.isConnected)return;
+    if(replaceSource)allDocumentariesForFilter=Array.isArray(docs)?docs:[];
+    const categories=[...new Set(allDocumentariesForFilter.map(d=>String(d.category||"General").trim()||"General"))].sort((a,b)=>a.localeCompare(b));
+    categoryBar.replaceChildren();
+    ["ALL",...categories].forEach(categoryName=>{
+      const filter=document.createElement("button");filter.type="button";filter.className="ione-doc-category-chip"+(selectedDocumentaryCategory===categoryName?" is-selected":"");
+      filter.textContent=categoryName==="ALL"?"ALL DOCUMENTARIES":categoryName.toUpperCase();
+      filter.setAttribute("aria-pressed",String(selectedDocumentaryCategory===categoryName));
+      filter.addEventListener("click",()=>{selectedDocumentaryCategory=categoryName;renderDocs(allDocumentariesForFilter,false);});
+      categoryBar.appendChild(filter);
+    });
+    const visibleDocs=selectedDocumentaryCategory==="ALL"?allDocumentariesForFilter:allDocumentariesForFilter.filter(d=>(String(d.category||"General").trim()||"General")===selectedDocumentaryCategory);
     list.replaceChildren();
-    if(!docs.length){const empty=document.createElement("div");empty.className="ione-home-doc-empty";empty.textContent="No published documentaries yet. New stories will appear here when they are published.";list.appendChild(empty);return;}
-    docs.forEach((d,index)=>{
+    if(!visibleDocs.length){const empty=document.createElement("div");empty.className="ione-home-doc-empty";empty.textContent=selectedDocumentaryCategory==="ALL"?"No published documentaries yet. New stories will appear here when they are published.":"No documentaries in this category yet.";list.appendChild(empty);return;}
+    visibleDocs.forEach((d,index)=>{
       const blocks=Array.isArray(d.content)?d.content:[];
       const first=blocks.find(x=>x&&x.type==="image"&&x.url);
       const cover=String(first?.url||d.cover_image_url||"").trim();if(!cover)return;
       const card=document.createElement("button");card.type="button";card.className="ione-home-doc-card";card.dataset.documentaryId=String(d.id||"");card.setAttribute("aria-label","Read documentary: "+String(d.title||"Documentary"));
-      const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading=index===0?"eager":"lazy";img.decoding="async";if(index===0)img.fetchPriority="high";
+      const coverWrap=document.createElement("span");coverWrap.className="ione-home-doc-cover-wrap";
+      const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading=index===0?"eager":"lazy";img.decoding="async";if(index===0)img.fetchPriority="high";coverWrap.appendChild(img);
+      const creator=String(d.documented_by||"").trim();
+      if(creator){const credit=document.createElement("span");credit.className="ione-home-doc-credit";const label=document.createElement("span");label.className="ione-home-doc-credit-label";label.textContent="DOCUMENTED BY";const name=document.createElement("strong");name.textContent=creator;credit.append(label,name);coverWrap.appendChild(credit);}
       const copy=document.createElement("span");copy.className="ione-home-doc-copy";
-      const kicker=document.createElement("span");kicker.className="ione-home-doc-kicker";kicker.textContent="DOCUMENTARY";
+      const kicker=document.createElement("span");kicker.className="ione-home-doc-kicker";kicker.textContent=String(d.category||"General").toUpperCase();
       const title=document.createElement("strong");title.className="ione-home-doc-title";title.textContent=String(d.title||"Untitled documentary");copy.append(kicker,title);
       const desc=String(d.short_description||"").trim();if(desc){const p=document.createElement("span");p.className="ione-home-doc-desc";p.textContent=desc;copy.appendChild(p);}const views=document.createElement("span");views.className="ione-home-doc-views";views.textContent=formatIoneDocumentaryViews(d.view_count);views.setAttribute("aria-label",formatIoneDocumentaryViews(d.view_count));copy.appendChild(views);
       img.onerror=()=>{card.remove();if(!list.querySelector(".ione-home-doc-card")){list.replaceChildren();const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="Documentary covers could not be loaded. Please try again.";list.appendChild(e);}};
-      card.append(img,copy);card.addEventListener("click",()=>openIonePublicDocumentary(d));list.appendChild(card);
+      card.append(coverWrap,copy);card.addEventListener("click",()=>openIonePublicDocumentary(d));list.appendChild(card);
     });
     if(!list.children.length){const e=document.createElement("div");e.className="ione-home-doc-empty";e.textContent="No documentary covers are available yet.";list.appendChild(e);}
   };
@@ -11220,6 +11247,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     blocks=[];
     const title=document.getElementById("ioneDocTitle");
     const desc=document.getElementById("ioneDocDescription");
+    const documentedBy=document.getElementById("ioneDocDocumentedBy");
+    const category=document.getElementById("ioneDocCategory");
     const order=document.getElementById("ioneDocOrder");
     const pub=document.getElementById("ioneDocPublished");
     docMeta={start_date:"",expiry_date:"",video_sound_allowed:true,allow_copy:true,allow_download:true,allow_print:true,active:false};
@@ -11232,6 +11261,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     if(activeToggle){activeToggle.setAttribute("aria-pressed","false");activeToggle.textContent="INACTIVE • TAP TO ACTIVATE";activeToggle.classList.remove("is-active");}
     if(title)title.value="";
     if(desc)desc.value="";
+    if(documentedBy)documentedBy.value="";
+    if(category)category.value="General";
     if(order)order.value="0";
     if(pub)pub.checked=false;
     renderBlocks();
@@ -11408,6 +11439,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
     return {
       title,
       short_description:String(document.getElementById("ioneDocDescription")?.value||"").trim(),
+      documented_by:String(document.getElementById("ioneDocDocumentedBy")?.value||"").trim(),
+      category:String(document.getElementById("ioneDocCategory")?.value||"General"),
       cover_image_url:blocks[0].url,
       content:blocks.map(b=>b.type==="image"
         ? {type:"image",url:b.url,alt:String(b.alt||"")}
@@ -11447,6 +11480,8 @@ function ioneRunBackgroundMediaPreload(){ return; }
       editingId=d.id;
       document.getElementById("ioneDocTitle").value=d.title||"";
       document.getElementById("ioneDocDescription").value=d.short_description||"";
+      document.getElementById("ioneDocDocumentedBy").value=d.documented_by||"";
+      document.getElementById("ioneDocCategory").value=d.category||"General";
       document.getElementById("ioneDocOrder").value=Number(d.sort_order||0);
       document.getElementById("ioneDocPublished").checked=!!d.published;
       const settings=Array.isArray(d.content)?d.content.find(b=>b?.type==="ione_authority_settings"):null;
@@ -11522,6 +11557,19 @@ function ioneRunBackgroundMediaPreload(){ return; }
       '<p class="ione-doc-note">Create a documentary as an exact sequence of text and large images. The first image automatically becomes the documentary cover.</p>'+
       '<div class="ione-doc-grid">'+
         '<input id="ioneDocTitle" type="text" maxlength="180" placeholder="DOCUMENTARY TITLE">'+
+        '<input id="ioneDocDocumentedBy" type="text" maxlength="120" placeholder="DOCUMENTED BY • CREATOR NAME">'+
+        '<select id="ioneDocCategory" aria-label="Documentary category" style="width:100%;box-sizing:border-box;padding:12px;border:1px solid #31545a;border-radius:12px;background:#050b0d;color:#fff;font:700 13px Arial,sans-serif">'+
+          '<option value="General">CATEGORY • GENERAL</option>'+
+          '<option value="Culture">CULTURE</option>'+
+          '<option value="Education">EDUCATION</option>'+
+          '<option value="History">HISTORY</option>'+
+          '<option value="Nature">NATURE</option>'+
+          '<option value="Science &amp; Technology">SCIENCE &amp; TECHNOLOGY</option>'+
+          '<option value="Society">SOCIETY</option>'+
+          '<option value="Business">BUSINESS</option>'+
+          '<option value="Faith &amp; Beliefs">FAITH &amp; BELIEFS</option>'+
+          '<option value="Other">OTHER</option>'+
+        '</select>'+
         '<textarea id="ioneDocDescription" maxlength="600" placeholder="SHORT DESCRIPTION FOR THE DOCUMENTARY CARD"></textarea>'+
         '<input id="ioneDocOrder" type="number" min="0" step="1" value="0" placeholder="SORT ORDER">'+
         '<div class="ione-doc-grid" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-top:2px">'+
