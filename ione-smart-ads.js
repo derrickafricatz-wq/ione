@@ -48,6 +48,43 @@
     }
     return result.data;
   }
+  async function uploadCreative(file) {
+    const sb = client();
+    if (!sb) throw new Error("I|ONE connection is not ready. Reload and try again.");
+    if (!file) throw new Error("Choose an image or video file from your device.");
+    const allowed = ["image/jpeg","image/png","image/webp","video/mp4","video/webm"];
+    if (!allowed.includes(file.type)) throw new Error("Use JPG, PNG, WEBP, MP4, or WEBM media.");
+    if (file.size > 50 * 1024 * 1024) throw new Error("The maximum ad file size is 50 MB.");
+    let duration = 0;
+    const mediaType = file.type.startsWith("video/") ? "video" : "image";
+    if (mediaType === "video") {
+      duration = await new Promise((resolve, reject) => {
+        const video = document.createElement("video");
+        const objectUrl = URL.createObjectURL(file);
+        video.preload = "metadata";
+        video.onloadedmetadata = () => {
+          const d = Number(video.duration);
+          URL.revokeObjectURL(objectUrl);
+          if (!Number.isFinite(d) || d <= 0 || d > 120) reject(new Error("Ad videos must be 2 minutes or shorter."));
+          else resolve(Math.ceil(d));
+        };
+        video.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("This video could not be read. Choose another MP4 or WEBM file.")); };
+        video.src = objectUrl;
+      });
+    }
+    await ensureSession();
+    const auth = await sb.auth.getUser();
+    const user = auth?.data?.user;
+    if (auth.error || !user?.id) throw new Error("Your I|ONE session is not ready. Reload and try again.");
+    const ext = (file.name.split(".").pop() || (mediaType === "video" ? "mp4" : "jpg")).toLowerCase().replace(/[^a-z0-9]/g,"") || "bin";
+    const path = user.id + "/" + newKey() + "." + ext;
+    const result = await sb.storage.from("ione-smart-ads").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+    if (result.error) throw new Error(result.error.message || "The media upload failed. Please try again.");
+    const publicResult = sb.storage.from("ione-smart-ads").getPublicUrl(result.data.path);
+    const publicUrl = publicResult?.data?.publicUrl || "";
+    if (!publicUrl) throw new Error("The uploaded media URL could not be created.");
+    return {creative_url:publicUrl,media_type:mediaType,media_duration_seconds:duration};
+  }
   function setStatus(message, isError) {
     const el = root && root.querySelector("#ioneSmartAdsStatus");
     if (!el) return;
@@ -141,7 +178,8 @@
       </div>` : "";
     const adminActions = mode === "authority" ? `
       <div class="isa-actions">
-        <button class="isa-btn primary" data-action="approve" data-id="${esc(c.id)}">APPROVE</button>
+        <button class="isa-btn" data-action="verify_payment" data-id="${esc(c.id)}" ${c.payment_status === "verified" ? "disabled" : ""}>VERIFY PAYMENT</button>
+        <button class="isa-btn primary" data-action="approve" data-id="${esc(c.id)}" ${c.payment_status !== "verified" ? "disabled" : ""}>APPROVE & ACTIVATE</button>
         <button class="isa-btn" data-action="pause" data-id="${esc(c.id)}">PAUSE</button>
         <button class="isa-btn danger" data-action="reject" data-id="${esc(c.id)}">REJECT</button>
       </div>` : "";
@@ -156,11 +194,12 @@
       </div>` : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
-        ${mode === "explore" ? '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Sponsored advertisement for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">' : ""}
+        ${mode === "explore" ? (c.media_type === "video" ? '<video class="isa-image" controls playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Sponsored advertisement for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
         <div class="isa-card-body">
           <div class="isa-card-top"><span class="isa-sponsor">${mode === "explore" ? "SPONSORED" : "CAMPAIGN"}</span><span class="isa-status ${esc(status)}">${esc(status.replace(/_/g," "))}</span></div>
           <h3>${esc(c.title)}</h3><p>${esc(c.description || "Discover this advertiser on I|ONE.")}</p>
-          <div class="isa-meta"><span>${esc(c.advertiser_name || "Advertiser")}</span><span>${esc(c.city || "Tanzania")}</span><span>Ends ${esc(dateText(c.ends_at))}</span></div>
+          <div class="isa-meta"><span>${esc(c.advertiser_name || "Advertiser")}</span><span>${esc(c.city || "Tanzania")}</span><span>Ends ${esc(dateText(c.ends_at))}</span>${c.plan_code ? '<span>'+esc(({weekly:'7 days',monthly:'30 days',quarterly:'90 days'}[c.plan_code] || c.plan_code))+' • TZS '+num(c.price_tzs)+'</span>' : ''}</div>
+          ${mode === "authority" ? '<div class="isa-notice">Payment: <strong>'+esc(c.payment_status || "pending")+'</strong> · Reference: <strong>'+esc(c.payment_reference || "not provided")+'</strong> · Media: <strong>'+esc(c.media_type || "image")+(c.media_type === "video" ? ' ('+esc(c.media_duration_seconds || 0)+' sec)' : '')+'</strong></div>' : ''}
           ${metricsHtml}
           ${c.review_note ? '<p><strong>Authority note:</strong> '+esc(c.review_note)+'</p>' : ""}
           ${publicActions}${ownerActions}${adminActions}
@@ -178,8 +217,8 @@
         const campaigns = data.campaigns || [];
         content.innerHTML = `
           <section class="isa-intro"><div class="isa-kicker">ADVERTISE WITH PURPOSE</div><h2>Reach people. Measure actions.</h2><p>Discover approved promotions from businesses and sellers on I|ONE. Every campaign is labelled sponsored.</p></section>
-          <div class="isa-notice">SMART ADS is launching with free starter campaigns. Advertisements are reviewed before they appear. Views and clicks are measured separately; a click is not automatically a sale.</div>
-          ${campaigns.length ? campaigns.map(c => campaignCard(c,"explore")).join("") : '<div class="isa-empty">No approved campaigns are live yet.<br>Be among the first advertisers—create a free starter campaign.</div>'}`;
+          <div class="isa-notice">Sponsored advertisements are reviewed before publication. Campaigns run across designated I|ONE placements after manual payment verification and Authority approval. Views and clicks are measured separately; a click is not automatically a sale.</div>
+          ${campaigns.length ? campaigns.map(c => campaignCard(c,"explore")).join("") : '<div class="isa-empty">No approved campaigns are live yet.<br>Submit an advertisement to get started.</div>'}`;
         campaigns.forEach(c => {
           let key = "";
           try { key = sessionStorage.getItem("ioneSmartAdsImpression:"+c.id) || ""; } catch (_) {}
@@ -196,7 +235,7 @@
           const m=c.metrics||{}; a.impressions+=Number(m.impressions||0);a.clicks+=Number(m.clicks||0);a.contacts+=Number(m.contacts||0);a.conversions+=Number(m.conversions||0);return a;
         },{impressions:0,clicks:0,contacts:0,conversions:0});
         content.innerHTML = `
-          <section class="isa-intro"><div class="isa-kicker">ADVERTISER WORKSPACE</div><h2>Your campaign results</h2><p>Review your campaign status and track measurable actions. Conversions are advertiser-reported and should represent a real outcome.</p></section>
+          <section class="isa-intro"><div class="isa-kicker">ADVERTISER WORKSPACE</div><h2>Your campaign results</h2><p>Review payment verification, campaign approval, expiry dates, and measurable actions. Campaigns start after Authority verifies payment and approves the advertisement.</p></section>
           <div class="isa-grid">
             <div class="isa-metric"><strong>${num(totals.impressions)}</strong><span>Impressions</span></div>
             <div class="isa-metric"><strong>${num(totals.clicks)}</strong><span>Clicks</span></div>
@@ -206,25 +245,23 @@
           ${campaigns.length ? campaigns.map(c => campaignCard(c,"mine")).join("") : '<div class="isa-empty">You have not submitted a campaign yet.<br>Choose CREATE CAMPAIGN to get started.</div>'}`;
       } else if (activeTab === "create") {
         content.innerHTML = `
-          <section class="isa-intro"><div class="isa-kicker">FREE STARTER CAMPAIGN</div><h2>Bring your business into view.</h2><p>Submit an advert for review. It will not appear to the public until Authority Press approves it.</p></section>
-          <div class="isa-notice">For this first version, use a publicly accessible HTTPS image URL and an HTTPS destination link. Do not paste private or temporary links. Campaigns are free during the starter phase; no payment is collected here.</div>
+          <section class="isa-intro"><div class="isa-kicker">PAID SMART AD CAMPAIGNS</div><h2>Bring your business into view.</h2><p>Upload your own image or short video, choose a package, then submit for manual payment verification and Authority approval.</p></section>
+          <div class="isa-notice"><strong>MANUAL PAYMENT & ACTIVATION</strong><br>Use the existing manual payment method and instructions shown in Author Studio. Enter your payment transaction/reference number below. Authority Press must verify payment and approve the advertisement before it goes live. Your paid period begins on activation. Maximum 3 ad submissions per account in any 7-day period. Videos must be 2 minutes or shorter; maximum file size is 50 MB.</div>
           <form class="isa-form" id="ioneSmartAdsCreateForm">
             <label>BUSINESS / ADVERTISER NAME<input name="advertiser_name" required maxlength="100" placeholder="Business or brand name"></label>
             <label>CONTACT PHONE<input name="contact_phone" type="tel" required maxlength="40" placeholder="+255…"></label>
             <label>CAMPAIGN TITLE<input name="title" required minlength="3" maxlength="100" placeholder="What are you promoting?"></label>
             <label>AD DESCRIPTION<textarea name="description" maxlength="800" placeholder="Short, clear message for customers"></textarea></label>
-            <label>AD IMAGE URL (HTTPS)<input name="creative_url" type="url" required placeholder="https://…/advert-image.jpg"></label>
-            <label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="Website, WhatsApp link, or product page"></label>
+            <label>UPLOAD AD IMAGE OR VIDEO<input name="creative_file" type="file" required accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>
+            <p class="isa-help">Choose a file from your phone or computer. Supported: JPG, PNG, WEBP, MP4, WEBM. Image or video is uploaded to I|ONE storage. No external image URL is required.</p>
+            <label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
             <label>TARGET CITY / AREA<input name="city" maxlength="100" placeholder="Tanzania or a city/area"></label>
             <label>CAMPAIGN GOAL<select name="objective"><option value="website">Website visits</option><option value="contact">Customer contacts</option><option value="awareness">Brand awareness</option></select></label>
-            <label>CAMPAIGN END DATE<input name="ends_at" type="date" required></label>
-            <p class="isa-help">Choose an end date within the next 90 days. SMART ADS currently measures impressions, clicks, contact actions, and advertiser-reported conversions.</p>
-            <button class="isa-btn primary" type="submit" style="width:100%">SUBMIT FOR AUTHORITY REVIEW</button>
+            <label>ADVERTISING PACKAGE<select name="plan_code" required><option value="weekly">1 week (7 days) — TZS 2,000</option><option value="monthly">1 month (30 days) — TZS 5,000</option><option value="quarterly">3 months (90 days) — TZS 10,000</option></select></label>
+            <label>MANUAL PAYMENT TRANSACTION / REFERENCE<input name="payment_reference" required maxlength="120" placeholder="Enter the payment reference"></label>
+            <p class="isa-help">Payment reference is required for Authority to verify the payment. Submitting this form does not activate the campaign.</p>
+            <button class="isa-btn primary" type="submit" style="width:100%">UPLOAD & SUBMIT FOR REVIEW</button>
           </form>`;
-        const date = new Date(Date.now()+7*86400000);
-        const local = new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,10);
-        const end = content.querySelector('[name="ends_at"]');
-        if (end) { end.value = local; end.min = new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10); }
       } else if (activeTab === "authority") {
         const data = await invoke("authority_list");
         const campaigns = data.campaigns || [];
@@ -249,11 +286,18 @@
     if (busy) return;
     const form = event.target;
     const values = Object.fromEntries(new FormData(form).entries());
-    values.ends_at = new Date(String(values.ends_at)+"T23:59:59").toISOString();
+    const file = form.querySelector('[name="creative_file"]')?.files?.[0];
+    delete values.creative_file;
     const button = form.querySelector('button[type="submit"]');
     busy = true; if(button){button.disabled=true;button.textContent="SUBMITTING…";}
     setStatus("Submitting campaign for review…", false);
     try {
+      if (!file) throw new Error("Choose an image or video file first.");
+      if (!/^https:\/\//i.test(String(values.destination_url || ""))) throw new Error("Enter a valid HTTPS destination link.");
+      setStatus("Checking and uploading your ad media…", false);
+      const media = await uploadCreative(file);
+      Object.assign(values, media);
+      setStatus("Media uploaded. Submitting campaign for payment verification…", false);
       const data = await invoke("create", values);
       setStatus(data.message || "Campaign submitted for review.", false);
       activeTab = "mine";
@@ -278,6 +322,16 @@
         setStatus("Conversion recorded.",false);
         await render();
       } catch (error) { setStatus(error.message || "Could not record conversion.",true); button.disabled=false; }
+      return;
+    }
+    if (action === "verify_payment") {
+      if (!confirm("Have you independently confirmed the advertiser's manual payment? Only verify after checking the payment record.")) return;
+      button.disabled = true;
+      try {
+        await invoke("authority_payment",{campaign_id:id,payment_status:"verified"});
+        setStatus("Payment verified. Review the creative and press APPROVE & ACTIVATE separately.",false);
+        await render();
+      } catch (error) { setStatus(error.message || "Payment verification failed.",true); button.disabled=false; }
       return;
     }
     if (["approve","reject","pause"].includes(action)) {
