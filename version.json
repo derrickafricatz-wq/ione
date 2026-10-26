@@ -1,5 +1,5 @@
 {
-  "version": "1.0.235",
-  "message": "Improve documentary cover art, centered creator credit and card readability",
+  "version": "1.0.236",
+  "message": "Show full documentary cover with clean centered creator credit",
   "force": true
 }
