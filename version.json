@@ -1,5 +1,5 @@
 {
-  "version": "1.0.242",
-  "message": "Tune books showcase auto-scroll and manual interaction",
+  "version": "1.0.243",
+  "message": "Center I|ONE Bookshelf and restore contained horizontal scrolling",
   "force": true
 }
