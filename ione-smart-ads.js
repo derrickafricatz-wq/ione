@@ -110,14 +110,16 @@
     root.addEventListener("submit", handleSubmit);
     return root;
   }
-  function open() {
+  function open(requestedTab) {
     ensureRoot();
     root.style.display = "flex";
     root.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     const token = sessionStorage.getItem("ioneAuthoritySession") || "";
-    root.querySelector("#ioneSmartAdsAuthorityTab").hidden = !token;
-    activeTab = "explore";
+    const authorityTab = root.querySelector("#ioneSmartAdsAuthorityTab");
+    authorityTab.hidden = !token;
+    const wanted = ["explore", "mine", "create", "authority"].includes(requestedTab) ? requestedTab : "explore";
+    activeTab = wanted === "authority" && !token ? "explore" : wanted;
     root.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === activeTab)));
     render();
   }
@@ -303,14 +305,28 @@
     tile.addEventListener("click", open);
     grid.appendChild(tile);
   }
+  function installAuthorityEntry() {
+    const panel = document.querySelector("#authorityPressPanel .authority-panel-inner");
+    const head = panel && panel.querySelector(".authority-panel-head");
+    if (!panel || !head || document.getElementById("ioneAuthoritySmartAdsEntry")) return;
+    const section = document.createElement("section");
+    section.id = "ioneAuthoritySmartAdsEntry";
+    section.className = "authority-panel-section";
+    section.style.cssText = "border:1px solid rgba(197,164,107,.42);border-radius:15px;background:linear-gradient(145deg,rgba(48,39,24,.55),rgba(7,20,23,.96));";
+    section.innerHTML = '<div class="authority-section-kicker">CAMPAIGN CONTROL • AUTHORITY ONLY</div><h3 style="margin:8px 0">I|ONE SMART ADS</h3><p class="authority-section-note">Review submitted campaigns, approve or reject advertisements, pause active campaigns, and inspect campaign analytics.</p><button type="button" id="ioneAuthoritySmartAdsOpen" class="authority-save-button">OPEN SMART ADS REVIEW</button>';
+    head.insertAdjacentElement("afterend", section);
+    section.querySelector("#ioneAuthoritySmartAdsOpen").addEventListener("click", function () {
+      if (typeof window.ioneSmartAdsOpen === "function") window.ioneSmartAdsOpen("authority");
+    });
+  }
   function boot() {
     installTile();
-    if (!document.getElementById("openIoneSmartAds")) {
-      const observer = new MutationObserver(installTile);
-      observer.observe(document.documentElement,{childList:true,subtree:true});
-    }
-    const token = sessionStorage.getItem("ioneAuthoritySession") || "";
-    if (token && root) root.querySelector("#ioneSmartAdsAuthorityTab").hidden = false;
+    installAuthorityEntry();
+    const observer = new MutationObserver(() => {
+      installTile();
+      installAuthorityEntry();
+    });
+    observer.observe(document.documentElement,{childList:true,subtree:true});
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();
   window.ioneSmartAdsOpen = open;
