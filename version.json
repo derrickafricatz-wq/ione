@@ -1,5 +1,5 @@
 {
-  "version": "1.0.244",
-  "message": "Fix missing and duplicated Bookshelf covers and seamless looping",
+  "version": "1.0.245",
+  "message": "Remove duplicate Bookshelf covers and style author names",
   "force": true
 }
