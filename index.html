@@ -9721,7 +9721,7 @@ function loadIoneHomeDocumentaries(list,categoryBar){
       const cover=String(first?.url||d.cover_image_url||"").trim();if(!cover)return;
       const card=document.createElement("button");card.type="button";card.className="ione-home-doc-card";card.dataset.documentaryId=String(d.id||"");card.setAttribute("aria-label","Read documentary: "+String(d.title||"Documentary"));
       const coverWrap=document.createElement("span");coverWrap.className="ione-home-doc-cover-wrap";
-      const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading=index===0?"eager":"lazy";img.decoding="async";if(index===0)img.fetchPriority="high";coverWrap.appendChild(img);
+      const backdrop=document.createElement("img");backdrop.className="ione-home-doc-cover-backdrop";backdrop.src=cover;backdrop.alt="";backdrop.setAttribute("aria-hidden","true");backdrop.loading=index===0?"eager":"lazy";backdrop.decoding="async";coverWrap.appendChild(backdrop);const img=document.createElement("img");img.className="ione-home-doc-cover";img.src=cover;img.alt="";img.loading=index===0?"eager":"lazy";img.decoding="async";if(index===0)img.fetchPriority="high";coverWrap.appendChild(img);
       const creator=String(d.documented_by||"").trim();
       if(creator){const credit=document.createElement("span");credit.className="ione-home-doc-credit";const label=document.createElement("span");label.className="ione-home-doc-credit-label";label.textContent="DOCUMENTED BY";const name=document.createElement("strong");name.textContent=creator;credit.append(label,name);coverWrap.appendChild(credit);}
       const copy=document.createElement("span");copy.className="ione-home-doc-copy";
@@ -11851,6 +11851,71 @@ function ioneRunBackgroundMediaPreload(){ return; }
   toggle.addEventListener("click",()=>panel.classList.contains("is-open")?close():open());$("ioneDocumentaryCommentModerationRefresh")?.addEventListener("click",refresh);
 })();
 </script>
+
+
+<style id="ione-documentary-cover-art-direction-v2">
+/* Documentary card art direction: full-bleed cover atmosphere with a crisp centered original. */
+#topicsList .ione-home-doc-card{
+  display:flex!important;align-items:stretch!important;min-height:clamp(196px,48vw,238px)!important;
+  border-radius:20px!important;overflow:hidden!important;gap:0!important;
+  background:linear-gradient(135deg,#10262d,#071115)!important;
+  border:1px solid rgba(126,224,230,.28)!important;
+  box-shadow:0 12px 26px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.08)!important;
+}
+#topicsList .ione-home-doc-cover-wrap{
+  position:relative!important;isolation:isolate!important;flex:0 0 clamp(132px,37vw,188px)!important;
+  width:clamp(132px,37vw,188px)!important;min-width:0!important;min-height:196px!important;
+  align-self:stretch!important;overflow:hidden!important;display:flex!important;align-items:center!important;justify-content:center!important;
+  background:#071014!important;border-right:1px solid rgba(139,232,235,.2)!important;
+}
+#topicsList .ione-home-doc-cover-backdrop{
+  position:absolute!important;inset:-10px!important;width:calc(100% + 20px)!important;height:calc(100% + 20px)!important;
+  display:block!important;object-fit:cover!important;object-position:center!important;filter:blur(9px) brightness(.43) saturate(.9)!important;
+  opacity:.9!important;transform:scale(1.08)!important;padding:0!important;pointer-events:none!important;z-index:0!important;
+}
+#topicsList .ione-home-doc-cover-wrap:after{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(2,8,11,.12),rgba(2,8,11,.2) 55%,rgba(2,8,11,.42));
+}
+#topicsList .ione-home-doc-cover-wrap .ione-home-doc-cover{
+  position:relative!important;z-index:2!important;display:block!important;flex:0 1 auto!important;
+  width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-height:none!important;
+  object-fit:contain!important;object-position:center center!important;padding:9px!important;
+  box-sizing:border-box!important;background:transparent!important;filter:drop-shadow(0 5px 10px rgba(0,0,0,.45))!important;
+}
+#topicsList .ione-home-doc-credit{
+  position:absolute!important;z-index:3!important;left:7px!important;right:7px!important;top:50%!important;bottom:auto!important;
+  transform:translateY(-50%)!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:5px!important;padding:10px 8px!important;text-align:center!important;
+  border:1px solid rgba(255,255,255,.26)!important;border-radius:12px!important;
+  background:rgba(2,9,12,.76)!important;box-shadow:0 5px 18px rgba(0,0,0,.28)!important;backdrop-filter:blur(5px)!important;
+}
+#topicsList .ione-home-doc-credit-label{font:900 7px/1.25 Arial,sans-serif!important;letter-spacing:1.1px!important;color:#d9fbfa!important;text-align:center!important}
+#topicsList .ione-home-doc-credit strong{display:block!important;max-width:100%!important;font:800 clamp(10px,2.7vw,13px)/1.25 Georgia,serif!important;color:#ffe8ad!important;letter-spacing:.1px!important;text-align:center!important;overflow-wrap:anywhere!important;text-shadow:0 1px 4px #000!important}
+#topicsList .ione-home-doc-copy{flex:1 1 auto!important;min-width:0!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:center!important;gap:9px!important;padding:16px clamp(12px,3vw,20px)!important;box-sizing:border-box!important}
+#topicsList .ione-home-doc-kicker{font:900 9px/1.3 Arial,sans-serif!important;letter-spacing:1.1px!important;color:#87e8e5!important;overflow-wrap:anywhere!important}
+#topicsList .ione-home-doc-title{display:block!important;max-width:100%!important;font:800 clamp(17px,4.5vw,23px)/1.22 Georgia,serif!important;color:#fff!important;overflow-wrap:anywhere!important}
+#topicsList .ione-home-doc-desc{display:-webkit-box!important;-webkit-line-clamp:3!important;-webkit-box-orient:vertical!important;overflow:hidden!important;font:400 clamp(11px,2.9vw,13px)/1.5 Arial,sans-serif!important;color:#c4d5d8!important;overflow-wrap:anywhere!important}
+#topicsList .ione-home-doc-views{margin-top:2px!important;font:800 9px/1.4 Arial,sans-serif!important;color:#91b3b8!important}
+#topicsList .ione-home-doc-card:focus-visible{outline:2px solid #9df4ee!important;outline-offset:3px!important}
+@media(max-width:420px){
+ #topicsList .ione-home-doc-card{min-height:188px!important;border-radius:17px!important}
+ #topicsList .ione-home-doc-cover-wrap{flex-basis:clamp(116px,35vw,138px)!important;width:clamp(116px,35vw,138px)!important;min-height:188px!important}
+ #topicsList .ione-home-doc-cover-wrap .ione-home-doc-cover{padding:6px!important}
+ #topicsList .ione-home-doc-credit{left:5px!important;right:5px!important;padding:8px 5px!important;gap:4px!important}
+ #topicsList .ione-home-doc-credit-label{font-size:6px!important;letter-spacing:.7px!important}
+ #topicsList .ione-home-doc-credit strong{font-size:10px!important}
+ #topicsList .ione-home-doc-copy{padding:12px 10px!important;gap:7px!important}
+ #topicsList .ione-home-doc-title{font-size:clamp(15px,4.3vw,18px)!important}
+ #topicsList .ione-home-doc-desc{-webkit-line-clamp:3!important;font-size:11px!important}
+}
+@media(max-width:350px){
+ #topicsList .ione-home-doc-cover-wrap{flex-basis:108px!important;width:108px!important}
+ #topicsList .ione-home-doc-copy{padding:10px 8px!important}
+ #topicsList .ione-home-doc-title{font-size:15px!important}
+}
+@media(prefers-reduced-motion:reduce){#topicsList .ione-home-doc-card{transition:none!important}}
+</style>
 
 </body>
 </html>
