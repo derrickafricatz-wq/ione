@@ -154,7 +154,7 @@
       </div>` : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
-        ${mode === "explore" ? '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Sponsored advertisement for '+esc(c.advertiser_name)+'" onerror="this.style.display=\'none\'">' : ""}
+        ${mode === "explore" ? '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Sponsored advertisement for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">' : ""}
         <div class="isa-card-body">
           <div class="isa-card-top"><span class="isa-sponsor">${mode === "explore" ? "SPONSORED" : "CAMPAIGN"}</span><span class="isa-status ${esc(status)}">${esc(status.replace(/_/g," "))}</span></div>
           <h3>${esc(c.title)}</h3><p>${esc(c.description || "Discover this advertiser on I|ONE.")}</p>
