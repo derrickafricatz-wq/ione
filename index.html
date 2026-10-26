@@ -13836,8 +13836,31 @@ function ioneRunBackgroundMediaPreload(){ return; }
 }
 /* Show the complete book-cover artwork without cropping, filling the existing cover panel. */
 #heavensBookstore .hb-cover{
+  position:relative!important;
+  isolation:isolate!important;
   overflow:hidden!important;
-  background:#101514!important;
+  background:#66513b!important;
+}
+#heavensBookstore .hb-cover::before{
+  content:"I|ONE"!important;
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  padding:6px!important;
+  color:rgba(255,248,235,.22)!important;
+  font:900 clamp(14px,3vw,22px)/1 Arial,sans-serif!important;
+  letter-spacing:2px!important;
+  text-align:center!important;
+  overflow-wrap:anywhere!important;
+  pointer-events:none!important;
+}
+#heavensBookstore .hb-cover img,
+#heavensBookstore .hb-cover .hb-cover-empty{
+  position:relative!important;
+  z-index:1!important;
 }
 #heavensBookstore .hb-cover img{
   display:block!important;
