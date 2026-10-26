@@ -194,7 +194,7 @@
       </div>` : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
-        ${mode === "explore" ? (c.media_type === "video" ? '<video class="isa-image" controls playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Sponsored advertisement for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
+        ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" controls playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
         <div class="isa-card-body">
           <div class="isa-card-top"><span class="isa-sponsor">${mode === "explore" ? "SPONSORED" : "CAMPAIGN"}</span><span class="isa-status ${esc(status)}">${esc(status.replace(/_/g," "))}</span></div>
           <h3>${esc(c.title)}</h3><p>${esc(c.description || "Discover this advertiser on I|ONE.")}</p>
@@ -373,14 +373,82 @@
       if (typeof window.ioneSmartAdsOpen === "function") window.ioneSmartAdsOpen("authority");
     });
   }
+  let readerAdBusy = false;
+  async function maybeShowReaderAd() {
+    const reader = document.querySelector("#ioneDocReaderLive, #heavensReader");
+    const existingAd = document.getElementById("ioneSmartAdReaderInterstitial");
+    if (!reader) {
+      if (existingAd) existingAd.remove();
+      readerAdBusy = false;
+      return;
+    }
+    if (reader.dataset.ioneSmartAdChecked || readerAdBusy || existingAd) return;
+    reader.dataset.ioneSmartAdChecked = "1";
+    let count = 0;
+    try {
+      count = Number(sessionStorage.getItem("ioneSmartAdReaderCount") || "0") + 1;
+      sessionStorage.setItem("ioneSmartAdReaderCount", String(count));
+    } catch (_) { count = 3; }
+    if (count % 3 !== 0) return;
+    readerAdBusy = true;
+    try {
+      const data = await invoke("public_list");
+      const campaigns = (data.campaigns || []).filter(c => c && c.creative_url);
+      if (!campaigns.length || !document.querySelector("#ioneDocReaderLive, #heavensReader")) {
+        readerAdBusy = false;
+        return;
+      }
+      const campaign = campaigns[Math.floor(Math.random() * campaigns.length)];
+      const overlay = document.createElement("section");
+      overlay.id = "ioneSmartAdReaderInterstitial";
+      overlay.setAttribute("role","dialog");
+      overlay.setAttribute("aria-modal","true");
+      overlay.setAttribute("aria-label","Sponsored advertisement");
+      overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(1,7,9,.94);color:#fff;font:14px/1.5 Arial,sans-serif;";
+      const media = campaign.media_type === "video"
+        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay controls style="display:block;width:100%;max-height:48vh;object-fit:contain;background:#000;border-radius:12px" src="'+esc(campaign.creative_url)+'"></video>'
+        : '<img style="display:block;width:100%;max-height:48vh;object-fit:contain;background:#000;border-radius:12px" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
+      overlay.innerHTML = '<div style="width:min(560px,100%);max-height:90%;overflow:auto;border:1px solid rgba(224,195,131,.5);border-radius:18px;background:linear-gradient(145deg,#152327,#080e10);padding:16px;box-shadow:0 18px 60px #0008"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><strong style="font-size:10px;letter-spacing:2px;color:#e7cc98">SPONSORED • I|ONE SMART AD</strong><span id="ioneReaderAdCountdown" style="font-size:11px;color:#bdcbcd">Skip available in 3s</span></div>'+media+'<h2 style="font-size:20px;margin:12px 0 5px">'+esc(campaign.title||"Sponsored advertisement")+'</h2><p style="font-size:12px;color:#b8c8ca;margin:0 0 12px">'+esc(campaign.description||"Discover this advertiser on I|ONE.")+'</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url||"#")+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;padding:10px 13px;border-radius:10px;background:#dfc17d;color:#17150f;text-decoration:none;font-weight:900;font-size:10px">LEARN MORE</a><button id="ioneReaderAdSkip" type="button" disabled style="padding:10px 13px;border:1px solid #53666a;border-radius:10px;background:#1a292d;color:#fff;font-weight:900;font-size:10px;opacity:.6">SKIP AD</button></div><p style="margin:10px 0 0;color:#7f969a;font-size:9px">This sponsored message supports I|ONE. Your reading or documentary will continue when you skip or the short display ends.</p></div>';
+      document.body.appendChild(overlay);
+      const skip = overlay.querySelector("#ioneReaderAdSkip");
+      const countdown = overlay.querySelector("#ioneReaderAdCountdown");
+      const visit = overlay.querySelector("#ioneReaderAdVisit");
+      const closeAd = () => {
+        if (overlay.isConnected) overlay.remove();
+        readerAdBusy = false;
+      };
+      skip.addEventListener("click", closeAd);
+      visit.addEventListener("click", () => invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
+      invoke("track",{campaign_id:campaign.id,event_type:"impression",event_key:newKey()}).catch(()=>{});
+      let seconds = 3;
+      const tick = () => {
+        seconds--;
+        if (seconds <= 0) {
+          skip.disabled = false;
+          skip.style.opacity = "1";
+          skip.textContent = "SKIP AD";
+          countdown.textContent = "You can skip now";
+          return;
+        }
+        countdown.textContent = "Skip available in "+seconds+"s";
+        setTimeout(tick,1000);
+      };
+      setTimeout(tick,1000);
+      setTimeout(closeAd,6500);
+    } catch (_) {
+      readerAdBusy = false;
+    }
+  }
   function boot() {
     installTile();
     installAuthorityEntry();
     const observer = new MutationObserver(() => {
       installTile();
       installAuthorityEntry();
+      maybeShowReaderAd();
     });
     observer.observe(document.documentElement,{childList:true,subtree:true});
+    maybeShowReaderAd();
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();
   window.ioneSmartAdsOpen = open;
