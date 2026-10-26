@@ -1,4 +1,4 @@
-const CACHE_NAME = "ione-app-v300";
+const CACHE_NAME = "ione-app-v301";
 const PDFJS_CACHE_NAME = "ione-pdfjs-v3.11.174";
 const SUPABASE_JS_URL = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
 const SUPABASE_JS_CACHE_NAME = "ione-supabase-js-v2";
