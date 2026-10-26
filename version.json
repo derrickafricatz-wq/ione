@@ -1,5 +1,5 @@
 {
-  "version": "1.0.246",
-  "message": "Simplify documentary controls and compact Explore book cards",
+  "version": "1.0.247",
+  "message": "Restore documentary corner controls and match Explore book cards to documentary rows",
   "force": true
 }
