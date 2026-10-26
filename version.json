@@ -1,5 +1,5 @@
 {
-  "version": "1.0.229",
-  "message": "Fix documentary library rendering and category filters",
+  "version": "1.0.230",
+  "message": "Polish documentary category filters and full-cover presentation",
   "force": true
 }
