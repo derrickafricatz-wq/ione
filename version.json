@@ -1,5 +1,5 @@
 {
-  "version": "1.0.241",
-  "message": "Add looping published-books showcase to IONE homepage",
+  "version": "1.0.242",
+  "message": "Tune books showcase auto-scroll and manual interaction",
   "force": true
 }
