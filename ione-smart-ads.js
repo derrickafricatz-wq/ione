@@ -195,7 +195,7 @@
         <button class="isa-btn primary" data-action="conversion" data-id="${esc(c.id)}">+ RECORD CONVERSION</button>
         <button class="isa-btn danger" data-action="delete_campaign" data-id="${esc(c.id)}">DELETE CAMPAIGN</button>
       </div>` : "";
-    const publicActions = mode === "explore" ? '<div class="isa-actions"><a class="isa-btn primary" data-action="learn_more" data-id="'+esc(c.id)+'" href="'+esc(c.marketing_billboard_id && c.marketing_brand ? "#" : "https://wa.me/"+whatsappDigits(c.whatsapp_phone || c.contact_phone))+'" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE</a><a class="isa-btn" data-action="chat_me" data-id="'+esc(c.id)+'" href="https://wa.me/'+esc(whatsappDigits(c.whatsapp_phone || c.contact_phone))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">CHAT ME</a><a class="isa-btn" data-action="call_me" data-id="'+esc(c.id)+'" href="tel:'+esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">CALL ME</a></div>' : "";
+    const publicActions = mode === "explore" ? '<div class="isa-actions"><a class="isa-btn primary" data-action="learn_more" data-id="'+esc(c.id)+'" data-brand-id="'+esc(c.marketing_billboard_id || "")+'" data-brand-active="'+String(!!c.marketing_brand)+'" href="'+esc(c.marketing_billboard_id && c.marketing_brand ? "#" : "https://wa.me/"+whatsappDigits(c.whatsapp_phone || c.contact_phone))+'" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE</a><a class="isa-btn" data-action="chat_me" data-id="'+esc(c.id)+'" href="https://wa.me/'+esc(whatsappDigits(c.whatsapp_phone || c.contact_phone))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">CHAT ME</a><a class="isa-btn" data-action="call_me" data-id="'+esc(c.id)+'" href="tel:'+esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">CALL ME</a></div>' : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
         ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
@@ -278,8 +278,7 @@
           ${campaigns.length ? campaigns.map(c => campaignCard(c,"authority")).join("") : '<div class="isa-empty">No campaigns have been submitted yet.</div>'}`;
       }
       content.querySelectorAll('[data-action="visit"],[data-action="learn_more"]').forEach(a => a.addEventListener("click", async event => {
-        const campaign = campaigns.find(c => String(c.id) === String(a.dataset.id));
-        if (a.dataset.action === "learn_more" && campaign && campaign.marketing_billboard_id && campaign.marketing_brand) { event.preventDefault(); await openLinkedBrand(campaign); }
+        if (a.dataset.action === "learn_more" && a.dataset.brandId && a.dataset.brandActive === "true") { event.preventDefault(); await openLinkedBrand({marketing_billboard_id:a.dataset.brandId}); }
         invoke("track",{campaign_id:a.dataset.id,event_type:"click",event_key:newKey()}).catch(()=>{});
       }));
       content.querySelectorAll('[data-action="contact"],[data-action="chat_me"],[data-action="call_me"]').forEach(a => a.addEventListener("click", () => {
