@@ -120,7 +120,7 @@ Deno.serve(async (req: Request) => {
       const mediaType = clean(body.media_type, 10);
       const mediaDuration = Number(body.media_duration_seconds || 0);
       const placement = clean(body.placement || "all", 30);
-      const validPlacements = ["all","smart_ads","explore","book_reader","documentary","expert"];
+      const validPlacements = ["all","smart_ads","explore","book_reader","documentary","expert","sokoni"];
       const dailyStart = clean(body.daily_start_time, 8);
       const dailyEnd = clean(body.daily_end_time, 8);
       const validTime = (value: string) => !value || /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
