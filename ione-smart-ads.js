@@ -271,11 +271,17 @@
           <section class="isa-intro"><div class="isa-kicker">AUTHORITY PRESS</div><h2>Campaign review desk</h2><p>Approve suitable campaigns, pause active campaigns, or reject submissions. Only approved campaigns inside their dates appear in Explore Ads.</p></section>
           ${campaigns.length ? campaigns.map(c => campaignCard(c,"authority")).join("") : '<div class="isa-empty">No campaigns have been submitted yet.</div>'}`;
       }
-      content.querySelectorAll('[data-action="visit"]').forEach(a => a.addEventListener("click", () => {
+      content.querySelectorAll('[data-action="visit"],[data-action="learn_more"]').forEach(a => a.addEventListener("click", async event => {
+        const campaign = campaigns.find(c => String(c.id) === String(a.dataset.id));
+        if (a.dataset.action === "learn_more" && campaign && campaign.marketing_billboard_id && campaign.marketing_brand) { event.preventDefault(); await openLinkedBrand(campaign); }
         invoke("track",{campaign_id:a.dataset.id,event_type:"click",event_key:newKey()}).catch(()=>{});
       }));
-      content.querySelectorAll('[data-action="contact"]').forEach(a => a.addEventListener("click", () => {
+      content.querySelectorAll('[data-action="contact"],[data-action="chat_me"],[data-action="call_me"]').forEach(a => a.addEventListener("click", () => {
         invoke("track",{campaign_id:a.dataset.id,event_type:"contact",event_key:newKey()}).catch(()=>{});
+      }));
+      content.querySelectorAll(".isa-card video").forEach(video => video.addEventListener("click", event => {
+        event.preventDefault(); event.stopPropagation(); video.muted = !video.muted;
+        if (!video.muted) { video.volume = 0.12; const p=video.play(); if (p && p.catch) p.catch(()=>{}); }
       }));
     } catch (error) {
       content.innerHTML = '<div class="isa-empty">'+esc(error.message || "SMART ADS could not load. Please try again.")+'</div>';
@@ -488,6 +494,20 @@
     tick();
   }
 
+  async function openLinkedBrand(campaign) {
+    const details = await invoke("brand_details", {billboard_id:campaign.marketing_billboard_id});
+    if (!details.billboard) throw new Error("Brand is unavailable.");
+    if (typeof window.aflOpenWorld !== "function") throw new Error("I1 Marketing is not ready.");
+    window.aflOpenWorld();
+    const feed = document.getElementById("aflFeed");
+    const focusBrand = () => {
+      const card = feed && Array.from(feed.querySelectorAll(".afl-billboard")).find(item => String(item.dataset.billboardId || "") === String(details.billboard.id));
+      if (!card) return false;
+      card.scrollIntoView({behavior:"smooth",block:"start"}); card.style.outline = "2px solid #00ffff"; card.style.outlineOffset = "4px";
+      setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 5000); return true;
+    };
+    if (!focusBrand() && feed) { const observer = new MutationObserver(() => { if (focusBrand()) observer.disconnect(); }); observer.observe(feed,{childList:true,subtree:true}); setTimeout(() => observer.disconnect(),8000); }
+  }
   async function showAreaAd(area) {
     if (readerAdBusy || document.getElementById("ioneSmartAdReaderInterstitial")) return;
     readerAdBusy = true;
@@ -521,6 +541,19 @@
       document.body.appendChild(overlay);
       const skip = overlay.querySelector("#ioneReaderAdSkip");
       const video = overlay.querySelector("#ioneReaderAdVideo");
+      const actionDock = document.createElement("div");
+      actionDock.style.cssText = "position:absolute;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:8px;flex-wrap:wrap;z-index:2";
+      overlay.appendChild(actionDock);
+      const actionLink = (label, href, newTab) => {
+        const a = document.createElement("a"); a.textContent = label; a.href = href || "#";
+        a.style.cssText = "display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:11px 14px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.86);color:#fff;font-weight:900;font-size:11px;text-decoration:none;backdrop-filter:blur(8px)";
+        if (newTab) { a.target = "_blank"; a.rel = "noopener noreferrer"; } actionDock.appendChild(a); return a;
+      };
+      actionLink("CHAT ME","https://wa.me/"+String(campaign.whatsapp_phone || campaign.contact_phone || "").replace(/\D/g,""),true).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
+      actionLink("CALL ME","tel:"+String(campaign.contact_phone || "").replace(/[^+0-9]/g,""),false).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
+      const learnMore = actionLink("LEARN MORE",campaign.marketing_billboard_id && campaign.marketing_brand ? "#" : "https://wa.me/"+String(campaign.whatsapp_phone || campaign.contact_phone || "").replace(/\D/g,""),false);
+      if (campaign.marketing_billboard_id && campaign.marketing_brand) learnMore.addEventListener("click",event=>{event.preventDefault();closeAd();openLinkedBrand(campaign).catch(()=>{});});
+      learnMore.addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
       if (campaign.marketing_billboard_id && campaign.marketing_brand) {
         const viewBrand = document.createElement("button");
         viewBrand.type = "button"; viewBrand.textContent = "VIEW BRAND";
