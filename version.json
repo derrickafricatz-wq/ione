@@ -1,5 +1,5 @@
 {
-  "version": "1.0.264",
-  "message": "Smart Ads Chat Me, Call Me, campaign-aware Learn More, creative add limits, sound toggle, and feature-return fix",
+  "version": "1.0.265",
+  "message": "Smart Ads interstitial buttons inside panel, no interstitial Learn More, Explore brand routing, and audio mute on close",
   "force": true
 }
