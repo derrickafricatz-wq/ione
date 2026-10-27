@@ -1,5 +1,5 @@
 {
-  "version": "1.0.265",
-  "message": "Smart Ads interstitial buttons inside panel, no interstitial Learn More, Explore brand routing, and audio mute on close",
+  "version": "1.0.266",
+  "message": "Smart Ads controls placed in panel dock, video source stopped on close, and Explore Learn More opens linked billboard directly",
   "force": true
 }
