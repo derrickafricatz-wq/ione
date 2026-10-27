@@ -205,6 +205,17 @@
         <button class="isa-btn" data-action="pause" data-id="${esc(c.id)}">PAUSE</button>
         <button class="isa-btn danger" data-action="reject" data-id="${esc(c.id)}">REJECT</button>
       </div>` : "";
+    const creativeItems = Array.isArray(c.creatives) && c.creatives.length
+      ? c.creatives
+      : [{ creative_url: c.creative_url, media_type: c.media_type, media_duration_seconds: c.media_duration_seconds }];
+    const creativeHtml = (mode === "explore" || mode === "authority") ? creativeItems.map((creative, index) => {
+      const url = esc(creative.creative_url || "");
+      const type = String(creative.media_type || "image").toLowerCase();
+      if (!url) return "";
+      return type === "video"
+        ? '<video class="isa-image" data-creative-index="' + index + '" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="' + url + '"></video>'
+        : '<img class="isa-image" data-creative-index="' + index + '" loading="lazy" referrerpolicy="no-referrer" src="' + url + '" alt="Advertisement creative for ' + esc(c.advertiser_name) + '" onerror="this.hidden=true">';
+    }).join("") : "";
     const ownerActions = mode === "mine" ? `
       <div class="isa-actions">
         <button class="isa-btn primary" data-action="conversion" data-id="${esc(c.id)}">+ RECORD CONVERSION</button>
@@ -213,7 +224,7 @@
     const publicActions = mode === "explore" ? '<div class="isa-actions"><a class="isa-btn primary" data-action="learn_more" data-id="'+esc(c.id)+'" data-brand-id="'+esc(c.marketing_billboard_id || "")+'" data-brand-active="'+String(!!c.marketing_brand)+'" href="'+esc(c.marketing_billboard_id && c.marketing_brand ? "#" : campaignWhatsappUrl(c))+'" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE</a><a class="isa-btn" data-action="chat_me" data-id="'+esc(c.id)+'" href="'+esc(campaignWhatsappUrl(c))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">CHAT ME</a><a class="isa-btn" data-action="call_me" data-id="'+esc(c.id)+'" href="tel:'+esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">CALL ME</a></div>' : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
-        ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
+        ${creativeHtml}
         <div class="isa-card-body">
           <div class="isa-card-top"><span class="isa-sponsor">${mode === "explore" ? "SPONSORED" : "CAMPAIGN"}</span><span class="isa-status ${esc(status)}">${esc(status.replace(/_/g," "))}</span></div>
           <h3>${esc(c.title)}</h3><p>${esc(c.description || "Discover this advertiser on I|ONE.")}</p>
