@@ -61,10 +61,22 @@ Deno.serve(async (req: Request) => {
     if (action === "public_list") {
       const now = new Date().toISOString();
       const { data, error } = await admin.from("ione_smart_ads_campaigns")
-        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status")
+        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time")
         .eq("status", "approved").lte("starts_at", now).gte("ends_at", now).order("created_at", { ascending: false }).limit(30);
       if (error) throw error;
-      return json({ success: true, campaigns: data || [] });
+      const placement = clean(body.placement || "smart_ads", 30);
+      const validPlacements = ["smart_ads","explore","book_reader","documentary","expert"];
+      if (!validPlacements.includes(placement)) return json({ success: false, error: "Invalid ad placement." }, 400);
+      const localClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Dar_es_Salaam", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
+      const campaigns = (data || []).filter((campaign: any) => {
+        const target = String(campaign.placement || "all");
+        if (target !== "all" && target !== placement) return false;
+        const start = campaign.daily_start_time ? String(campaign.daily_start_time).slice(0,5) : "";
+        const end = campaign.daily_end_time ? String(campaign.daily_end_time).slice(0,5) : "";
+        if (!start || !end) return true;
+        return start < end ? localClock >= start && localClock < end : localClock >= start || localClock < end;
+      });
+      return json({ success: true, campaigns });
     }
 
     if (action === "track") {
@@ -107,7 +119,11 @@ Deno.serve(async (req: Request) => {
       const plan = plans[planCode];
       const mediaType = clean(body.media_type, 10);
       const mediaDuration = Number(body.media_duration_seconds || 0);
-      const paymentReference = clean(body.payment_reference, 120);
+      const placement = clean(body.placement || "all", 30);
+      const validPlacements = ["all","smart_ads","explore","book_reader","documentary","expert"];
+      const dailyStart = clean(body.daily_start_time, 8);
+      const dailyEnd = clean(body.daily_end_time, 8);
+      const validTime = (value: string) => !value || /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
       const expectedPrefix = `/storage/v1/object/public/ione-smart-ads/${user.id}/`;
       let creativePath = "";
       let creativeOrigin = "";
@@ -120,12 +136,13 @@ Deno.serve(async (req: Request) => {
       try { expectedOrigin = new URL(url).origin; } catch {}
       if (advertiser_name.length < 2 || contact_phone.length < 5 || title.length < 3 ||
           !validHttps(creative_url) || !validHttps(destination_url) || !plan ||
-          !["image","video"].includes(mediaType) || !paymentReference ||
+          !["image","video"].includes(mediaType) || !validPlacements.includes(placement) ||
+          !validTime(dailyStart) || !validTime(dailyEnd) || Boolean(dailyStart) !== Boolean(dailyEnd) ||
           !expectedOrigin || creativeOrigin !== expectedOrigin ||
           !creativePath.startsWith(expectedPrefix) ||
           (mediaType === "video" && (!Number.isFinite(mediaDuration) || mediaDuration <= 0 || mediaDuration > 120)) ||
           (mediaType === "image" && mediaDuration !== 0)) {
-        return json({ success: false, error: "Check advertiser details, uploaded media, package, payment reference, and destination link. Videos must be no longer than 2 minutes." }, 400);
+        return json({ success: false, error: "Check advertiser details, uploaded media, package, display schedule, and destination link. Videos must be no longer than 2 minutes." }, 400);
       }
       const now = new Date();
       const { count, error: countError } = await admin.from("ione_smart_ads_campaigns")
@@ -138,9 +155,10 @@ Deno.serve(async (req: Request) => {
         objective, status: "pending", starts_at: now.toISOString(),
         ends_at: new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000).toISOString(),
         plan_code: planCode, price_tzs: plan.price, duration_days: plan.days,
-        payment_status: "pending", payment_reference: paymentReference,
-        media_type: mediaType, media_duration_seconds: mediaDuration
-      }).select("id,title,status,created_at,ends_at,plan_code,price_tzs,payment_status").single();
+        payment_status: "pending", payment_reference: "",
+        media_type: mediaType, media_duration_seconds: mediaDuration,
+        placement, daily_start_time: dailyStart || null, daily_end_time: dailyEnd || null
+      }).select("id,title,status,created_at,ends_at,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time").single();
       if (error) throw error;
       return json({ success: true, campaign: data, message: "Advertisement submitted. Payment is pending Authority verification; the campaign starts only after verification and approval." });
     }
@@ -192,7 +210,7 @@ Deno.serve(async (req: Request) => {
         }
         const { data, error } = await admin.from("ione_smart_ads_campaigns").update({
           payment_status: status, updated_at: new Date().toISOString()
-        }).eq("id", id).select("id,payment_status,status,price_tzs,payment_reference").single();
+        }).eq("id", id).select("id,payment_status,status,price_tzs").single();
         if (error) throw error;
         return json({ success: true, campaign: data, message: status === "verified" ? "Payment verified. Review the advertisement and approve it separately to activate the campaign." : "Payment marked as rejected. The campaign remains inactive." });
       }
