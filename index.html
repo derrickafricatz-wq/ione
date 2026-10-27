@@ -5986,7 +5986,9 @@ function aflOpenWorld(){
 
 function aflCloseWorld(){
   aflOverlay.style.display="none";
-  ioneSetHomeControls(true);
+  const activeAdAreas=["heavensReader","ioneDocReaderLive","heavensBookstore","ioneSokoniOverlay"];
+  const featureStillOpen=activeAdAreas.some(id=>{const el=document.getElementById(id);if(!el||!el.isConnected)return false;const cs=getComputedStyle(el);const r=el.getBoundingClientRect();return cs.display!=="none"&&cs.visibility!=="hidden"&&Number(cs.opacity)!==0&&r.width>0&&r.height>0;});
+  ioneSetHomeControls(!featureStillOpen);
   aflOverlay.setAttribute("aria-hidden","true");
   if(aflFeedTimer)clearInterval(aflFeedTimer);
   aflFeedTimer=null;aflRefreshTimer=null;
