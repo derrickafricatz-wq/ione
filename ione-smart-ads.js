@@ -113,6 +113,12 @@
         .isa-notice{padding:11px 12px;border:1px solid #30484a;border-radius:12px;background:#0c191c;color:#a9c2c2;font-size:11px;line-height:1.5;margin-bottom:13px}
         .isa-card{overflow:hidden;margin:0 0 13px;border:1px solid #2a3e42;border-radius:16px;background:linear-gradient(145deg,#111e22,#080e10);box-shadow:0 8px 24px rgba(0,0,0,.18)}
         .isa-image{display:block;width:100%;max-height:230px;aspect-ratio:16/9;object-fit:cover;background:#11191b}
+.isa-creative-list{display:grid;grid-template-columns:1fr;gap:10px;padding:12px 12px 0}
+.isa-creative-card{overflow:hidden;border:1px solid #30464a;border-radius:13px;background:linear-gradient(145deg,#0b1518,#101c20);box-shadow:0 5px 16px rgba(0,0,0,.16)}
+.isa-creative-label{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-bottom:1px solid #263a3e;color:#a9c0c2;font-size:9px;font-weight:900;letter-spacing:1px}
+.isa-creative-label span:last-child{color:#d8bb82}
+.isa-creative-card .isa-image{max-height:300px}
+.isa-creative-card video{cursor:pointer}
         .isa-card-body{padding:14px}.isa-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
         .isa-sponsor{display:inline-block;padding:4px 7px;border:1px solid rgba(197,164,107,.45);border-radius:999px;color:#e7cc98;font-size:8px;font-weight:900;letter-spacing:1.1px}
         .isa-status{display:inline-block;padding:4px 7px;border-radius:999px;background:#1b2a2e;color:#b5c9cb;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.5px}
@@ -208,14 +214,15 @@
     const creativeItems = Array.isArray(c.creatives) && c.creatives.length
       ? c.creatives
       : [{ creative_url: c.creative_url, media_type: c.media_type, media_duration_seconds: c.media_duration_seconds }];
-    const creativeHtml = (mode === "explore" || mode === "authority") ? creativeItems.map((creative, index) => {
+    const creativeHtml = (mode === "explore" || mode === "authority") ? '<div class="isa-creative-list">' + creativeItems.map((creative, index) => {
       const url = esc(creative.creative_url || "");
       const type = String(creative.media_type || "image").toLowerCase();
       if (!url) return "";
-      return type === "video"
+      const media = type === "video"
         ? '<video class="isa-image" data-creative-index="' + index + '" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="' + url + '"></video>'
         : '<img class="isa-image" data-creative-index="' + index + '" loading="lazy" referrerpolicy="no-referrer" src="' + url + '" alt="Advertisement creative for ' + esc(c.advertiser_name) + '" onerror="this.hidden=true">';
-    }).join("") : "";
+      return '<section class="isa-creative-card" data-creative-card="' + index + '"><div class="isa-creative-label"><span>CAMPAIGN CREATIVE ' + (index + 1) + '</span><span>' + (type === "video" ? "VIDEO" : "IMAGE") + '</span></div>' + media + '</section>';
+    }).join("") + '</div>' : "";
     const ownerActions = mode === "mine" ? `
       <div class="isa-actions">
         <button class="isa-btn primary" data-action="conversion" data-id="${esc(c.id)}">+ RECORD CONVERSION</button>
@@ -543,10 +550,11 @@
     const focusBrand = () => {
       const card = Array.from(feed.querySelectorAll(".afl-billboard")).find(item => String(item.dataset.billboardId || "") === targetId);
       if (!card) return false;
-      card.scrollIntoView({behavior:"auto",block:"start"});
-      card.style.outline = "2px solid #00ffff";
+      card.scrollIntoView({behavior:"smooth",block:"start"});
+      card.style.outline = "2px solid rgba(0,255,255,.85)";
       card.style.outlineOffset = "4px";
-      setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 5000);
+      if (typeof card.animate === "function") card.animate([{opacity:.72,transform:"translateY(18px)"},{opacity:1,transform:"translateY(0)"}],{duration:720,easing:"cubic-bezier(.22,.75,.25,1)"});
+      setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 4200);
       close();
       return true;
     };
@@ -589,7 +597,7 @@
       overlay.setAttribute("role", "dialog");
       overlay.setAttribute("aria-modal", "true");
       overlay.setAttribute("aria-label", "Sponsored advertisement");
-      overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;";
+      overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;opacity:0;transition:opacity 620ms cubic-bezier(.22,.75,.25,1);";
       const media = adIsVideo
         ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'"></video>'
         : '<img style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'" alt="Sponsored advertisement">';
@@ -599,6 +607,10 @@
       overlay.innerHTML = '<div id="ioneReaderAdPanel" style="position:relative;width:min(680px,100%);max-height:90vh;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'</div>';
       document.body.appendChild(overlay);
       const adPanel = overlay.querySelector("#ioneReaderAdPanel");
+      adPanel.style.opacity = "0";
+      adPanel.style.transform = "translateY(18px) scale(.985)";
+      adPanel.style.transition = "opacity 700ms cubic-bezier(.22,.75,.25,1), transform 700ms cubic-bezier(.22,.75,.25,1)";
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (!overlay.isConnected) return; overlay.style.opacity = "1"; adPanel.style.opacity = "1"; adPanel.style.transform = "translateY(0) scale(1)"; }));
       const video = overlay.querySelector("#ioneReaderAdVideo");
       const actionDock = document.createElement("div");
       actionDock.style.cssText = "position:relative;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3;flex:0 0 auto;padding:12px 10px calc(12px + env(safe-area-inset-bottom));background:#05090a";
