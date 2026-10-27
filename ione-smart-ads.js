@@ -255,7 +255,7 @@
             <label>AD DESCRIPTION<textarea name="description" maxlength="800" placeholder="Short, clear message for customers"></textarea></label>
             <label>UPLOAD AD IMAGES / VIDEOS<input name="creative_file" type="file" multiple required accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>
             <p class="isa-help">Choose a file from your phone or computer. Supported: JPG, PNG, WEBP, MP4, WEBM. Image or video is uploaded to I|ONE storage. No external image URL is required.</p>
-            <label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
+            <label>LINK TO REGISTERED I1 MARKETING BRAND (OPTIONAL)<select name="marketing_billboard_id" id="ioneSmartAdsBrandSelect"><option value="">No linked brand — hide View Brand</option></select></label><p class="isa-help">Only active I1 Marketing billboards owned by this account can be linked.</p><label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
             <label>TARGET CITY / AREA<input name="city" maxlength="100" placeholder="Tanzania or a city/area"></label>
             <label>CAMPAIGN GOAL<select name="objective"><option value="website">Website visits</option><option value="contact">Customer contacts</option><option value="awareness">Brand awareness</option></select></label>
             <label>WHERE SHOULD THIS AD APPEAR?<select name="placement"><option value="all">All eligible I|ONE placements</option><option value="smart_ads">Smart Ads only</option><option value="explore">Explore bookshelf</option><option value="book_reader">Inside books</option><option value="documentary">Documentaries</option><option value="expert">Expert section</option><option value="sokoni">Sokoni marketplace</option></select></label>
@@ -267,6 +267,7 @@
 
             <button class="isa-btn primary" type="submit" style="width:100%">UPLOAD & SUBMIT FOR REVIEW</button>
           </form>`;
+        loadBrandOptions();
       } else if (activeTab === "authority") {
         const data = await invoke("authority_list");
         const campaigns = data.campaigns || [];
@@ -284,6 +285,16 @@
       content.innerHTML = '<div class="isa-empty">'+esc(error.message || "SMART ADS could not load. Please try again.")+'</div>';
       setStatus(error.message || "Could not load SMART ADS.", true);
     }
+  }
+  async function loadBrandOptions() {
+    const select = root && root.querySelector("#ioneSmartAdsBrandSelect");
+    if (!select) return;
+    try {
+      const data = await invoke("brand_list");
+      select.innerHTML = "";
+      const blank = document.createElement("option"); blank.value = ""; blank.textContent = "No linked brand — hide View Brand"; select.appendChild(blank);
+      (data.billboards || []).forEach(b => { const option = document.createElement("option"); option.value = b.id; option.textContent = String(b.brand_name || "Brand") + " • " + String(b.business_type || b.category || "Business"); select.appendChild(option); });
+    } catch (_) { select.innerHTML = ""; const option = document.createElement("option"); option.value = ""; option.textContent = "No linked brand — hide View Brand"; select.appendChild(option); }
   }
   async function handleSubmit(event) {
     if (event.target.id !== "ioneSmartAdsCreateForm") return;
@@ -497,6 +508,22 @@
       document.body.appendChild(overlay);
       const skip = overlay.querySelector("#ioneReaderAdSkip");
       const video = overlay.querySelector("#ioneReaderAdVideo");
+      if (campaign.marketing_billboard_id && campaign.marketing_brand) {
+        const viewBrand = document.createElement("button");
+        viewBrand.type = "button"; viewBrand.textContent = "VIEW BRAND";
+        viewBrand.style.cssText = "position:absolute;left:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px";
+        viewBrand.addEventListener("click", async () => {
+          viewBrand.disabled = true;
+          try {
+            const details = await invoke("brand_details", {billboard_id:campaign.marketing_billboard_id});
+            if (!details.billboard) throw new Error("Brand is unavailable.");
+            closeAd();
+            if (typeof window.aflOpenWorld === "function") window.aflOpenWorld();
+            if (typeof window.aflOpenService === "function") await window.aflOpenService(details.billboard);
+          } catch (_) { viewBrand.disabled = false; }
+        });
+        overlay.querySelector("div").appendChild(viewBrand);
+      }
       const closeAd = () => {
         if (video) { video.pause(); video.muted = true; }
         if (overlay.isConnected) overlay.remove();
