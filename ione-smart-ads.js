@@ -518,8 +518,24 @@
             const details = await invoke("brand_details", {billboard_id:campaign.marketing_billboard_id});
             if (!details.billboard) throw new Error("Brand is unavailable.");
             closeAd();
-            if (typeof window.aflOpenWorld === "function") window.aflOpenWorld();
-            if (typeof window.aflOpenService === "function") await window.aflOpenService(details.billboard);
+            if (typeof window.aflOpenWorld === "function") {
+              window.aflOpenWorld();
+              const feed = document.getElementById("aflFeed");
+              const openExactBrand = () => {
+                const cards = feed ? Array.from(feed.querySelectorAll(".afl-billboard")) : [];
+                const card = cards.find(item => String(item.dataset.billboardId || "") === String(details.billboard.id));
+                const service = card && card.querySelector(".afl-open-service");
+                if (service) { service.click(); return true; }
+                return false;
+              };
+              if (!openExactBrand() && feed) {
+                const observer = new MutationObserver(() => { if (openExactBrand()) observer.disconnect(); });
+                observer.observe(feed, {childList:true,subtree:true});
+                setTimeout(() => observer.disconnect(), 8000);
+              }
+            } else if (typeof window.aflOpenService === "function") {
+              await window.aflOpenService(details.billboard);
+            }
           } catch (_) { viewBrand.disabled = false; }
         });
         overlay.querySelector("div").appendChild(viewBrand);
