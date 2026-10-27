@@ -65,7 +65,7 @@ Deno.serve(async (req: Request) => {
         .eq("status", "approved").lte("starts_at", now).gte("ends_at", now).order("created_at", { ascending: false }).limit(30);
       if (error) throw error;
       const placement = clean(body.placement || "smart_ads", 30);
-      const validPlacements = ["smart_ads","explore","book_reader","documentary","expert"];
+      const validPlacements = ["smart_ads","explore","book_reader","documentary","expert","sokoni"];
       if (!validPlacements.includes(placement)) return json({ success: false, error: "Invalid ad placement." }, 400);
       const localClock = new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Dar_es_Salaam", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date());
       const campaigns = (data || []).filter((campaign: any) => {
