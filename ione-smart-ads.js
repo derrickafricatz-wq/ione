@@ -186,6 +186,7 @@
     const ownerActions = mode === "mine" ? `
       <div class="isa-actions">
         <button class="isa-btn primary" data-action="conversion" data-id="${esc(c.id)}">+ RECORD CONVERSION</button>
+        <button class="isa-btn danger" data-action="delete_campaign" data-id="${esc(c.id)}">DELETE CAMPAIGN</button>
       </div>` : "";
     const publicActions = mode === "explore" ? `
       <div class="isa-actions">
@@ -252,7 +253,7 @@
             <label>CONTACT PHONE<input name="contact_phone" type="tel" required maxlength="40" placeholder="+255…"></label>
             <label>CAMPAIGN TITLE<input name="title" required minlength="3" maxlength="100" placeholder="What are you promoting?"></label>
             <label>AD DESCRIPTION<textarea name="description" maxlength="800" placeholder="Short, clear message for customers"></textarea></label>
-            <label>UPLOAD AD IMAGE OR VIDEO<input name="creative_file" type="file" required accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>
+            <label>UPLOAD AD IMAGES / VIDEOS<input name="creative_file" type="file" multiple required accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>
             <p class="isa-help">Choose a file from your phone or computer. Supported: JPG, PNG, WEBP, MP4, WEBM. Image or video is uploaded to I|ONE storage. No external image URL is required.</p>
             <label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
             <label>TARGET CITY / AREA<input name="city" maxlength="100" placeholder="Tanzania or a city/area"></label>
@@ -290,17 +291,23 @@
     if (busy) return;
     const form = event.target;
     const values = Object.fromEntries(new FormData(form).entries());
-    const file = form.querySelector('[name="creative_file"]')?.files?.[0];
+    const files = Array.from(form.querySelector('[name="creative_file"]')?.files || []);
     delete values.creative_file;
     const button = form.querySelector('button[type="submit"]');
     busy = true; if(button){button.disabled=true;button.textContent="SUBMITTING…";}
     setStatus("Submitting campaign for review…", false);
     try {
-      if (!file) throw new Error("Choose an image or video file first.");
+      const creativeLimit = ({weekly:2,monthly:5,quarterly:10})[String(values.plan_code)] || 2;
+      if (!files.length) throw new Error("Choose at least one image or video.");
+      if (files.length > creativeLimit) throw new Error("This package allows up to " + creativeLimit + " creatives.");
       if (!/^https:\/\//i.test(String(values.destination_url || ""))) throw new Error("Enter a valid HTTPS destination link.");
-      setStatus("Checking and uploading your ad media…", false);
-      const media = await uploadCreative(file);
-      Object.assign(values, media);
+      const creatives = [];
+      for (let i=0;i<files.length;i++) {
+        setStatus("Uploading creative " + (i+1) + " of " + files.length + "…", false);
+        creatives.push(await uploadCreative(files[i]));
+      }
+      Object.assign(values, creatives[0]);
+      values.creatives = creatives;
       setStatus("Media uploaded. Submitting campaign for payment verification…", false);
       const data = await invoke("create", values);
       setStatus(data.message || "Campaign submitted for review.", false);
@@ -318,6 +325,13 @@
     if (!button || !root.contains(button)) return;
     const action = button.dataset.action;
     const id = button.dataset.id;
+    if (action === "delete_campaign") {
+      if (!confirm("Permanently delete this campaign and stop its ads from displaying? This cannot be undone.")) return;
+      button.disabled = true;
+      try { await invoke("delete_campaign",{campaign_id:id}); setStatus("Campaign deleted. Its ads will no longer be served.",false); await render(); }
+      catch (error) { setStatus(error.message || "Campaign could not be deleted.",true); button.disabled=false; }
+      return;
+    }
     if (action === "conversion") {
       if (!confirm("Record one real conversion for this campaign? Only record a completed outcome, not a click or enquiry.")) return;
       button.disabled = true;
@@ -379,10 +393,11 @@
   }
   let readerAdBusy = false;
   const AREA_FIRST_DELAY_MS = 60 * 1000;
-  const AREA_REPEAT_DELAY_MS = 25 * 60 * 1000;
+  const AREA_REPEAT_DELAY_MS = 10 * 60 * 1000;
   const AREA_CHECK_INTERVAL_MS = 5000;
   let activeArea = "";
   let activeAreaSince = 0;
+  let activeAreaAdShown = false;
   let areaCheckHandle = 0;
 
   function visible(el) {
@@ -467,7 +482,7 @@
       overlay.setAttribute("aria-label", "Sponsored advertisement");
       overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;";
       const media = campaign.media_type === "video"
-        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay loop preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'"></video>'
+        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'"></video>'
         : '<img style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
       const mediaTag = campaign.media_type === "video"
         ? media
@@ -483,6 +498,8 @@
       };
       skip.addEventListener("click", closeAd);
       if (video) {
+        video.addEventListener("ended", closeAd, {once:true});
+        video.addEventListener("error", closeAd, {once:true});
         video.volume = 0;
         video.muted = true;
         video.addEventListener("click", event => {
@@ -500,6 +517,7 @@
       if (imageLink) imageLink.addEventListener("click", () => invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
       invoke("track",{campaign_id:campaign.id,event_type:"impression",event_key:newKey()}).catch(()=>{});
       const previous = getAreaSchedule(placement);
+      activeAreaAdShown = true;
       saveAreaSchedule(placement, {
         lastShownAt: Date.now(),
         lastCampaignId: String(campaign.id),
@@ -520,20 +538,19 @@
         setTimeout(tick,1000);
       };
       setTimeout(tick,1000);
-      setTimeout(closeAd,7000);
+      if (!video) setTimeout(closeAd,30000);
     } catch (_) { readerAdBusy = false; }
   }
 
   function checkAdArea() {
     const area = detectAdArea();
-    if (!area) { activeArea = ""; activeAreaSince = 0; return; }
-    if (activeArea !== area.key) { activeArea = area.key; activeAreaSince = Date.now(); }
+    if (!area) { activeArea = ""; activeAreaSince = 0; activeAreaAdShown = false; return; }
+    if (activeArea !== area.key) { activeArea = area.key; activeAreaSince = Date.now(); activeAreaAdShown = false; }
     if (readerAdBusy) return;
     const schedule = getAreaSchedule(area.key);
-    const lastShown = Number(schedule.lastShownAt || 0);
     const firstEligibleAt = activeAreaSince + AREA_FIRST_DELAY_MS;
-    const repeatEligibleAt = lastShown ? lastShown + AREA_REPEAT_DELAY_MS : firstEligibleAt;
-    const eligibleAt = Math.max(firstEligibleAt, repeatEligibleAt, Number(schedule.retryAfter || 0));
+    const repeatEligibleAt = activeAreaAdShown ? Number(schedule.lastShownAt || 0) + AREA_REPEAT_DELAY_MS : firstEligibleAt;
+    const eligibleAt = Math.max(activeAreaAdShown ? repeatEligibleAt : firstEligibleAt, Number(schedule.retryAfter || 0));
     if (Date.now() >= eligibleAt) showAreaAd(area);
   }
 
