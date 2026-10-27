@@ -380,7 +380,7 @@
   let readerAdBusy = false;
   const AREA_FIRST_DELAY_MS = 60 * 1000;
   const AREA_REPEAT_DELAY_MS = 25 * 60 * 1000;
-  const AREA_CHECK_INTERVAL_MS = 1000;
+  const AREA_CHECK_INTERVAL_MS = 5000;
   let activeArea = "";
   let activeAreaSince = 0;
   let areaCheckHandle = 0;
@@ -425,9 +425,13 @@
     const schedule = getAreaSchedule(placement);
     const lastId = String(schedule.lastCampaignId || "");
     const lastBrand = String(schedule.lastAdvertiser || "").trim().toLowerCase();
-    const differentBrand = campaigns.filter(c => String(c.advertiser_name || "").trim().toLowerCase() !== lastBrand);
-    const pool = differentBrand.length ? differentBrand : campaigns;
-    return pool.find(c => String(c.id) !== lastId) || pool[0];
+    const lastIndex = campaigns.findIndex(c => String(c.id) === lastId);
+    const ordered = lastIndex >= 0
+      ? campaigns.slice(lastIndex + 1).concat(campaigns.slice(0, lastIndex + 1))
+      : campaigns.slice();
+    return ordered.find(c => String(c.advertiser_name || "").trim().toLowerCase() !== lastBrand)
+      || ordered.find(c => String(c.id) !== lastId)
+      || ordered[0];
   }
 
   function fadeVideo(video, target, done) {
