@@ -475,16 +475,22 @@
       if (!visible(area.element)) { readerAdBusy = false; return; }
       const campaign = chooseRotatingCampaign(campaigns, placement);
       if (!campaign) { readerAdBusy = false; return; }
+      const creativeList = Array.isArray(campaign.creatives) && campaign.creatives.length ? campaign.creatives : [{creative_url:creative.creative_url,media_type:campaign.media_type,media_duration_seconds:campaign.media_duration_seconds}];
+      const scheduleBeforeCreative = getAreaSchedule(placement);
+      const previousCreativeIndex = Number(scheduleBeforeCreative.lastCreativeIndex == null ? -1 : scheduleBeforeCreative.lastCreativeIndex);
+      const creativeIndex = creativeList.length > 1 ? (previousCreativeIndex + 1) % creativeList.length : 0;
+      const creative = creativeList[creativeIndex] || creativeList[0];
+      const adIsVideo = creative.media_type === "video";
       const overlay = document.createElement("section");
       overlay.id = "ioneSmartAdReaderInterstitial";
       overlay.setAttribute("role", "dialog");
       overlay.setAttribute("aria-modal", "true");
       overlay.setAttribute("aria-label", "Sponsored advertisement");
       overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;";
-      const media = campaign.media_type === "video"
-        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'"></video>'
-        : '<img style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
-      const mediaTag = campaign.media_type === "video"
+      const media = adIsVideo
+        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'"></video>'
+        : '<img style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'" alt="Sponsored advertisement">';
+      const mediaTag = adIsVideo
         ? media
         : '<a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url || "#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a>';
       overlay.innerHTML = '<div style="position:relative;width:min(680px,100%);max-height:94%;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'<button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
@@ -522,6 +528,7 @@
         lastShownAt: Date.now(),
         lastCampaignId: String(campaign.id),
         lastAdvertiser: String(campaign.advertiser_name || ""),
+        lastCreativeIndex: creativeIndex,
         firstShownAt: previous.firstShownAt || Date.now()
       });
       let seconds = 3;
