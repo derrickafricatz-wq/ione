@@ -1,5 +1,5 @@
 {
-  "version": "1.0.266",
-  "message": "Smart Ads controls placed in panel dock, video source stopped on close, and Explore Learn More opens linked billboard directly",
+  "version": "1.0.267",
+  "message": "Smart Ads Explore video audio stops on close; Learn More opens linked billboard without homepage flash",
   "force": true
 }
