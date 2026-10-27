@@ -378,54 +378,132 @@
     });
   }
   let readerAdBusy = false;
-  async function maybeShowReaderAd() {
-    const reader = document.querySelector("#ioneDocReaderLive, #heavensReader");
-    const existingAd = document.getElementById("ioneSmartAdReaderInterstitial");
-    if (!reader) {
-      if (existingAd) existingAd.remove();
-      readerAdBusy = false;
-      return;
-    }
-    if (reader.dataset.ioneSmartAdChecked || readerAdBusy || existingAd) return;
-    reader.dataset.ioneSmartAdChecked = "1";
-    let count = 0;
+  const AREA_FIRST_DELAY_MS = 60 * 1000;
+  const AREA_REPEAT_DELAY_MS = 25 * 60 * 1000;
+  const AREA_CHECK_INTERVAL_MS = 1000;
+  let activeArea = "";
+  let activeAreaSince = 0;
+  let areaCheckHandle = 0;
+
+  function visible(el) {
+    if (!el || !el.isConnected || el.getAttribute("aria-hidden") === "true") return false;
+    const style = getComputedStyle(el);
+    if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function detectAdArea() {
+    const bookReader = document.getElementById("heavensReader");
+    if (visible(bookReader)) return {key:"book_reader", element:bookReader};
+    const documentaryReader = document.getElementById("ioneDocReaderLive");
+    if (visible(documentaryReader)) return {key:"documentary", element:documentaryReader};
+    const bookstore = document.getElementById("heavensBookstore");
+    if (visible(bookstore)) return {key:"explore", element:bookstore};
+    const sokoni = document.getElementById("ioneSokoniOverlay");
+    if (visible(sokoni)) return {key:"sokoni", element:sokoni};
+    return null;
+  }
+
+  function getAreaSchedule(key) {
     try {
-      count = Number(sessionStorage.getItem("ioneSmartAdReaderCount") || "0") + 1;
-      sessionStorage.setItem("ioneSmartAdReaderCount", String(count));
-    } catch (_) { count = 3; }
-    if (count % 3 !== 0) return;
+      const value = JSON.parse(localStorage.getItem("ioneSmartAdsAreaScheduleV1") || "{}");
+      return value && typeof value === "object" ? value[key] || {} : {};
+    } catch (_) { return {}; }
+  }
+
+  function saveAreaSchedule(key, patch) {
+    try {
+      const value = JSON.parse(localStorage.getItem("ioneSmartAdsAreaScheduleV1") || "{}");
+      value[key] = Object.assign({}, value[key] || {}, patch);
+      localStorage.setItem("ioneSmartAdsAreaScheduleV1", JSON.stringify(value));
+    } catch (_) {}
+  }
+
+  function chooseRotatingCampaign(campaigns, placement) {
+    if (!campaigns.length) return null;
+    const schedule = getAreaSchedule(placement);
+    const lastId = String(schedule.lastCampaignId || "");
+    const lastBrand = String(schedule.lastAdvertiser || "").trim().toLowerCase();
+    const differentBrand = campaigns.filter(c => String(c.advertiser_name || "").trim().toLowerCase() !== lastBrand);
+    const pool = differentBrand.length ? differentBrand : campaigns;
+    return pool.find(c => String(c.id) !== lastId) || pool[0];
+  }
+
+  function fadeVideo(video, target, done) {
+    if (!video) { if (done) done(); return; }
+    const start = Number(video.volume || 0);
+    const end = Math.max(0, Math.min(0.12, target));
+    const steps = 8;
+    let step = 0;
+    const tick = () => {
+      step++;
+      video.volume = Math.max(0, Math.min(0.12, start + (end - start) * (step / steps)));
+      if (step < steps) setTimeout(tick, 45);
+      else if (done) done();
+    };
+    tick();
+  }
+
+  async function showAreaAd(area) {
+    if (readerAdBusy || document.getElementById("ioneSmartAdReaderInterstitial")) return;
     readerAdBusy = true;
     try {
-      const placement = reader.id === "heavensReader" ? "book_reader" : "documentary";
-      const data = await invoke("public_list",{placement});
+      const placement = area.key;
+      const data = await invoke("public_list", {placement});
       const campaigns = (data.campaigns || []).filter(c => c && c.creative_url);
-      if (!campaigns.length || !document.querySelector("#ioneDocReaderLive, #heavensReader")) {
-        readerAdBusy = false;
-        return;
-      }
-      const campaign = campaigns[Math.floor(Math.random() * campaigns.length)];
+      if (!campaigns.length || !visible(area.element)) { readerAdBusy = false; return; }
+      const campaign = chooseRotatingCampaign(campaigns, placement);
+      if (!campaign) { readerAdBusy = false; return; }
       const overlay = document.createElement("section");
       overlay.id = "ioneSmartAdReaderInterstitial";
-      overlay.setAttribute("role","dialog");
-      overlay.setAttribute("aria-modal","true");
-      overlay.setAttribute("aria-label","Sponsored advertisement");
-      overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(1,7,9,.94);color:#fff;font:14px/1.5 Arial,sans-serif;";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-label", "Sponsored advertisement");
+      overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;";
       const media = campaign.media_type === "video"
-        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay loop preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:72vh;object-fit:contain;background:#000;pointer-events:none" src="'+esc(campaign.creative_url)+'"></video>'
-        : '<img style="display:block;width:100%;max-height:72vh;object-fit:contain;background:#000" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
-      overlay.innerHTML = '<div style="position:relative;width:min(620px,100%);max-height:92%;display:flex;align-items:center;justify-content:center;border-radius:18px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008"><a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url||"#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a><button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
+        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay loop preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'"></video>'
+        : '<img style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
+      const mediaTag = campaign.media_type === "video"
+        ? media
+        : '<a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url || "#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a>';
+      overlay.innerHTML = '<div style="position:relative;width:min(680px,100%);max-height:94%;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'<button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
       document.body.appendChild(overlay);
       const skip = overlay.querySelector("#ioneReaderAdSkip");
-      const visit = overlay.querySelector("#ioneReaderAdVisit");
+      const video = overlay.querySelector("#ioneReaderAdVideo");
       const closeAd = () => {
+        if (video) { video.pause(); video.muted = true; }
         if (overlay.isConnected) overlay.remove();
         readerAdBusy = false;
       };
       skip.addEventListener("click", closeAd);
-      visit.addEventListener("click", () => invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
+      if (video) {
+        video.volume = 0;
+        video.muted = true;
+        video.addEventListener("click", event => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (video.muted) {
+            video.muted = false;
+            fadeVideo(video, 0.12);
+          } else {
+            fadeVideo(video, 0, () => { video.muted = true; });
+          }
+        });
+      }
+      const imageLink = overlay.querySelector("#ioneReaderAdVisit");
+      if (imageLink) imageLink.addEventListener("click", () => invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
       invoke("track",{campaign_id:campaign.id,event_type:"impression",event_key:newKey()}).catch(()=>{});
+      const previous = getAreaSchedule(placement);
+      saveAreaSchedule(placement, {
+        lastShownAt: Date.now(),
+        lastCampaignId: String(campaign.id),
+        lastAdvertiser: String(campaign.advertiser_name || ""),
+        firstShownAt: previous.firstShownAt || Date.now()
+      });
       let seconds = 3;
       const tick = () => {
+        if (!skip.isConnected) return;
         seconds--;
         if (seconds <= 0) {
           skip.disabled = false;
@@ -433,25 +511,37 @@
           skip.textContent = "SKIP AD";
           return;
         }
-        skip.textContent = "SKIP IN "+seconds;
+        skip.textContent = "SKIP IN " + seconds;
         setTimeout(tick,1000);
       };
       setTimeout(tick,1000);
-      setTimeout(closeAd,6500);
-    } catch (_) {
-      readerAdBusy = false;
-    }
+      setTimeout(closeAd,7000);
+    } catch (_) { readerAdBusy = false; }
   }
+
+  function checkAdArea() {
+    const area = detectAdArea();
+    if (!area) { activeArea = ""; activeAreaSince = 0; return; }
+    if (activeArea !== area.key) { activeArea = area.key; activeAreaSince = Date.now(); }
+    if (readerAdBusy) return;
+    const schedule = getAreaSchedule(area.key);
+    const lastShown = Number(schedule.lastShownAt || 0);
+    const eligibleAt = lastShown ? lastShown + AREA_REPEAT_DELAY_MS : activeAreaSince + AREA_FIRST_DELAY_MS;
+    if (Date.now() >= eligibleAt) showAreaAd(area);
+  }
+
   function boot() {
     installTile();
     installAuthorityEntry();
     const observer = new MutationObserver(() => {
       installTile();
       installAuthorityEntry();
-      maybeShowReaderAd();
+      checkAdArea();
     });
     observer.observe(document.documentElement,{childList:true,subtree:true});
-    maybeShowReaderAd();
+    checkAdArea();
+    if (areaCheckHandle) clearInterval(areaCheckHandle);
+    areaCheckHandle = setInterval(checkAdArea, AREA_CHECK_INTERVAL_MS);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();
   window.ioneSmartAdsOpen = open;
