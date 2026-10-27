@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     if (action === "public_list") {
       const now = new Date().toISOString();
       const { data, error } = await admin.from("ione_smart_ads_campaigns")
-        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time,marketing_billboard_id")
+        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,whatsapp_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time,marketing_billboard_id")
         .eq("status", "approved").lte("starts_at", now).gte("ends_at", now).order("created_at", { ascending: false }).limit(30);
       if (error) throw error;
       const placement = clean(body.placement || "smart_ads", 30);
@@ -114,10 +114,13 @@ Deno.serve(async (req: Request) => {
       if (!user) return json({ success: false, error: "Reconnect to I|ONE and try again." }, 401);
       const advertiser_name = clean(body.advertiser_name, 100);
       const contact_phone = clean(body.contact_phone, 40);
+      const whatsapp_phone = clean(body.whatsapp_phone, 40);
       const title = clean(body.title, 100);
       const description = clean(body.description, 800);
       const creative_url = clean(body.creative_url, 2048);
-      const destination_url = clean(body.destination_url, 2048);
+      const rawDestinationUrl = clean(body.destination_url, 2048);
+      const destinationDigits = whatsapp_phone.replace(/\D/g, "");
+      const destination_url = rawDestinationUrl || (destinationDigits ? "https://wa.me/" + destinationDigits : "");
       const city = clean(body.city || "Tanzania", 100);
       const objective = ["website","contact","awareness"].includes(body.objective) ? body.objective : "website";
       const planCode = clean(body.plan_code, 20);
@@ -155,7 +158,7 @@ Deno.serve(async (req: Request) => {
       } catch {}
       let expectedOrigin = "";
       try { expectedOrigin = new URL(url).origin; } catch {}
-      if (advertiser_name.length < 2 || contact_phone.length < 5 || title.length < 3 ||
+      if (advertiser_name.length < 2 || contact_phone.length < 5 || whatsapp_phone.replace(/\D/g, "").length < 7 || title.length < 3 ||
           !validHttps(creative_url) || !validHttps(destination_url) || !plan || !allCreativesValid ||
           !["image","video"].includes(mediaType) || !validPlacements.includes(placement) ||
           !validTime(dailyStart) || !validTime(dailyEnd) || Boolean(dailyStart) !== Boolean(dailyEnd) ||
@@ -180,7 +183,7 @@ Deno.serve(async (req: Request) => {
       if (countError) throw countError;
       if ((count || 0) >= 3) return json({ success: false, error: "The limit is 3 ad submissions per account in any 7-day period. Try again when an earlier submission is more than 7 days old." }, 429);
       const { data, error } = await admin.from("ione_smart_ads_campaigns").insert({
-        owner_id: user.id, advertiser_name, contact_phone, title, description, creative_url, destination_url, city,
+        owner_id: user.id, advertiser_name, contact_phone, whatsapp_phone, title, description, creative_url, destination_url, city,
         objective, marketing_billboard_id: billboard?.id || null, status: "pending", starts_at: now.toISOString(),
         ends_at: new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000).toISOString(),
         plan_code: planCode, price_tzs: plan.price, duration_days: plan.days,
