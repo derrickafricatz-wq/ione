@@ -167,6 +167,12 @@
     root.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
   }
+  function whatsappDigits(value) {
+    let digits = String(value || "").replace(/\D/g, "");
+    if (digits.length === 10 && digits.startsWith("0")) digits = "255" + digits.slice(1);
+    else if (digits.length === 9 && /^[6789]/.test(digits)) digits = "255" + digits;
+    return digits;
+  }
   function campaignCard(c, mode) {
     const status = String(c.status || "approved").toLowerCase();
     const m = c.metrics || {};
@@ -189,7 +195,7 @@
         <button class="isa-btn primary" data-action="conversion" data-id="${esc(c.id)}">+ RECORD CONVERSION</button>
         <button class="isa-btn danger" data-action="delete_campaign" data-id="${esc(c.id)}">DELETE CAMPAIGN</button>
       </div>` : "";
-    const publicActions = mode === "explore" ? '<div class="isa-actions"><a class="isa-btn primary" data-action="learn_more" data-id="'+esc(c.id)+'" href="'+esc(c.marketing_billboard_id && c.marketing_brand ? "#" : "https://wa.me/"+String(c.whatsapp_phone || c.contact_phone || "").replace(/\D/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE</a><a class="isa-btn" data-action="chat_me" data-id="'+esc(c.id)+'" href="https://wa.me/'+esc(String(c.whatsapp_phone || c.contact_phone || "").replace(/\D/g,""))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">CHAT ME</a><a class="isa-btn" data-action="call_me" data-id="'+esc(c.id)+'" href="tel:'+esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">CALL ME</a></div>' : "";
+    const publicActions = mode === "explore" ? '<div class="isa-actions"><a class="isa-btn primary" data-action="learn_more" data-id="'+esc(c.id)+'" href="'+esc(c.marketing_billboard_id && c.marketing_brand ? "#" : "https://wa.me/"+whatsappDigits(c.whatsapp_phone || c.contact_phone))+'" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE</a><a class="isa-btn" data-action="chat_me" data-id="'+esc(c.id)+'" href="https://wa.me/'+esc(whatsappDigits(c.whatsapp_phone || c.contact_phone))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">CHAT ME</a><a class="isa-btn" data-action="call_me" data-id="'+esc(c.id)+'" href="tel:'+esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">CALL ME</a></div>' : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
         ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
@@ -549,9 +555,9 @@
         a.style.cssText = "display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:11px 14px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.86);color:#fff;font-weight:900;font-size:11px;text-decoration:none;backdrop-filter:blur(8px)";
         if (newTab) { a.target = "_blank"; a.rel = "noopener noreferrer"; } actionDock.appendChild(a); return a;
       };
-      actionLink("CHAT ME","https://wa.me/"+String(campaign.whatsapp_phone || campaign.contact_phone || "").replace(/\D/g,""),true).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
+      actionLink("CHAT ME","https://wa.me/"+whatsappDigits(campaign.whatsapp_phone || campaign.contact_phone),true).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
       actionLink("CALL ME","tel:"+String(campaign.contact_phone || "").replace(/[^+0-9]/g,""),false).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
-      const learnMore = actionLink("LEARN MORE",campaign.marketing_billboard_id && campaign.marketing_brand ? "#" : "https://wa.me/"+String(campaign.whatsapp_phone || campaign.contact_phone || "").replace(/\D/g,""),false);
+      const learnMore = actionLink("LEARN MORE",campaign.marketing_billboard_id && campaign.marketing_brand ? "#" : "https://wa.me/"+whatsappDigits(campaign.whatsapp_phone || campaign.contact_phone),false);
       if (campaign.marketing_billboard_id && campaign.marketing_brand) learnMore.addEventListener("click",event=>{event.preventDefault();closeAd();openLinkedBrand(campaign).catch(()=>{});});
       learnMore.addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
       if (campaign.marketing_billboard_id && campaign.marketing_brand) {
