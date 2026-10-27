@@ -595,7 +595,7 @@
   function checkAdArea() {
     const area = detectAdArea();
     if (!area) { activeArea = ""; activeAreaSince = 0; activeAreaAdShown = false; return; }
-    if (activeArea !== area.key) { activeArea = area.key; activeAreaSince = Date.now(); activeAreaAdShown = false; }
+    if (activeArea !== area.key) { activeArea = area.key; activeAreaSince = Date.now(); activeAreaAdShown = false; saveAreaSchedule(area.key,{retryAfter:0}); }
     if (readerAdBusy) return;
     const schedule = getAreaSchedule(area.key);
     const firstEligibleAt = activeAreaSince + AREA_FIRST_DELAY_MS;
