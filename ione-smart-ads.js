@@ -163,6 +163,16 @@
   }
   function close() {
     if (!root) return;
+    // Explore videos can keep playing while the Smart Ads panel is hidden.
+    // Stop playback and silence every campaign video before hiding the panel.
+    root.querySelectorAll("video").forEach(video => {
+      try {
+        video.pause();
+        video.muted = true;
+        video.volume = 0;
+        video.dataset.adClosed = "true";
+      } catch (_) {}
+    });
     root.style.display = "none";
     root.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
@@ -285,7 +295,6 @@
       content.querySelectorAll('[data-action="visit"],[data-action="learn_more"]').forEach(a => a.addEventListener("click", async event => {
         if (a.dataset.action === "learn_more" && a.dataset.brandId && a.dataset.brandActive === "true") {
           event.preventDefault();
-          close();
           try { await openLinkedBrand({marketing_billboard_id:a.dataset.brandId}); }
           catch (error) { setStatus(error.message || "Could not open this I1 Marketing brand.", true); }
         }
@@ -514,15 +523,38 @@
     const details = await invoke("brand_details", {billboard_id:campaign.marketing_billboard_id});
     if (!details.billboard) throw new Error("Brand is unavailable.");
     if (typeof window.aflOpenWorld !== "function") throw new Error("I1 Marketing is not ready.");
+    // Open the market underneath the Smart Ads panel, then dismiss the panel
+    // only after the linked billboard has rendered and been brought into view.
     window.aflOpenWorld();
     const feed = document.getElementById("aflFeed");
+    if (!feed) throw new Error("I1 Marketing billboard feed is unavailable.");
+    const targetId = String(details.billboard.id);
     const focusBrand = () => {
-      const card = feed && Array.from(feed.querySelectorAll(".afl-billboard")).find(item => String(item.dataset.billboardId || "") === String(details.billboard.id));
+      const card = Array.from(feed.querySelectorAll(".afl-billboard")).find(item => String(item.dataset.billboardId || "") === targetId);
       if (!card) return false;
-      card.scrollIntoView({behavior:"smooth",block:"start"}); card.style.outline = "2px solid #00ffff"; card.style.outlineOffset = "4px";
-      setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 5000); return true;
+      card.scrollIntoView({behavior:"auto",block:"start"});
+      card.style.outline = "2px solid #00ffff";
+      card.style.outlineOffset = "4px";
+      setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 5000);
+      close();
+      return true;
     };
-    if (!focusBrand() && feed) { const observer = new MutationObserver(() => { if (focusBrand()) observer.disconnect(); }); observer.observe(feed,{childList:true,subtree:true}); setTimeout(() => observer.disconnect(),8000); }
+    if (focusBrand()) return;
+    await new Promise((resolve, reject) => {
+      let finished = false;
+      const finish = (error) => {
+        if (finished) return;
+        finished = true;
+        observer.disconnect();
+        clearTimeout(timeout);
+        if (error) reject(error); else resolve();
+      };
+      const observer = new MutationObserver(() => { if (focusBrand()) finish(); });
+      observer.observe(feed, {childList:true,subtree:true});
+      const timeout = setTimeout(() => finish(new Error("The linked billboard did not load. Please try again.")), 12000);
+      // Check once after observation starts to cover a render between the first check and observer setup.
+      if (focusBrand()) finish();
+    });
   }
   async function showAreaAd(area) {
     if (readerAdBusy || document.getElementById("ioneSmartAdReaderInterstitial")) return;
