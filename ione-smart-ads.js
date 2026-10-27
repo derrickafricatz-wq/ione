@@ -257,7 +257,7 @@
             <label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
             <label>TARGET CITY / AREA<input name="city" maxlength="100" placeholder="Tanzania or a city/area"></label>
             <label>CAMPAIGN GOAL<select name="objective"><option value="website">Website visits</option><option value="contact">Customer contacts</option><option value="awareness">Brand awareness</option></select></label>
-            <label>WHERE SHOULD THIS AD APPEAR?<select name="placement"><option value="all">All eligible I|ONE placements</option><option value="smart_ads">Smart Ads only</option><option value="explore">Explore bookshelf</option><option value="book_reader">Inside books</option><option value="documentary">Documentaries</option><option value="expert">Expert section</option></select></label>
+            <label>WHERE SHOULD THIS AD APPEAR?<select name="placement"><option value="all">All eligible I|ONE placements</option><option value="smart_ads">Smart Ads only</option><option value="explore">Explore bookshelf</option><option value="book_reader">Inside books</option><option value="documentary">Documentaries</option><option value="expert">Expert section</option><option value="sokoni">Sokoni marketplace</option></select></label>
             <label>DAILY DISPLAY START (Tanzania time)<input name="daily_start_time" type="time"></label>
             <label>DAILY DISPLAY END (Tanzania time)<input name="daily_end_time" type="time"></label>
             <p class="isa-help">Leave both times empty to run all day. When set, the ad appears only during this daily window in Tanzania time.</p>
@@ -452,7 +452,8 @@
       const placement = area.key;
       const data = await invoke("public_list", {placement});
       const campaigns = (data.campaigns || []).filter(c => c && c.creative_url);
-      if (!campaigns.length || !visible(area.element)) { readerAdBusy = false; return; }
+      if (!campaigns.length) { saveAreaSchedule(placement,{retryAfter:Date.now()+60*1000}); readerAdBusy = false; return; }
+      if (!visible(area.element)) { readerAdBusy = false; return; }
       const campaign = chooseRotatingCampaign(campaigns, placement);
       if (!campaign) { readerAdBusy = false; return; }
       const overlay = document.createElement("section");
@@ -526,7 +527,9 @@
     if (readerAdBusy) return;
     const schedule = getAreaSchedule(area.key);
     const lastShown = Number(schedule.lastShownAt || 0);
-    const eligibleAt = lastShown ? lastShown + AREA_REPEAT_DELAY_MS : activeAreaSince + AREA_FIRST_DELAY_MS;
+    const firstEligibleAt = activeAreaSince + AREA_FIRST_DELAY_MS;
+    const repeatEligibleAt = lastShown ? lastShown + AREA_REPEAT_DELAY_MS : firstEligibleAt;
+    const eligibleAt = Math.max(firstEligibleAt, repeatEligibleAt, Number(schedule.retryAfter || 0));
     if (Date.now() >= eligibleAt) showAreaAd(area);
   }
 
