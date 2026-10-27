@@ -283,7 +283,7 @@
           ${campaigns.length ? campaigns.map(c => campaignCard(c,"authority")).join("") : '<div class="isa-empty">No campaigns have been submitted yet.</div>'}`;
       }
       content.querySelectorAll('[data-action="visit"],[data-action="learn_more"]').forEach(a => a.addEventListener("click", async event => {
-        if (a.dataset.action === "learn_more" && a.dataset.brandId && a.dataset.brandActive === "true") { event.preventDefault(); await openLinkedBrand({marketing_billboard_id:a.dataset.brandId}); }
+        if (a.dataset.action === "learn_more" && a.dataset.brandId && a.dataset.brandActive === "true") { event.preventDefault(); try { await openLinkedBrand({marketing_billboard_id:a.dataset.brandId}); } catch (error) { setStatus(error.message || "Could not open this I1 Marketing brand.", true); } }
         invoke("track",{campaign_id:a.dataset.id,event_type:"click",event_key:newKey()}).catch(()=>{});
       }));
       content.querySelectorAll('[data-action="contact"],[data-action="chat_me"],[data-action="call_me"]').forEach(a => a.addEventListener("click", () => {
@@ -496,6 +496,7 @@
     const steps = 8;
     let step = 0;
     const tick = () => {
+      if (video.dataset.adClosed === "true") { video.pause(); video.muted = true; video.volume = 0; return; }
       step++;
       video.volume = Math.max(0, Math.min(0.12, start + (end - start) * (step / steps)));
       if (step < steps) setTimeout(tick, 45);
@@ -547,13 +548,14 @@
       const mediaTag = adIsVideo
         ? media
         : '<a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url || "#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a>';
-      overlay.innerHTML = '<div style="position:relative;width:min(680px,100%);max-height:82%;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'<button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
+      overlay.innerHTML = '<div id="ioneReaderAdPanel" style="position:relative;width:min(680px,100%);max-height:90vh;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'<button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;z-index:5;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.84);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
       document.body.appendChild(overlay);
+      const adPanel = overlay.querySelector("#ioneReaderAdPanel");
       const skip = overlay.querySelector("#ioneReaderAdSkip");
       const video = overlay.querySelector("#ioneReaderAdVideo");
       const actionDock = document.createElement("div");
-      actionDock.style.cssText = "position:absolute;left:10px;right:10px;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center;gap:8px;flex-wrap:wrap;z-index:2";
-      overlay.appendChild(actionDock);
+      actionDock.style.cssText = "position:relative;left:auto;right:auto;bottom:auto;display:flex;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3;flex-shrink:0;padding:12px 10px calc(12px + env(safe-area-inset-bottom));background:#05090a";
+      adPanel.appendChild(actionDock);
       const actionLink = (label, href, newTab) => {
         const a = document.createElement("a"); a.textContent = label; a.href = href || "#";
         a.style.cssText = "display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:11px 14px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.86);color:#fff;font-weight:900;font-size:11px;text-decoration:none;backdrop-filter:blur(8px)";
@@ -561,13 +563,11 @@
       };
       actionLink("CHAT ME",campaignWhatsappUrl(campaign),true).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
       actionLink("CALL ME","tel:"+String(campaign.contact_phone || "").replace(/[^+0-9]/g,""),false).addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"contact",event_key:newKey()}).catch(()=>{}));
-      const learnMore = actionLink("LEARN MORE",campaign.marketing_billboard_id && campaign.marketing_brand ? "#" : campaignWhatsappUrl(campaign),false);
-      if (campaign.marketing_billboard_id && campaign.marketing_brand) learnMore.addEventListener("click",event=>{event.preventDefault();closeAd();openLinkedBrand(campaign).catch(()=>{});});
-      learnMore.addEventListener("click",()=>invoke("track",{campaign_id:campaign.id,event_type:"click",event_key:newKey()}).catch(()=>{}));
       if (campaign.marketing_billboard_id && campaign.marketing_brand) {
         const viewBrand = document.createElement("button");
         viewBrand.type = "button"; viewBrand.textContent = "VIEW BRAND";
-        viewBrand.style.cssText = "position:absolute;left:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px";
+        viewBrand.style.cssText = "position:absolute;left:12px;top:12px;z-index:5;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.84);color:#fff;font-weight:900;font-size:12px";
+        adPanel.appendChild(viewBrand);
         viewBrand.addEventListener("click", async () => {
           viewBrand.disabled = true;
           try {
@@ -602,7 +602,7 @@
         overlay.querySelector("div").appendChild(viewBrand);
       }
       const closeAd = () => {
-        if (video) { video.pause(); video.muted = true; }
+        if (video) { video.dataset.adClosed = "true"; video.pause(); video.muted = true; video.volume = 0; }
         if (overlay.isConnected) overlay.remove();
         readerAdBusy = false;
       };
