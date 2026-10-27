@@ -581,17 +581,19 @@
     try {
       const placement = area.key;
       const data = await invoke("public_list", {placement});
-      const campaigns = (data.campaigns || []).filter(c => c && c.creative_url);
+      const campaigns = (data.campaigns || []).filter(c => c && (c.creative_url || (Array.isArray(c.creatives) && c.creatives.some(item => item && item.creative_url))));
       if (!campaigns.length) { saveAreaSchedule(placement,{retryAfter:Date.now()+60*1000}); readerAdBusy = false; return; }
       if (!visible(area.element)) { readerAdBusy = false; return; }
       const campaign = chooseRotatingCampaign(campaigns, placement);
       if (!campaign) { readerAdBusy = false; return; }
-      const creativeList = Array.isArray(campaign.creatives) && campaign.creatives.length ? campaign.creatives : [{creative_url:campaign.creative_url,media_type:campaign.media_type,media_duration_seconds:campaign.media_duration_seconds}];
+      const creativeList = (Array.isArray(campaign.creatives) && campaign.creatives.length ? campaign.creatives : [{creative_url:campaign.creative_url,media_type:campaign.media_type,media_duration_seconds:campaign.media_duration_seconds}]).filter(item => item && item.creative_url);
+      if (!creativeList.length) { saveAreaSchedule(placement,{retryAfter:Date.now()+60*1000}); readerAdBusy = false; return; }
       const scheduleBeforeCreative = getAreaSchedule(placement);
-      const previousCreativeIndex = Number(scheduleBeforeCreative.lastCreativeIndex == null ? -1 : scheduleBeforeCreative.lastCreativeIndex);
+      const campaignCreativeIndexes = Object.assign({}, scheduleBeforeCreative.creativeIndexesByCampaign || {});
+      const previousCreativeIndex = Number(campaignCreativeIndexes[String(campaign.id)] == null ? -1 : campaignCreativeIndexes[String(campaign.id)]);
       const creativeIndex = creativeList.length > 1 ? (previousCreativeIndex + 1) % creativeList.length : 0;
       const creative = creativeList[creativeIndex] || creativeList[0];
-      const adIsVideo = creative.media_type === "video";
+      const adIsVideo = String(creative.media_type || "image").toLowerCase() === "video";
       const overlay = document.createElement("section");
       overlay.id = "ioneSmartAdReaderInterstitial";
       overlay.setAttribute("role", "dialog");
@@ -613,7 +615,7 @@
       requestAnimationFrame(() => requestAnimationFrame(() => { if (!overlay.isConnected) return; overlay.style.opacity = "1"; adPanel.style.opacity = "1"; adPanel.style.transform = "translateY(0) scale(1)"; }));
       const video = overlay.querySelector("#ioneReaderAdVideo");
       const actionDock = document.createElement("div");
-      actionDock.style.cssText = "position:relative;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3;flex:0 0 auto;padding:12px 10px calc(12px + env(safe-area-inset-bottom));background:#05090a";
+      actionDock.style.cssText = "position:relative;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3;flex:0 0 auto;padding:12px 10px calc(12px + env(safe-area-inset-bottom));background:#05090a;border:0;border-top:0;outline:0;box-shadow:none";
       adPanel.appendChild(actionDock);
       const skip = document.createElement("button");
       skip.type = "button"; skip.disabled = true; skip.textContent = "SKIP IN 3";
@@ -697,11 +699,13 @@
       invoke("track",{campaign_id:campaign.id,event_type:"impression",event_key:newKey()}).catch(()=>{});
       const previous = getAreaSchedule(placement);
       activeAreaAdShown = true;
+      campaignCreativeIndexes[String(campaign.id)] = creativeIndex;
       saveAreaSchedule(placement, {
         lastShownAt: Date.now(),
         lastCampaignId: String(campaign.id),
         lastAdvertiser: String(campaign.advertiser_name || ""),
         lastCreativeIndex: creativeIndex,
+        creativeIndexesByCampaign: campaignCreativeIndexes,
         firstShownAt: previous.firstShownAt || Date.now()
       });
       let seconds = 3;
