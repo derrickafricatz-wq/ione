@@ -537,12 +537,12 @@
       overlay.setAttribute("aria-label", "Sponsored advertisement");
       overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;";
       const media = adIsVideo
-        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'"></video>'
-        : '<img style="display:block;width:100%;max-height:78vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'" alt="Sponsored advertisement">';
+        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'"></video>'
+        : '<img style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'" alt="Sponsored advertisement">';
       const mediaTag = adIsVideo
         ? media
         : '<a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url || "#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a>';
-      overlay.innerHTML = '<div style="position:relative;width:min(680px,100%);max-height:94%;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'<button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
+      overlay.innerHTML = '<div style="position:relative;width:min(680px,100%);max-height:82%;display:flex;align-items:center;justify-content:center;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'<button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.74);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
       document.body.appendChild(overlay);
       const skip = overlay.querySelector("#ioneReaderAdSkip");
       const video = overlay.querySelector("#ioneReaderAdVideo");
