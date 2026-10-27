@@ -194,12 +194,12 @@
       </div>` : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
-        ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" controls playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
+        ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
         <div class="isa-card-body">
           <div class="isa-card-top"><span class="isa-sponsor">${mode === "explore" ? "SPONSORED" : "CAMPAIGN"}</span><span class="isa-status ${esc(status)}">${esc(status.replace(/_/g," "))}</span></div>
           <h3>${esc(c.title)}</h3><p>${esc(c.description || "Discover this advertiser on I|ONE.")}</p>
           <div class="isa-meta"><span>${esc(c.advertiser_name || "Advertiser")}</span><span>${esc(c.city || "Tanzania")}</span><span>Ends ${esc(dateText(c.ends_at))}</span>${c.plan_code ? '<span>'+esc(({weekly:'7 days',monthly:'30 days',quarterly:'90 days'}[c.plan_code] || c.plan_code))+' • TZS '+num(c.price_tzs)+'</span>' : ''}</div>
-          ${mode === "authority" ? '<div class="isa-notice">Payment: <strong>'+esc(c.payment_status || "pending")+'</strong> · Reference: <strong>'+esc(c.payment_reference || "not provided")+'</strong> · Media: <strong>'+esc(c.media_type || "image")+(c.media_type === "video" ? ' ('+esc(c.media_duration_seconds || 0)+' sec)' : '')+'</strong></div>' : ''}
+          ${mode === "authority" ? '<div class="isa-notice">Payment: <strong>'+esc(c.payment_status || "pending")+'</strong> · Media: <strong>'+esc(c.media_type || "image")+(c.media_type === "video" ? ' ('+esc(c.media_duration_seconds || 0)+' sec)' : '')+'</strong></div>' : ''}
           ${metricsHtml}
           ${c.review_note ? '<p><strong>Authority note:</strong> '+esc(c.review_note)+'</p>' : ""}
           ${publicActions}${ownerActions}${adminActions}
@@ -213,11 +213,11 @@
     setStatus("", false);
     try {
       if (activeTab === "explore") {
-        const data = await invoke("public_list");
+        const data = await invoke("public_list",{placement:"smart_ads"});
         const campaigns = data.campaigns || [];
         content.innerHTML = `
-          <section class="isa-intro"><div class="isa-kicker">ADVERTISE WITH PURPOSE</div><h2>Reach people. Measure actions.</h2><p>Discover approved promotions from businesses and sellers on I|ONE. Every campaign is labelled sponsored.</p></section>
-          <div class="isa-notice">Sponsored advertisements are reviewed before publication. Campaigns run across designated I|ONE placements after manual payment verification and Authority approval. Views and clicks are measured separately; a click is not automatically a sale.</div>
+          
+          
           ${campaigns.length ? campaigns.map(c => campaignCard(c,"explore")).join("") : '<div class="isa-empty">No approved campaigns are live yet.<br>Submit an advertisement to get started.</div>'}`;
         campaigns.forEach(c => {
           let key = "";
@@ -246,7 +246,7 @@
       } else if (activeTab === "create") {
         content.innerHTML = `
           <section class="isa-intro"><div class="isa-kicker">PAID SMART AD CAMPAIGNS</div><h2>Bring your business into view.</h2><p>Upload your own image or short video, choose a package, then submit for manual payment verification and Authority approval.</p></section>
-          <div class="isa-notice"><strong>MANUAL PAYMENT & ACTIVATION</strong><br>Use the existing manual payment method and instructions shown in Author Studio. Enter your payment transaction/reference number below. Authority Press must verify payment and approve the advertisement before it goes live. Your paid period begins on activation. Maximum 3 ad submissions per account in any 7-day period. Videos must be 2 minutes or shorter; maximum file size is 50 MB.</div>
+          <div class="isa-notice"><strong>MANUAL PAYMENT</strong><br>Pay to <strong>DERRICK KIPAJI OF AFRIKA & CO</strong> via <strong>Airtel Money</strong>, merchant number <strong>140001788</strong>. Keep your payment confirmation, then contact I|ONE Support by call or WhatsApp at <a href="https://wa.me/255742097868" target="_blank" rel="noopener noreferrer" style="color:#e7cc98">+255 742 097 868</a> and ask for Smart Ads payment verification. Authority checks payment directly and activates the campaign only after verification and creative approval. Maximum 3 submissions per account per 7 days; video limit 2 minutes; maximum file size 50 MB.</div>
           <form class="isa-form" id="ioneSmartAdsCreateForm">
             <label>BUSINESS / ADVERTISER NAME<input name="advertiser_name" required maxlength="100" placeholder="Business or brand name"></label>
             <label>CONTACT PHONE<input name="contact_phone" type="tel" required maxlength="40" placeholder="+255…"></label>
@@ -257,9 +257,13 @@
             <label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
             <label>TARGET CITY / AREA<input name="city" maxlength="100" placeholder="Tanzania or a city/area"></label>
             <label>CAMPAIGN GOAL<select name="objective"><option value="website">Website visits</option><option value="contact">Customer contacts</option><option value="awareness">Brand awareness</option></select></label>
+            <label>WHERE SHOULD THIS AD APPEAR?<select name="placement"><option value="all">All eligible I|ONE placements</option><option value="smart_ads">Smart Ads only</option><option value="explore">Explore bookshelf</option><option value="book_reader">Inside books</option><option value="documentary">Documentaries</option><option value="expert">Expert section</option></select></label>
+            <label>DAILY DISPLAY START (Tanzania time)<input name="daily_start_time" type="time"></label>
+            <label>DAILY DISPLAY END (Tanzania time)<input name="daily_end_time" type="time"></label>
+            <p class="isa-help">Leave both times empty to run all day. When set, the ad appears only during this daily window in Tanzania time.</p>
             <label>ADVERTISING PACKAGE<select name="plan_code" required><option value="weekly">1 week (7 days) — TZS 2,000</option><option value="monthly">1 month (30 days) — TZS 5,000</option><option value="quarterly">3 months (90 days) — TZS 10,000</option></select></label>
-            <label>MANUAL PAYMENT TRANSACTION / REFERENCE<input name="payment_reference" required maxlength="120" placeholder="Enter the payment reference"></label>
-            <p class="isa-help">Payment reference is required for Authority to verify the payment. Submitting this form does not activate the campaign.</p>
+            <p class="isa-help">After paying, keep your confirmation and contact I|ONE Support for direct payment verification. No transaction reference is required in this form.</p>
+
             <button class="isa-btn primary" type="submit" style="width:100%">UPLOAD & SUBMIT FOR REVIEW</button>
           </form>`;
       } else if (activeTab === "authority") {
@@ -392,7 +396,8 @@
     if (count % 3 !== 0) return;
     readerAdBusy = true;
     try {
-      const data = await invoke("public_list");
+      const placement = reader.id === "heavensReader" ? "book_reader" : "documentary";
+      const data = await invoke("public_list",{placement});
       const campaigns = (data.campaigns || []).filter(c => c && c.creative_url);
       if (!campaigns.length || !document.querySelector("#ioneDocReaderLive, #heavensReader")) {
         readerAdBusy = false;
@@ -406,12 +411,11 @@
       overlay.setAttribute("aria-label","Sponsored advertisement");
       overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(1,7,9,.94);color:#fff;font:14px/1.5 Arial,sans-serif;";
       const media = campaign.media_type === "video"
-        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay controls style="display:block;width:100%;max-height:48vh;object-fit:contain;background:#000;border-radius:12px" src="'+esc(campaign.creative_url)+'"></video>'
-        : '<img style="display:block;width:100%;max-height:48vh;object-fit:contain;background:#000;border-radius:12px" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
-      overlay.innerHTML = '<div style="width:min(560px,100%);max-height:90%;overflow:auto;border:1px solid rgba(224,195,131,.5);border-radius:18px;background:linear-gradient(145deg,#152327,#080e10);padding:16px;box-shadow:0 18px 60px #0008"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px"><strong style="font-size:10px;letter-spacing:2px;color:#e7cc98">SPONSORED • I|ONE SMART AD</strong><span id="ioneReaderAdCountdown" style="font-size:11px;color:#bdcbcd">Skip available in 3s</span></div>'+media+'<h2 style="font-size:20px;margin:12px 0 5px">'+esc(campaign.title||"Sponsored advertisement")+'</h2><p style="font-size:12px;color:#b8c8ca;margin:0 0 12px">'+esc(campaign.description||"Discover this advertiser on I|ONE.")+'</p><div style="display:flex;gap:8px;flex-wrap:wrap"><a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url||"#")+'" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;padding:10px 13px;border-radius:10px;background:#dfc17d;color:#17150f;text-decoration:none;font-weight:900;font-size:10px">LEARN MORE</a><button id="ioneReaderAdSkip" type="button" disabled style="padding:10px 13px;border:1px solid #53666a;border-radius:10px;background:#1a292d;color:#fff;font-weight:900;font-size:10px;opacity:.6">SKIP AD</button></div><p style="margin:10px 0 0;color:#7f969a;font-size:9px">This sponsored message supports I|ONE. Your reading or documentary will continue when you skip or the short display ends.</p></div>';
+        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay loop preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:72vh;object-fit:contain;background:#000;pointer-events:none" src="'+esc(campaign.creative_url)+'"></video>'
+        : '<img style="display:block;width:100%;max-height:72vh;object-fit:contain;background:#000" src="'+esc(campaign.creative_url)+'" alt="Sponsored advertisement">';
+      overlay.innerHTML = '<div style="position:relative;width:min(620px,100%);max-height:92%;display:flex;align-items:center;justify-content:center;border-radius:18px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008"><a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url||"#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a><button id="ioneReaderAdSkip" type="button" disabled style="position:absolute;right:12px;top:12px;padding:11px 15px;border:1px solid rgba(255,255,255,.7);border-radius:999px;background:rgba(0,0,0,.72);color:#fff;font-weight:900;font-size:12px;backdrop-filter:blur(8px);opacity:.65">SKIP IN 3</button></div>';
       document.body.appendChild(overlay);
       const skip = overlay.querySelector("#ioneReaderAdSkip");
-      const countdown = overlay.querySelector("#ioneReaderAdCountdown");
       const visit = overlay.querySelector("#ioneReaderAdVisit");
       const closeAd = () => {
         if (overlay.isConnected) overlay.remove();
@@ -427,10 +431,9 @@
           skip.disabled = false;
           skip.style.opacity = "1";
           skip.textContent = "SKIP AD";
-          countdown.textContent = "You can skip now";
           return;
         }
-        countdown.textContent = "Skip available in "+seconds+"s";
+        skip.textContent = "SKIP IN "+seconds;
         setTimeout(tick,1000);
       };
       setTimeout(tick,1000);
