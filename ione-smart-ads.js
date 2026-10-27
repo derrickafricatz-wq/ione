@@ -624,21 +624,20 @@
           try {
             const details = await invoke("brand_details", {billboard_id:campaign.marketing_billboard_id});
             if (!details.billboard) throw new Error("Brand is unavailable.");
-            closeAd();
             if (typeof window.aflOpenWorld === "function") {
               window.aflOpenWorld();
               const feed = document.getElementById("aflFeed");
               const openExactBrand = () => {
                 const cards = feed ? Array.from(feed.querySelectorAll(".afl-billboard")) : [];
                 const card = cards.find(item => String(item.dataset.billboardId || "") === String(details.billboard.id));
-                if (card) {
-                  card.scrollIntoView({behavior:"smooth",block:"start"});
-                  card.style.outline = "2px solid #00ffff";
-                  card.style.outlineOffset = "4px";
-                  setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 5000);
-                  return true;
-                }
-                return false;
+                if (!card) return false;
+                card.scrollIntoView({behavior:"smooth",block:"start"});
+                card.style.outline = "2px solid rgba(0,255,255,.85)";
+                card.style.outlineOffset = "4px";
+                if (typeof card.animate === "function") card.animate([{opacity:.72,transform:"translateY(18px)"},{opacity:1,transform:"translateY(0)"}],{duration:720,easing:"cubic-bezier(.22,.75,.25,1)"});
+                setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 4200);
+                closeAd();
+                return true;
               };
               if (!openExactBrand() && feed) {
                 const observer = new MutationObserver(() => { if (openExactBrand()) observer.disconnect(); });
@@ -647,6 +646,7 @@
               }
             } else if (typeof window.aflOpenService === "function") {
               await window.aflOpenService(details.billboard);
+              closeAd();
             }
           } catch (_) { viewBrand.disabled = false; }
         });
