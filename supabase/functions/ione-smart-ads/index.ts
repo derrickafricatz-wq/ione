@@ -76,7 +76,13 @@ Deno.serve(async (req: Request) => {
         if (!start || !end) return true;
         return start < end ? localClock >= start && localClock < end : localClock >= start || localClock < end;
       });
-      return json({ success: true, campaigns });
+      const ids = campaigns.map((c: any) => c.id);
+      const { data: creativeRows, error: creativeError } = ids.length ? await admin.from("ione_smart_ads_creatives").select("campaign_id,creative_url,media_type,media_duration_seconds,sort_order").in("campaign_id", ids).order("sort_order", {ascending:true}) : {data:[],error:null};
+      if (creativeError) throw creativeError;
+      const creativesByCampaign = new Map<string, any[]>();
+      for (const row of creativeRows || []) { const list = creativesByCampaign.get(String(row.campaign_id)) || []; list.push(row); creativesByCampaign.set(String(row.campaign_id), list); }
+      const enriched = campaigns.map((c: any) => ({...c, creatives: creativesByCampaign.get(String(c.id)) || [{creative_url:c.creative_url,media_type:c.media_type,media_duration_seconds:c.media_duration_seconds}]}));
+      return json({ success: true, campaigns: enriched });
     }
 
     if (action === "track") {
@@ -119,12 +125,22 @@ Deno.serve(async (req: Request) => {
       const plan = plans[planCode];
       const mediaType = clean(body.media_type, 10);
       const mediaDuration = Number(body.media_duration_seconds || 0);
+      const creativeList = Array.isArray(body.creatives) ? body.creatives : [{creative_url,media_type:mediaType,media_duration_seconds:mediaDuration}];
+      const creativeLimit = ({weekly:2,monthly:5,quarterly:10} as Record<string,number>)[planCode] || 0;
       const placement = clean(body.placement || "all", 30);
       const validPlacements = ["all","smart_ads","explore","book_reader","documentary","expert","sokoni"];
       const dailyStart = clean(body.daily_start_time, 8);
       const dailyEnd = clean(body.daily_end_time, 8);
       const validTime = (value: string) => !value || /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value);
       const expectedPrefix = `/storage/v1/object/public/ione-smart-ads/${user.id}/`;
+      const allCreativesValid = creativeList.length >= 1 && creativeList.length <= creativeLimit && creativeList.every((item: any) => {
+        const media = clean(item?.media_type, 10);
+        const duration = Number(item?.media_duration_seconds || 0);
+        let parsed: URL;
+        try { parsed = new URL(clean(item?.creative_url, 2048)); } catch { return false; }
+        return validHttps(parsed.href) && parsed.origin === new URL(url).origin && parsed.pathname.startsWith(expectedPrefix) &&
+          ["image","video"].includes(media) && (media === "video" ? Number.isFinite(duration) && duration > 0 && duration <= 120 : duration === 0);
+      });
       let creativePath = "";
       let creativeOrigin = "";
       try {
@@ -135,7 +151,7 @@ Deno.serve(async (req: Request) => {
       let expectedOrigin = "";
       try { expectedOrigin = new URL(url).origin; } catch {}
       if (advertiser_name.length < 2 || contact_phone.length < 5 || title.length < 3 ||
-          !validHttps(creative_url) || !validHttps(destination_url) || !plan ||
+          !validHttps(creative_url) || !validHttps(destination_url) || !plan || !allCreativesValid ||
           !["image","video"].includes(mediaType) || !validPlacements.includes(placement) ||
           !validTime(dailyStart) || !validTime(dailyEnd) || Boolean(dailyStart) !== Boolean(dailyEnd) ||
           !expectedOrigin || creativeOrigin !== expectedOrigin ||
@@ -160,7 +176,10 @@ Deno.serve(async (req: Request) => {
         placement, daily_start_time: dailyStart || null, daily_end_time: dailyEnd || null
       }).select("id,title,status,created_at,ends_at,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time").single();
       if (error) throw error;
-      return json({ success: true, campaign: data, message: "Advertisement submitted. Payment is pending Authority verification; the campaign starts only after verification and approval." });
+      const creativeRows = creativeList.map((item: any, index: number) => ({ campaign_id: data.id, creative_url: clean(item.creative_url, 2048), media_type: clean(item.media_type, 10), media_duration_seconds: Number(item.media_duration_seconds || 0), sort_order: index }));
+      const { error: creativeError } = await admin.from("ione_smart_ads_creatives").insert(creativeRows);
+      if (creativeError) { await admin.from("ione_smart_ads_campaigns").delete().eq("id", data.id).eq("owner_id", user.id); throw creativeError; }
+      return json({ success: true, campaign: data, message: "Advertisement submitted with " + creativeRows.length + " creative(s). Payment is pending Authority verification; the campaign starts only after verification and approval." });
     }
 
     if (action === "my_campaigns") {
@@ -171,7 +190,23 @@ Deno.serve(async (req: Request) => {
       if (error) throw error;
       const campaigns = data || [];
       const stats = metrics(await eventRows(admin, campaigns.map((c: any) => c.id)));
-      return json({ success: true, campaigns: campaigns.map((c: any) => ({ ...c, metrics: stats[c.id] || { impressions:0,clicks:0,contacts:0,conversions:0 } })) });
+      const ids = campaigns.map((c: any) => c.id);
+      const { data: creativeRows, error: creativeError } = ids.length ? await admin.from("ione_smart_ads_creatives").select("campaign_id,creative_url,media_type,media_duration_seconds,sort_order").in("campaign_id", ids).order("sort_order", {ascending:true}) : {data:[],error:null};
+      if (creativeError) throw creativeError;
+      const creativesByCampaign = new Map<string, any[]>();
+      for (const row of creativeRows || []) { const list = creativesByCampaign.get(String(row.campaign_id)) || []; list.push(row); creativesByCampaign.set(String(row.campaign_id), list); }
+      return json({ success: true, campaigns: campaigns.map((c: any) => ({ ...c, creatives: creativesByCampaign.get(String(c.id)) || [{creative_url:c.creative_url,media_type:c.media_type,media_duration_seconds:c.media_duration_seconds}], metrics: stats[c.id] || { impressions:0,clicks:0,contacts:0,conversions:0 } })) });
+    }
+
+    if (action === "delete_campaign") {
+      const user = await userFromRequest(admin, req);
+      if (!user) return json({ success: false, error: "Reconnect to I|ONE and try again." }, 401);
+      const id = clean(body.campaign_id, 80);
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ success: false, error: "Invalid campaign ID." }, 400);
+      const { data, error } = await admin.from("ione_smart_ads_campaigns").delete().eq("id", id).eq("owner_id", user.id).select("id").maybeSingle();
+      if (error) throw error;
+      if (!data) return json({ success: false, error: "Campaign not found for this account." }, 404);
+      return json({ success: true, message: "Campaign deleted." });
     }
 
     if (action === "record_conversion") {
