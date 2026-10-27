@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
     if (action === "public_list") {
       const now = new Date().toISOString();
       const { data, error } = await admin.from("ione_smart_ads_campaigns")
-        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time")
+        .select("id,advertiser_name,title,description,creative_url,destination_url,contact_phone,city,objective,starts_at,ends_at,media_type,media_duration_seconds,plan_code,price_tzs,payment_status,placement,daily_start_time,daily_end_time,marketing_billboard_id")
         .eq("status", "approved").lte("starts_at", now).gte("ends_at", now).order("created_at", { ascending: false }).limit(30);
       if (error) throw error;
       const placement = clean(body.placement || "smart_ads", 30);
@@ -77,11 +77,15 @@ Deno.serve(async (req: Request) => {
         return start < end ? localClock >= start && localClock < end : localClock >= start || localClock < end;
       });
       const ids = campaigns.map((c: any) => c.id);
+      const linkedIds = [...new Set(campaigns.map((c: any) => c.marketing_billboard_id).filter(Boolean))];
+      let boards: any[] = [];
+      if (linkedIds.length) { const { data, error } = await admin.from("afrilink_billboards").select("id,brand_name,business_type,category,end_at,end_date").in("id", linkedIds); if (error) throw error; boards = data || []; }
+      const brandById = new Map(boards.filter((b: any) => (!b.end_at || new Date(b.end_at).getTime() > Date.now()) && (!b.end_date || b.end_at || new Date(b.end_date + "T23:59:59Z").getTime() > Date.now())).map((b: any) => [String(b.id), b]));
       const { data: creativeRows, error: creativeError } = ids.length ? await admin.from("ione_smart_ads_creatives").select("campaign_id,creative_url,media_type,media_duration_seconds,sort_order").in("campaign_id", ids).order("sort_order", {ascending:true}) : {data:[],error:null};
       if (creativeError) throw creativeError;
       const creativesByCampaign = new Map<string, any[]>();
       for (const row of creativeRows || []) { const list = creativesByCampaign.get(String(row.campaign_id)) || []; list.push(row); creativesByCampaign.set(String(row.campaign_id), list); }
-      const enriched = campaigns.map((c: any) => ({...c, creatives: creativesByCampaign.get(String(c.id)) || [{creative_url:c.creative_url,media_type:c.media_type,media_duration_seconds:c.media_duration_seconds}]}));
+      const enriched = campaigns.map((c: any) => ({...c, marketing_brand: c.marketing_billboard_id ? brandById.get(String(c.marketing_billboard_id)) || null : null, creatives: creativesByCampaign.get(String(c.id)) || [{creative_url:c.creative_url,media_type:c.media_type,media_duration_seconds:c.media_duration_seconds}]}));
       return json({ success: true, campaigns: enriched });
     }
 
@@ -123,6 +127,7 @@ Deno.serve(async (req: Request) => {
         quarterly: { price: 10000, days: 90 },
       };
       const plan = plans[planCode];
+      const marketingBillboardId = clean(body.marketing_billboard_id, 80);
       const mediaType = clean(body.media_type, 10);
       const mediaDuration = Number(body.media_duration_seconds || 0);
       const creativeList = Array.isArray(body.creatives) ? body.creatives : [{creative_url,media_type:mediaType,media_duration_seconds:mediaDuration}];
@@ -160,6 +165,14 @@ Deno.serve(async (req: Request) => {
           (mediaType === "image" && mediaDuration !== 0)) {
         return json({ success: false, error: "Check advertiser details, uploaded media, package, display schedule, and destination link. Videos must be no longer than 2 minutes." }, 400);
       }
+      let billboard: any = null;
+      if (marketingBillboardId) {
+        if (!/^[0-9a-f-]{36}$/i.test(marketingBillboardId)) return json({ success: false, error: "Invalid I1 Marketing brand selection." }, 400);
+        const { data: board, error: boardError } = await admin.from("afrilink_billboards").select("id,owner_id,end_at,end_date").eq("id", marketingBillboardId).eq("owner_id", user.id).maybeSingle();
+        if (boardError) throw boardError;
+        if (!board || (board.end_at && new Date(board.end_at).getTime() <= Date.now()) || (board.end_date && !board.end_at && new Date(board.end_date + "T23:59:59Z").getTime() <= Date.now())) return json({ success: false, error: "Choose an active I1 Marketing billboard owned by this account." }, 400);
+        billboard = board;
+      }
       const now = new Date();
       const { count, error: countError } = await admin.from("ione_smart_ads_campaigns")
         .select("id", { count: "exact", head: true })
@@ -168,7 +181,7 @@ Deno.serve(async (req: Request) => {
       if ((count || 0) >= 3) return json({ success: false, error: "The limit is 3 ad submissions per account in any 7-day period. Try again when an earlier submission is more than 7 days old." }, 429);
       const { data, error } = await admin.from("ione_smart_ads_campaigns").insert({
         owner_id: user.id, advertiser_name, contact_phone, title, description, creative_url, destination_url, city,
-        objective, status: "pending", starts_at: now.toISOString(),
+        objective, marketing_billboard_id: billboard?.id || null, status: "pending", starts_at: now.toISOString(),
         ends_at: new Date(now.getTime() + plan.days * 24 * 60 * 60 * 1000).toISOString(),
         plan_code: planCode, price_tzs: plan.price, duration_days: plan.days,
         payment_status: "pending", payment_reference: "",
@@ -198,6 +211,26 @@ Deno.serve(async (req: Request) => {
       return json({ success: true, campaigns: campaigns.map((c: any) => ({ ...c, creatives: creativesByCampaign.get(String(c.id)) || [{creative_url:c.creative_url,media_type:c.media_type,media_duration_seconds:c.media_duration_seconds}], metrics: stats[c.id] || { impressions:0,clicks:0,contacts:0,conversions:0 } })) });
     }
 
+    if (action === "brand_list") {
+      const user = await userFromRequest(admin, req);
+      if (!user) return json({ success: false, error: "Reconnect to I|ONE and try again." }, 401);
+      const { data, error } = await admin.from("afrilink_billboards").select("id,brand_name,business_type,category,end_at,end_date").eq("owner_id", user.id).order("created_at", {ascending:false}).limit(100);
+      if (error) throw error;
+      const billboards = (data || []).filter((b: any) => (!b.end_at || new Date(b.end_at).getTime() > Date.now()) && (!b.end_date || b.end_at || new Date(b.end_date + "T23:59:59Z").getTime() > Date.now()));
+      return json({ success: true, billboards });
+    }
+    if (action === "brand_details") {
+      const id = clean(body.billboard_id, 80);
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ success: false, error: "Invalid brand selection." }, 400);
+      const now = new Date().toISOString();
+      const { data: campaign, error: campaignError } = await admin.from("ione_smart_ads_campaigns").select("id").eq("marketing_billboard_id", id).eq("status", "approved").lte("starts_at", now).gte("ends_at", now).limit(1).maybeSingle();
+      if (campaignError) throw campaignError;
+      if (!campaign) return json({ success: false, error: "No active approved campaign is linked to this brand." }, 404);
+      const { data: board, error } = await admin.from("afrilink_billboards").select("id,owner_id,brand_name,business_type,category,address,content,waiting_message,booking_info,brand_color,content_color,address_color,end_at,end_date,video_url,video_path,video_bucket,video_duration_sec").eq("id", id).maybeSingle();
+      if (error) throw error;
+      if (!board || (board.end_at && new Date(board.end_at).getTime() <= Date.now()) || (board.end_date && !board.end_at && new Date(board.end_date + "T23:59:59Z").getTime() <= Date.now())) return json({ success: false, error: "This I1 Marketing brand is no longer active." }, 404);
+      return json({ success: true, billboard: board });
+    }
     if (action === "delete_campaign") {
       const user = await userFromRequest(admin, req);
       if (!user) return json({ success: false, error: "Reconnect to I|ONE and try again." }, 401);
