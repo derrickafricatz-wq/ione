@@ -103,7 +103,7 @@
         .isa-head{display:flex;align-items:center;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;border-bottom:1px solid rgba(214,180,120,.25);background:rgba(3,9,11,.96)}
         .isa-mark{width:44px;height:44px;display:grid;place-items:center;border:1px solid #c5a46b;border-radius:13px;color:#e5c88d;font-weight:900;letter-spacing:-1px;background:linear-gradient(145deg,#302718,#101719)}
         .isa-headcopy{min-width:0;flex:1}.isa-headcopy strong{display:block;font-size:15px;letter-spacing:1.2px}.isa-headcopy small{display:block;color:#9aaeb0;font-size:10px;letter-spacing:.7px}
-        .isa-close{width:42px;height:42px;border:1px solid #53656a;border-radius:13px;background:#111c20;color:#fff;font-size:22px}
+        .isa-close{min-width:64px;height:42px;padding:0 12px;border:1px solid #53656a;border-radius:13px;background:#111c20;color:#fff;font-size:11px;font-weight:900;letter-spacing:.5px}
         .isa-tabs{display:flex;gap:7px;padding:12px 12px 0;overflow-x:auto;flex:0 0 auto}
         .isa-tab{flex:1;min-width:max-content;padding:10px 13px;border:1px solid #34474b;border-radius:12px;background:#101a1d;color:#b7c6c7;font-size:10px;font-weight:900;letter-spacing:.7px}
         .isa-tab[aria-selected="true"]{border-color:#c5a46b;background:linear-gradient(145deg,#55432a,#1d2728);color:#fff1d2}
@@ -126,7 +126,7 @@
         .isa-empty{padding:24px 15px;text-align:center;border:1px dashed #34484c;border-radius:15px;color:#9db1b4;font-size:12px;line-height:1.6}.isa-statusline{min-height:20px;padding:8px 13px 0;font-size:11px}
         @media(min-width:700px){.isa-scroll{padding-left:max(18px,calc((100% - 740px)/2));padding-right:max(18px,calc((100% - 740px)/2))}.isa-image{max-height:300px}}
       </style>
-      <header class="isa-head"><div class="isa-mark">I|1</div><div class="isa-headcopy"><strong>I|ONE SMART ADS</strong><small>MEASURABLE CAMPAIGNS • CLEAR RESULTS</small></div><button class="isa-close" id="ioneSmartAdsClose" aria-label="Close SMART ADS">×</button></header>
+      <header class="isa-head"><div class="isa-mark">I|1</div><div class="isa-headcopy"><strong>I|ONE SMART ADS</strong><small>MEASURABLE CAMPAIGNS • CLEAR RESULTS</small></div><button class="isa-close" id="ioneSmartAdsClose" aria-label="Close SMART ADS">CLOSE</button></header>
       <nav class="isa-tabs" aria-label="SMART ADS sections">
         <button class="isa-tab" data-tab="explore" aria-selected="true">EXPLORE ADS</button>
         <button class="isa-tab" data-tab="mine" aria-selected="false">MY CAMPAIGNS</button>
@@ -143,7 +143,8 @@
       root.querySelectorAll("[data-tab]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === activeTab)));
       render();
     }));
-    root.addEventListener("click", handleClick);
+    root.addEventListener("click", event => { if (event.target.closest("#ioneSmartAdsAddCreative")) addCreativeInput(); handleClick(event); });
+    root.addEventListener("change", handleCreativeChange);
     root.addEventListener("submit", handleSubmit);
     return root;
   }
@@ -188,18 +189,14 @@
         <button class="isa-btn primary" data-action="conversion" data-id="${esc(c.id)}">+ RECORD CONVERSION</button>
         <button class="isa-btn danger" data-action="delete_campaign" data-id="${esc(c.id)}">DELETE CAMPAIGN</button>
       </div>` : "";
-    const publicActions = mode === "explore" ? `
-      <div class="isa-actions">
-        <a class="isa-btn primary" data-action="visit" data-id="${esc(c.id)}" href="${esc(c.destination_url)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE ↗</a>
-        <a class="isa-btn" data-action="contact" data-id="${esc(c.id)}" href="tel:${esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))}" style="text-decoration:none;display:inline-flex;align-items:center">CONTACT</a>
-      </div>` : "";
+    const publicActions = mode === "explore" ? '<div class="isa-actions"><a class="isa-btn primary" data-action="learn_more" data-id="'+esc(c.id)+'" href="'+esc(c.marketing_billboard_id && c.marketing_brand ? "#" : "https://wa.me/"+String(c.whatsapp_phone || c.contact_phone || "").replace(/\\D/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">LEARN MORE</a><a class="isa-btn" data-action="chat_me" data-id="'+esc(c.id)+'" href="https://wa.me/'+esc(String(c.whatsapp_phone || c.contact_phone || "").replace(/\\D/g,""))+'" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center">CHAT ME</a><a class="isa-btn" data-action="call_me" data-id="'+esc(c.id)+'" href="tel:'+esc(String(c.contact_phone||"").replace(/[^+0-9]/g,""))+'" style="text-decoration:none;display:inline-flex;align-items:center">CALL ME</a></div>' : "";
     return `
       <article class="isa-card" data-campaign-card="${esc(c.id)}">
         ${(mode === "explore" || mode === "authority") ? (c.media_type === "video" ? '<video class="isa-image" autoplay muted loop playsinline preload="metadata" aria-label="Sponsored video advertisement" src="'+esc(c.creative_url)+'"></video>' : '<img class="isa-image" loading="lazy" referrerpolicy="no-referrer" src="'+esc(c.creative_url)+'" alt="Advertisement creative for '+esc(c.advertiser_name)+'" onerror="this.hidden=true">') : ""}
         <div class="isa-card-body">
           <div class="isa-card-top"><span class="isa-sponsor">${mode === "explore" ? "SPONSORED" : "CAMPAIGN"}</span><span class="isa-status ${esc(status)}">${esc(status.replace(/_/g," "))}</span></div>
           <h3>${esc(c.title)}</h3><p>${esc(c.description || "Discover this advertiser on I|ONE.")}</p>
-          <div class="isa-meta"><span>${esc(c.advertiser_name || "Advertiser")}</span><span>${esc(c.city || "Tanzania")}</span><span>Ends ${esc(dateText(c.ends_at))}</span>${c.plan_code ? '<span>'+esc(({weekly:'7 days',monthly:'30 days',quarterly:'90 days'}[c.plan_code] || c.plan_code))+' • TZS '+num(c.price_tzs)+'</span>' : ''}</div>
+          <div class="isa-meta"><span>${esc(c.advertiser_name || "Advertiser")}</span><span>${esc(c.city || "Tanzania")}</span>${mode !== "explore" ? '<span>Ends '+esc(dateText(c.ends_at))+'</span>'+(c.plan_code ? '<span>'+esc(({weekly:'7 days',monthly:'30 days',quarterly:'90 days'}[c.plan_code] || c.plan_code))+' • TZS '+num(c.price_tzs)+'</span>' : '') : ""}</div>
           ${mode === "authority" ? '<div class="isa-notice">Payment: <strong>'+esc(c.payment_status || "pending")+'</strong> · Media: <strong>'+esc(c.media_type || "image")+(c.media_type === "video" ? ' ('+esc(c.media_duration_seconds || 0)+' sec)' : '')+'</strong></div>' : ''}
           ${metricsHtml}
           ${c.review_note ? '<p><strong>Authority note:</strong> '+esc(c.review_note)+'</p>' : ""}
@@ -250,12 +247,11 @@
           <div class="isa-notice"><strong>MANUAL PAYMENT</strong><br>Pay to <strong>DERRICK KIPAJI OF AFRIKA & CO</strong> via <strong>Airtel Money</strong>, merchant number <strong>140001788</strong>. Keep your payment confirmation, then contact I|ONE Support by call or WhatsApp at <a href="https://wa.me/255742097868" target="_blank" rel="noopener noreferrer" style="color:#e7cc98">+255 742 097 868</a> and ask for Smart Ads payment verification. Authority checks payment directly and activates the campaign only after verification and creative approval. Maximum 3 submissions per account per 7 days; video limit 2 minutes; maximum file size 50 MB.</div>
           <form class="isa-form" id="ioneSmartAdsCreateForm">
             <label>BUSINESS / ADVERTISER NAME<input name="advertiser_name" required maxlength="100" placeholder="Business or brand name"></label>
-            <label>CONTACT PHONE<input name="contact_phone" type="tel" required maxlength="40" placeholder="+255…"></label>
+            <label>CALL ME — PHONE NUMBER<input name="contact_phone" type="tel" required maxlength="40" placeholder="+255…"></label><label>CHAT ME — WHATSAPP NUMBER<input name="whatsapp_phone" type="tel" required maxlength="40" placeholder="+255…"></label>
             <label>CAMPAIGN TITLE<input name="title" required minlength="3" maxlength="100" placeholder="What are you promoting?"></label>
             <label>AD DESCRIPTION<textarea name="description" maxlength="800" placeholder="Short, clear message for customers"></textarea></label>
-            <label>UPLOAD AD IMAGES / VIDEOS<input name="creative_file" type="file" multiple required accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></label>
-            <p class="isa-help">Choose a file from your phone or computer. Supported: JPG, PNG, WEBP, MP4, WEBM. Image or video is uploaded to I|ONE storage. No external image URL is required.</p>
-            <label>LINK TO REGISTERED I1 MARKETING BRAND (OPTIONAL)<select name="marketing_billboard_id" id="ioneSmartAdsBrandSelect"><option value="">No linked brand — hide View Brand</option></select></label><p class="isa-help">Only active I1 Marketing billboards owned by this account can be linked.</p><label>DESTINATION LINK (HTTPS)<input name="destination_url" type="url" required placeholder="https://… or WhatsApp link"></label>
+            <label>CAMPAIGN CREATIVES</label><div id="ioneSmartAdsCreativeInputs"><input name="creative_file" type="file" required accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"></div><div class="isa-actions"><button class="isa-btn" type="button" id="ioneSmartAdsAddCreative">+ ADD IMAGE OR VIDEO</button></div><p class="isa-help" id="ioneSmartAdsCreativeHelp">Add creatives one at a time. Weekly: up to 2, monthly: up to 5, quarterly: up to 10. Supported: JPG, PNG, WEBP, MP4, WEBM. Maximum 50 MB per file; videos up to 2 minutes.</p>
+            <label>LINK TO REGISTERED I1 MARKETING BRAND (OPTIONAL)<select name="marketing_billboard_id" id="ioneSmartAdsBrandSelect"><option value="">No linked brand — hide View Brand</option></select></label><p class="isa-help">Only active I1 Marketing billboards owned by this account can be linked.</p><label>OPTIONAL WEBSITE / DESTINATION LINK<input name="destination_url" type="url" placeholder="https://… (optional; Learn More uses your brand or WhatsApp)"></label>
             <label>TARGET CITY / AREA<input name="city" maxlength="100" placeholder="Tanzania or a city/area"></label>
             <label>CAMPAIGN GOAL<select name="objective"><option value="website">Website visits</option><option value="contact">Customer contacts</option><option value="awareness">Brand awareness</option></select></label>
             <label>WHERE SHOULD THIS AD APPEAR?<select name="placement"><option value="all">All eligible I|ONE placements</option><option value="smart_ads">Smart Ads only</option><option value="explore">Explore bookshelf</option><option value="book_reader">Inside books</option><option value="documentary">Documentaries</option><option value="expert">Expert section</option><option value="sokoni">Sokoni marketplace</option></select></label>
@@ -296,13 +292,30 @@
       (data.billboards || []).forEach(b => { const option = document.createElement("option"); option.value = b.id; option.textContent = String(b.brand_name || "Brand") + " • " + String(b.business_type || b.category || "Business"); select.appendChild(option); });
     } catch (_) { select.innerHTML = ""; const option = document.createElement("option"); option.value = ""; option.textContent = "No linked brand — hide View Brand"; select.appendChild(option); }
   }
+  function handleCreativeChange(event) {
+    const form = root && root.querySelector("#ioneSmartAdsCreateForm"); if (!form) return;
+    const plan = form.querySelector('[name="plan_code"]')?.value || "weekly";
+    const limit = ({weekly:2,monthly:5,quarterly:10})[plan] || 2;
+    let inputs = Array.from(form.querySelectorAll('[name="creative_file"]'));
+    if (event.target.matches('[name="plan_code"]')) while (inputs.length > limit) inputs.pop().remove();
+    inputs = Array.from(form.querySelectorAll('[name="creative_file"]'));
+    const add = form.querySelector("#ioneSmartAdsAddCreative"); const help = form.querySelector("#ioneSmartAdsCreativeHelp");
+    if (add) add.disabled = inputs.length >= limit;
+    if (help) help.textContent = "Upload rows: " + inputs.length + " / " + limit + ". Weekly 2, monthly 5, quarterly 10 maximum. Each file max 50 MB; videos up to 2 minutes.";
+  }
+  function addCreativeInput() {
+    const form = root && root.querySelector("#ioneSmartAdsCreateForm"); const holder = form && form.querySelector("#ioneSmartAdsCreativeInputs"); if (!form || !holder) return;
+    const plan = form.querySelector('[name="plan_code"]')?.value || "weekly"; const limit = ({weekly:2,monthly:5,quarterly:10})[plan] || 2;
+    if (holder.querySelectorAll('[name="creative_file"]').length >= limit) { setStatus("This subscription allows up to " + limit + " creatives.", true); return; }
+    const input = document.createElement("input"); input.type = "file"; input.name = "creative_file"; input.accept = "image/jpeg,image/png,image/webp,video/mp4,video/webm"; input.required = true; input.style.marginTop = "8px"; holder.appendChild(input); handleCreativeChange({target:input});
+  }
   async function handleSubmit(event) {
     if (event.target.id !== "ioneSmartAdsCreateForm") return;
     event.preventDefault();
     if (busy) return;
     const form = event.target;
     const values = Object.fromEntries(new FormData(form).entries());
-    const files = Array.from(form.querySelector('[name="creative_file"]')?.files || []);
+    const files = Array.from(form.querySelectorAll('[name="creative_file"]')).flatMap(input => Array.from(input.files || []));
     delete values.creative_file;
     const button = form.querySelector('button[type="submit"]');
     busy = true; if(button){button.disabled=true;button.textContent="SUBMITTING…";}
@@ -311,7 +324,7 @@
       const creativeLimit = ({weekly:2,monthly:5,quarterly:10})[String(values.plan_code)] || 2;
       if (!files.length) throw new Error("Choose at least one image or video.");
       if (files.length > creativeLimit) throw new Error("This package allows up to " + creativeLimit + " creatives.");
-      if (!/^https:\/\//i.test(String(values.destination_url || ""))) throw new Error("Enter a valid HTTPS destination link.");
+      if (String(values.destination_url || "").trim() && !/^https:\/\//i.test(String(values.destination_url || ""))) throw new Error("Enter a valid HTTPS destination link or leave it empty to use WhatsApp.");
       const creatives = [];
       for (let i=0;i<files.length;i++) {
         setStatus("Uploading creative " + (i+1) + " of " + files.length + "…", false);
@@ -486,7 +499,7 @@
       if (!visible(area.element)) { readerAdBusy = false; return; }
       const campaign = chooseRotatingCampaign(campaigns, placement);
       if (!campaign) { readerAdBusy = false; return; }
-      const creativeList = Array.isArray(campaign.creatives) && campaign.creatives.length ? campaign.creatives : [{creative_url:creative.creative_url,media_type:campaign.media_type,media_duration_seconds:campaign.media_duration_seconds}];
+      const creativeList = Array.isArray(campaign.creatives) && campaign.creatives.length ? campaign.creatives : [{creative_url:campaign.creative_url,media_type:campaign.media_type,media_duration_seconds:campaign.media_duration_seconds}];
       const scheduleBeforeCreative = getAreaSchedule(placement);
       const previousCreativeIndex = Number(scheduleBeforeCreative.lastCreativeIndex == null ? -1 : scheduleBeforeCreative.lastCreativeIndex);
       const creativeIndex = creativeList.length > 1 ? (previousCreativeIndex + 1) % creativeList.length : 0;
