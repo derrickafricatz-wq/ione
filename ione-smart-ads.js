@@ -524,8 +524,13 @@
               const openExactBrand = () => {
                 const cards = feed ? Array.from(feed.querySelectorAll(".afl-billboard")) : [];
                 const card = cards.find(item => String(item.dataset.billboardId || "") === String(details.billboard.id));
-                const service = card && card.querySelector(".afl-open-service");
-                if (service) { service.click(); return true; }
+                if (card) {
+                  card.scrollIntoView({behavior:"smooth",block:"start"});
+                  card.style.outline = "2px solid #00ffff";
+                  card.style.outlineOffset = "4px";
+                  setTimeout(() => { card.style.outline = ""; card.style.outlineOffset = ""; }, 5000);
+                  return true;
+                }
                 return false;
               };
               if (!openExactBrand() && feed) {
