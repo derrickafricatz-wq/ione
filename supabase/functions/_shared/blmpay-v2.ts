@@ -41,12 +41,25 @@ function validateIdempotencyKey(key: string): void {
   }
 }
 
+/** Reject absolute URLs, protocol-relative URLs, fragments, whitespace, and non-V2 paths. */
+export function validateBlmpayV2Target(target: string): void {
+  if (
+    !target.startsWith("/api/v2/") ||
+    target.startsWith("//") ||
+    target.includes("#") ||
+    /[\s\u0000-\u001f\u007f]/.test(target) ||
+    target.includes("\\")
+  ) {
+    throw new Error("BLMPay V2 target must be a valid /api/v2/ path and query.");
+  }
+}
+
 /**
  * Creates authenticated headers for one BLMPay V2 request.
  *
  * `body` must be the exact serialized string that will be passed to fetch.
  * Use an empty string for body-less requests. `target` must be the exact
- * path-and-query sent on the wire, starting with "/".
+ * V2 path-and-query sent on the wire, starting with "/api/v2/".
  */
 export async function createBlmpayV2Headers(args: {
   method: string;
@@ -62,21 +75,15 @@ export async function createBlmpayV2Headers(args: {
   }
 
   const method = args.method.trim().toUpperCase();
-  const target = args.target.trim();
-  if (!/^[A-Z]+$/.test(method) || !target.startsWith("/") || target.includes("#")) {
-    throw new Error("Invalid BLMPay V2 method or request target.");
+  const target = args.target;
+  if (!/^[A-Z]+$/.test(method)) {
+    throw new Error("Invalid BLMPay V2 HTTP method.");
   }
+  validateBlmpayV2Target(target);
 
   if (args.idempotencyKey !== undefined) {
     validateIdempotencyKey(args.idempotencyKey);
   }
-
-  const timestamp = String(Math.floor(Date.now() / 1000));
-  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
-  const nonce = toHex(nonceBytes);
-  const bodyHash = await sha256Hex(args.body);
-  const canonical = `${method}\n${target}\n${timestamp}\n${nonce}\n${bodyHash}`;
-  const signature = await hmacSha256Hex(secret, canonical);
 
   const origin = (args.origin || Deno.env.get("BLMPAY_V2_ORIGIN") || DEFAULT_ORIGIN).trim();
   let parsedOrigin: URL;
@@ -85,9 +92,22 @@ export async function createBlmpayV2Headers(args: {
   } catch {
     throw new Error("BLMPay origin must be a valid HTTPS origin.");
   }
-  if (parsedOrigin.protocol !== "https:" || parsedOrigin.origin !== origin || parsedOrigin.pathname !== "/" || parsedOrigin.search || parsedOrigin.hash) {
+  if (
+    parsedOrigin.protocol !== "https:" ||
+    parsedOrigin.origin !== origin ||
+    parsedOrigin.pathname !== "/" ||
+    parsedOrigin.search ||
+    parsedOrigin.hash
+  ) {
     throw new Error("BLMPay origin must be an HTTPS origin without a path or query.");
   }
+
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
+  const nonce = toHex(nonceBytes);
+  const bodyHash = await sha256Hex(args.body);
+  const canonical = `${method}\n${target}\n${timestamp}\n${nonce}\n${bodyHash}`;
+  const signature = await hmacSha256Hex(secret, canonical);
 
   const headers = new Headers({
     Authorization: `BLMPay-HMAC ${apiKey}`,
@@ -102,10 +122,8 @@ export async function createBlmpayV2Headers(args: {
   return headers;
 }
 
-/** URL helper to prevent accidental use of a non-V2 host. */
+/** URL helper pins requests to the BLMPay API host and V2 route namespace. */
 export function blmpayV2Url(target: string): string {
-  if (!target.startsWith("/") || target.startsWith("//") || target.includes("#")) {
-    throw new Error("BLMPay V2 target must be an absolute path on the BLMPay API host.");
-  }
+  validateBlmpayV2Target(target);
   return API_BASE + target;
 }
