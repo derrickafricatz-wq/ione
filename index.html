@@ -3679,6 +3679,18 @@ function getMedia(id){
       </div>
       <div id="ioneAuthorAccessAuthorityList" style="display:grid;gap:10px"></div>
     </div>
+
+    <div class="authority-panel-section" id="ioneManualBookPaymentsSection">
+      <div class="authority-section-kicker">BOOKSTORE • MANUAL PAYMENT VERIFICATION</div>
+      <h3>MANUAL BOOK PAYMENTS & RECEIPTS</h3>
+      <p class="authority-section-note">Check the actual merchant transaction before approving. Approval unlocks the book, records the receipt, and adds the sale to the existing author earnings ledger. Rejection does not grant access.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0">
+        <button type="button" id="ioneManualBookPaymentsRefresh" class="authority-save-button">REFRESH PAYMENT REQUESTS</button>
+        <button type="button" id="ioneManualBookReceiptsRefresh" class="authority-save-button">VIEW CONFIRMED RECEIPTS</button>
+        <span id="ioneManualBookPaymentsStatus" role="status" style="font-size:12px;color:#bfe8d7">Not loaded.</span>
+      </div>
+      <div id="ioneManualBookPaymentsList" style="display:grid;gap:10px"></div>
+    </div>
     <div class="authority-panel-section" id="authorityNarrationSection">
       <div class="authority-section-kicker">BOOK INSIGHT & NARRATION</div>
       <h3>BOOK NARRATION REQUESTS</h3>
@@ -9268,7 +9280,7 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
 const IONE_AUTHORITY_BODY_FUNCTIONS = new Set([
   "ione-app-banners", "ione-documentaries", "ione-author-access",
   "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage",
-  "ione-author-payouts", "ione-manual-subscriptions", "ione-sokoni", "ione-expert"
+  "ione-author-payouts", "ione-manual-subscriptions", "ione-manual-book-payments", "ione-sokoni", "ione-expert"
 ]);
 const IONE_AUTHORITY_HEADER_FUNCTIONS = new Set([
   "ione-app-banners", "ione-documentaries", "ione-author-access",
@@ -9562,7 +9574,7 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button><button class="hb-btn hb-manual-payment">MANUAL PAY</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
       const insightBox=card.querySelector(".hb-insight"), insightText=card.querySelector(".hb-insight-text");
       const insightItems=[book.bookInsight,book.bookInsight2,book.bookInsight3].map(v=>String(v||"").trim()).filter(Boolean);
       if(!insightItems.length)insightItems.push("The author has not added a book insight yet.");
@@ -9606,6 +9618,12 @@ async function openHeavensBookstore(){
         };
       }
       card.querySelector(".hb-btn:not(.hb-check-payment)").onclick=()=>{if(book._metadataOnly)return;isBookPaid(book)?openBookReader(book,store):startBookPayment(book,store);};
+      const manualBtn=card.querySelector(".hb-manual-payment");
+      if(manualBtn){
+        manualBtn.onclick=()=>{if(!book._metadataOnly)startManualBookPayment(book,store);};
+        manualBtn.disabled=!!book._metadataOnly || !book.paymentRequired || Number(book.price||0)<=0;
+        manualBtn.title="Pay by manual mobile money or check your submitted request";
+      }
       const checkBtn=card.querySelector('.hb-check-payment');
       if(checkBtn){
         checkBtn.onclick=async()=>{
@@ -10195,6 +10213,46 @@ function heavensPhonePaymentDialog(book, amount){
     overlay.querySelector("#heavensPayContinue").onclick=()=>{const value=input.value.trim();if(!value){input.focus();return;}overlay.remove();heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);resolve(value);};
     setTimeout(()=>input.focus(),80);
   });
+}
+
+
+async function startManualBookPayment(book,store){
+  try{
+    const session=await ensureHeavensAnonymousSession();
+    if(!session?.access_token)throw new Error("Please reconnect to your I|ONE session.");
+    const bookId=String(book.supabaseId||book.id||"");
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(bookId)){
+      alert("This book is not yet published to the secure I|ONE bookstore.");return;
+    }
+    const statusResult=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body:{action:"my_status"}});
+    if(statusResult.error||!statusResult.data?.success)throw new Error(statusResult.data?.error||"Could not check manual payment status.");
+    const prior=(statusResult.data.orders||[]).find(o=>String(o.book_id)===bookId && ["pending","paid","completed"].includes(String(o.status)));
+    if(prior){
+      if(["paid","completed"].includes(prior.status)){
+        markBookPaid(book);
+        const receipt=(statusResult.data.receipts||[]).find(r=>r.order_id===prior.id);
+        alert("Manual payment CONFIRMED. This book is unlocked.\n"+(receipt?"Receipt: "+receipt.receipt_number:"")+"\nOpen the book again to read.");
+        const card=store?.querySelector('.hb-card[data-book-id="'+String(book.id).replace(/"/g,'&quot;')+'"]');
+        if(card){const b=card.querySelector(".hb-btn:not(.hb-check-payment):not(.hb-manual-payment)");if(b){b.className="hb-btn read";b.textContent="READ";}}
+      }else{
+        alert("Your manual payment request is awaiting Authority Press verification. Do not pay a second time.\n\nStatus: PENDING VERIFICATION");
+      }
+      return;
+    }
+    const amount=Math.round(Number(book.price||0));
+    if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("This book has no valid price.");
+    const instructions="I|ONE MANUAL BOOK PAYMENT\n\nBook: "+String(book.title||"Book")+"\nAmount: TZS "+amount.toLocaleString("en-US")+"\n\nMerchant: DERRICK KIPAJI OF AFRIKA & CO\nNetwork: Airtel Money\nMerchant number: 140001788\n\nPay the exact amount using your mobile-money service first. Then press OK to submit the payer details. The book unlocks only after Authority Press verifies the transaction.";
+    if(!confirm(instructions+"\n\nHave you completed the payment?"))return;
+    const payerName=prompt("Enter the name shown on the mobile-money transaction:");
+    if(!payerName||payerName.trim().length<3)return;
+    const payerPhone=prompt("Enter the phone number used to make the payment:");
+    if(!payerPhone||payerPhone.trim().length<9)return;
+    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body:{action:"submit",book_id:bookId,payer_name:payerName.trim(),payer_phone:payerPhone.trim()}});
+    if(result.error||!result.data?.success)throw new Error(result.data?.error||"Could not submit manual payment request.");
+    const code=String(result.data.recovery_code||"");
+    try{localStorage.setItem("ione_book_recovery_"+bookId,code);}catch(_){}
+    alert("MANUAL PAYMENT REQUEST SUBMITTED\n\nBook: "+String(book.title||"Book")+"\nAmount: TZS "+amount.toLocaleString("en-US")+"\nStatus: PENDING AUTHORITY VERIFICATION\n\nIMPORTANT — save this recovery code somewhere safe. It is shown only once:\n\n"+code+"\n\nDo not pay again. You can use MANUAL PAY to check status. The book opens only after Authority Press verifies your payment.");
+  }catch(error){console.error("Manual book payment:",error);alert(error?.message||"Manual payment could not be processed.");}
 }
 
 async function startBookPayment(book,store){
@@ -13883,3 +13941,78 @@ function ioneRunBackgroundMediaPreload(){ return; }
   background:#101514!important;
 }
 </style>
+
+<script>
+
+(function(){
+  "use strict";
+  if(window.__ioneManualBookPaymentsAuthorityUI)return;
+  window.__ioneManualBookPaymentsAuthorityUI=true;
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+  async function call(body){
+    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body});
+    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Manual book payment request failed.");
+    return result.data;
+  }
+  async function refresh(receiptsOnly=false){
+    const status=$("ioneManualBookPaymentsStatus"),list=$("ioneManualBookPaymentsList");
+    if(!status||!list)return;
+    status.textContent=receiptsOnly?"Loading confirmed receipts…":"Loading manual payment requests…";
+    try{
+      if(receiptsOnly){
+        const data=await call({action:"authority_receipts"});
+        const rows=data.receipts||[];
+        list.innerHTML=rows.length?rows.map(r=>'<article style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:12px;display:grid;gap:5px"><strong>'+esc(r.receipt_number)+'</strong><div style="font-size:12px;line-height:1.6;color:#bdd3ce">Book ID: '+esc(r.book_id)+'<br>Buyer: '+esc(r.buyer_name||"—")+' • '+esc(r.buyer_phone||"—")+'<br>Amount: TZS '+Number(r.amount_tzs||0).toLocaleString("en-US")+' • Method: '+esc(r.payment_method)+'<br>Paid: '+esc(r.paid_at||"—")+'</div></article>').join(""):'<div class="authority-section-note">No confirmed book receipts yet.</div>';
+        status.textContent=rows.length+" permanent receipt record(s)";
+        return;
+      }
+      const data=await call({action:"authority_list"});
+      const rows=data.requests||[];
+      list.innerHTML=rows.length?rows.map(r=>{
+        const pending=r.manual_review_status==="pending"&&r.status==="pending";
+        return '<article style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:12px;display:grid;gap:7px">'+
+          '<strong>'+esc(r.heavens_books?.title||"Book")+'</strong>'+
+          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Request: '+esc(r.id)+'<br>Buyer account: '+esc(r.customer_email||r.customer_id||"—")+'<br>Payer name: '+esc(r.manual_payer_name||"—")+'<br>Payer phone: '+esc(r.manual_payer_phone||"—")+'<br>Amount: TZS '+Number(r.amount||0).toLocaleString("en-US")+'<br>Submitted: '+esc(r.created_at||"—")+'<br>Status: <b>'+esc(String(r.manual_review_status||r.status).toUpperCase())+'</b>'+(r.manual_receipt_number?'<br>Receipt: '+esc(r.manual_receipt_number):'')+(r.manual_rejection_reason?'<br>Reason: '+esc(r.manual_rejection_reason):'')+'</div>'+
+          (pending?'<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" data-i1-manual-approve="'+esc(r.id)+'" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • UNLOCK BOOK</button><button type="button" data-i1-manual-reject="'+esc(r.id)+'" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT</button></div>':'')+
+          '</article>';
+      }).join(""):'<div class="authority-section-note">No manual book payment requests have been submitted.</div>';
+      status.textContent=rows.length+" request(s) • approve only after checking the real merchant transaction";
+    }catch(e){status.textContent=e.message||"Could not load manual book payment records.";status.style.color="#ff9f9f";}
+  }
+  document.addEventListener("click",async event=>{
+    if(event.target.closest("#ioneManualBookPaymentsRefresh")){await refresh(false);return;}
+    if(event.target.closest("#ioneManualBookReceiptsRefresh")){await refresh(true);return;}
+    const approve=event.target.closest("[data-i1-manual-approve]");
+    const reject=event.target.closest("[data-i1-manual-reject]");
+    if(!approve&&!reject)return;
+    const btn=approve||reject, id=btn.getAttribute(approve?"data-i1-manual-approve":"data-i1-manual-reject");
+    try{
+      if(approve){
+        if(!confirm("Confirm that you checked the actual merchant transaction and the amount matches? This will unlock the book and record the sale."))return;
+        btn.disabled=true;btn.textContent="VERIFYING…";
+        const data=await call({action:"authority_approve",order_id:id,authority_name:"Authority Press"});
+        alert("Manual payment approved. Book unlocked and receipt recorded: "+(data.result?.receipt_number||"created"));
+      }else{
+        const reason=prompt("Why is this payment being rejected?","Payment could not be verified");
+        if(reason===null)return;
+        btn.disabled=true;btn.textContent="REJECTING…";
+        await call({action:"authority_reject",order_id:id,authority_name:"Authority Press",reason});
+        alert("Request rejected. No book access was granted.");
+      }
+      await refresh(false);
+    }catch(e){alert(e.message||"Could not update the payment request.");btn.disabled=false;btn.textContent=approve?"PAYMENT VERIFIED • UNLOCK BOOK":"REJECT";}
+  });
+  document.addEventListener("click",event=>{
+    if(event.target.closest("#ioneManualBookPaymentsRefresh"))refresh(false);
+    if(event.target.closest("#ioneManualBookReceiptsRefresh"))refresh(true);
+  });
+  const oldRefresh=window.ioneLoadManualSubscriptionRequests;
+  window.ioneLoadManualSubscriptionRequests=async()=>{if(oldRefresh)await oldRefresh();};
+  document.addEventListener("click",event=>{
+    if(event.target.closest("#ioneAuthorAccessRefresh"))setTimeout(()=>refresh(false),150);
+  });
+  window.ioneLoadManualBookPayments=refresh;
+})();
+
+</script>
