@@ -12199,6 +12199,76 @@ function ioneRunBackgroundMediaPreload(){ return; }
 })();
 </script>
 
+<script>
+
+(function(){
+  "use strict";
+  if(window.__ioneManualBookPaymentsAuthorityUI)return;
+  window.__ioneManualBookPaymentsAuthorityUI=true;
+  const $=id=>document.getElementById(id);
+  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+  async function call(body){
+    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body});
+    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Manual book payment request failed.");
+    return result.data;
+  }
+  async function refresh(receiptsOnly=false){
+    const status=$("ioneManualBookPaymentsStatus"),list=$("ioneManualBookPaymentsList");
+    if(!status||!list)return;
+    status.textContent=receiptsOnly?"Loading confirmed receipts…":"Loading manual payment requests…";
+    try{
+      if(receiptsOnly){
+        const data=await call({action:"authority_receipts"});
+        const rows=data.receipts||[];
+        list.innerHTML=rows.length?rows.map(r=>'<article style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:12px;display:grid;gap:5px"><strong>'+esc(r.receipt_number)+'</strong><div style="font-size:12px;line-height:1.6;color:#bdd3ce">Book ID: '+esc(r.book_id)+'<br>Buyer: '+esc(r.buyer_name||"—")+' • '+esc(r.buyer_phone||"—")+'<br>Amount: TZS '+Number(r.amount_tzs||0).toLocaleString("en-US")+' • Method: '+esc(r.payment_method)+'<br>Paid: '+esc(r.paid_at||"—")+'</div></article>').join(""):'<div class="authority-section-note">No confirmed book receipts yet.</div>';
+        status.textContent=rows.length+" permanent receipt record(s)";
+        return;
+      }
+      const data=await call({action:"authority_list"});
+      const rows=data.requests||[];
+      list.innerHTML=rows.length?rows.map(r=>{
+        const pending=r.manual_review_status==="pending"&&r.status==="pending";
+        return '<article style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:12px;display:grid;gap:7px">'+
+          '<strong>'+esc(r.heavens_books?.title||"Book")+'</strong>'+
+          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Request: '+esc(r.id)+'<br>Buyer account: '+esc(r.customer_email||r.customer_id||"—")+'<br>Payer name: '+esc(r.manual_payer_name||"—")+'<br>Payer phone: '+esc(r.manual_payer_phone||"—")+'<br>Amount: TZS '+Number(r.amount||0).toLocaleString("en-US")+'<br>Submitted: '+esc(r.created_at||"—")+'<br>Status: <b>'+esc(String(r.manual_review_status||r.status).toUpperCase())+'</b>'+(r.manual_receipt_number?'<br>Receipt: '+esc(r.manual_receipt_number):'')+(r.manual_rejection_reason?'<br>Reason: '+esc(r.manual_rejection_reason):'')+'</div>'+
+          (pending?'<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" data-i1-manual-approve="'+esc(r.id)+'" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • UNLOCK BOOK</button><button type="button" data-i1-manual-reject="'+esc(r.id)+'" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT</button></div>':'')+
+          '</article>';
+      }).join(""):'<div class="authority-section-note">No manual book payment requests have been submitted.</div>';
+      status.textContent=rows.length+" request(s) • approve only after checking the real merchant transaction";
+    }catch(e){status.textContent=e.message||"Could not load manual book payment records.";status.style.color="#ff9f9f";}
+  }
+  document.addEventListener("click",async event=>{
+    if(event.target.closest("#ioneManualBookPaymentsRefresh")){await refresh(false);return;}
+    if(event.target.closest("#ioneManualBookReceiptsRefresh")){await refresh(true);return;}
+    const approve=event.target.closest("[data-i1-manual-approve]");
+    const reject=event.target.closest("[data-i1-manual-reject]");
+    if(!approve&&!reject)return;
+    const btn=approve||reject, id=btn.getAttribute(approve?"data-i1-manual-approve":"data-i1-manual-reject");
+    try{
+      if(approve){
+        if(!confirm("Confirm that you checked the actual merchant transaction and the amount matches? This will unlock the book and record the sale."))return;
+        btn.disabled=true;btn.textContent="VERIFYING…";
+        const data=await call({action:"authority_approve",order_id:id,authority_name:"Authority Press"});
+        alert("Manual payment approved. Book unlocked and receipt recorded: "+(data.result?.receipt_number||"created"));
+      }else{
+        const reason=prompt("Why is this payment being rejected?","Payment could not be verified");
+        if(reason===null)return;
+        btn.disabled=true;btn.textContent="REJECTING…";
+        await call({action:"authority_reject",order_id:id,authority_name:"Authority Press",reason});
+        alert("Request rejected. No book access was granted.");
+      }
+      await refresh(false);
+    }catch(e){alert(e.message||"Could not update the payment request.");btn.disabled=false;btn.textContent=approve?"PAYMENT VERIFIED • UNLOCK BOOK":"REJECT";}
+  });
+  const oldRefresh=window.ioneLoadManualSubscriptionRequests;
+  window.ioneLoadManualSubscriptionRequests=async()=>{if(oldRefresh)await oldRefresh();};
+  document.addEventListener("click",event=>{
+    if(event.target.closest("#ioneAuthorAccessRefresh"))setTimeout(()=>refresh(false),150);
+  });
+  window.ioneLoadManualBookPayments=refresh;
+})();
+
+</script>
 </body>
 
 
@@ -13942,73 +14012,4 @@ function ioneRunBackgroundMediaPreload(){ return; }
 }
 </style>
 
-<script>
 
-(function(){
-  "use strict";
-  if(window.__ioneManualBookPaymentsAuthorityUI)return;
-  window.__ioneManualBookPaymentsAuthorityUI=true;
-  const $=id=>document.getElementById(id);
-  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
-  async function call(body){
-    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body});
-    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Manual book payment request failed.");
-    return result.data;
-  }
-  async function refresh(receiptsOnly=false){
-    const status=$("ioneManualBookPaymentsStatus"),list=$("ioneManualBookPaymentsList");
-    if(!status||!list)return;
-    status.textContent=receiptsOnly?"Loading confirmed receipts…":"Loading manual payment requests…";
-    try{
-      if(receiptsOnly){
-        const data=await call({action:"authority_receipts"});
-        const rows=data.receipts||[];
-        list.innerHTML=rows.length?rows.map(r=>'<article style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:12px;display:grid;gap:5px"><strong>'+esc(r.receipt_number)+'</strong><div style="font-size:12px;line-height:1.6;color:#bdd3ce">Book ID: '+esc(r.book_id)+'<br>Buyer: '+esc(r.buyer_name||"—")+' • '+esc(r.buyer_phone||"—")+'<br>Amount: TZS '+Number(r.amount_tzs||0).toLocaleString("en-US")+' • Method: '+esc(r.payment_method)+'<br>Paid: '+esc(r.paid_at||"—")+'</div></article>').join(""):'<div class="authority-section-note">No confirmed book receipts yet.</div>';
-        status.textContent=rows.length+" permanent receipt record(s)";
-        return;
-      }
-      const data=await call({action:"authority_list"});
-      const rows=data.requests||[];
-      list.innerHTML=rows.length?rows.map(r=>{
-        const pending=r.manual_review_status==="pending"&&r.status==="pending";
-        return '<article style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:12px;display:grid;gap:7px">'+
-          '<strong>'+esc(r.heavens_books?.title||"Book")+'</strong>'+
-          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Request: '+esc(r.id)+'<br>Buyer account: '+esc(r.customer_email||r.customer_id||"—")+'<br>Payer name: '+esc(r.manual_payer_name||"—")+'<br>Payer phone: '+esc(r.manual_payer_phone||"—")+'<br>Amount: TZS '+Number(r.amount||0).toLocaleString("en-US")+'<br>Submitted: '+esc(r.created_at||"—")+'<br>Status: <b>'+esc(String(r.manual_review_status||r.status).toUpperCase())+'</b>'+(r.manual_receipt_number?'<br>Receipt: '+esc(r.manual_receipt_number):'')+(r.manual_rejection_reason?'<br>Reason: '+esc(r.manual_rejection_reason):'')+'</div>'+
-          (pending?'<div style="display:flex;gap:7px;flex-wrap:wrap"><button type="button" data-i1-manual-approve="'+esc(r.id)+'" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • UNLOCK BOOK</button><button type="button" data-i1-manual-reject="'+esc(r.id)+'" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT</button></div>':'')+
-          '</article>';
-      }).join(""):'<div class="authority-section-note">No manual book payment requests have been submitted.</div>';
-      status.textContent=rows.length+" request(s) • approve only after checking the real merchant transaction";
-    }catch(e){status.textContent=e.message||"Could not load manual book payment records.";status.style.color="#ff9f9f";}
-  }
-  document.addEventListener("click",async event=>{
-    if(event.target.closest("#ioneManualBookPaymentsRefresh")){await refresh(false);return;}
-    if(event.target.closest("#ioneManualBookReceiptsRefresh")){await refresh(true);return;}
-    const approve=event.target.closest("[data-i1-manual-approve]");
-    const reject=event.target.closest("[data-i1-manual-reject]");
-    if(!approve&&!reject)return;
-    const btn=approve||reject, id=btn.getAttribute(approve?"data-i1-manual-approve":"data-i1-manual-reject");
-    try{
-      if(approve){
-        if(!confirm("Confirm that you checked the actual merchant transaction and the amount matches? This will unlock the book and record the sale."))return;
-        btn.disabled=true;btn.textContent="VERIFYING…";
-        const data=await call({action:"authority_approve",order_id:id,authority_name:"Authority Press"});
-        alert("Manual payment approved. Book unlocked and receipt recorded: "+(data.result?.receipt_number||"created"));
-      }else{
-        const reason=prompt("Why is this payment being rejected?","Payment could not be verified");
-        if(reason===null)return;
-        btn.disabled=true;btn.textContent="REJECTING…";
-        await call({action:"authority_reject",order_id:id,authority_name:"Authority Press",reason});
-        alert("Request rejected. No book access was granted.");
-      }
-      await refresh(false);
-    }catch(e){alert(e.message||"Could not update the payment request.");btn.disabled=false;btn.textContent=approve?"PAYMENT VERIFIED • UNLOCK BOOK":"REJECT";}
-  });
-  const oldRefresh=window.ioneLoadManualSubscriptionRequests;
-  window.ioneLoadManualSubscriptionRequests=async()=>{if(oldRefresh)await oldRefresh();};
-  document.addEventListener("click",event=>{
-    if(event.target.closest("#ioneAuthorAccessRefresh"))setTimeout(()=>refresh(false),150);
-  });
-  window.ioneLoadManualBookPayments=refresh;
-})();
-
-</script>
