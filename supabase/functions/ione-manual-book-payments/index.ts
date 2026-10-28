@@ -53,6 +53,11 @@ Deno.serve(async (req: Request) => {
         if (error) return json({ success: false, error: "Could not load manual book payment requests." }, 500);
         return json({ success: true, requests: data || [] });
       }
+      if (action === "authority_receipts") {
+        const { data, error } = await admin.from("ione_book_receipts").select("*").order("paid_at", { ascending: false }).limit(500);
+        if (error) return json({ success: false, error: "Could not load the permanent receipt ledger." }, 500);
+        return json({ success: true, receipts: data || [] });
+      }
       const orderId = clean(body.order_id, 64);
       if (!validUuid(orderId)) return json({ success: false, error: "A valid payment request is required." }, 400);
       if (action === "authority_reject") {
@@ -77,11 +82,6 @@ Deno.serve(async (req: Request) => {
         });
         if (error) return json({ success: false, error: error.message || "Could not approve this payment." }, 409);
         return json({ success: true, result: data });
-      }
-      if (action === "authority_receipts") {
-        const { data, error } = await admin.from("ione_book_receipts").select("*").order("paid_at", { ascending: false }).limit(500);
-        if (error) return json({ success: false, error: "Could not load the permanent receipt ledger." }, 500);
-        return json({ success: true, receipts: data || [] });
       }
       return json({ success: false, error: "Unknown Authority Press action." }, 400);
     }
