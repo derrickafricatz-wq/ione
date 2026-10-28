@@ -12264,7 +12264,21 @@ function ioneRunBackgroundMediaPreload(){ return; }
   const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
   async function call(body){
     const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body});
-    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Manual book payment request failed.");
+    if(result.error){
+      let detail=result.data?.error||"";
+      try{
+        if(!detail&&result.error.context&&typeof result.error.context.json==="function"){
+          const payload=await result.error.context.clone().json();
+          detail=payload?.error||payload?.message||"";
+        }
+      }catch(_){}
+      const status=Number(result.error.context?.status||0);
+      if(status===401||/Authority Press session expired/i.test(detail)){
+        throw new Error("Authority Press session expired. Verify Authority Press access again, then press REFRESH PAYMENT REQUESTS.");
+      }
+      throw new Error(detail||result.error.message||"Manual book payment request failed. Please retry.");
+    }
+    if(!result.data?.success)throw new Error(result.data?.error||"Manual book payment request failed.");
     return result.data;
   }
   async function refresh(receiptsOnly=false){
