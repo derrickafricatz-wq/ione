@@ -152,10 +152,15 @@ Deno.serve(async (req: Request) => {
       const { data: order, error: orderError } = await admin.from("book_orders").select("id,status,book_id,amount")
         .eq("id", recovery.order_id).in("status", ["paid","completed"]).maybeSingle();
       if (orderError || !order || order.book_id !== bookId) return json({ success: false, error: "This purchase is not confirmed, so access cannot be restored." }, 409);
-      const { error: accessError } = await admin.from("book_access").upsert({
-        book_id: bookId, customer_id: userId, order_id: order.id,
-      }, { onConflict: "book_id,customer_id" });
-      if (accessError) return json({ success: false, error: "Could not restore access. Contact I|ONE Care." }, 500);
+      const { data: existingAccess, error: existingAccessError } = await admin.from("book_access")
+        .select("id").eq("book_id", bookId).eq("customer_id", userId).limit(1);
+      if (existingAccessError) return json({ success: false, error: "Could not check existing book access." }, 500);
+      if (!existingAccess?.length) {
+        const { error: accessError } = await admin.from("book_access").insert({
+          book_id: bookId, customer_id: userId, order_id: order.id,
+        });
+        if (accessError) return json({ success: false, error: "Could not restore access. Contact I|ONE Care." }, 500);
+      }
       await admin.from("ione_book_recovery_codes").update({ last_used_at: new Date().toISOString(), use_count: Number(recovery.use_count || 0) + 1 }).eq("id", recovery.id);
       return json({ success: true, message: "Purchase verified. Book access restored.", book_id: bookId });
     }
