@@ -57,6 +57,31 @@ const style=document.createElement("style");style.textContent=`
 #ioneOpportunitiesOverlay .io-foot{padding:0 20px 18px;font-size:10px;line-height:1.5;color:#829286}
 #openIoneOpportunities{background:linear-gradient(145deg,#f0cf7c,#936024)!important;border-color:#ffefbe!important}#openIoneOpportunities .smart-icon{color:#fff8d8!important;text-shadow:none!important}
 @media(max-width:600px){#ioneOpportunitiesOverlay .io-tools{grid-template-columns:1fr}#ioneOpportunitiesOverlay .io-list{grid-template-columns:1fr}#ioneOpportunitiesOverlay .io-form{grid-template-columns:1fr}#ioneOpportunitiesOverlay .io-wide{grid-column:auto}#ioneOpportunitiesOverlay .io-admin-row{align-items:flex-start;flex-direction:column}}
+
+/* I|ONE premium business palette: navy, teal, forest, champagne and slate */
+#smartPanel .smart-item,
+#openAfrilink,#openSokoni,#openIoneOpportunities,#openHealth,#openTranscript,
+#openIoneExpert,#openIoneGift,#openIoneSupport,#openBusBooking,#openFlightBooking,#openAuthority{
+  color:#fff!important;
+  border:1px solid rgba(220,235,231,.62)!important;
+  background:linear-gradient(145deg,#173b4b 0%,#102b3a 58%,#0a1c29 100%)!important;
+}
+#openAfrilink{background:linear-gradient(145deg,#176c73,#124653 62%,#0b2936)!important;border-color:#82d6cb!important}
+#openSokoni{background:linear-gradient(145deg,#39785a,#20543f 62%,#123b30)!important;border-color:#a8d7b1!important}
+#openIoneOpportunities{background:linear-gradient(145deg,#a9823d,#755728 62%,#47371f)!important;border-color:#ead4a0!important}
+#openHealth{background:linear-gradient(145deg,#356b91,#244c70 62%,#152f4b)!important;border-color:#a9cde4!important}
+#openTranscript{background:linear-gradient(145deg,#665c83,#443c61 62%,#292740)!important;border-color:#c9bee8!important}
+#openIoneExpert{background:linear-gradient(145deg,#287a78,#1a5658 62%,#10353d)!important;border-color:#a2ddd2!important}
+#openIoneGift{background:linear-gradient(145deg,#a9823d,#755728 62%,#47371f)!important;border-color:#ead4a0!important}
+#openIoneSupport{background:linear-gradient(145deg,#3f627e,#2b455f 62%,#182d43)!important;border-color:#b7d0e0!important}
+#openBusBooking{background:linear-gradient(145deg,#3b777f,#28555f 62%,#183541)!important;border-color:#a8d5d8!important}
+#openFlightBooking{background:linear-gradient(145deg,#667786,#465765 62%,#283844)!important;border-color:#cbd5dc!important}
+#openAuthority{background:linear-gradient(145deg,#46566e,#303e55 62%,#1a293c)!important;border-color:#c1cedd!important}
+#smartPanel .smart-item .smart-icon,#smartPanel .smart-item .ione-service-art{color:#f7e7b5!important;text-shadow:none!important}
+#smartPanel .smart-item strong{color:#fff!important;text-shadow:none!important}
+#smartPanel .smart-item small{color:#e4eee9!important;text-shadow:none!important}
+#smartPanel .smart-item{box-shadow:0 5px 0 rgba(0,0,0,.24),0 10px 20px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.2)!important}
+#smartPanel .smart-item:active{filter:brightness(1.1)!important}
 `;document.head.appendChild(style);
 const root=document.createElement("section");root.id="ioneOpportunitiesOverlay";root.setAttribute("aria-label","I|ONE Opportunities");
 root.innerHTML=`<div class="io-shell"><header class="io-hero"><div class="io-top"><div class="io-kicker">I|ONE • VERIFIED NOTICEBOARD</div><button class="io-close" data-action="close">CLOSE</button></div><h1>Opportunities, in one place.</h1><p>Explore jobs, scholarships, training, tenders and business opportunities. Check deadlines and apply through the original source.</p></header>
