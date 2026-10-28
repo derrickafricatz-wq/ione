@@ -6,7 +6,8 @@ alter table public.book_orders
   add column if not exists manual_reviewed_at timestamptz,
   add column if not exists manual_reviewed_by text,
   add column if not exists manual_rejection_reason text,
-  add column if not exists manual_receipt_number text;
+  add column if not exists manual_receipt_number text,
+  add column if not exists manual_recovery_hash text;
 
 create index if not exists book_orders_manual_review_idx
   on public.book_orders (manual_review_status, created_at desc)
@@ -95,7 +96,8 @@ begin
   end if;
   if v_order.status <> 'pending' or v_order.manual_review_status <> 'pending' then raise exception 'Only pending manual requests can be approved'; end if;
   if v_order.customer_id is null then raise exception 'Customer account is missing'; end if;
-  if p_receipt_number is null or length(trim(p_receipt_number)) < 6 or p_recovery_hash is null or length(trim(p_recovery_hash)) <> 64 then raise exception 'Receipt or recovery details are invalid'; end if;
+  if p_receipt_number is null or length(trim(p_receipt_number)) < 6 then raise exception 'Receipt details are invalid'; end if;
+  if coalesce(v_order.manual_recovery_hash, p_recovery_hash) is null or length(coalesce(v_order.manual_recovery_hash, p_recovery_hash)) <> 64 then raise exception 'Recovery details are invalid'; end if;
   select * into v_book from public.heavens_books where id = v_order.book_id and active = true;
   if not found then raise exception 'Book is no longer available'; end if;
   update public.book_orders set status='paid', paid_at=now(), manual_review_status='approved',
@@ -109,7 +111,7 @@ begin
     v_order.manual_payer_name,v_order.manual_payer_phone,round(v_order.amount)::bigint,'Manual',now())
   on conflict (order_id) do nothing;
   insert into public.ione_book_recovery_codes (order_id,book_id,customer_id,code_hash)
-    values (v_order.id,v_order.book_id,v_order.customer_id,lower(trim(p_recovery_hash))) on conflict (order_id) do nothing;
+    values (v_order.id,v_order.book_id,v_order.customer_id,lower(trim(coalesce(v_order.manual_recovery_hash,p_recovery_hash)))) on conflict (order_id) do nothing;
   return jsonb_build_object('success',true,'already_approved',false,'receipt_number',trim(p_receipt_number));
 end $$;
 
