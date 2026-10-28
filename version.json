@@ -1,5 +1,5 @@
 {
-  "version": "1.0.278",
-  "message": "Adds verified manual book payments, Authority Press review, receipts and recovery",
+  "version": "1.0.279",
+  "message": "Completes manual book payment, Authority Press verification and recovery controls",
   "force": true
 }
