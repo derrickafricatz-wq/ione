@@ -1,5 +1,5 @@
 {
-  "version": "1.0.279",
-  "message": "Completes manual book payment, Authority Press verification and recovery controls",
+  "version": "1.0.280",
+  "message": "Shorter manual/recovery buttons, recovery-code copy, clearer Authority Press payment errors",
   "force": true
 }
