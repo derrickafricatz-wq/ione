@@ -14003,10 +14003,6 @@ function ioneRunBackgroundMediaPreload(){ return; }
       await refresh(false);
     }catch(e){alert(e.message||"Could not update the payment request.");btn.disabled=false;btn.textContent=approve?"PAYMENT VERIFIED • UNLOCK BOOK":"REJECT";}
   });
-  document.addEventListener("click",event=>{
-    if(event.target.closest("#ioneManualBookPaymentsRefresh"))refresh(false);
-    if(event.target.closest("#ioneManualBookReceiptsRefresh"))refresh(true);
-  });
   const oldRefresh=window.ioneLoadManualSubscriptionRequests;
   window.ioneLoadManualSubscriptionRequests=async()=>{if(oldRefresh)await oldRefresh();};
   document.addEventListener("click",event=>{
