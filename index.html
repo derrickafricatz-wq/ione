@@ -9574,7 +9574,7 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button><button class="hb-btn hb-manual-payment">MANUAL PAY</button><button class="hb-btn hb-book-recovery">CONFIRM RECOVERY</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button><button class="hb-btn hb-manual-payment">MANUAL</button><button class="hb-btn hb-book-recovery">RECOVERY</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
       const insightBox=card.querySelector(".hb-insight"), insightText=card.querySelector(".hb-insight-text");
       const insightItems=[book.bookInsight,book.bookInsight2,book.bookInsight3].map(v=>String(v||"").trim()).filter(Boolean);
       if(!insightItems.length)insightItems.push("The author has not added a book insight yet.");
@@ -10239,6 +10239,38 @@ async function recoverManualBookAccess(book,store){
   }catch(error){alert(error?.message||"Could not restore the book. Check the code and selected book.");}
 }
 
+function showManualBookRecoveryCode(code,book,amount){
+  const old=document.getElementById("ioneManualRecoveryCodeOverlay");
+  if(old)old.remove();
+  const overlay=document.createElement("div");
+  overlay.id="ioneManualRecoveryCodeOverlay";
+  overlay.style.cssText="position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box";
+  const panel=document.createElement("section");
+  panel.style.cssText="width:min(100%,420px);box-sizing:border-box;background:#071713;color:#eafff4;border:1px solid #4bd7a0;border-radius:18px;padding:20px;box-shadow:0 18px 55px rgba(0,0,0,.55);display:grid;gap:12px;font-family:Arial,sans-serif";
+  const heading=document.createElement("h3");heading.textContent="REQUEST SUBMITTED";heading.style.cssText="margin:0;font-size:18px;font-weight:900;letter-spacing:.5px";
+  const info=document.createElement("p");info.textContent="Book: "+String(book.title||"Book")+" · Amount: TZS "+Number(amount||0).toLocaleString("en-US")+". Your request is awaiting Authority Press verification. Do not pay again.";info.style.cssText="margin:0;font-size:13px;line-height:1.5;color:#c7ded5";
+  const warning=document.createElement("p");warning.textContent="Save this recovery code. It is shown only once here. Keep it private.";warning.style.cssText="margin:0;font-size:12px;line-height:1.45;color:#f8d99a;font-weight:700";
+  const codeBox=document.createElement("div");codeBox.textContent=code;codeBox.style.cssText="padding:14px 10px;border:1px dashed #67e8b2;border-radius:10px;background:#102720;color:#fff;font-size:20px;font-weight:900;letter-spacing:2px;text-align:center;overflow-wrap:anywhere;user-select:all";
+  const status=document.createElement("div");status.setAttribute("role","status");status.style.cssText="font-size:12px;min-height:16px;color:#9feacb";
+  const actions=document.createElement("div");actions.style.cssText="display:flex;gap:9px;flex-wrap:wrap";
+  const copy=document.createElement("button");copy.type="button";copy.textContent="COPY CODE";copy.style.cssText="flex:1;min-height:44px;border:0;border-radius:10px;background:#a8f1ca;color:#09241b;font-weight:900;padding:10px";
+  const done=document.createElement("button");done.type="button";done.textContent="DONE";done.style.cssText="flex:1;min-height:44px;border:1px solid #45665a;border-radius:10px;background:#14241e;color:#eafff4;font-weight:800;padding:10px";
+  copy.addEventListener("click",async()=>{
+    try{
+      if(navigator.clipboard&&window.isSecureContext)await navigator.clipboard.writeText(code);
+      else{
+        const area=document.createElement("textarea");area.value=code;area.readOnly=true;area.style.cssText="position:fixed;left:-9999px;top:0;opacity:0";
+        document.body.appendChild(area);area.select();area.setSelectionRange(0,area.value.length);
+        const copied=document.execCommand("copy");area.remove();if(!copied)throw new Error("Copy is unavailable");
+      }
+      copy.textContent="COPIED ✓";status.textContent="Recovery code copied. Save it somewhere safe.";
+    }catch(_){status.textContent="Copy was blocked. Press and hold the code above to copy it manually.";copy.textContent="TRY COPY AGAIN";}
+  });
+  done.addEventListener("click",()=>{overlay.remove();heavensNormalizeViewport();});
+  actions.append(copy,done);panel.append(heading,info,warning,codeBox,actions,status);overlay.appendChild(panel);document.body.appendChild(overlay);
+  try{localStorage.setItem("ione_book_recovery_"+String(book.supabaseId||book.id||""),code);}catch(_){}
+}
+
 async function startManualBookPayment(book,store){
   try{
     const session=await ensureHeavensAnonymousSession();
@@ -10274,7 +10306,7 @@ async function startManualBookPayment(book,store){
     if(result.error||!result.data?.success)throw new Error(result.data?.error||"Could not submit manual payment request.");
     const code=String(result.data.recovery_code||"");
     try{localStorage.setItem("ione_book_recovery_"+bookId,code);}catch(_){}
-    alert("MANUAL PAYMENT REQUEST SUBMITTED\n\nBook: "+String(book.title||"Book")+"\nAmount: TZS "+amount.toLocaleString("en-US")+"\nStatus: PENDING AUTHORITY VERIFICATION\n\nIMPORTANT — save this recovery code somewhere safe. It is shown only once:\n\n"+code+"\n\nDo not pay again. You can use MANUAL PAY to check status. The book opens only after Authority Press verifies your payment.");
+    showManualBookRecoveryCode(code,book,amount);
   }catch(error){console.error("Manual book payment:",error);alert(error?.message||"Manual payment could not be processed.");}
 }
 
