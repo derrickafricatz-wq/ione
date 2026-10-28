@@ -9574,7 +9574,7 @@ async function openHeavensBookstore(){
       })();
       const displayPrice = Number(book.price || 0);
       const priceLabel = (!book.paymentRequired || displayPrice <= 0) ? "" : (Number.isFinite(displayPrice) ? `TZS ${displayPrice.toLocaleString()}` : "PRICE NOT SET");
-      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button><button class="hb-btn hb-manual-payment">MANUAL PAY</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
+      card.innerHTML=`<div class="hb-cover">${cover}</div><div class="hb-card-body"><div class="hb-card-title">${escapeBookHtml(book.title||"Untitled Book")}</div><div class="hb-meta">${escapeBookHtml(book.category||"BOOK")}</div><div class="hb-author"><span class="hb-author-label">AUTHOR SIGNATURE</span><span class="hb-author-name">${escapeBookHtml(book.authorName||"Independent Author")}</span></div><div class="hb-insight" role="button" tabindex="0" aria-label="Book insights preview"><div class="hb-insight-kicker">INSIDE THE BOOK</div><div class="hb-insight-text">${escapeBookHtml(book.bookInsight||"The author has not added a book insight yet.")}</div></div><div class="hb-price" ${priceLabel ? "" : "hidden"}>${priceLabel}</div><div class="hb-actions"><button class="hb-btn ${book._metadataOnly?'pay':paid?'read':'pay'}" ${book._metadataOnly?'disabled':''}>${book._metadataOnly?'LOADING…':paid?'READ':'PAY'}</button><button class="hb-btn pay hb-check-payment">CHECK</button><button class="hb-btn hb-manual-payment">MANUAL PAY</button><button class="hb-btn hb-book-recovery">CONFIRM RECOVERY</button></div><button type="button" class="hb-audio-btn" ${book.narrationPath?'':'disabled'}>${book.narrationPath?'▶ LISTEN TO NARRATION':'NARRATION'}</button><div class="hb-lock">${(!book.paymentRequired || Number(book.price||0)<=0)?'':paid?'Purchased • access saved':pending?'Payment sent — checking BLMPay…':'Payment required to read'}</div></div>`;
       const insightBox=card.querySelector(".hb-insight"), insightText=card.querySelector(".hb-insight-text");
       const insightItems=[book.bookInsight,book.bookInsight2,book.bookInsight3].map(v=>String(v||"").trim()).filter(Boolean);
       if(!insightItems.length)insightItems.push("The author has not added a book insight yet.");
@@ -9623,6 +9623,12 @@ async function openHeavensBookstore(){
         manualBtn.onclick=()=>{if(!book._metadataOnly)startManualBookPayment(book,store);};
         manualBtn.disabled=!!book._metadataOnly || !book.paymentRequired || Number(book.price||0)<=0;
         manualBtn.title="Pay by manual mobile money or check your submitted request";
+      }
+      const recoveryBtn=card.querySelector(".hb-book-recovery");
+      if(recoveryBtn){
+        recoveryBtn.onclick=()=>{if(!book._metadataOnly)recoverManualBookAccess(book,store);};
+        recoveryBtn.disabled=!!book._metadataOnly;
+        recoveryBtn.title="Restore a previously confirmed purchase on this phone";
       }
       const checkBtn=card.querySelector('.hb-check-payment');
       if(checkBtn){
@@ -10215,6 +10221,23 @@ function heavensPhonePaymentDialog(book, amount){
   });
 }
 
+
+async function recoverManualBookAccess(book,store){
+  try{
+    const session=await ensureHeavensAnonymousSession();
+    if(!session?.access_token)throw new Error("Please reconnect to your I|ONE session.");
+    const bookId=String(book.supabaseId||book.id||"");
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(bookId))throw new Error("This book is not linked to the secure bookstore.");
+    const code=prompt("Enter the 16-character recovery code saved when your manual purchase was submitted:");
+    if(!code)return;
+    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body:{action:"recover",book_id:bookId,recovery_code:code.trim()}});
+    if(result.error||!result.data?.success)throw new Error(result.data?.error||"Purchase recovery failed.");
+    markBookPaid(book);
+    const card=store?.querySelector('.hb-card[data-book-id="'+String(book.id).replace(/"/g,'&quot;')+'"]');
+    if(card){const b=card.querySelector(".hb-btn:not(.hb-check-payment):not(.hb-manual-payment):not(.hb-book-recovery)");if(b){b.className="hb-btn read";b.textContent="READ";}const lock=card.querySelector(".hb-lock");if(lock)lock.textContent="Purchase verified • access restored";}
+    alert("Purchase confirmed. Your book access has been restored on this phone.");
+  }catch(error){alert(error?.message||"Could not restore the book. Check the code and selected book.");}
+}
 
 async function startManualBookPayment(book,store){
   try{
