@@ -12263,7 +12263,21 @@ function ioneRunBackgroundMediaPreload(){ return; }
   const $=id=>document.getElementById(id);
   const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
   async function call(body){
-    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body});
+    let authorityToken="";
+    try{
+      authorityToken=sessionStorage.getItem("ioneAuthoritySession")||"";
+      const expiresAt=Date.parse(sessionStorage.getItem("ioneAuthoritySessionExpiresAt")||"");
+      if(!authorityToken||(Number.isFinite(expiresAt)&&Date.now()>=expiresAt)){
+        throw new Error("Authority Press is locked or its session has expired. Unlock Authority Press first, then refresh payment requests.");
+      }
+    }catch(error){
+      if(error&&error.message&&error.message.includes("Authority Press is locked"))throw error;
+      throw new Error("Could not read the Authority Press session. Unlock Authority Press again, then retry.");
+    }
+    // Pass the active session explicitly. Do not rely on the shared invoke wrapper,
+    // because this panel can run in a script loaded before that wrapper is installed.
+    const securedBody={...body,authority_session:authorityToken};
+    const result=await heavensSupabase.functions.invoke("ione-manual-book-payments",{body:securedBody});
     if(result.error){
       let detail=result.data?.error||"";
       try{
