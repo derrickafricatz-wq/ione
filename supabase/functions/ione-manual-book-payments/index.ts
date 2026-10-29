@@ -56,7 +56,14 @@ Deno.serve(async (req: Request) => {
       if (action === "authority_receipts") {
         const { data, error } = await admin.from("ione_book_receipts").select("*").order("paid_at", { ascending: false }).limit(500);
         if (error) return json({ success: false, error: "Could not load the permanent receipt ledger." }, 500);
-        return json({ success: true, receipts: data || [] });
+        const rows = data || [];
+        const bookIds = [...new Set(rows.map((r: any) => r.book_id).filter(Boolean))];
+        let titleById = new Map<string, string>();
+        if (bookIds.length) {
+          const booksResult = await admin.from("heavens_books").select("id,title").in("id", bookIds);
+          if (!booksResult.error) titleById = new Map((booksResult.data || []).map((b: any) => [String(b.id), String(b.title || "I|ONE Book")]));
+        }
+        return json({ success: true, receipts: rows.map((r: any) => ({ ...r, book_title: titleById.get(String(r.book_id)) || "I|ONE Book" })) });
       }
       const orderId = clean(body.order_id, 64);
       if (!validUuid(orderId)) return json({ success: false, error: "A valid payment request is required." }, 400);
@@ -117,7 +124,7 @@ Deno.serve(async (req: Request) => {
         book_id: bookId, customer_id: userId, customer_email: auth.user.email || null,
         amount, currency: book.currency || "TZS", status: "pending", payment_provider: "Manual",
         manual_payer_name: payerName, manual_payer_phone: payerPhone, manual_review_status: "pending",
-        manual_recovery_hash: recoveryHash,
+        manual_recovery_hash: recoveryHash, manual_recovery_code: recoveryCode,
       }).select("id,book_id,amount,status,manual_review_status,created_at").single();
       if (insertError || !order) return json({ success: false, error: "Could not submit your manual payment request." }, 500);
       return json({
@@ -135,7 +142,7 @@ Deno.serve(async (req: Request) => {
       const orderIds = (data || []).filter((o: any) => ["paid","completed"].includes(o.status)).map((o: any) => o.id);
       let receipts: any[] = [];
       if (orderIds.length) {
-        const result = await admin.from("ione_book_receipts").select("order_id,receipt_number,amount_tzs,payment_method,paid_at").in("order_id", orderIds);
+        const result = await admin.from("ione_book_receipts").select("order_id,receipt_number,amount_tzs,payment_method,paid_at,recovery_code").in("order_id", orderIds);
         if (!result.error) receipts = result.data || [];
       }
       return json({ success: true, orders: data || [], receipts });
