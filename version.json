@@ -1,5 +1,5 @@
 {
-  "version": "1.0.281",
-  "message": "Fix Authority Press manual book payment verification",
+  "version": "1.0.282",
+  "message": "Book receipt PDF with recovery code, RECOVER label and homepage Call I1",
   "force": true
 }
