@@ -1,5 +1,5 @@
 {
-  "version": "1.0.287",
-  "message": "ChapChap manual payments, Authority confirmation, and receipts",
+  "version": "1.0.288",
+  "message": "Fix Authority Press manual ChapChap payment verification",
   "force": true
 }
