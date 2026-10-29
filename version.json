@@ -1,5 +1,5 @@
 {
-  "version": "1.0.282",
-  "message": "Book receipt PDF with recovery code, RECOVER label and homepage Call I1",
+  "version": "1.0.283",
+  "message": "Add explicit receipt PDF download button",
   "force": true
 }
