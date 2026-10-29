@@ -52,6 +52,14 @@
     if(!password) throw new Error("Unlock Authority Press first.");
     var r=await sb().functions.invoke("ione-chapchap-authority",{body:{action:"list",password:password}});
     if(r.error||!r.data?.success) throw new Error(r.data?.error||r.error?.message||"Could not load Authority Press data.");
+    var manual=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"list_pending",password:password}});
+    if(!manual.error&&manual.data?.success){
+      (manual.data.orders||[]).forEach(function(o){
+        r.data.orders=r.data.orders||[];
+        if(!r.data.orders.some(function(x){return String(x.id)===String(o.id);}))
+          r.data.orders.unshift({...o,manual_pending:true,payment_provider:"Manual",product:{title:o.product?.title||"ChapChap product"},has_receipt:false,receipt:null});
+      });
+    }
     return r.data;
   }
 
@@ -153,7 +161,7 @@
       });
     }else{
       rows=orders.map(function(o){
-        return '<div class="authority-chapchap-order"><strong>'+esc(o.product?.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER: '+esc(o.id)+'<br>BUYER: '+esc(o.buyer_full_name||"—")+' • '+esc(o.buyer_phone||"—")+'<br>AMOUNT: '+esc(money(o.amount_tzs))+'<br>STATUS: '+esc(String(o.status||"").toUpperCase())+' • PAYOUT: '+esc(String(o.payout_status||"").toUpperCase())+'</div>'+(o.has_receipt&&o.receipt?receiptButton(o.receipt):'<div class="cc-mini">RECEIPT: PREPARING</div>')+'</div>';
+        return '<div class="authority-chapchap-order"><strong>'+esc(o.product?.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER: '+esc(o.id)+'<br>BUYER: '+esc(o.buyer_full_name||"—")+' • '+esc(o.buyer_phone||"—")+'<br>AMOUNT: '+esc(money(o.amount_tzs))+'<br>PAYMENT: '+esc(o.payment_provider||"BLMPay")+'<br>STATUS: '+esc(String(o.status||"").toUpperCase())+' • PAYOUT: '+esc(String(o.payout_status||"").toUpperCase())+'</div>'+(o.manual_pending?'<button type="button" class="cc-primary cc-authority-confirm-manual" data-order-id="'+esc(o.id)+'" style="width:100%;margin-top:8px">CONFIRM PAYMENT & MARK SOLD</button>':(o.has_receipt&&o.receipt?receiptButton(o.receipt):'<div class="cc-mini">RECEIPT: PREPARING</div>'))+'</div>';
       });
     }
     authorityWriting=true; list.innerHTML=rows.length?rows.join(""):'<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">This section will fill automatically when the matching ChapChap record is created.</div></div>';
@@ -161,6 +169,18 @@
     list.querySelectorAll(".cc-authority-view-receipt").forEach(function(b){b.addEventListener("click",function(){openAuthorityReceipt(JSON.parse(b.dataset.receipt));});});
     list.querySelectorAll(".cc-authority-download-receipt").forEach(function(b){b.addEventListener("click",function(){downloadReceipt(JSON.parse(b.dataset.receipt));});});
     list.querySelectorAll(".cc-authority-download-agreement").forEach(function(b){b.addEventListener("click",function(){var id=String(b.getAttribute("data-agreement-id")||"");var a=(data.agreements||[]).find(function(x){return String(x.id)===id;});if(!a)return;var product=(data.orders||[]).find(function(o){return String(o.product_id)===String(a.product_id);})?.product||null;downloadAgreement(a,product?.title||"PRODUCT ID "+a.product_id);});});
+    list.querySelectorAll(".cc-authority-confirm-manual").forEach(function(b){b.addEventListener("click",async function(){
+      var orderId=String(b.getAttribute("data-order-id")||"");if(!orderId)return;
+      if(!confirm("Confirm that the manual payment is visible in the merchant account? This will mark the product SOLD and create the official receipt."))return;
+      b.disabled=true;b.textContent="VERIFYING…";
+      try{
+        var password=String(document.getElementById("authorityPasswordInput")?.value||"");
+        var result=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"confirm_sold",order_id:orderId,password:password}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not confirm manual payment.");
+        alert("Manual payment confirmed. Product marked SOLD and official receipt created.");
+        var fresh=await getAuthority();renderAuthority("orders",fresh);
+      }catch(e){alert(e?.message||"Could not confirm manual payment.");b.disabled=false;b.textContent="CONFIRM PAYMENT & MARK SOLD";}
+    });});
   }
 
   function openAuthorityReceipt(r){
