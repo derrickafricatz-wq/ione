@@ -37,7 +37,7 @@
         function line(label,value){doc.setFont("helvetica","bold");doc.text(label,20,y);doc.setFont("helvetica","normal");doc.text(String(value||"—"),62,y);y+=9;}
         doc.setFont("helvetica","bold");doc.setFontSize(16);doc.text("I|ONE CHAPCHAP — OFFICIAL RECEIPT",20,y);y+=14;
         doc.setFontSize(11);
-        line("Receipt:",r.receipt_number);line("Product:",r.product_title);line("CLIENT NAME:",r.buyer_full_name);line("PHONE:",r.buyer_phone||r.buyer_contact);line("EMAIL:",r.buyer_email);line("ADDRESS:",r.buyer_address);line("Amount:",money(r.amount_tzs));line("ChapChap fee:",money(r.chapchap_fee_tzs));line("BLMPay ref:",r.blmpay_reference||"—");line("Paid:",r.paid_at?new Date(r.paid_at).toLocaleString():"—");
+        line("Receipt:",r.receipt_number);line("Product:",r.product_title);line("CLIENT NAME:",r.buyer_full_name);line("PHONE:",r.buyer_phone||r.buyer_contact);line("EMAIL:",r.buyer_email);line("ADDRESS:",r.buyer_address);line("Amount:",money(r.amount_tzs));line("Payment method:",r.payment_provider||"BLMPay");line("I|ONE fee ("+Number(r.chapchap_percent||1)+"%):",money(r.chapchap_fee_tzs));line("BLMPay processing fee:",money(r.blmpay_payment_fee_tzs||0));line("Seller share:",money(r.seller_available_tzs||0));line("BLMPay ref:",r.blmpay_reference||"—");line("Paid:",r.paid_at?new Date(r.paid_at).toLocaleString():"—");
         y+=5;doc.line(20,y,190,y);y+=10;doc.setFont("helvetica","bold");doc.text("I|ONE Care",20,y);y+=7;doc.setFont("helvetica","normal");doc.text("+255 742 097 868",20,y);y+=7;doc.text("ione.customercare.africa@gmail.com",20,y);
         var safe=String(r.receipt_number||"receipt").replace(/[^a-z0-9_-]/gi,"-");
         doc.save("IONE-ChapChap-"+safe+".pdf");
@@ -146,7 +146,7 @@
     if(filter==="receipts"){
       rows=orders.filter(function(o){return o.has_receipt && o.receipt;}).map(function(o){
         var r=o.receipt;
-        return '<div class="authority-chapchap-order"><strong>'+esc(r.receipt_number||"OFFICIAL RECEIPT")+'</strong><div class="cc-mini">PRODUCT: '+esc(r.product_title||o.product?.title||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>CHAPCHAP FEE: '+esc(money(r.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</div>'+receiptButton(r)+'</div>';
+        return '<div class="authority-chapchap-order"><strong>'+esc(r.receipt_number||"OFFICIAL RECEIPT")+'</strong><div class="cc-mini">PRODUCT: '+esc(r.product_title||o.product?.title||"—")+'<br>AMOUNT: '+esc(money(r.amount_tzs))+'<br>PAYMENT: '+esc(r.payment_provider||"BLMPay")+'<br>I|ONE FEE ('+esc(Number(r.chapchap_percent||1))+'%): '+esc(money(r.chapchap_fee_tzs))+'<br>PROCESSING FEE: '+esc(money(r.blmpay_payment_fee_tzs||0))+'<br>SELLER SHARE: '+esc(money(r.seller_available_tzs||0))+'<br>BLMPAY: '+esc(r.blmpay_reference||"—")+'<br>PAID: '+esc(r.paid_at?new Date(r.paid_at).toLocaleString():"—")+'</div>'+receiptButton(r)+'</div>';
       });
     }else if(filter==="agreements"){
       var agreements=data.agreements||[];
