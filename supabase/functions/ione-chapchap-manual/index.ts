@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
       const phone = cleanPhone(body?.buyer_phone);
       if (name.length < 2 || !/^255[67]\d{8}$/.test(phone)) return json({ success: false, error: "Enter the same full name and phone number used for manual payment." }, 400);
       const { data: receipts, error } = await admin.from("ione_chapchap_receipts").select("*")
-        .eq("payment_provider", "Manual").ilike("buyer_full_name", name).eq("buyer_contact", phone)
+        .eq("payment_provider", "Manual").eq("buyer_full_name", name).eq("buyer_contact", phone)
         .order("paid_at", { ascending: false }).limit(20);
       if (error) return json({ success: false, error: "Could not load your manual receipts." }, 500);
       return json({ success: true, receipts: receipts || [] });
