@@ -52,14 +52,16 @@
     if(!password) throw new Error("Unlock Authority Press first.");
     var r=await sb().functions.invoke("ione-chapchap-authority",{body:{action:"list",password:password}});
     if(r.error||!r.data?.success) throw new Error(r.data?.error||r.error?.message||"Could not load Authority Press data.");
-    var manual=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"list_pending",password:password}});
-    if(!manual.error&&manual.data?.success){
-      (manual.data.orders||[]).forEach(function(o){
-        r.data.orders=r.data.orders||[];
-        if(!r.data.orders.some(function(x){return String(x.id)===String(o.id);}))
-          r.data.orders.unshift({...o,manual_pending:true,payment_provider:"Manual",product:{title:o.product?.title||"ChapChap product"},has_receipt:false,receipt:null});
-      });
-    }
+    var authoritySession="";
+    try{authoritySession=sessionStorage.getItem("ioneAuthoritySession")||"";}catch(_){}
+    var manual=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"list_pending",password:password,authority_session:authoritySession}});
+    if(manual.error||!manual.data?.success) throw new Error(manual.data?.error||manual.error?.message||"Could not load pending manual ChapChap payments. Unlock Authority Press again.");
+    (manual.data.orders||[]).forEach(function(o){
+      r.data.orders=r.data.orders||[];
+      if(!r.data.orders.some(function(x){return String(x.id)===String(o.id);}))
+        r.data.orders.unshift({...o,manual_pending:true,payment_provider:"Manual",product:{title:o.product?.title||"ChapChap product"},has_receipt:false,receipt:null});
+    });
+    r.data.manual_pending_count=(manual.data.orders||[]).length;
     return r.data;
   }
 
@@ -143,6 +145,8 @@
     var list=document.getElementById("authorityChapChapOrders"); if(!list)return;
     var orders=data.orders||[];
     var rows=[];
+    var pendingManual=orders.filter(function(o){return o.manual_pending&&String(o.status||"").toLowerCase()==="pending";});
+    var manualSection=pendingManual.length?'<div class="authority-chapchap-order" style="border:2px solid #e6a23c;background:rgba(230,162,60,.08);margin-bottom:12px"><strong>MANUAL PAYMENTS AWAITING MERCHANT VERIFICATION ('+pendingManual.length+')</strong><div class="cc-mini">Check the merchant account first. Confirm only after the payment is visible.</div>'+pendingManual.map(function(o){return '<div style="border-top:1px solid rgba(230,162,60,.3);margin-top:10px;padding-top:10px"><strong>'+esc(o.product?.title||"CHAPCHAP PRODUCT")+'</strong><div class="cc-mini">BUYER: '+esc(o.buyer_full_name||"—")+' • '+esc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT TO VERIFY: '+esc(money(o.amount_tzs))+'<br>SUBMITTED: '+esc(o.created_at?new Date(o.created_at).toLocaleString():"—")+'</div><button type="button" class="cc-primary cc-authority-confirm-manual" data-order-id="'+esc(o.id)+'" style="width:100%;margin-top:8px;min-height:44px">CONFIRM MERCHANT PAYMENT & MARK SOLD</button></div>';}).join("")+'</div>':'';
     if(filter==="receipts"){
       rows=orders.filter(function(o){return o.has_receipt && o.receipt;}).map(function(o){
         var r=o.receipt;
@@ -164,7 +168,7 @@
         return '<div class="authority-chapchap-order"><strong>'+esc(o.product?.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER: '+esc(o.id)+'<br>BUYER: '+esc(o.buyer_full_name||"—")+' • '+esc(o.buyer_phone||"—")+'<br>AMOUNT: '+esc(money(o.amount_tzs))+'<br>PAYMENT: '+esc(o.payment_provider||"BLMPay")+'<br>STATUS: '+esc(String(o.status||"").toUpperCase())+' • PAYOUT: '+esc(String(o.payout_status||"").toUpperCase())+'</div>'+(o.manual_pending?'<button type="button" class="cc-primary cc-authority-confirm-manual" data-order-id="'+esc(o.id)+'" style="width:100%;margin-top:8px">CONFIRM PAYMENT & MARK SOLD</button>':(o.has_receipt&&o.receipt?receiptButton(o.receipt):'<div class="cc-mini">RECEIPT: PREPARING</div>'))+'</div>';
       });
     }
-    authorityWriting=true; list.innerHTML=rows.length?rows.join(""):'<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">This section will fill automatically when the matching ChapChap record is created.</div></div>';
+    authorityWriting=true; list.innerHTML=manualSection+(rows.length?rows.join(""):'<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">This section will fill automatically when the matching ChapChap record is created.</div></div>');
     setTimeout(function(){authorityWriting=false;},0);
     list.querySelectorAll(".cc-authority-view-receipt").forEach(function(b){b.addEventListener("click",function(){openAuthorityReceipt(JSON.parse(b.dataset.receipt));});});
     list.querySelectorAll(".cc-authority-download-receipt").forEach(function(b){b.addEventListener("click",function(){downloadReceipt(JSON.parse(b.dataset.receipt));});});
@@ -175,7 +179,8 @@
       b.disabled=true;b.textContent="VERIFYING…";
       try{
         var password=String(document.getElementById("authorityPasswordInput")?.value||"");
-        var result=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"confirm_sold",order_id:orderId,password:password}});
+        var authoritySession="";try{authoritySession=sessionStorage.getItem("ioneAuthoritySession")||"";}catch(_){}
+        var result=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"confirm_sold",order_id:orderId,password:password,authority_session:authoritySession}});
         if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not confirm manual payment.");
         alert("Manual payment confirmed. Product marked SOLD and official receipt created.");
         var fresh=await getAuthority();renderAuthority("orders",fresh);
