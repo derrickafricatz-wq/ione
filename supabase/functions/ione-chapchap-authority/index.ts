@@ -12,7 +12,7 @@ const isFailedStatus=(s:string)=>["failed","voided","expired","cancelled","cance
 async function sendAuthorityPaymentEmail(receipt:any,order:any){
  const apiKey=String(Deno.env.get("IONE_RESEND_API_KEY") || Deno.env.get("RESEND_API_KEY") || "").trim();
  const to=String(Deno.env.get("IONE_AUTHORITY_EMAIL")||"").trim();
- if(!apiKey||!to||!receipt)return;
+ if(!apiKey||!to||!receipt||String(receipt.payment_provider||"BLMPay").toLowerCase()==="manual")return;
  const from=String(Deno.env.get("RESEND_FROM_EMAIL") || "ione <hello@intoione.space>").trim();
  const safe=(v:any)=>String(v??"").replace(/[&<>"]/g,(x)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"} as any)[x]);
  const html="<div style='font-family:Arial,sans-serif'><h2>I|ONE CHAPCHAP • PAYMENT CONFIRMED</h2><p><b>Receipt:</b> "+safe(receipt.receipt_number)+"</p><p><b>Product:</b> "+safe(receipt.product_title)+"</p><p><b>Client:</b> "+safe(receipt.buyer_full_name)+"</p><p><b>Amount:</b> TZS "+Number(receipt.amount_tzs||0).toLocaleString("en-US")+"</p><p><b>BLMPay reference:</b> "+safe(receipt.blmpay_reference)+"</p><p><b>Order:</b> "+safe(order?.id)+"</p><p>Payment is confirmed by BLMPay. The product is sold and the order is awaiting Authority payout handling.</p></div>";
