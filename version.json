@@ -1,5 +1,5 @@
 {
-  "version": "1.0.285",
-  "message": "Restore feature buttons after receipt template fix",
+  "version": "1.0.286",
+  "message": "In-app book receipts and direct PDF downloads",
   "force": true
 }
