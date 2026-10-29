@@ -265,10 +265,25 @@
       '<input id="ccRecoverEmail" type="email" placeholder="EMAIL" style="width:100%;box-sizing:border-box;margin-top:8px;min-height:46px;padding:10px;border-radius:11px;border:1px solid #294349;background:#020708;color:#fff;font-weight:800">'+
       '<input id="ccRecoverContact" placeholder="CONTACT NUMBER (+255...)" style="width:100%;box-sizing:border-box;margin-top:8px;min-height:46px;padding:10px;border-radius:11px;border:1px solid #294349;background:#020708;color:#fff;font-weight:800">'+
       '<div id="ccRecoverStatus" style="min-height:22px;margin-top:10px;color:#9fb2b6;font:800 10px/1.4 Arial"></div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button id="ccRecoverFind" class="cc-primary" type="button" style="min-height:46px">FIND RECEIPTS</button><button id="ccRecoverClose" class="cc-secondary" type="button" style="min-height:46px">CLOSE</button></div></div>';
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px"><button id="ccRecoverFind" class="cc-primary" type="button" style="min-height:46px">FIND ELECTRONIC</button><button id="ccRecoverFindManual" class="cc-secondary" type="button" style="min-height:46px">FIND MANUAL</button></div><button id="ccRecoverClose" class="cc-secondary" type="button" style="width:100%;min-height:42px;margin-top:8px">CLOSE</button></div>';
     box.style.display="flex";
     var status=box.querySelector("#ccRecoverStatus");
     box.querySelector("#ccRecoverClose").onclick=function(){box.style.display="none";};
+    box.querySelector("#ccRecoverFindManual").onclick=async function(){
+      var btn=this,name=box.querySelector("#ccRecoverName").value.trim(),contact=box.querySelector("#ccRecoverContact").value.trim();
+      if(!name||!contact){status.textContent="Enter the full name and phone number used for manual payment.";return;}
+      btn.disabled=true;status.textContent="CHECKING MANUAL RECEIPTS…";
+      try{
+        var result=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"lookup_receipts",buyer_full_name:name,buyer_phone:contact}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not find manual receipts.");
+        var rows=result.data.receipts||[];
+        if(!rows.length){status.textContent="No confirmed manual receipt matches that name and phone number.";return;}
+        saveChapChapReceiptCache(rows);
+        rows.forEach(function(r){try{localStorage.setItem("ione_chapchap_last_paid_order",String(r.order_id||""));}catch(e){}});
+        box.style.display="none";openReceiptHistory(rows);
+      }catch(e){status.textContent=e&&e.message?e.message:"Could not find manual receipts.";}
+      finally{btn.disabled=false;}
+    };
     box.querySelector("#ccRecoverFind").onclick=async function(){
       var btn=this,name=box.querySelector("#ccRecoverName").value.trim(),email=box.querySelector("#ccRecoverEmail").value.trim().toLowerCase(),contact=box.querySelector("#ccRecoverContact").value.trim();
       if(!name||!email||!contact){status.textContent="Enter all three details.";return;}
