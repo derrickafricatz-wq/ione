@@ -734,13 +734,38 @@
       '<strong style="font-size:12px">BEFORE YOU PAY</strong><div style="font-size:11px;line-height:1.55;color:#d7e5e8;margin-top:7px">Contact the seller first. Confirm the seller is available, confirm where the seller is, confirm the product is physically available, and agree how and where you will receive it. Your official receipt is important. After receiving the product, immediately inform I|ONE Care by phone, WhatsApp or email.</div>' +
       '<label style="display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:11px;line-height:1.4"><input id="ioneCcBuyerConfirm" type="checkbox" style="margin-top:2px"> <span>I have contacted/confirmed the seller and understand the receipt and I|ONE Care instructions.</span></label>' +
       '</div>' +
-      '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button">CONFIRM PAYMENT</button></div>' +
-      '<div id="ioneCcBuyStatus" class="cc-status">ChapChap platform fee: 1%. BLMPay processing fees are separate where applicable.</div>' +
+      '<div class="cc-actions"><button id="ioneCcBuyCancel" class="cc-secondary" type="button">CANCEL</button><button id="ioneCcBuySubmit" class="cc-primary" type="button">PAY WITH BLMPAY</button></div>' +
+      '<button id="ioneCcManualPay" class="cc-secondary" type="button" style="width:100%;margin-top:8px;min-height:45px">MANUAL PAYMENT • AUTHORITY VERIFIED</button>' +
+      '<div id="ioneCcBuyStatus" class="cc-status">BLMPay remains the normal electronic option. Manual payment has no BLMPay processing fee and is completed only after Authority Press verifies it.</div>' +
       "</div>"
     );
     document.getElementById("ioneCcBuyCancel").addEventListener("click", closeOverlay);
     document.getElementById("ioneCcBuySubmit").addEventListener("click", function () { startPayment(p); });
+    document.getElementById("ioneCcManualPay").addEventListener("click", function () { startManualPayment(p); });
     startGalleryLoop();
+  }
+
+  async function startManualPayment(product) {
+    var status=document.getElementById("ioneCcBuyStatus"),btn=document.getElementById("ioneCcManualPay");
+    try {
+      if(btn)btn.disabled=true;
+      var buyerName=fieldValue("ioneCcBuyerName").trim(),buyerAddress=fieldValue("ioneCcBuyerAddress").trim();
+      var buyerEmail=fieldValue("ioneCcBuyerEmail").trim().toLowerCase(),buyerPhone=normalizePhone(fieldValue("ioneCcBuyerContact"));
+      var confirm=document.getElementById("ioneCcBuyerConfirm");
+      if(buyerName.length<2)throw new Error("Enter your full name.");
+      if(!buyerAddress)throw new Error("Enter your full address.");
+      if(!buyerEmail||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail))throw new Error("Enter a valid email address.");
+      if(!validPhone(buyerPhone))throw new Error("Enter a valid contact number beginning +255.");
+      if(!confirm||!confirm.checked)throw new Error("Please confirm that you checked product availability with the seller.");
+      var sb=getSupabase(); await getSession();
+      if(status)status.textContent="Submitting manual payment request…";
+      var result=await sb.functions.invoke("ione-chapchap-manual",{body:{action:"submit",product_id:product.id,buyer_full_name:buyerName,buyer_phone:buyerPhone,buyer_contact:buyerPhone,buyer_address:buyerAddress,buyer_email:buyerEmail}});
+      if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not submit manual payment.");
+      var d=result.data,amount=money(d.amount_tzs,"TZS");
+      if(status)status.innerHTML='<div style="text-align:left;padding:13px;border:1px solid rgba(0,255,255,.3);border-radius:13px;line-height:1.6"><strong style="color:#00ffff">MANUAL PAYMENT REQUEST SUBMITTED</strong><p>Merchant: <b>'+esc(d.merchant.name)+'</b><br>Network: <b>'+esc(d.merchant.network)+'</b><br>Merchant number: <b>'+esc(d.merchant.number)+'</b><br>Amount to pay: <b>'+esc(amount)+'</b></p><p>ChapChap fee (4%): '+esc(money(d.platform_fee_tzs,"TZS"))+'<br>Seller share: '+esc(money(d.seller_share_tzs,"TZS"))+'<br>BLMPay processing fee: TZS 0</p><p>Pay the exact amount to the merchant, then wait for Authority Press to verify the transaction. Your product is <b>not sold</b> until Authority confirms it.</p><button id="ioneCcManualDone" class="cc-primary" type="button" style="width:100%">DONE</button></div>';
+      var done=document.getElementById("ioneCcManualDone");if(done)done.addEventListener("click",closeOverlay);
+    } catch(e) { if(status)status.textContent=e?.message||"Manual payment request failed."; }
+    finally { if(btn)btn.disabled=false; }
   }
 
   async function confirmReceived(orderId) {
