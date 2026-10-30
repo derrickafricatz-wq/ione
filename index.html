@@ -524,7 +524,9 @@ window.ioneEnsureBookPdfLibraries = async function(){
     else if(chapChapAuthorityFilter==="agreements") rows=agreements;
     else if(chapChapAuthorityFilter==="receipts") rows=orders.filter(o=>o.has_receipt);
     else rows=orders.filter(o=>o.payout_record || (o.payout_status!=="completed" && ["paid","received"].includes(String(o.status||"").toLowerCase())));
-    if(!rows.length){list.innerHTML='<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';if(status)status.textContent="CONNECTED • READY";return;}
+    const manualPending=orders.filter(o=>o.manual_pending && String(o.status||"").toLowerCase()==="pending");
+    const manualSection='<div class="authority-chapchap-order" style="border:2px solid #d69b37;background:rgba(214,155,55,.09);margin-bottom:12px"><strong>MANUAL PAYMENTS AWAITING MERCHANT VERIFICATION (' + manualPending.length + ')</strong><div class="cc-mini">Check the merchant account first. Confirm only after the payment is visible.</div>'+(manualPending.length?manualPending.map(o=>'<div style="border-top:1px solid rgba(214,155,55,.35);margin-top:10px;padding-top:10px"><strong>'+authorityEsc(o.product?.title||"CHAPCHAP PRODUCT")+'</strong><div class="cc-mini">BUYER: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT TO VERIFY: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>SUBMITTED: '+authorityEsc(o.created_at?new Date(o.created_at).toLocaleString():"—")+'</div><button type="button" class="cc-primary cc-authority-confirm-manual" data-order-id="'+authorityEsc(o.id)+'" style="width:100%;margin-top:8px;min-height:44px">CONFIRM MERCHANT PAYMENT &amp; MARK SOLD</button></div>').join(""):'<div class="cc-mini">No manual payments are waiting for verification.</div>')+'</div>';
+    if(!rows.length){list.innerHTML=manualSection+'<div class="authority-chapchap-order"><strong>NOTHING IN THIS SECTION YET</strong><div class="cc-mini">No matching ChapChap records in this section.</div></div>';if(status)status.textContent="CONNECTED • READY";return;}
     if(chapChapAuthorityFilter==="orders"){
       list.innerHTML=rows.map(o=>{const p=o.product||{};return '<div class="authority-chapchap-order"><strong>'+authorityEsc(p.title||"CHAPCHAP ORDER")+'</strong><div class="cc-mini">ORDER '+authorityEsc(o.id)+'<br>CLIENT: '+authorityEsc(o.buyer_full_name||"—")+' • '+authorityEsc(o.buyer_phone||o.buyer_contact||"—")+'<br>AMOUNT: TZS '+Number(o.amount_tzs||0).toLocaleString("en-US")+'<br>STATUS: '+authorityEsc(String(o.status||"").toUpperCase())+'</div></div>';}).join("");
     }else if(chapChapAuthorityFilter==="agreements"){
@@ -537,6 +539,18 @@ window.ioneEnsureBookPdfLibraries = async function(){
     list.querySelectorAll("[data-authority-receipt],[data-authority-download]").forEach(btn=>btn.addEventListener("click",()=>{const o=orders.find(x=>String(x.id)===String(btn.getAttribute("data-authority-receipt")||btn.getAttribute("data-authority-download")));const r=o?.receipt;if(!r)return;if(btn.hasAttribute("data-authority-download"))window.ioneChapChapDownloadReceipt?.(r);else window.ioneChapChapOpenReceipt?.(r);}));
     list.querySelectorAll("[data-agreement-download]").forEach(btn=>btn.addEventListener("click",()=>{const a=agreements.find(x=>String(x.id)===String(btn.getAttribute("data-agreement-download")));if(!a)return;const product=orders.find(o=>String(o.product_id)===String(a.product_id))?.product||{};window.ioneChapChapDownloadAgreement?.(a,product.title||("PRODUCT ID "+a.product_id));}));
     list.querySelectorAll("[data-live-payout]").forEach(btn=>btn.addEventListener("click",()=>sendChapChapPayout(btn.getAttribute("data-live-payout"))));
+    list.insertAdjacentHTML("afterbegin",manualSection);
+    list.querySelectorAll(".cc-authority-confirm-manual").forEach(btn=>btn.addEventListener("click",async()=>{
+      const orderId=String(btn.getAttribute("data-order-id")||"");if(!orderId)return;
+      if(!confirm("Confirm that this manual payment is visible in the merchant account? This will mark the product SOLD and create the official receipt."))return;
+      btn.disabled=true;btn.textContent="VERIFYING…";
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-chapchap-manual",{body:{action:"confirm_sold",order_id:orderId}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not confirm manual payment.");
+        alert("Manual payment confirmed. Product marked SOLD and official receipt created.");
+        await loadChapChapAuthority(true);
+      }catch(error){alert(error?.message||"Could not confirm manual payment.");btn.disabled=false;btn.textContent="CONFIRM MERCHANT PAYMENT & MARK SOLD";}
+    }));
     if(status)status.textContent="CONNECTED • READY";
   }
   /* Keep the Authority renderer available to the legacy/cached Authority click handlers too. */
@@ -969,7 +983,12 @@ window.ioneEnsureBookPdfLibraries = async function(){
           try{const ctx=result.error?.context;if(ctx&&typeof ctx.json==="function"){const body=await ctx.json();detail=body?.error||body?.message||detail;}}catch(_){ }
           throw new Error(detail);
         }
-        chapChapAuthorityCache=result.data;renderChapChapAuthority(chapChapAuthorityCache);return chapChapAuthorityCache;
+        const manual=await heavensSupabase.functions.invoke("ione-chapchap-manual",{body:{action:"list_pending",password}});
+        if(manual.error||!manual.data?.success)throw new Error(manual.data?.error||manual.error?.message||"Could not load pending manual ChapChap payments. Unlock Authority Press again.");
+        const combined={...result.data,orders:[...(result.data.orders||[])]};
+        (manual.data.orders||[]).forEach(o=>{if(!combined.orders.some(x=>String(x.id)===String(o.id)))combined.orders.unshift({...o,manual_pending:true,payment_provider:"Manual",product:{title:o.product?.title||"ChapChap product"},has_receipt:false,receipt:null});});
+        combined.manual_pending_count=(manual.data.orders||[]).length;
+        chapChapAuthorityCache=combined;renderChapChapAuthority(chapChapAuthorityCache);return chapChapAuthorityCache;
       }catch(error){chapChapAuthorityCache=null;if(loadStatus)loadStatus.textContent=error?.message||"Could not load Authority Press data.";return null;}
     })();
     try{return await chapChapAuthorityLoadPromise;}finally{chapChapAuthorityLoadPromise=null;}
@@ -9281,7 +9300,7 @@ const heavensSupabase = window.supabase.createClient(SUPABASE_URL, HEAVENS_SUPAB
 // intentionally do not allow, which breaks the live inbox even though client chat works.
 const IONE_AUTHORITY_BODY_FUNCTIONS = new Set([
   "ione-app-banners", "ione-documentaries", "ione-author-access",
-  "ione-chapchap-authority", "ione-subscription-plans", "book-narration-manage",
+  "ione-chapchap-authority", "ione-chapchap-manual", "ione-subscription-plans", "book-narration-manage",
   "ione-author-payouts", "ione-manual-subscriptions", "ione-manual-book-payments", "ione-sokoni", "ione-expert"
 ]);
 const IONE_AUTHORITY_HEADER_FUNCTIONS = new Set([
