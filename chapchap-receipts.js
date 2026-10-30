@@ -183,6 +183,7 @@
         var result=await sb().functions.invoke("ione-chapchap-manual",{body:{action:"confirm_sold",order_id:orderId,password:password,authority_session:authoritySession}});
         if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not confirm manual payment.");
         alert("Manual payment confirmed. Product marked SOLD and official receipt created.");
+        if(typeof window.ioneChapChapRefresh==="function") await window.ioneChapChapRefresh();
         var fresh=await getAuthority();renderAuthority("orders",fresh);
       }catch(e){alert(e?.message||"Could not confirm manual payment.");b.disabled=false;b.textContent="CONFIRM PAYMENT & MARK SOLD";}
     });});
