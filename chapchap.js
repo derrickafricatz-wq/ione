@@ -1271,6 +1271,18 @@
   /* The existing marketing world is opened by I|ONE. We only mount inside it. */
   bootWhenReady();
   window.ioneChapChapRefresh = loadProducts;
+  // Refresh the public shelf when a user returns to I|ONE so sold items
+  // disappear from already-open app sessions as well as after a full reload.
+  var lastChapFeedRefresh = 0;
+  function refreshChapFeedOnReturn(){
+    if(document.visibilityState && document.visibilityState !== "visible") return;
+    var now = Date.now();
+    if(now - lastChapFeedRefresh < 2500) return;
+    lastChapFeedRefresh = now;
+    loadProducts();
+  }
+  window.addEventListener("focus", refreshChapFeedOnReturn);
+  document.addEventListener("visibilitychange", refreshChapFeedOnReturn);
   window.ioneChapChapOpen = openSell;
 })();
 /* ChapChap receipt module loader */
