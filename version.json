@@ -1,5 +1,5 @@
 {
-  "version": "1.0.291",
-  "message": "Fix Authority session handoff for manual payment verification",
+  "version": "1.0.292",
+  "message": "Fix seller receipt CORS and refresh sold ChapChap listings",
   "force": true
 }
