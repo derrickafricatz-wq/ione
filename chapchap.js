@@ -1284,6 +1284,7 @@
   window.addEventListener("focus", refreshChapFeedOnReturn);
   document.addEventListener("visibilitychange", refreshChapFeedOnReturn);
   window.ioneChapChapOpen = openSell;
+  window.ioneChapChapOpenMine = openMine;
 })();
 /* ChapChap receipt module loader */
 (function(){try{var s=document.createElement("script");s.src="chapchap-receipts.js?v=20";s.defer=true;document.head.appendChild(s);}catch(e){console.warn("ChapChap receipt module loader:",e);}})();
