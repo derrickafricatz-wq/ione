@@ -1,5 +1,5 @@
 {
-  "version": "1.0.290",
-  "message": "Fix pending manual payment display and confirmation",
+  "version": "1.0.291",
+  "message": "Fix Authority session handoff for manual payment verification",
   "force": true
 }
