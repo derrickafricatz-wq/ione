@@ -240,7 +240,7 @@
     var o=document.getElementById("ioneChapOverlay");var list=o?.querySelector(".cc-list");if(!list)return;
     list.innerHTML='<div class="cc-list-item"><strong>OFFICIAL CHAPCHAP RECEIPT</strong><span>'+esc(receipt.receipt_number)+' • '+esc(receipt.product_title)+'</span><span>CLIENT: '+esc(receipt.buyer_full_name||found.buyer_full_name||"—")+'<br>PHONE: '+esc(receipt.buyer_phone||found.buyer_phone||found.buyer_contact||"—")+'<br>EMAIL: '+esc(receipt.buyer_email||found.buyer_email||"—")+'<br>ADDRESS: '+esc(receipt.buyer_address||found.buyer_address||"—")+'<br>AMOUNT: '+esc(money(receipt.amount_tzs))+'<br>FEE: '+esc(money(receipt.chapchap_fee_tzs))+'<br>BLMPAY: '+esc(receipt.blmpay_reference||found.blmpay_reference||"—")+'<br>PAID: '+esc(receipt.paid_at?new Date(receipt.paid_at).toLocaleString():"—")+'</span><div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px"><button type="button" id="ccSellerDownload" class="cc-primary">DOWNLOAD RECEIPT</button><button type="button" id="ccSellerBack" class="cc-secondary">BACK</button></div></div>';
     document.getElementById("ccSellerDownload")?.addEventListener("click",function(){downloadReceipt(receipt);});
-    document.getElementById("ccSellerBack")?.addEventListener("click",function(){if(o?.querySelector(".cc-list"))o.querySelector(".cc-list").dataset.receiptEnhanced="";enhanceMyShop();});
+    document.getElementById("ccSellerBack")?.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();if(typeof window.ioneChapChapOpenMine==="function"){window.ioneChapChapOpenMine();return;}alert("Could not return to My ChapChap. Please close and reopen it.");});
   }
 
   async function openSavedBuyerReceipt(){
@@ -377,7 +377,7 @@
     box.innerHTML='<div style="width:100vw;height:100vh;box-sizing:border-box;overflow:auto;padding:18px;background:linear-gradient(160deg,#102b32,#071417 45%,#030607)">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;padding:5px 0 13px;background:linear-gradient(#102b32 78%,transparent);z-index:2">'+
       '<div><strong style="display:block;color:#ff7be7;font-size:19px">RECEIPT HISTORY</strong><span style="display:block;margin-top:4px;color:#91a8ad;font-size:9px;letter-spacing:1.3px">YOUR CHAPCHAP PURCHASES</span></div>'+
-      '<button id="ccHistoryClose" class="cc-secondary" type="button">CLOSE</button></div>'+
+      '<div style="display:flex;gap:6px;align-items:center"><button id="ccHistoryFindMore" class="cc-secondary" type="button" style="min-height:38px;padding:0 9px;font-size:9px">FIND RECEIPT</button><button id="ccHistoryClose" class="cc-secondary" type="button">CLOSE</button></div></div>'+
       '<div style="display:grid;gap:10px">'+rows.map(function(r,i){
         return '<div style="border:1px solid rgba(255,79,216,.3);border-radius:15px;padding:12px;background:linear-gradient(145deg,rgba(255,79,216,.07),rgba(0,255,255,.035));box-shadow:inset 0 1px 0 rgba(255,255,255,.07)">'+
           '<strong style="display:block;color:#fff;font-size:12px">'+esc(r.product_title||"ChapChap product")+'</strong>'+
@@ -387,6 +387,7 @@
           '<button type="button" class="cc-secondary cc-history-download" data-index="'+i+'">DOWNLOAD</button></div></div>';
       }).join("")+'</div></div>';
     box.style.display="flex";
+    box.querySelector("#ccHistoryFindMore").onclick=function(){showChapChapReceiptRecovery();};
     box.querySelector("#ccHistoryClose").onclick=function(){
       box.style.display="none";
       var quick=document.getElementById("ioneChapReceiptQuick");
