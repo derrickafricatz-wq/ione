@@ -1,5 +1,5 @@
 {
-  "version": "1.0.293",
-  "message": "Fix seller receipt CORS and refresh sold ChapChap listings",
+  "version": "1.0.294",
+  "message": "Fix ChapChap receipt back navigation and buyer receipt recovery",
   "force": true
 }
