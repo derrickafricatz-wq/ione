@@ -155,7 +155,7 @@
     overlay.style.display = "block";
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
-    loadMyStatus(true);
+    // i1 Transport operations module loads the driver and passenger workspaces.
   }
   function close() {
     overlay.style.display = "none";
