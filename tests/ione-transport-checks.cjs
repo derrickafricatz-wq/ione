@@ -56,3 +56,6 @@ assert.match(edge, /ione_transport_claim_job/);
 assert.match(edge, /ione_transport_transition_job/);
 assert.match(edge, /suspend_driver/);
 console.log("PASS: passenger directory, requests, driver operations, secure chat and Authority controls are wired");
+
+assert.match(operations, /x.id.slice\(8\)/);
+console.log("PASS: chat panels stay attached to the correct trip after refresh");
