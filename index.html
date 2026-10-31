@@ -4203,7 +4203,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=145", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=146", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -13682,7 +13682,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-launch-observatory.js?v=4" defer></script>
 <script src="./ione-sokoni.js?v=13" defer></script>
 <script src="./ione-transport.js?v=3" defer></script>
-<script src="./ione-transport-operations.js?v=4" defer></script>
+<script src="./ione-transport-operations.js?v=5" defer></script>
 <script src="./ione-expert.js?v=4" defer></script>
 <script>
 /* I|ONE DOCUMENTARY AUTO-SCROLL • waits for the library to open and for cards to render */
