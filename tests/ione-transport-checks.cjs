@@ -21,15 +21,15 @@ assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS/);
 assert.doesNotMatch(html, /id="openBusBooking"[^>]*smart-coming-soon/);
 assert.match(html, /ione-transport\.js\?v=3/);
-assert.match(html, /ione-transport-operations\.js\?v=4/);
-assert.match(html, /sw\.js\?v=145/);
+assert.match(html, /ione-transport-operations\.js\?v=5/);
+assert.match(html, /sw\.js\?v=146/);
 assert.match(html, /\["transport","🚕","i1 TRANSPORT"/);
 console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Coming Soon tile");
 
 assert.match(sw, /ione-transport\.js/);
-assert.match(sw, /ione-app-v356/);
+assert.match(sw, /ione-app-v357/);
 assert.match(sw, /ione-transport-operations\.js/);
-assert.equal(version.version, "1.0.299");
+assert.equal(version.version, "1.0.300");
 console.log("PASS: PWA cache and version include the new Transport module");
 
 assert.match(migration, /ione_transport_driver_applications/);
@@ -52,6 +52,8 @@ console.log("PASS: private driver onboarding, document review and Authority appr
 assert.match(operations, /active_drivers/);
 assert.match(operations, /create_request/);
 assert.match(operations, /GO ACTIVE/);
+assert.match(operations, /APPROVE DRIVER/);
+assert.match(operations, /REJECT APPLICATION/);
 assert.match(operations, /ACCEPT JOB/);
 assert.match(operations, /JOB COMPLETE/);
 assert.match(operations, /OPEN DRIVER CHAT/);
