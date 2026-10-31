@@ -344,6 +344,5 @@
     const authorityButton = $("openAuthority");
     if (authorityButton) authorityButton.addEventListener("click", () => setTimeout(loadAuthority, 500));
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchAuthority, { once: true });
-  else watchAuthority();
+  // i1 Transport Authority operations are mounted by ione-transport-operations.js.
 })();
