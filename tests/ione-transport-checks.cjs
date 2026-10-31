@@ -18,16 +18,16 @@ assert.match(html, /id="openBusBooking"/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS/);
 assert.doesNotMatch(html, /id="openBusBooking"[^>]*smart-coming-soon/);
-assert.match(html, /ione-transport\.js\?v=1/);
-assert.match(html, /ione-transport-operations\.js\?v=1/);
-assert.match(html, /sw\.js\?v=142/);
+assert.match(html, /ione-transport\.js\?v=2/);
+assert.match(html, /ione-transport-operations\.js\?v=2/);
+assert.match(html, /sw\.js\?v=143/);
 assert.match(html, /\["transport","🚕","i1 TRANSPORT"/);
 console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Coming Soon tile");
 
 assert.match(sw, /ione-transport\.js/);
-assert.match(sw, /ione-app-v353/);
+assert.match(sw, /ione-app-v354/);
 assert.match(sw, /ione-transport-operations\.js/);
-assert.equal(version.version, "1.0.296");
+assert.equal(version.version, "1.0.297");
 console.log("PASS: PWA cache and version include the new Transport module");
 
 assert.match(migration, /ione_transport_driver_applications/);
