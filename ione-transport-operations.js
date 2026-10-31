@@ -169,7 +169,7 @@
   function availability(value,returnOnline) {
     const pill=$("itoAvailability");if(!pill)return;pill.textContent=String(value||"offline").toUpperCase();pill.className="ito-pill "+(value==="busy"?"busy":"");
     $("itoDriverHint").textContent=value==="busy"?(returnOnline===false?"On a trip. You will go OFFLINE when it is complete.":"On a trip. You will return to ACTIVE when complete."):value==="active"?"You are visible to passengers. Accepting a job automatically makes you BUSY.":"You are hidden from passengers. Switch to ACTIVE when ready.";
-    $("itoGoActive").disabled=value==="active"||value==="busy";$("itoGoOffline").disabled=value==="offline";
+    $("itoGoActive").disabled=value==="active"||(value==="busy"&&returnOnline!==false);$("itoGoOffline").disabled=value==="offline"||(value==="busy"&&returnOnline===false);
   }
   async function availabilityClick(e) {
     if(!["itoGoActive","itoGoOffline"].includes(e.target.id))return;
@@ -178,11 +178,16 @@
     catch(err){say("itoDriverHint",err.message,true);}
   }
   async function status() {
-    const r=await call({action:"my_status"});const driver=r.driver;
+    const r=await call({action:"my_status"});const driver=r.driver,app=r.application;
     if(driver?.verification_status==="approved"){
       $("itDriverForm").style.display="none";$("itMyStatus").innerHTML='<div class="it-application-status"><span class="it-status-pill">AUTHORITY APPROVED</span><p>Your verified i1 Transport driver profile is ready. Switch to ACTIVE when you are ready to receive trips.</p></div>';
       $("itoDriver").style.display="block";$("itoDriverWelcome").textContent=driver.driver_name+" • "+driver.vehicle_make_model+" • "+driver.vehicle_registration;availability(driver.availability,driver.return_online_after_job);
-    } else { $("itoDriver").style.display="none"; }
+    } else {
+      $("itoDriver").style.display="none";
+      $("itDriverForm").style.display="block";
+      if(app){const note=app.admin_note?'<br><b>Authority note:</b> '+esc(app.admin_note):'';$("itMyStatus").innerHTML='<div class="it-application-status"><span class="it-status-pill">'+esc(String(app.status||"pending").toUpperCase())+'</span><p>Your driver application was submitted on '+esc(app.created_at?new Date(app.created_at).toLocaleDateString():"—")+'.'+note+'</p></div>';}
+      else $("itMyStatus").innerHTML="";
+    }
   }
   async function openNetwork() {
     install();if(!$("itoPassenger"))return;
