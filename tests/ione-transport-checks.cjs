@@ -9,6 +9,7 @@ const ui = fs.readFileSync("ione-transport.js", "utf8");
 const operations = fs.readFileSync("ione-transport-operations.js", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-transport/index.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20261031010000_ione_transport_driver_onboarding_v1.sql", "utf8");
+const operationsMigration = fs.readFileSync("supabase/migrations/20261031020000_ione_transport_operations_v2.sql", "utf8");
 
 new vm.Script(ui, { filename: "ione-transport.js" });
 new vm.Script(operations, { filename: "ione-transport-operations.js" });
@@ -32,6 +33,10 @@ console.log("PASS: PWA cache and version include the new Transport module");
 
 assert.match(migration, /ione_transport_driver_applications/);
 assert.match(migration, /ione_transport_drivers/);
+assert.match(operationsMigration, /ione_transport_jobs/);
+assert.match(operationsMigration, /ione_transport_messages/);
+assert.match(operationsMigration, /ione_transport_claim_job/);
+assert.match(operationsMigration, /ione_transport_transition_job/);
 assert.match(migration, /enable row level security/);
 assert.match(migration, /public = false/);
 assert.match(edge, /validAuthoritySession/);
