@@ -6,10 +6,12 @@ const html = fs.readFileSync("index.html", "utf8");
 const sw = fs.readFileSync("sw.js", "utf8");
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 const ui = fs.readFileSync("ione-transport.js", "utf8");
+const operations = fs.readFileSync("ione-transport-operations.js", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-transport/index.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20261031010000_ione_transport_driver_onboarding_v1.sql", "utf8");
 
 new vm.Script(ui, { filename: "ione-transport.js" });
+new vm.Script(operations, { filename: "ione-transport-operations.js" });
 console.log("PASS: i1 Transport browser module parses");
 
 assert.match(html, /id="openBusBooking"/);
@@ -17,13 +19,15 @@ assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS/);
 assert.doesNotMatch(html, /id="openBusBooking"[^>]*smart-coming-soon/);
 assert.match(html, /ione-transport\.js\?v=1/);
-assert.match(html, /sw\.js\?v=141/);
+assert.match(html, /ione-transport-operations\.js\?v=1/);
+assert.match(html, /sw\.js\?v=142/);
 assert.match(html, /\["transport","🚕","i1 TRANSPORT"/);
 console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Coming Soon tile");
 
 assert.match(sw, /ione-transport\.js/);
-assert.match(sw, /ione-app-v352/);
-assert.equal(version.version, "1.0.295");
+assert.match(sw, /ione-app-v353/);
+assert.match(sw, /ione-transport-operations\.js/);
+assert.equal(version.version, "1.0.296");
 console.log("PASS: PWA cache and version include the new Transport module");
 
 assert.match(migration, /ione_transport_driver_applications/);
@@ -36,3 +40,14 @@ assert.match(edge, /action === "approve"/);
 assert.match(edge, /availability: "offline"/);
 assert.match(edge, /createSignedUrl/);
 console.log("PASS: private driver onboarding, document review and Authority approval safeguards are present");
+
+assert.match(operations, /active_drivers/);
+assert.match(operations, /create_request/);
+assert.match(operations, /GO ACTIVE/);
+assert.match(operations, /ACCEPT JOB/);
+assert.match(operations, /JOB COMPLETE/);
+assert.match(operations, /OPEN DRIVER CHAT/);
+assert.match(edge, /ione_transport_claim_job/);
+assert.match(edge, /ione_transport_transition_job/);
+assert.match(edge, /suspend_driver/);
+console.log("PASS: passenger directory, requests, driver operations, secure chat and Authority controls are wired");
