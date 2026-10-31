@@ -1,0 +1,31 @@
+name: i1 Transport checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "ione-transport.js"
+      - "sw.js"
+      - "version.json"
+      - "supabase/functions/ione-transport/**"
+      - "supabase/migrations/*ione_transport*"
+      - "tests/ione-transport-checks.cjs"
+      - ".github/workflows/ione-transport-checks.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  transport-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check i1 Transport UI and integration
+        run: node tests/ione-transport-checks.cjs
+      - uses: denoland/setup-deno@v2
+      - name: Type-check i1 Transport Edge Function
+        run: deno check supabase/functions/ione-transport/index.ts

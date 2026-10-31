@@ -26,12 +26,14 @@ for (let i = 0; i < inlineScripts.length; i++) {
 }
 console.log("PASS: existing inline scripts parse");
 
-for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert"]) {
+for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert", "openBusBooking"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
 assert.match(html, /ione-sokoni\.js\?v=13/);
 assert.match(html, /ione-expert\.js\?v=4/);
-assert.match(html, /sw\.js\?v=139/);
+assert.match(html, /i1 TRANSPORT/);
+assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS/);
+assert.match(html, /sw\.js\?v=141/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
