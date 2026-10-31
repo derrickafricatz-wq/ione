@@ -126,7 +126,7 @@
     }).join("");
   }
   function renderTrips(jobs) {
-    const openChats=[...document.querySelectorAll(".ito-chat")].filter(x=>x.style.display==="block").map(x=>x.id.slice(7));
+    const openChats=[...document.querySelectorAll(".ito-chat")].filter(x=>x.style.display==="block").map(x=>x.id.slice(8));
     const p=jobs.filter(j=>j.viewer_role==="passenger"),d=jobs.filter(j=>j.viewer_role==="driver");
     $("itoPassengerTrips").innerHTML=p.length?p.map(j=>passengerCard(j)).join(""):'<div class="ito-empty">No trips yet. Choose an ACTIVE driver above.</div>';
     $("itoDriverTrips").innerHTML=d.length?d.map(j=>driverCard(j)).join(""):'<div class="ito-empty">No incoming requests or current trips.</div>';
