@@ -10,6 +10,7 @@ const operations = fs.readFileSync("ione-transport-operations.js", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-transport/index.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20261031144232_ione_transport_driver_onboarding_v1.sql", "utf8");
 const operationsMigration = fs.readFileSync("supabase/migrations/20261031151104_ione_transport_operations_v2.sql", "utf8");
+const indexMigration = fs.readFileSync("supabase/migrations/20261031152037_ione_transport_query_indexes_v1.sql", "utf8");
 
 new vm.Script(ui, { filename: "ione-transport.js" });
 new vm.Script(operations, { filename: "ione-transport-operations.js" });
@@ -37,6 +38,8 @@ assert.match(operationsMigration, /ione_transport_jobs/);
 assert.match(operationsMigration, /ione_transport_messages/);
 assert.match(operationsMigration, /ione_transport_claim_job/);
 assert.match(operationsMigration, /ione_transport_transition_job/);
+assert.match(indexMigration, /ione_transport_jobs_driver_profile_idx/);
+assert.match(indexMigration, /ione_transport_messages_sender_created_idx/);
 assert.match(migration, /enable row level security/);
 assert.match(migration, /public = false/);
 assert.match(edge, /validAuthoritySession/);
