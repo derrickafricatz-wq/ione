@@ -1,5 +1,5 @@
 {
-  "version": "1.0.298",
-  "message": "Finalize i1 Transport chat refresh and driver session handling",
+  "version": "1.0.299",
+  "message": "Finalize i1 Transport application status and driver availability controls",
   "force": true
 }
