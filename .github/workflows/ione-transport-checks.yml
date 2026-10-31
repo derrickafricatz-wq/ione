@@ -1,6 +1,17 @@
 name: i1 Transport checks
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "ione-transport*.js"
+      - "sw.js"
+      - "version.json"
+      - "supabase/functions/ione-transport/**"
+      - "supabase/migrations/*ione_transport*"
+      - "tests/ione-transport-checks.cjs"
+      - ".github/workflows/ione-transport-checks.yml"
   pull_request:
     branches: [main]
     paths:
