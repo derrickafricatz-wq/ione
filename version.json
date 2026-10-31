@@ -1,5 +1,5 @@
 {
-  "version": "1.0.294",
-  "message": "Fix ChapChap receipt back navigation and buyer receipt recovery",
+  "version": "1.0.295",
+  "message": "Introduce i1 Transport driver applications and Authority Press verification",
   "force": true
 }
