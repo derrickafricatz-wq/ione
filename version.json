@@ -1,5 +1,5 @@
 {
-  "version": "1.0.295",
-  "message": "Introduce i1 Transport driver applications and Authority Press verification",
+  "version": "1.0.296",
+  "message": "Complete i1 Transport passenger requests, driver availability, trip chat and Authority controls",
   "force": true
 }
