@@ -8,8 +8,8 @@ const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 const ui = fs.readFileSync("ione-transport.js", "utf8");
 const operations = fs.readFileSync("ione-transport-operations.js", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-transport/index.ts", "utf8");
-const migration = fs.readFileSync("supabase/migrations/20261031010000_ione_transport_driver_onboarding_v1.sql", "utf8");
-const operationsMigration = fs.readFileSync("supabase/migrations/20261031020000_ione_transport_operations_v2.sql", "utf8");
+const migration = fs.readFileSync("supabase/migrations/20261031144232_ione_transport_driver_onboarding_v1.sql", "utf8");
+const operationsMigration = fs.readFileSync("supabase/migrations/20261031151104_ione_transport_operations_v2.sql", "utf8");
 
 new vm.Script(ui, { filename: "ione-transport.js" });
 new vm.Script(operations, { filename: "ione-transport-operations.js" });
