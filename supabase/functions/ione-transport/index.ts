@@ -113,6 +113,7 @@ function decodeFile(file: any, key: string) {
 async function uploadDocument(admin: any, userId: string, applicationId: string, key: string, file: any) {
   if (!file) return null;
   const decoded = decodeFile(file, key);
+  if (!decoded) throw new Error("The selected document is empty.");
   const path = userId + "/" + applicationId + "/" + key + "-" + crypto.randomUUID() + "." + decoded.ext;
   const { error } = await admin.storage.from(BUCKET).upload(path, decoded.bytes, {
     contentType: decoded.mime, upsert: false, cacheControl: "3600",
@@ -231,7 +232,8 @@ Deno.serve(async (req: Request) => {
     if (action === "create_request") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
       const driverId=clean(body?.driver_id,50),service=clean(body?.service_type,30).toLowerCase(),name=clean(body?.passenger_name,120),phone=normalizePhone(body?.passenger_phone),pickup=clean(body?.pickup_location,240),destination=clean(body?.destination,240),count=Number(body?.passenger_count),notes=clean(body?.notes,600),pickupLat=body?.pickup_lat==null?null:Number(body.pickup_lat),pickupLng=body?.pickup_lng==null?null:Number(body.pickup_lng);
-      if(!/^[0-9a-f-]{36}$/i.test(driverId)||!CATEGORIES.has(service)||name.length<2||!validPhone(phone)||pickup.length<2||destination.length<2||!Number.isInteger(count)||count<1||count>60||((pickupLat!==null||pickupLng!==null)&&(!Number.isFinite(pickupLat)||!Number.isFinite(pickupLng)||pickupLat < -90||pickupLat > 90||pickupLng < -180||pickupLng > 180)))return json({success:false,error:"Complete your name, valid Tanzania phone, pickup, destination and passenger count."},400);
+      const pickupCoordsValid=(pickupLat===null&&pickupLng===null)||(pickupLat!==null&&pickupLng!==null&&Number.isFinite(pickupLat)&&Number.isFinite(pickupLng)&&pickupLat>=-90&&pickupLat<=90&&pickupLng>=-180&&pickupLng<=180);
+      if(!/^[0-9a-f-]{36}$/i.test(driverId)||!CATEGORIES.has(service)||name.length<2||!validPhone(phone)||pickup.length<2||destination.length<2||!Number.isInteger(count)||count<1||count>60||!pickupCoordsValid)return json({success:false,error:"Complete your name, valid Tanzania phone, pickup, destination and passenger count."},400);
       const {data:existing,error:existingError}=await admin.from("ione_transport_jobs").select("id").eq("passenger_user_id",user.id).in("status",["requested","accepted","in_progress"]).maybeSingle();
       if(existingError)return json({success:false,error:"Could not check your existing trip."},500);if(existing)return json({success:false,error:"You already have an active request. Open My Trips."},409);
       const {data:driver,error:driverError}=await admin.from("ione_transport_drivers").select("id,user_id,phone_number,driver_name,availability,verification_status,service_types,passenger_capacity,last_seen_at").eq("id",driverId).maybeSingle();
@@ -240,8 +242,8 @@ Deno.serve(async (req: Request) => {
       if(!(driver.service_types||[]).includes(service))return json({success:false,error:"This driver does not provide that service."},400);if(count>driver.passenger_capacity)return json({success:false,error:"Passenger count exceeds vehicle capacity."},400);
       const {data:job,error}=await admin.from("ione_transport_jobs").insert({passenger_user_id:user.id,driver_id:driver.id,driver_user_id:driver.user_id,service_type:service,passenger_name:name,passenger_phone:phone,pickup_location:pickup,destination,passenger_count:count,notes,pickup_lat:pickupLat,pickup_lng:pickupLng,status:"requested"}).select("id,status,service_type,pickup_location,destination,passenger_count,requested_at").single();
       if(error){if(error.code==="23505")return json({success:false,error:"You already have an active request. Open My Trips."},409);return json({success:false,error:"Could not save your trip request."},500);}
-      await notifyTransport(admin,job.data,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","i1 Transport: "+name+" requested a "+service.replace("_"," ")+" trip from "+pickup+". Open i1 Transport to accept.");
-      return json({success:true,job:job.data,message:"Request sent. The driver has been notified by push and SMS where available."});
+      await notifyTransport(admin,job,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","i1 Transport: "+name+" requested a "+service.replace("_"," ")+" trip from "+pickup+". Open i1 Transport to accept.");
+      return json({success:true,job,message:"Request sent. The driver has been notified by push and SMS where available."});
     }
     if (action === "location_update") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
@@ -260,7 +262,7 @@ Deno.serve(async (req: Request) => {
     if (action === "my_jobs") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
       const {data:rows,error}=await admin.from("ione_transport_jobs").select("*").or("passenger_user_id.eq."+user.id+",driver_user_id.eq."+user.id).order("requested_at",{ascending:false}).limit(30);if(error)return json({success:false,error:"Could not load trips."},500);
-      const jobs=await Promise.all((rows||[]).map(async(j:any)=>{const passenger=j.passenger_user_id===user.id;const {data:d}=await admin.from("ione_transport_drivers").select("driver_name,phone_number,vehicle_make_model,vehicle_registration,availability,profile_photo_path,current_lat,current_lng,location_updated_at").eq("id",j.driver_id).maybeSingle();const {profile_photo_path,...safe}=d||{};const unlocked=["accepted","in_progress","completed"].includes(j.status);const live=["accepted","in_progress"].includes(j.status);return {...j,passenger_phone:!passenger&&unlocked?j.passenger_phone:"",driver:{...safe,phone_number:passenger&&unlocked?safe.phone_number:"",current_lat:live?safe.current_lat:null,current_lng:live?safe.current_lng:null,location_updated_at:live?safe.location_updated_at:null,profile_photo_url:passenger?await signedUrl(admin,profile_photo_path||null):null},viewer_role:passenger?"passenger":"driver"};}));
+      const jobs=await Promise.all((rows||[]).map(async(j:any)=>{const passenger=j.passenger_user_id===user.id;const {data:d}=await admin.from("ione_transport_drivers").select("driver_name,phone_number,vehicle_make_model,vehicle_registration,availability,profile_photo_path,current_lat,current_lng,location_updated_at").eq("id",j.driver_id).maybeSingle();const safe:any={...(d||{})};const profile_photo_path=safe.profile_photo_path;delete safe.profile_photo_path;const unlocked=["accepted","in_progress","completed"].includes(j.status);const live=["accepted","in_progress"].includes(j.status);return {...j,passenger_phone:!passenger&&unlocked?j.passenger_phone:"",driver:{...safe,phone_number:passenger&&unlocked?safe.phone_number:"",current_lat:live?safe.current_lat:null,current_lng:live?safe.current_lng:null,location_updated_at:live?safe.location_updated_at:null,profile_photo_url:passenger?await signedUrl(admin,profile_photo_path||null):null},viewer_role:passenger?"passenger":"driver"};}));
       return json({success:true,jobs});
     }
     if (action === "accept") {
