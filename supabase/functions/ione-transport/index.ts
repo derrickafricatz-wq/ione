@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -19,7 +20,60 @@ function normalizePhone(value: unknown) {
   if (digits.startsWith("6") || digits.startsWith("7")) return "255" + digits;
   return digits;
 }
+
 const validPhone = (phone: string) => /^255[67]\d{8}$/.test(phone);
+async function sendTransportPush(admin: any, userId: string, payload: any) {
+  try {
+    const { data: cfg, error: cfgError } = await admin.from("ione_push_config").select("vapid_public_key,vapid_private_key,vapid_subject").eq("id", true).maybeSingle();
+    if (cfgError || !cfg?.vapid_public_key || !cfg?.vapid_private_key) return 0;
+    webpush.setVapidDetails(cfg.vapid_subject || "mailto:notifications@ione.app", cfg.vapid_public_key, cfg.vapid_private_key);
+    const { data: rows, error } = await admin.from("ione_push_subscriptions").select("id,endpoint,p256dh,auth").eq("user_id", userId).eq("active", true);
+    if (error) return 0;
+    let sent = 0;
+    for (const row of rows || []) {
+      try {
+        await webpush.sendNotification({ endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } }, JSON.stringify(payload));
+        sent++;
+      } catch (e: any) {
+        const status = Number(e?.statusCode || 0);
+        if (status === 404 || status === 410) await admin.from("ione_push_subscriptions").update({ active: false, updated_at: new Date().toISOString() }).eq("id", row.id);
+      }
+    }
+    return sent;
+  } catch (e) { console.warn("i1 Transport push delivery skipped:", String(e)); return 0; }
+}
+async function sendTransportSms(admin: any, jobId: string, eventType: string, userId: string, rawPhone: unknown, rawMessage: string) {
+  const apiKey = Deno.env.get("DARSMS_API_KEY");
+  const phone = normalizePhone(rawPhone);
+  if (!apiKey || !validPhone(phone)) return { status: "skipped" };
+  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 150);
+  if (!message) return { status: "skipped" };
+  const idempotencyKey = jobId + ":" + eventType + ":" + userId;
+  const claim = await admin.from("ione_transport_sms_log").insert({ idempotency_key: idempotencyKey, job_id: jobId, event_type: eventType, recipient_user_id: userId, recipient_phone: phone, status: "pending" }).select("id").maybeSingle();
+  if (claim.error) return { status: claim.error.code === "23505" ? "duplicate" : "failed" };
+  if (!claim.data?.id) return { status: "duplicate" };
+  try {
+    const response = await fetch("https://dev.darsms.co.tz/api/v1/integrations/sms/send", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+      body: JSON.stringify({ senderId: "DARSMS", to: [phone], message }), signal: AbortSignal.timeout(12000)
+    });
+    let result: any = {}; try { result = await response.json(); } catch (_) {}
+    const ok = response.ok && result?.success === true;
+    const ids = result?.data?.messageIds;
+    const providerId = Array.isArray(ids) ? String(ids[0] || "") : String(ids || "");
+    await admin.from("ione_transport_sms_log").update({ status: ok ? "queued" : "failed", provider_message_id: providerId || null, error_message: ok ? null : String(result?.message || ("DARSMS HTTP " + response.status)).slice(0, 240), provider_response: { http_status: response.status, success: ok }, updated_at: new Date().toISOString() }).eq("idempotency_key", idempotencyKey);
+    return { status: ok ? "queued" : "failed" };
+  } catch (e: any) {
+    await admin.from("ione_transport_sms_log").update({ status: "failed", error_message: String(e?.message || e).slice(0, 240), updated_at: new Date().toISOString() }).eq("idempotency_key", idempotencyKey);
+    return { status: "failed" };
+  }
+}
+async function notifyTransport(admin: any, job: any, recipientUserId: string, recipientPhone: unknown, eventType: string, title: string, body: string, smsText: string) {
+  await Promise.all([
+    sendTransportPush(admin, recipientUserId, { title, body: body.slice(0, 180), url: "./?i1Transport=1&trip=" + encodeURIComponent(job.id), tag: "i1-transport-" + job.id + "-" + eventType }),
+    sendTransportSms(admin, job.id, eventType, recipientUserId, recipientPhone, smsText)
+  ]);
+}
 
 async function getVerifiedUser(admin: any, req: Request) {
   const token = (req.headers.get("Authorization") || "").match(/^Bearer\s+(.+)$/i)?.[1] || "";
@@ -97,7 +151,7 @@ Deno.serve(async (req: Request) => {
       const categories = Array.isArray(body?.service_types)
         ? [...new Set(body.service_types.map((v: unknown) => clean(v, 30).toLowerCase()).filter((v: string) => CATEGORIES.has(v)))]
         : [];
-      const area = clean(body?.operating_area || "Arusha Region", 120);
+      const area = clean(body?.operating_area, 120);
       const vehicle = clean(body?.vehicle_make_model, 120);
       const plate = clean(body?.vehicle_registration, 30).toUpperCase();
       const color = clean(body?.vehicle_color, 40);
@@ -165,9 +219,11 @@ Deno.serve(async (req: Request) => {
 
     if (action === "active_drivers") {
       const service=clean(body?.service_type,30).toLowerCase();
+      const area=clean(body?.area,120);
       if(service&&!CATEGORIES.has(service))return json({success:false,error:"Choose a valid transport service."},400);
       let q=admin.from("ione_transport_drivers").select("id,driver_name,service_types,operating_area,vehicle_make_model,vehicle_registration,vehicle_color,passenger_capacity,availability,profile_photo_path,last_seen_at").eq("verification_status","approved").in("availability",["active","busy"]).gt("last_seen_at",new Date(Date.now()-300000).toISOString()).order("availability",{ascending:true}).order("last_seen_at",{ascending:false}).limit(100);
       if(service)q=q.contains("service_types",[service]);
+      if(area)q=q.ilike("operating_area","%"+area+"%");
       const {data,error}=await q;if(error)return json({success:false,error:"Could not load drivers."},500);
       const drivers=await Promise.all((data||[]).map(async(d:any)=>{const photo=await signedUrl(admin,d.profile_photo_path);const {profile_photo_path,...safe}=d;return {...safe,profile_photo_url:photo};}));
       return json({success:true,drivers});
@@ -178,13 +234,22 @@ Deno.serve(async (req: Request) => {
       if(!/^[0-9a-f-]{36}$/i.test(driverId)||!CATEGORIES.has(service)||name.length<2||!validPhone(phone)||pickup.length<2||destination.length<2||!Number.isInteger(count)||count<1||count>60)return json({success:false,error:"Complete your name, valid Tanzania phone, pickup, destination and passenger count."},400);
       const {data:existing,error:existingError}=await admin.from("ione_transport_jobs").select("id").eq("passenger_user_id",user.id).in("status",["requested","accepted","in_progress"]).maybeSingle();
       if(existingError)return json({success:false,error:"Could not check your existing trip."},500);if(existing)return json({success:false,error:"You already have an active request. Open My Trips."},409);
-      const {data:driver,error:driverError}=await admin.from("ione_transport_drivers").select("id,user_id,availability,verification_status,service_types,passenger_capacity,last_seen_at").eq("id",driverId).maybeSingle();
+      const {data:driver,error:driverError}=await admin.from("ione_transport_drivers").select("id,user_id,phone_number,driver_name,availability,verification_status,service_types,passenger_capacity,last_seen_at").eq("id",driverId).maybeSingle();
       if(driverError||!driver)return json({success:false,error:"Driver profile not found."},404);
       if(driver.verification_status!=="approved"||driver.availability!=="active"||Date.parse(driver.last_seen_at)<Date.now()-300000)return json({success:false,error:"Driver is no longer active. Refresh the list."},409);
       if(!(driver.service_types||[]).includes(service))return json({success:false,error:"This driver does not provide that service."},400);if(count>driver.passenger_capacity)return json({success:false,error:"Passenger count exceeds vehicle capacity."},400);
       const {data:job,error}=await admin.from("ione_transport_jobs").insert({passenger_user_id:user.id,driver_id:driver.id,driver_user_id:driver.user_id,service_type:service,passenger_name:name,passenger_phone:phone,pickup_location:pickup,destination,passenger_count:count,notes,status:"requested"}).select("id,status,service_type,pickup_location,destination,passenger_count,requested_at").single();
       if(error){if(error.code==="23505")return json({success:false,error:"You already have an active request. Open My Trips."},409);return json({success:false,error:"Could not save your trip request."},500);}
-      return json({success:true,job,message:"Request sent to driver. Chat opens after acceptance."});
+      await notifyTransport(admin,job.data,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","i1 Transport: "+name+" requested a "+service.replace("_"," ")+" trip from "+pickup+". Open i1 Transport to accept.");
+      return json({success:true,job:job.data,message:"Request sent. The driver has been notified by push and SMS where available."});
+    }
+    if (action === "location_update") {
+      const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
+      const lat=Number(body?.latitude),lng=Number(body?.longitude);if(!Number.isFinite(lat)||!Number.isFinite(lng)||lat < -90||lat > 90||lng < -180||lng > 180)return json({success:false,error:"Valid GPS coordinates are required."},400);
+      const {data:job,error:jobError}=await admin.from("ione_transport_jobs").select("id").eq("driver_user_id",user.id).in("status",["accepted","in_progress"]).order("accepted_at",{ascending:false}).limit(1).maybeSingle();
+      if(jobError||!job)return json({success:false,error:"Location sharing is available only during your accepted trip."},409);
+      const now=new Date().toISOString();const {error}=await admin.from("ione_transport_drivers").update({current_lat:lat,current_lng:lng,location_updated_at:now,last_seen_at:now,updated_at:now}).eq("user_id",user.id).eq("verification_status","approved");
+      if(error)return json({success:false,error:"Could not update your live location."},500);return json({success:true,updated_at:now});
     }
     if (action === "set_availability" || action === "heartbeat") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
@@ -195,26 +260,28 @@ Deno.serve(async (req: Request) => {
     if (action === "my_jobs") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
       const {data:rows,error}=await admin.from("ione_transport_jobs").select("*").or("passenger_user_id.eq."+user.id+",driver_user_id.eq."+user.id).order("requested_at",{ascending:false}).limit(30);if(error)return json({success:false,error:"Could not load trips."},500);
-      const jobs=await Promise.all((rows||[]).map(async(j:any)=>{const passenger=j.passenger_user_id===user.id;const {data:d}=await admin.from("ione_transport_drivers").select("driver_name,phone_number,vehicle_make_model,vehicle_registration,availability,profile_photo_path").eq("id",j.driver_id).maybeSingle();const {profile_photo_path,...safe}=d||{};const unlocked=["accepted","in_progress","completed"].includes(j.status);return {...j,passenger_phone:!passenger&&unlocked?j.passenger_phone:"",driver:{...safe,phone_number:passenger&&unlocked?safe.phone_number:"",profile_photo_url:passenger?await signedUrl(admin,profile_photo_path||null):null},viewer_role:passenger?"passenger":"driver"};}));
+      const jobs=await Promise.all((rows||[]).map(async(j:any)=>{const passenger=j.passenger_user_id===user.id;const {data:d}=await admin.from("ione_transport_drivers").select("driver_name,phone_number,vehicle_make_model,vehicle_registration,availability,profile_photo_path,current_lat,current_lng,location_updated_at").eq("id",j.driver_id).maybeSingle();const {profile_photo_path,...safe}=d||{};const unlocked=["accepted","in_progress","completed"].includes(j.status);const live=["accepted","in_progress"].includes(j.status);return {...j,passenger_phone:!passenger&&unlocked?j.passenger_phone:"",driver:{...safe,phone_number:passenger&&unlocked?safe.phone_number:"",current_lat:live?safe.current_lat:null,current_lng:live?safe.current_lng:null,location_updated_at:live?safe.location_updated_at:null,profile_photo_url:passenger?await signedUrl(admin,profile_photo_path||null):null},viewer_role:passenger?"passenger":"driver"};}));
       return json({success:true,jobs});
     }
     if (action === "accept") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);const id=clean(body?.job_id,50);if(!/^[0-9a-f-]{36}$/i.test(id))return json({success:false,error:"Invalid request."},400);
-      const {data,error}=await admin.rpc("ione_transport_claim_job",{p_job_id:id,p_driver_user_id:user.id});if(error)return json({success:false,error:"Could not accept trip."},500);return json(data);
+      const {data,error}=await admin.rpc("ione_transport_claim_job",{p_job_id:id,p_driver_user_id:user.id});if(error)return json({success:false,error:"Could not accept trip."},500);if(data?.success){const {data:job}=await admin.from("ione_transport_jobs").select("*").eq("id",id).maybeSingle();if(job){const {data:driver}=await admin.from("ione_transport_drivers").select("driver_name").eq("id",job.driver_id).maybeSingle();await notifyTransport(admin,job,job.passenger_user_id,job.passenger_phone,"driver_accepted","i1 Transport • Driver accepted",String(driver?.driver_name||"Your driver")+" accepted your request and will contact you shortly.","i1 Transport: Your driver accepted your request. Open i1 Transport to chat or call.");}}return json(data);
     }
     if (action === "decline") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
-      const {data,error}=await admin.from("ione_transport_jobs").update({status:"declined",driver_note:clean(body?.reason||"Driver declined.",600),updated_at:new Date().toISOString()}).eq("id",clean(body?.job_id,50)).eq("driver_user_id",user.id).eq("status","requested").select("id").maybeSingle();if(error||!data)return json({success:false,error:"Request no longer available."},409);return json({success:true,message:"Request declined."});
+      const {data,error}=await admin.from("ione_transport_jobs").update({status:"declined",driver_note:clean(body?.reason||"Driver declined.",600),updated_at:new Date().toISOString()}).eq("id",clean(body?.job_id,50)).eq("driver_user_id",user.id).eq("status","requested").select("id").maybeSingle();if(error||!data)return json({success:false,error:"Request no longer available."},409);const {data:job}=await admin.from("ione_transport_jobs").select("*").eq("id",clean(body?.job_id,50)).maybeSingle();if(job)await notifyTransport(admin,job,job.passenger_user_id,job.passenger_phone,"driver_declined","i1 Transport • Request declined","The selected driver cannot take this trip. Please choose another available driver.","i1 Transport: Your selected driver declined the request. Please choose another driver.");return json({success:true,message:"Request declined."});
     }
     if (action === "start_trip" || action === "complete_trip" || action === "cancel_trip") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);const id=clean(body?.job_id,50);if(!/^[0-9a-f-]{36}$/i.test(id))return json({success:false,error:"Invalid trip."},400);
-      const transition=action==="start_trip"?"start":action==="complete_trip"?"complete":"cancel";const {data,error}=await admin.rpc("ione_transport_transition_job",{p_job_id:id,p_actor_user_id:user.id,p_action:transition,p_reason:clean(body?.reason,300)});if(error)return json({success:false,error:"Could not update trip."},500);return json(data);
+      const transition=action==="start_trip"?"start":action==="complete_trip"?"complete":"cancel";const {data,error}=await admin.rpc("ione_transport_transition_job",{p_job_id:id,p_actor_user_id:user.id,p_action:transition,p_reason:clean(body?.reason,300)});if(error)return json({success:false,error:"Could not update trip."},500);
+      if(data?.success){const {data:job}=await admin.from("ione_transport_jobs").select("*").eq("id",id).maybeSingle();if(job){const {data:driver}=await admin.from("ione_transport_drivers").select("phone_number").eq("id",job.driver_id).maybeSingle();const events=action==="start_trip"?[{uid:job.passenger_user_id,phone:job.passenger_phone,kind:"trip_started",title:"i1 Transport • Trip started",body:"Your driver has started the journey to "+job.destination+".",sms:"i1 Transport: Your driver has started the trip to "+job.destination+"."}]:action==="complete_trip"?[{uid:job.passenger_user_id,phone:job.passenger_phone,kind:"trip_completed_passenger",title:"i1 Transport • Trip completed",body:"Your journey is marked complete. Thank you for travelling with i1.",sms:"i1 Transport: Your trip is complete. Thank you for travelling with i1."},{uid:job.driver_user_id,phone:driver?.phone_number,kind:"trip_completed_driver",title:"i1 Transport • Job complete",body:"Trip completed. Your availability has been updated.",sms:"i1 Transport: Job completed. Your availability has been updated."}]:[{uid:job.passenger_user_id,phone:job.passenger_phone,kind:"trip_cancelled_passenger",title:"i1 Transport • Trip cancelled",body:"Your transport request was cancelled.",sms:"i1 Transport: Your transport trip was cancelled."},{uid:job.driver_user_id,phone:driver?.phone_number,kind:"trip_cancelled_driver",title:"i1 Transport • Trip cancelled",body:"The transport trip was cancelled.",sms:"i1 Transport: The transport trip was cancelled."}];await Promise.all(events.map(e=>notifyTransport(admin,job,e.uid,e.phone,e.kind,e.title,e.body,e.sms)));}}
+      return json(data);
     }
     if (action === "get_messages" || action === "send_message") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);const id=clean(body?.job_id,50);if(!/^[0-9a-f-]{36}$/i.test(id))return json({success:false,error:"Invalid trip."},400);
       const {data:job,error:je}=await admin.from("ione_transport_jobs").select("id,passenger_user_id,driver_user_id,status").eq("id",id).maybeSingle();if(je||!job)return json({success:false,error:"Trip not found."},404);
       if(user.id!==job.passenger_user_id&&user.id!==job.driver_user_id)return json({success:false,error:"Not a trip participant."},403);if(!["accepted","in_progress","completed"].includes(job.status))return json({success:false,error:"Chat opens after driver acceptance."},409);
-      if(action==="send_message"){const message=clean(body?.message,1000);if(!message)return json({success:false,error:"Write a message first."},400);const {count:recentCount,error:rateError}=await admin.from("ione_transport_messages").select("id",{count:"exact",head:true}).eq("sender_user_id",user.id).gt("created_at",new Date(Date.now()-60000).toISOString());if(rateError)return json({success:false,error:"Could not verify message rate."},500);if((recentCount||0)>=20)return json({success:false,error:"Please wait before sending more messages."},429);const {data,error}=await admin.from("ione_transport_messages").insert({job_id:id,sender_user_id:user.id,message}).select("id,job_id,sender_user_id,message,created_at").single();if(error)return json({success:false,error:"Message could not be sent."},500);return json({success:true,message:data});}
+      if(action==="send_message"){const message=clean(body?.message,1000);if(!message)return json({success:false,error:"Write a message first."},400);const {count:recentCount,error:rateError}=await admin.from("ione_transport_messages").select("id",{count:"exact",head:true}).eq("sender_user_id",user.id).gt("created_at",new Date(Date.now()-60000).toISOString());if(rateError)return json({success:false,error:"Could not verify message rate."},500);if((recentCount||0)>=20)return json({success:false,error:"Please wait before sending more messages."},429);const {data,error}=await admin.from("ione_transport_messages").insert({job_id:id,sender_user_id:user.id,message}).select("id,job_id,sender_user_id,message,created_at").single();if(error)return json({success:false,error:"Message could not be sent."},500);const recipient=job.passenger_user_id===user.id?job.driver_user_id:job.passenger_user_id;await sendTransportPush(admin,recipient,{title:"i1 Transport • New chat message",body:message.slice(0,150),url:"./?i1Transport=1&trip="+encodeURIComponent(id),tag:"i1-transport-chat-"+id});return json({success:true,message:data});}
       const {data,error}=await admin.from("ione_transport_messages").select("id,job_id,sender_user_id,message,created_at").eq("job_id",id).order("created_at",{ascending:true}).limit(100);if(error)return json({success:false,error:"Could not load chat."},500);return json({success:true,messages:data||[]});
     }
 
