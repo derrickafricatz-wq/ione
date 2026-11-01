@@ -73,15 +73,15 @@
     <main class="it-shell">
       <header class="it-top"><div class="it-brand">I|ONE • PRIVATE MOBILITY</div><button class="it-close" id="itClose" type="button">CLOSE ✕</button></header>
       <section class="it-hero">
-        <div class="it-kicker">ARUSHA REGION • AUTHORITY-VERIFIED NETWORK</div>
+        <div class="it-kicker">GLOBAL NETWORK • AUTHORITY-VERIFIED DRIVERS</div>
         <h1>i1 Transport</h1>
         <p>One connected transport network for private journeys. Choose Taxi, Special Hire, Shuttle or Bus services. Drivers apply here and every application is reviewed by Authority Press before approval.</p>
       </section>
       <section class="it-services" aria-label="Transport services">
-        <article class="it-service"><div class="it-emoji">🚕</div><strong>Taxi</strong><span>Private point-to-point journeys around Arusha</span></article>
+        <article class="it-service"><div class="it-emoji">🚕</div><strong>Taxi</strong><span>Private point-to-point journeys in your area</span></article>
         <article class="it-service"><div class="it-emoji">🚘</div><strong>Special Hire</strong><span>Private hires, business trips and airport transfers</span></article>
         <article class="it-service"><div class="it-emoji">🚐</div><strong>Shuttle</strong><span>Group transport and scheduled shuttle services</span></article>
-        <article class="it-service"><div class="it-emoji">🚌</div><strong>Bus</strong><span>Bus operators, routes and ticketing in the same network</span></article>
+        <article class="it-service"><div class="it-emoji">🚌</div><strong>Bus</strong><span>Private bus hire, group travel and transfers</span></article>
       </section>
       <div class="it-note"><strong>Verified-driver standard:</strong> Submitting an application does not make a driver active. Authority Press must review the driver's details and driving-licence document and approve the application first.</div>
       <section class="it-card">
