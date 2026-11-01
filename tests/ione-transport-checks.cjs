@@ -13,6 +13,7 @@ const operationsMigration = fs.readFileSync("supabase/migrations/20261031151104_
 const indexMigration = fs.readFileSync("supabase/migrations/20261031152037_ione_transport_query_indexes_v1.sql", "utf8");
 const communicationsMigration = fs.readFileSync("supabase/migrations/20261101003202_ione_transport_communications_global_v1.sql", "utf8");
 const globalAreaMigration = fs.readFileSync("supabase/migrations/20261101003706_ione_transport_global_area_v1.sql", "utf8");
+const smsIndexMigration = fs.readFileSync("supabase/migrations/20261101003837_ione_transport_sms_recipient_index_v1.sql", "utf8");
 
 new vm.Script(ui, { filename: "ione-transport.js" });
 new vm.Script(operations, { filename: "ione-transport-operations.js" });
@@ -47,6 +48,7 @@ assert.match(communicationsMigration, /current_lat/);
 assert.match(communicationsMigration, /pickup_lat/);
 assert.match(communicationsMigration, /enable row level security/);
 assert.match(globalAreaMigration, /alter column operating_area drop default/);
+assert.match(smsIndexMigration, /ione_transport_sms_recipient_idx/);
 assert.match(migration, /enable row level security/);
 assert.match(migration, /public = false/);
 assert.match(edge, /validAuthoritySession/);
