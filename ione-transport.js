@@ -91,7 +91,7 @@
           <div class="it-field"><label for="itDriverName">FULL NAME</label><input id="itDriverName" name="driver_name" maxlength="120" required placeholder="Name as shown on your licence"></div>
           <div class="it-field"><label for="itDriverPhone">PHONE NUMBER</label><input id="itDriverPhone" name="phone_number" type="tel" maxlength="20" required placeholder="+255 7XX XXX XXX"></div>
           <div class="it-field"><label for="itDriverEmail">EMAIL (OPTIONAL)</label><input id="itDriverEmail" name="email" type="email" maxlength="254" placeholder="name@example.com"></div>
-          <div class="it-field"><label for="itDriverArea">OPERATING AREA</label><input id="itDriverArea" name="operating_area" maxlength="120" required value="Arusha Region" placeholder="Arusha Region"></div>
+          <div class="it-field"><label for="itDriverArea">OPERATING AREA</label><input id="itDriverArea" name="operating_area" maxlength="120" required value="" placeholder="e.g. Dar es Salaam, Pwani, Arusha, Mwanza or your service area"></div>
           <div class="it-field full"><span class="it-label">TRANSPORT SERVICE(S) YOU PROVIDE</span><div class="it-categories">
             <label class="it-check"><input type="checkbox" name="service_types" value="taxi"> Taxi</label>
             <label class="it-check"><input type="checkbox" name="service_types" value="special_hire"> Special Hire</label>
@@ -231,7 +231,7 @@
       if (data.already_pending || data.already_approved) await loadMyStatus(false);
       else {
         form.reset();
-        $("itDriverArea").value = "Arusha Region";
+        $("itDriverArea").value = "";
         await loadMyStatus(false);
       }
     } catch (error) {
