@@ -35,6 +35,7 @@
     .ito-send input{flex:1;min-width:0}
     .ito-status{min-height:20px;margin-top:9px;font-size:12px;line-height:1.5;color:#c6e9d0}
     .ito-status.error{color:#ffb8ad}
+    .ito-live{margin-top:12px;padding:10px;border:1px solid #67b88a;border-radius:12px;background:#092117}.ito-live iframe{display:block;width:100%;height:210px;border:0;border-radius:9px;margin:8px 0}.ito-live a{color:#a7e8bb;font-size:12px;font-weight:900}
     @media(max-width:620px){.ito-form{grid-template-columns:1fr}.ito-field.full{grid-column:auto}}
   `;
   document.head.appendChild(style);
@@ -56,6 +57,39 @@
     if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Transport request failed.");
     return r.data;
   }
+
+  let locationWatch=null,lastLocationSent=0;
+  async function enableTransportPush(){
+    try{
+      if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window))throw new Error("This browser does not support push notifications.");
+      const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+      if(permission!=="granted")throw new Error("Please allow notifications in your browser settings.");
+      if(typeof window.ioneEnsurePushSubscription==="function")await window.ioneEnsurePushSubscription();
+      else if(typeof window.ioneSyncPushNow==="function")await window.ioneSyncPushNow();
+      else throw new Error("The i1 push service is not ready. Refresh the app and try again.");
+      alert("i1 Transport alerts are enabled on this device.");
+    }catch(e){alert(e?.message||"Could not enable transport alerts.");}
+  }
+  function usePickupLocation(){
+    const b=$("itoUseLocation");if(!navigator.geolocation){say("itoBookingStatus","GPS is not available in this browser.",true);return;}
+    b.disabled=true;b.textContent="LOCATING…";
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const lat=Number(pos.coords.latitude),lng=Number(pos.coords.longitude);
+      $("itoPickupLat").value=String(lat);$("itoPickupLng").value=String(lng);
+      if(!$("itoPickup").value.trim())$("itoPickup").value="My current GPS location ("+lat.toFixed(5)+", "+lng.toFixed(5)+")";
+      say("itoBookingStatus","Pickup GPS location attached to your request.",false);b.disabled=false;b.textContent="GPS LOCATION SAVED";
+    },err=>{say("itoBookingStatus",err.message||"Could not get your GPS location. Enter pickup manually.",true);b.disabled=false;b.textContent="USE MY GPS LOCATION";},{enableHighAccuracy:true,timeout:15000,maximumAge:10000});
+  }
+  function manageDriverLocationSharing(jobs){
+    const active=jobs.some(j=>j.viewer_role==="driver"&&["accepted","in_progress"].includes(j.status));
+    if(!active){if(locationWatch!==null&&navigator.geolocation){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}return;}
+    if(locationWatch!==null||!navigator.geolocation)return;
+    locationWatch=navigator.geolocation.watchPosition(async pos=>{
+      const now=Date.now();if(now-lastLocationSent<8000)return;lastLocationSent=now;
+      try{await call({action:"location_update",latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy:pos.coords.accuracy});}
+      catch(e){console.warn("i1 Transport location update:",e?.message||e);}
+    },err=>{console.warn("i1 Transport GPS unavailable:",err?.message||err);},{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+  }
   function install() {
     const overlay=$(overlayId); if(!overlay||$("itoPassenger"))return;
     const shell=overlay.querySelector(".it-shell"); if(!shell)return;
@@ -63,7 +97,7 @@
     passenger.innerHTML=`
       <h2>Find your i1 Transport driver</h2>
       <p class="ito-muted">ACTIVE drivers can receive a journey request. BUSY drivers remain visible so you can see they have already accepted a trip.</p>
-      <div class="ito-actions"><select id="itoFilter" class="ito-filter" style="max-width:240px"><option value="">All services</option><option value="taxi">Taxi</option><option value="special_hire">Special Hire</option><option value="shuttle">Shuttle</option><option value="bus">Bus / Private bus hire</option></select><button class="ito-btn" id="itoRefresh">REFRESH DRIVERS</button></div>
+      <div class="ito-actions"><input id="itoArea" class="ito-filter" style="max-width:260px" maxlength="120" placeholder="City / district / region — anywhere"><select id="itoFilter" class="ito-filter" style="max-width:240px"><option value="">All services</option><option value="taxi">Taxi</option><option value="special_hire">Special Hire</option><option value="shuttle">Shuttle</option><option value="bus">Bus / Private bus hire</option></select><button class="ito-btn" id="itoRefresh">FIND DRIVERS</button><button class="ito-btn" id="itoEnablePush">ENABLE ALERTS</button></div>
       <div class="ito-grid" id="itoDrivers"><div class="ito-empty">Loading verified drivers…</div></div>
       <form class="ito-booking" id="itoBooking">
         <h2>Request this driver</h2><p class="ito-muted" id="itoChosen"></p><input type="hidden" id="itoDriverId">
@@ -72,7 +106,7 @@
           <div class="ito-field"><label>PHONE NUMBER</label><input id="itoPhone" class="ito-input" maxlength="20" required placeholder="+255 7XX XXX XXX"></div>
           <div class="ito-field"><label>SERVICE</label><select id="itoService" class="ito-select" required></select></div>
           <div class="ito-field"><label>PASSENGERS</label><input id="itoCount" class="ito-input" type="number" min="1" max="60" value="1" required></div>
-          <div class="ito-field"><label>PICKUP LOCATION</label><input id="itoPickup" class="ito-input" maxlength="240" required placeholder="Pickup point"></div>
+          <div class="ito-field"><label>PICKUP LOCATION</label><input id="itoPickup" class="ito-input" maxlength="240" required placeholder="Pickup point"><button class="ito-btn" type="button" id="itoUseLocation">USE MY GPS LOCATION</button><input type="hidden" id="itoPickupLat"><input type="hidden" id="itoPickupLng"></div>
           <div class="ito-field"><label>DESTINATION</label><input id="itoDestination" class="ito-input" maxlength="240" required placeholder="Where are you going?"></div>
           <div class="ito-field full"><label>EXTRA DETAILS (OPTIONAL)</label><textarea id="itoNotes" class="ito-textarea" rows="2" maxlength="600" placeholder="Landmark, luggage or useful details"></textarea></div>
           <div class="ito-field full"><div class="ito-actions"><button class="ito-btn primary" id="itoSend" type="submit">SEND TRANSPORT REQUEST</button><button class="ito-btn" type="button" id="itoCancelBooking">CANCEL</button></div><div class="ito-status" id="itoBookingStatus"></div></div>
@@ -82,16 +116,20 @@
     const driver=document.createElement("section");driver.id="itoDriver";driver.className="ito-section";driver.style.display="none";
     driver.innerHTML=`
       <h2>Driver dashboard</h2><p class="ito-muted" id="itoDriverWelcome">Your Authority-verified driver workspace.</p>
-      <div class="ito-actions"><span class="ito-pill" id="itoAvailability">OFFLINE</span><button class="ito-btn primary" id="itoGoActive">GO ACTIVE</button><button class="ito-btn" id="itoGoOffline">GO OFFLINE</button><button class="ito-btn" id="itoDriverRefresh">REFRESH JOBS</button></div>
+      <div class="ito-actions"><span class="ito-pill" id="itoAvailability">OFFLINE</span><button class="ito-btn primary" id="itoGoActive">GO ACTIVE</button><button class="ito-btn" id="itoGoOffline">GO OFFLINE</button><button class="ito-btn" id="itoDriverRefresh">REFRESH JOBS</button><button class="ito-btn" id="itoDriverPush">ENABLE ALERTS</button></div>
       <p class="ito-muted" id="itoDriverHint">You only appear in the passenger directory while ACTIVE.</p>
       <h2 style="margin-top:20px">Incoming requests & current trip</h2><div class="ito-grid" id="itoDriverTrips"><div class="ito-empty">No requests yet.</div></div>`;
     shell.append(passenger,driver);
     $("itoRefresh").addEventListener("click",refresh);
     $("itoFilter").addEventListener("change",refresh);
+    $("itoArea").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();refresh();}});
     $("itoDriverRefresh").addEventListener("click",refresh);
     $("itoCancelBooking").addEventListener("click",()=>{$("itoBooking").style.display="none";chosen=null;});
     $("itoDrivers").addEventListener("click",e=>{const b=e.target.closest("[data-ito-request]");if(b)selectDriver(b.dataset.itoRequest);});
     $("itoBooking").addEventListener("submit",sendRequest);
+    $("itoUseLocation").addEventListener("click",usePickupLocation);
+    $("itoEnablePush").addEventListener("click",enableTransportPush);
+    $("itoDriverPush").addEventListener("click",enableTransportPush);
     $("itoPassengerTrips").addEventListener("click",tripClick);
     $("itoDriverTrips").addEventListener("click",tripClick);
     $("itoDriver").addEventListener("click",availabilityClick);
@@ -106,15 +144,15 @@
   async function sendRequest(e) {
     e.preventDefault();const b=$("itoSend");b.disabled=true;b.textContent="SENDING…";
     try {
-      const r=await call({action:"create_request",driver_id:$("itoDriverId").value,service_type:$("itoService").value,passenger_name:$("itoName").value,passenger_phone:$("itoPhone").value,pickup_location:$("itoPickup").value,destination:$("itoDestination").value,passenger_count:$("itoCount").value,notes:$("itoNotes").value});
+      const r=await call({action:"create_request",driver_id:$("itoDriverId").value,service_type:$("itoService").value,passenger_name:$("itoName").value,passenger_phone:$("itoPhone").value,pickup_location:$("itoPickup").value,pickup_lat:$("itoPickupLat").value||null,pickup_lng:$("itoPickupLng").value||null,destination:$("itoDestination").value,passenger_count:$("itoCount").value,notes:$("itoNotes").value});
       say("itoBookingStatus",r.message||"Request sent.");$("itoBooking").reset();$("itoBooking").style.display="none";chosen=null;await refresh();
     } catch(err){say("itoBookingStatus",err.message,true);}
     finally{b.disabled=false;b.textContent="SEND TRANSPORT REQUEST";}
   }
   async function refresh() {
     try {
-      const [d,j]=await Promise.all([call({action:"active_drivers",service_type:$("itoFilter")?.value||""}),call({action:"my_jobs"})]);
-      directory=d.drivers||[];renderDrivers(directory);renderTrips(j.jobs||[]);
+      const [d,j]=await Promise.all([call({action:"active_drivers",service_type:$("itoFilter")?.value||"",area:$("itoArea")?.value||""}),call({action:"my_jobs"})]);
+      directory=d.drivers||[];renderDrivers(directory);renderTrips(j.jobs||[]);manageDriverLocationSharing(j.jobs||[]);
     } catch(err){$("itoDrivers").innerHTML='<div class="ito-empty">'+esc(err.message)+'</div>';}
   }
   function renderDrivers(rows) {
@@ -134,12 +172,12 @@
   }
   function chatShell(j){return '<div class="ito-chat" id="itoChat-'+esc(j.id)+'" style="display:none"></div>';}
   function passengerCard(j) {
-    const active=["accepted","in_progress","completed"].includes(j.status),phone=j.driver?.phone_number;
-    return '<article class="ito-card" data-ito-job="'+esc(j.id)+'"><h3>'+esc(labels[j.service_type]||j.service_type)+' • '+esc(j.status.toUpperCase().replace("_"," "))+'</h3><div class="ito-meta"><b>From:</b> '+esc(j.pickup_location)+'<br><b>To:</b> '+esc(j.destination)+'<br><b>Driver:</b> '+esc(j.driver?.driver_name||"Assigned driver")+(j.driver?.vehicle_make_model?'<br><b>Vehicle:</b> '+esc(j.driver.vehicle_make_model):"")+(phone?'<br><b>Phone:</b> '+esc(phone):"")+'<br><b>Passengers:</b> '+esc(j.passenger_count)+'</div>'+(active?'<button class="ito-btn" data-ito-chat="'+esc(j.id)+'">OPEN DRIVER CHAT</button>':"")+(["requested","accepted","in_progress"].includes(j.status)?'<button class="ito-btn" data-ito-action="cancel_trip" data-ito-id="'+esc(j.id)+'">CANCEL TRIP</button>':"")+chatShell(j)+'</article>';
+    const active=["accepted","in_progress","completed"].includes(j.status),phone=j.driver?.phone_number,live=["accepted","in_progress"].includes(j.status)&&j.driver?.current_lat!=null&&j.driver?.current_lng!=null;
+    return '<article class="ito-card" data-ito-job="'+esc(j.id)+'"><h3>'+esc(labels[j.service_type]||j.service_type)+' • '+esc(j.status.toUpperCase().replace("_"," "))+'</h3><div class="ito-meta"><b>From:</b> '+esc(j.pickup_location)+'<br><b>To:</b> '+esc(j.destination)+'<br><b>Driver:</b> '+esc(j.driver?.driver_name||"Assigned driver")+(j.driver?.vehicle_make_model?'<br><b>Vehicle:</b> '+esc(j.driver.vehicle_make_model):"")+(phone?'<br><b>Phone:</b> '+esc(phone):"")+'<br><b>Passengers:</b> '+esc(j.passenger_count)+'</div>'+(active?(phone?'<a class="ito-btn" href="tel:+'+esc(phone)+'">CALL DRIVER</a>':"")+'<button class="ito-btn" data-ito-chat="'+esc(j.id)+'">CHAT WITH DRIVER</button>':"")+(live?'<div class="ito-live"><b>DRIVER IS COMING</b><div class="ito-meta">Location updated '+esc(j.driver.location_updated_at?new Date(j.driver.location_updated_at).toLocaleTimeString():"recently")+'</div><iframe title="Live driver location" loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox='+encodeURIComponent((Number(j.driver.current_lng)-0.012)+','+(Number(j.driver.current_lat)-0.008)+','+(Number(j.driver.current_lng)+0.012)+','+(Number(j.driver.current_lat)+0.008))+'&layer=mapnik&marker='+Number(j.driver.current_lat)+','+Number(j.driver.current_lng)+'"></iframe><a target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat='+Number(j.driver.current_lat)+'&mlon='+Number(j.driver.current_lng)+'#map=16/'+Number(j.driver.current_lat)+'/'+Number(j.driver.current_lng)+'">OPEN DRIVER ON MAP</a></div>':"")+(["requested","accepted","in_progress"].includes(j.status)?'<button class="ito-btn" data-ito-action="cancel_trip" data-ito-id="'+esc(j.id)+'">CANCEL TRIP</button>':"")+chatShell(j)+'</article>';
   }
   function driverCard(j) {
     const pending=j.status==="requested",accepted=j.status==="accepted",started=j.status==="in_progress";
-    return '<article class="ito-card" data-ito-job="'+esc(j.id)+'"><h3>'+esc(labels[j.service_type]||j.service_type)+' • '+esc(j.status.toUpperCase().replace("_"," "))+'</h3><div class="ito-meta"><b>Passenger:</b> '+esc(j.passenger_name)+(j.passenger_phone?' • '+esc(j.passenger_phone):"")+'<br><b>Pickup:</b> '+esc(j.pickup_location)+'<br><b>Destination:</b> '+esc(j.destination)+'<br><b>Passengers:</b> '+esc(j.passenger_count)+(j.notes?'<br><b>Details:</b> '+esc(j.notes):"")+'</div>'+(pending?'<button class="ito-btn primary" data-ito-action="accept" data-ito-id="'+esc(j.id)+'">ACCEPT JOB</button><button class="ito-btn" data-ito-action="decline" data-ito-id="'+esc(j.id)+'">DECLINE</button>':"")+(accepted?'<button class="ito-btn primary" data-ito-action="start_trip" data-ito-id="'+esc(j.id)+'">START TRIP</button>':"")+(started?'<button class="ito-btn primary" data-ito-action="complete_trip" data-ito-id="'+esc(j.id)+'">JOB COMPLETE</button>':"")+(accepted||started||j.status==="completed"?'<button class="ito-btn" data-ito-chat="'+esc(j.id)+'">OPEN PASSENGER CHAT</button>':"")+(accepted||started?'<button class="ito-btn" data-ito-action="cancel_trip" data-ito-id="'+esc(j.id)+'">CANCEL TRIP</button>':"")+chatShell(j)+'</article>';
+    return '<article class="ito-card" data-ito-job="'+esc(j.id)+'"><h3>'+esc(labels[j.service_type]||j.service_type)+' • '+esc(j.status.toUpperCase().replace("_"," "))+'</h3><div class="ito-meta"><b>Passenger:</b> '+esc(j.passenger_name)+(j.passenger_phone?' • '+esc(j.passenger_phone):"")+'<br><b>Pickup:</b> '+esc(j.pickup_location)+'<br><b>Destination:</b> '+esc(j.destination)+'<br><b>Passengers:</b> '+esc(j.passenger_count)+(j.notes?'<br><b>Details:</b> '+esc(j.notes):"")+'</div>'+(pending?'<button class="ito-btn primary" data-ito-action="accept" data-ito-id="'+esc(j.id)+'">ACCEPT JOB</button><button class="ito-btn" data-ito-action="decline" data-ito-id="'+esc(j.id)+'">DECLINE</button>':"")+(accepted?'<button class="ito-btn primary" data-ito-action="start_trip" data-ito-id="'+esc(j.id)+'">START TRIP</button>':"")+(started?'<button class="ito-btn primary" data-ito-action="complete_trip" data-ito-id="'+esc(j.id)+'">JOB COMPLETE</button>':"")+(accepted||started||j.status==="completed"?(j.passenger_phone?'<a class="ito-btn" href="tel:+'+esc(j.passenger_phone)+'">CALL PASSENGER</a>':"")+'<button class="ito-btn" data-ito-chat="'+esc(j.id)+'">CHAT WITH PASSENGER</button>':"")+(accepted||started?'<button class="ito-btn" data-ito-action="cancel_trip" data-ito-id="'+esc(j.id)+'">CANCEL TRIP</button>':"")+chatShell(j)+'</article>';
   }
   async function tripClick(e) {
     const chat=e.target.closest("[data-ito-chat]");if(chat){await openChat(chat.dataset.itoChat);return;}
@@ -193,10 +231,10 @@
     install();if(!$("itoPassenger"))return;
     try{await session();await status();await refresh();}catch(err){say("itoBookingStatus",err.message,true);}
     if(poll)clearInterval(poll);if(heartbeat)clearInterval(heartbeat);
-    poll=setInterval(()=>{if($(overlayId)?.style.display==="block")refresh();},12000);
+    poll=setInterval(()=>{if($(overlayId)?.style.display==="block")refresh();},10000);
     heartbeat=setInterval(async()=>{if($(overlayId)?.style.display!=="block")return;try{const r=await call({action:"heartbeat"});if(r.driver)availability(r.driver.availability,r.driver.return_online_after_job);}catch(_){}},30000);
   }
-  function closeNetwork(){if(poll)clearInterval(poll);if(heartbeat)clearInterval(heartbeat);poll=null;heartbeat=null;}
+  function closeNetwork(){if(poll)clearInterval(poll);if(heartbeat)clearInterval(heartbeat);poll=null;heartbeat=null;if(locationWatch!==null&&navigator.geolocation){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}}
   function installAuthority() {
     const host=document.querySelector("#authorityPressPanel .authority-panel-inner");if(!host||$("itoAuthority"))return;
     const section=document.createElement("section");section.id="itoAuthority";section.className="ito-section";
