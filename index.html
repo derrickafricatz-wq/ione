@@ -4203,7 +4203,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=148", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=149", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -13681,7 +13681,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-find-it-for-me.js?v=1" defer></script>
 <script src="./ione-launch-observatory.js?v=4" defer></script>
 <script src="./ione-sokoni.js?v=13" defer></script>
-<script src="./ione-transport.js?v=4" defer></script>
+<script src="./ione-transport.js?v=5" defer></script>
 <script src="./ione-transport-operations.js?v=7" defer></script>
 <script src="./ione-expert.js?v=4" defer></script>
 <script>
