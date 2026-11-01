@@ -49,9 +49,18 @@ async function sendTransportSms(admin: any, jobId: string, eventType: string, us
   const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 150);
   if (!message) return { status: "skipped" };
   const idempotencyKey = jobId + ":" + eventType + ":" + userId;
-  const claim = await admin.from("ione_transport_sms_log").insert({ idempotency_key: idempotencyKey, job_id: jobId, event_type: eventType, recipient_user_id: userId, recipient_phone: phone, status: "pending" }).select("id").maybeSingle();
-  if (claim.error) return { status: claim.error.code === "23505" ? "duplicate" : "failed" };
-  if (!claim.data?.id) return { status: "duplicate" };
+  let claim: any;
+  try {
+    claim = await admin.from("ione_transport_sms_log").insert({ idempotency_key: idempotencyKey, job_id: jobId, event_type: eventType, recipient_user_id: userId, recipient_phone: phone, status: "pending" }).select("id").maybeSingle();
+  } catch (e: any) {
+    console.warn("i1 Transport SMS audit insert failed:", String(e?.message || e));
+    return { status: "failed" };
+  }
+  if (claim?.error) {
+    console.warn("i1 Transport SMS audit insert failed:", claim.error.message || claim.error.code);
+    return { status: claim.error.code === "23505" ? "duplicate" : "failed" };
+  }
+  if (!claim?.data?.id) return { status: "duplicate" };
   try {
     const response = await fetch("https://dev.darsms.co.tz/api/v1/integrations/sms/send", {
       method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
@@ -69,10 +78,13 @@ async function sendTransportSms(admin: any, jobId: string, eventType: string, us
   }
 }
 async function notifyTransport(admin: any, job: any, recipientUserId: string, recipientPhone: unknown, eventType: string, title: string, body: string, smsText: string) {
-  await Promise.all([
+  // Alerts are deliberately best-effort: never fail a saved booking or trip transition
+  // because a push provider, SMS provider or notification audit write is unavailable.
+  const results = await Promise.allSettled([
     sendTransportPush(admin, recipientUserId, { title, body: body.slice(0, 180), url: "./?i1Transport=1&trip=" + encodeURIComponent(job.id), tag: "i1-transport-" + job.id + "-" + eventType }),
     sendTransportSms(admin, job.id, eventType, recipientUserId, recipientPhone, smsText)
   ]);
+  for (const result of results) if (result.status === "rejected") console.warn("i1 Transport notification delivery failed:", String(result.reason?.message || result.reason));
 }
 
 async function getVerifiedUser(admin: any, req: Request) {
@@ -241,9 +253,10 @@ Deno.serve(async (req: Request) => {
       if(driver.verification_status!=="approved"||driver.availability!=="active"||Date.parse(driver.last_seen_at)<Date.now()-300000)return json({success:false,error:"Driver is no longer active. Refresh the list."},409);
       if(!(driver.service_types||[]).includes(service))return json({success:false,error:"This driver does not provide that service."},400);if(count>driver.passenger_capacity)return json({success:false,error:"Passenger count exceeds vehicle capacity."},400);
       const {data:job,error}=await admin.from("ione_transport_jobs").insert({passenger_user_id:user.id,driver_id:driver.id,driver_user_id:driver.user_id,service_type:service,passenger_name:name,passenger_phone:phone,pickup_location:pickup,destination,passenger_count:count,notes,pickup_lat:pickupLat,pickup_lng:pickupLng,status:"requested"}).select("id,status,service_type,pickup_location,destination,passenger_count,requested_at").single();
-      if(error){if(error.code==="23505")return json({success:false,error:"You already have an active request. Open My Trips."},409);return json({success:false,error:"Could not save your trip request."},500);}
-      await notifyTransport(admin,job,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","i1 Transport: "+name+" requested a "+service.replace("_"," ")+" trip from "+pickup+". Open i1 Transport to accept.");
-      return json({success:true,job,message:"Request sent. The driver has been notified by push and SMS where available."});
+      if(error){console.error("ione-transport create_request insert failed:",{code:error.code,message:error.message,details:error.details,hint:error.hint});if(error.code==="23505")return json({success:false,error:"You already have an active request. Open My Trips."},409);return json({success:false,error:"We could not save this trip. Please refresh and try again."},500);}
+      // Return the confirmed booking independently of external notification delivery.
+      EdgeRuntime.waitUntil(notifyTransport(admin,job,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","i1 Transport: "+name+" requested a "+service.replace("_"," ")+" trip from "+pickup+". Open i1 Transport to accept."));
+      return json({success:true,job,message:"Your trip request has been sent. The driver will be alerted when notifications are available."});
     }
     if (action === "location_update") {
       const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Your i1 session is not ready."},401);
