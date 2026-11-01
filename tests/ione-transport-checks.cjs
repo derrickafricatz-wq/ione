@@ -12,6 +12,7 @@ const migration = fs.readFileSync("supabase/migrations/20261031144232_ione_trans
 const operationsMigration = fs.readFileSync("supabase/migrations/20261031151104_ione_transport_operations_v2.sql", "utf8");
 const indexMigration = fs.readFileSync("supabase/migrations/20261031152037_ione_transport_query_indexes_v1.sql", "utf8");
 const communicationsMigration = fs.readFileSync("supabase/migrations/20261101003202_ione_transport_communications_global_v1.sql", "utf8");
+const globalAreaMigration = fs.readFileSync("supabase/migrations/20261101003706_ione_transport_global_area_v1.sql", "utf8");
 
 new vm.Script(ui, { filename: "ione-transport.js" });
 new vm.Script(operations, { filename: "ione-transport-operations.js" });
@@ -21,16 +22,16 @@ assert.match(html, /id="openBusBooking"/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS/);
 assert.doesNotMatch(html, /id="openBusBooking"[^>]*smart-coming-soon/);
-assert.match(html, /ione-transport\.js\?v=4/);
+assert.match(html, /ione-transport\.js\?v=5/);
 assert.match(html, /ione-transport-operations\.js\?v=7/);
-assert.match(html, /sw\.js\?v=148/);
+assert.match(html, /sw\.js\?v=149/);
 assert.match(html, /\["transport","🚕","i1 TRANSPORT"/);
 console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Coming Soon tile");
 
 assert.match(sw, /ione-transport\.js/);
-assert.match(sw, /ione-app-v359/);
+assert.match(sw, /ione-app-v360/);
 assert.match(sw, /ione-transport-operations\.js/);
-assert.equal(version.version, "1.0.302");
+assert.equal(version.version, "1.0.303");
 console.log("PASS: PWA cache and version include the new Transport module");
 
 assert.match(migration, /ione_transport_driver_applications/);
@@ -45,6 +46,7 @@ assert.match(communicationsMigration, /ione_transport_sms_log/);
 assert.match(communicationsMigration, /current_lat/);
 assert.match(communicationsMigration, /pickup_lat/);
 assert.match(communicationsMigration, /enable row level security/);
+assert.match(globalAreaMigration, /alter column operating_area drop default/);
 assert.match(migration, /enable row level security/);
 assert.match(migration, /public = false/);
 assert.match(edge, /validAuthoritySession/);
@@ -68,6 +70,8 @@ assert.match(operations, /DRIVER IS COMING/);
 assert.match(operations, /itoArea/);
 assert.match(operations, /watchPosition/);
 assert.match(operations, /enableTransportPush/);
+assert.doesNotMatch(ui, /value="Arusha Region"/);
+assert.doesNotMatch(ui, /ARUSHA REGION/);
 assert.match(edge, /ione_transport_claim_job/);
 assert.match(edge, /notifyTransport/);
 assert.match(edge, /sendTransportSms/);
