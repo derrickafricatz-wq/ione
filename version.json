@@ -1,5 +1,5 @@
 {
-  "version": "1.0.302",
-  "message": "i1 Transport communications, global driver areas and live GPS",
+  "version": "1.0.303",
+  "message": "Global i1 Transport areas, passenger/driver alerts and live GPS",
   "force": true
 }
