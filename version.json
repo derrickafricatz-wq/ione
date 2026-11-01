@@ -1,5 +1,5 @@
 {
-  "version": "1.0.303",
-  "message": "Global i1 Transport areas, passenger/driver alerts and live GPS",
+  "version": "1.0.304",
+  "message": "Fix transport booking notification isolation and driver contact button layout",
   "force": true
 }
