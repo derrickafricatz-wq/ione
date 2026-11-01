@@ -1,0 +1,1 @@
+create index if not exists ione_transport_sms_recipient_idx on public.ione_transport_sms_log(recipient_user_id,created_at desc);
