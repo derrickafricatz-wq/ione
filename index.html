@@ -2742,6 +2742,48 @@ body.ione-gentle-boot #ioneTopActions{
   #heavensBookstore .hb-insight{padding:8px 7px!important}
   #heavensBookstore .hb-insight-text{font-size:10px!important}
 }
+
+/* I|ONE reader full-page mobile layout: one page centered, controls docked below. */
+#heavensReader .hr-stage{
+  display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;
+  gap:8px!important;padding:8px 8px calc(10px + env(safe-area-inset-bottom))!important;
+  min-width:0!important;min-height:0!important;box-sizing:border-box!important;
+}
+#heavensReader .hr-book{
+  order:1!important;position:relative!important;flex:1 1 0!important;align-self:stretch!important;
+  width:100%!important;height:auto!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;
+  overflow:hidden!important;perspective:1800px;
+}
+#heavensReader .hr-book:before{display:none!important}
+#heavensReader .hr-page{inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}
+#heavensReader .hr-pdf-page{padding:0!important}
+#heavensReader .hr-pdf-page .hr-page-inner{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  width:100%!important;height:100%!important;overflow:auto!important;padding:0!important;
+}
+#heavensReader .hr-reading-size{
+  order:2!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+  flex:0 0 auto!important;display:flex!important;align-items:center!important;justify-content:space-evenly!important;
+  flex-wrap:nowrap!important;gap:clamp(5px,2vw,10px)!important;width:min(100%,430px)!important;max-width:100%!important;
+  margin:0 auto!important;padding:6px 8px!important;box-sizing:border-box!important;
+}
+#heavensReader .hr-reading-size button{min-width:42px!important;min-height:40px!important;padding:7px 10px!important}
+#heavensReader .hr-controls{
+  order:3!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
+  transform:none!important;flex:0 0 auto!important;align-self:center!important;display:flex!important;
+  align-items:center!important;justify-content:center!important;gap:clamp(12px,4vw,20px)!important;
+  margin:0 auto 4px!important;padding:0!important;
+}
+#heavensReader .hr-nav{width:52px!important;height:48px!important;flex:0 0 52px!important}
+#heavensReader .hr-page-count{min-width:86px!important;padding:11px 12px!important;font-size:12px!important}
+@media(max-width:380px){
+  #heavensReader .hr-stage{gap:6px!important;padding-left:5px!important;padding-right:5px!important}
+  #heavensReader .hr-reading-size{gap:4px!important;padding:5px 4px!important}
+  #heavensReader .hr-reading-size button{min-width:38px!important;padding:6px 7px!important}
+  #heavensReader .hr-controls{gap:10px!important}
+  #heavensReader .hr-nav{width:46px!important;height:44px!important;flex-basis:46px!important}
+}
+
 </style>
 
 <style id="ione-explore-card-layout-v2">
