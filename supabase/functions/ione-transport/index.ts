@@ -235,11 +235,19 @@ Deno.serve(async (req: Request) => {
       const service=clean(body?.service_type,30).toLowerCase();
       const area=clean(body?.area,120);
       if(service&&!CATEGORIES.has(service))return json({success:false,error:"Choose a valid transport service."},400);
-      let q=admin.from("ione_transport_drivers").select("id,driver_name,service_types,operating_area,vehicle_make_model,vehicle_registration,vehicle_color,passenger_capacity,availability,profile_photo_path,last_seen_at").eq("verification_status","approved").in("availability",["active","busy"]).gt("last_seen_at",new Date(Date.now()-300000).toISOString()).order("availability",{ascending:true}).order("last_seen_at",{ascending:false}).limit(100);
-      if(service)q=q.contains("service_types",[service]);
-      if(area)q=q.ilike("operating_area","%"+area+"%");
-      const {data,error}=await q;if(error)return json({success:false,error:"Could not load drivers."},500);
-      const drivers=await Promise.all((data||[]).map(async(d:any)=>{const photo=await signedUrl(admin,d.profile_photo_path);const {profile_photo_path,...safe}=d;return {...safe,profile_photo_url:photo};}));
+      const cutoff=new Date(Date.now()-300000).toISOString();
+      const rows:any[]=[];
+      // Page through the complete active network instead of silently stopping at 100.
+      for(let offset=0;;offset+=500){
+        let q=admin.from("ione_transport_drivers").select("id,driver_name,service_types,operating_area,vehicle_make_model,vehicle_registration,vehicle_color,passenger_capacity,availability,profile_photo_path,last_seen_at").eq("verification_status","approved").in("availability",["active","busy"]).gt("last_seen_at",cutoff).order("availability",{ascending:true}).order("last_seen_at",{ascending:false}).range(offset,offset+499);
+        if(service)q=q.contains("service_types",[service]);
+        if(area)q=q.ilike("operating_area","%"+area+"%");
+        const {data,error}=await q;
+        if(error)return json({success:false,error:"Could not load drivers."},500);
+        rows.push(...(data||[]));
+        if(!data||data.length<500)break;
+      }
+      const drivers=await Promise.all(rows.map(async(d:any)=>{const photo=await signedUrl(admin,d.profile_photo_path);const {profile_photo_path,...safe}=d;return {...safe,profile_photo_url:photo};}));
       return json({success:true,drivers});
     }
     if (action === "create_request") {
