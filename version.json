@@ -1,5 +1,5 @@
 {
-  "version": "1.0.305",
-  "message": "Improve book reading size, Access Trending onboarding and stable transport refresh",
+  "version": "1.0.306",
+  "message": "Add live in-app transport maps and improve book reading and access controls",
   "force": true
 }
