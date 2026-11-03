@@ -151,7 +151,8 @@
     passenger.innerHTML=`
       <h2>Find your i1 Transport driver</h2>
       <p class="ito-muted">ACTIVE drivers can receive a journey request. BUSY drivers remain visible so you can see they have already accepted a trip.</p>
-      <div class="ito-actions"><input id="itoArea" class="ito-filter" style="max-width:260px" maxlength="120" placeholder="City / district / region — anywhere"><select id="itoFilter" class="ito-filter" style="max-width:240px"><option value="">All services</option><option value="taxi">Taxi</option><option value="special_hire">Special Hire</option><option value="shuttle">Shuttle</option><option value="bus">Bus / Private bus hire</option></select><button class="ito-btn" id="itoRefresh">FIND DRIVERS</button><button class="ito-btn" id="itoEnablePush">ENABLE ALERTS</button></div>
+      <p class="ito-muted">All currently active, Authority-verified drivers from every region appear automatically below. Region search is optional.</p>
+      <div class="ito-actions"><input id="itoArea" class="ito-filter" style="max-width:260px" maxlength="120" placeholder="Optional: search region — e.g. Arusha"><select id="itoFilter" class="ito-filter" style="max-width:240px"><option value="">All services</option><option value="taxi">Taxi</option><option value="special_hire">Special Hire</option><option value="shuttle">Shuttle</option><option value="bus">Bus / Private bus hire</option></select><button class="ito-btn" id="itoRefresh">REFRESH DRIVERS</button><button class="ito-btn" id="itoEnablePush">ENABLE ALERTS</button></div>
       <div class="ito-grid" id="itoDrivers"><div class="ito-empty">Loading verified drivers…</div></div>
       <form class="ito-booking" id="itoBooking">
         <h2>Request this driver</h2><p class="ito-muted" id="itoChosen"></p><input type="hidden" id="itoDriverId">
@@ -174,9 +175,18 @@
       <p class="ito-muted" id="itoDriverHint">You only appear in the passenger directory while ACTIVE.</p>
       <h2 style="margin-top:20px">Incoming requests & current trip</h2><div class="ito-grid" id="itoDriverTrips"><div class="ito-empty">No requests yet.</div></div>`;
     shell.append(passenger,driver);
+    // Put the passenger directory immediately after the hero so available drivers
+    // are visible before registration or other informational sections.
+    const servicesSection=shell.querySelector(".it-services");
+    if(servicesSection)shell.insertBefore(passenger,servicesSection);
     $("itoRefresh").addEventListener("click",refresh);
     $("itoFilter").addEventListener("change",refresh);
-    $("itoArea").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();refresh();}});
+    let areaSearchTimer=0;
+    $("itoArea").addEventListener("input",()=>{
+      clearTimeout(areaSearchTimer);
+      areaSearchTimer=setTimeout(()=>refresh(),350);
+    });
+    $("itoArea").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();clearTimeout(areaSearchTimer);refresh();}});
     $("itoDriverRefresh").addEventListener("click",refresh);
     $("itoCancelBooking").addEventListener("click",()=>{$("itoBooking").style.display="none";chosen=null;});
     $("itoDrivers").addEventListener("click",e=>{const b=e.target.closest("[data-ito-request]");if(b)selectDriver(b.dataset.itoRequest);});
@@ -204,16 +214,26 @@
     finally{b.disabled=false;b.textContent="SEND TRANSPORT REQUEST";}
   }
   async function refresh() {
+    // Load and render the worldwide active-driver directory independently of My Trips,
+    // so a trip-history issue can never hide available drivers from passengers.
     try {
-      const [d,j]=await Promise.all([call({action:"active_drivers",service_type:$("itoFilter")?.value||"",area:$("itoArea")?.value||""}),call({action:"my_jobs"})]);
+      const d=await call({action:"active_drivers",service_type:$("itoFilter")?.value||"",area:$("itoArea")?.value||""});
       directory=d.drivers||[];
-      const directorySignature=directory.map(x=>[x.id,x.availability,x.driver_name].join(":")).join("|");
+      const directorySignature=directory.map(x=>[x.id,x.availability,x.driver_name,x.operating_area].join(":")).join("|");
       if(directorySignature!==lastDirectorySignature){lastDirectorySignature=directorySignature;renderDrivers(directory);}
+    } catch(err) {
+      $("itoDrivers").innerHTML='<div class="ito-empty">'+esc(err.message)+'</div>';
+      return;
+    }
+    try {
+      const j=await call({action:"my_jobs"});
       const jobs=j.jobs||[];
       const jobsSignature=jobs.map(x=>[x.id,x.viewer_role,x.status,x.driver?.driver_name,x.passenger_name].join(":")).join("|");
       if(jobsSignature!==lastJobsSignature){lastJobsSignature=jobsSignature;renderTrips(jobs);}
       syncTransportMaps(jobs);manageDriverLocationSharing(jobs);
-    } catch(err){$("itoDrivers").innerHTML='<div class="ito-empty">'+esc(err.message)+'</div>';}
+    } catch(err) {
+      say("itoBookingStatus","Driver directory is available. My Trips could not refresh: "+(err.message||"Please retry."),true);
+    }
   }
   function renderDrivers(rows) {
     const host=$("itoDrivers");if(!host)return;
