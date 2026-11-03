@@ -575,6 +575,53 @@
       if (focusBrand()) finish();
     });
   }
+  async function prepareAdCreative(creative, isVideo) {
+    return await new Promise((resolve, reject) => {
+      let settled = false;
+      const media = document.createElement(isVideo ? "video" : "img");
+      const timeout = setTimeout(() => finish(new Error("Sponsored media is taking too long to load.")), 20000);
+      function finish(error) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        media.onload = null;
+        media.onerror = null;
+        media.onloadeddata = null;
+        media.oncanplay = null;
+        if (error) {
+          try { if (isVideo) { media.pause(); media.removeAttribute("src"); media.load(); } } catch (_) {}
+          reject(error);
+        } else resolve(media);
+      }
+      if (isVideo) {
+        media.muted = true;
+        media.defaultMuted = true;
+        media.playsInline = true;
+        media.setAttribute("playsinline", "");
+        media.preload = "auto";
+        media.autoplay = true;
+        media.onloadeddata = () => finish();
+        media.oncanplay = () => finish();
+        media.onerror = () => finish(new Error("Sponsored video could not be loaded."));
+        media.src = String(creative.creative_url || "");
+        media.load();
+      } else {
+        media.decoding = "async";
+        media.loading = "eager";
+        media.alt = "Sponsored advertisement";
+        media.onerror = () => finish(new Error("Sponsored image could not be loaded."));
+        media.onload = async () => {
+          try { if (typeof media.decode === "function") await media.decode(); } catch (_) {}
+          finish();
+        };
+        media.src = String(creative.creative_url || "");
+        if (media.complete && media.naturalWidth > 0) {
+          Promise.resolve(typeof media.decode === "function" ? media.decode().catch(() => {}) : null).then(() => finish());
+        }
+      }
+    });
+  }
+
   async function showAreaAd(area) {
     if (readerAdBusy || document.getElementById("ioneSmartAdReaderInterstitial")) return;
     readerAdBusy = true;
@@ -594,26 +641,41 @@
       const creativeIndex = creativeList.length > 1 ? (previousCreativeIndex + 1) % creativeList.length : 0;
       const creative = creativeList[creativeIndex] || creativeList[0];
       const adIsVideo = String(creative.media_type || "image").toLowerCase() === "video";
+      // Prepare and decode the exact creative before covering the reader or marketplace.
+      // If media is not ready, keep the current content visible instead of flashing a blank ad.
+      const preparedMedia = await prepareAdCreative(creative, adIsVideo);
+      if (!visible(area.element) || document.getElementById("ioneSmartAdReaderInterstitial")) {
+        if (adIsVideo) { preparedMedia.pause(); preparedMedia.removeAttribute("src"); preparedMedia.load(); }
+        readerAdBusy = false;
+        return;
+      }
       const overlay = document.createElement("section");
       overlay.id = "ioneSmartAdReaderInterstitial";
       overlay.setAttribute("role", "dialog");
       overlay.setAttribute("aria-modal", "true");
       overlay.setAttribute("aria-label", "Sponsored advertisement");
       overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(1,7,9,.96);color:#fff;font:14px/1.5 Arial,sans-serif;opacity:0;transition:opacity 620ms cubic-bezier(.22,.75,.25,1);";
-      const media = adIsVideo
-        ? '<video id="ioneReaderAdVideo" playsinline muted autoplay preload="auto" aria-label="Sponsored video" style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'"></video>'
-        : '<img style="display:block;width:100%;max-height:65vh;object-fit:contain;background:#000;cursor:pointer" src="'+esc(creative.creative_url)+'" alt="Sponsored advertisement">';
-      const mediaTag = adIsVideo
-        ? media
-        : '<a id="ioneReaderAdVisit" href="'+esc(campaign.destination_url || "#")+'" target="_blank" rel="noopener noreferrer" aria-label="Open advertiser offer" style="display:block;width:100%;text-decoration:none">'+media+'</a>';
-      overlay.innerHTML = '<div id="ioneReaderAdPanel" style="position:relative;width:min(680px,100%);max-height:90vh;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008">'+mediaTag+'</div>';
+      preparedMedia.id = adIsVideo ? "ioneReaderAdVideo" : "ioneReaderAdImage";
+      preparedMedia.style.cssText = "display:block;width:100%;max-width:100%;max-height:65vh;object-fit:contain;background:#05090a;cursor:pointer";
+      const mediaHost = document.createElement(adIsVideo ? "div" : "a");
+      if (!adIsVideo) {
+        mediaHost.id = "ioneReaderAdVisit";
+        mediaHost.href = campaign.destination_url || "#";
+        mediaHost.target = "_blank";
+        mediaHost.rel = "noopener noreferrer";
+        mediaHost.setAttribute("aria-label", "Open advertiser offer");
+        mediaHost.style.cssText = "display:block;width:100%;text-decoration:none;background:#05090a";
+      }
+      mediaHost.appendChild(preparedMedia);
+      overlay.innerHTML = '<div id="ioneReaderAdPanel" style="position:relative;width:min(680px,100%);max-height:90vh;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;border-radius:16px;overflow:hidden;background:#05090a;box-shadow:0 18px 60px #0008"></div>';
+      overlay.querySelector("#ioneReaderAdPanel").appendChild(mediaHost);
       document.body.appendChild(overlay);
       const adPanel = overlay.querySelector("#ioneReaderAdPanel");
       adPanel.style.opacity = "0";
       adPanel.style.transform = "translateY(18px) scale(.985)";
       adPanel.style.transition = "opacity 700ms cubic-bezier(.22,.75,.25,1), transform 700ms cubic-bezier(.22,.75,.25,1)";
       requestAnimationFrame(() => requestAnimationFrame(() => { if (!overlay.isConnected) return; overlay.style.opacity = "1"; adPanel.style.opacity = "1"; adPanel.style.transform = "translateY(0) scale(1)"; }));
-      const video = overlay.querySelector("#ioneReaderAdVideo");
+      const video = adIsVideo ? preparedMedia : null;
       const actionDock = document.createElement("div");
       actionDock.style.cssText = "position:relative;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;z-index:3;flex:0 0 auto;padding:12px 10px calc(12px + env(safe-area-inset-bottom));background:#05090a;border:0;border-top:0;outline:0;box-shadow:none";
       adPanel.appendChild(actionDock);
