@@ -1,5 +1,5 @@
 {
-  "version": "1.0.304",
-  "message": "Fix transport booking notification isolation and driver contact button layout",
+  "version": "1.0.305",
+  "message": "Improve book reading size, Access Trending onboarding and stable transport refresh",
   "force": true
 }
