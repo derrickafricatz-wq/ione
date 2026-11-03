@@ -85,8 +85,10 @@
     const targets=[];
     (jobs||[]).forEach(j=>{
       if(!["accepted","in_progress"].includes(j.status))return;
-      const d=j.driver||{},lat=Number(d.current_lat),lng=Number(d.current_lng);
-      if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+      const d=j.driver||{};
+      if(d.current_lat==null||d.current_lng==null)return;
+      const lat=Number(d.current_lat),lng=Number(d.current_lng);
+      if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)return;
       targets.push({id:j.id,lat,lng});
     });
     if(!targets.length)return;
