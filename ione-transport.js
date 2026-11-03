@@ -71,7 +71,7 @@
   overlay.setAttribute("aria-hidden", "true");
   overlay.innerHTML = `
     <main class="it-shell">
-      <header class="it-top"><div class="it-brand">I|ONE • PRIVATE MOBILITY</div></header>
+      <header class="it-top"><div class="it-brand">I|ONE • PRIVATE MOBILITY</div><button class="it-close" id="itClose" type="button" aria-label="Close i1 Transport">CLOSE</button></header>
       <section class="it-hero">
         <div class="it-kicker">GLOBAL NETWORK • AUTHORITY-VERIFIED DRIVERS</div>
         <h1>i1 Transport</h1>
@@ -162,6 +162,7 @@
     overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
   }
+  $("itClose").addEventListener("click", close);
   overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
   document.addEventListener("keydown", event => { if (event.key === "Escape" && overlay.style.display === "block") close(); });
   const tile = $("openBusBooking");
