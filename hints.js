@@ -176,11 +176,13 @@ const lessonHints = [
         on=!!(await registration.pushManager.getSubscription()) || on;
       }catch(_){}
     }
+    const permission = ("Notification" in window) ? Notification.permission : "unsupported";
+    const state = on ? "ACTIVE" : permission === "denied" ? "ALLOW IN SETTINGS" : permission === "default" ? "NOT ENABLED" : "UNAVAILABLE";
     button.dataset.state=on?"on":"off";
     button.innerHTML=on
       ? '<span class="ione-notification-main">ACCESS TRENDING</span><span id="ioneNotificationState">ACTIVE</span>'
-      : '<span class="ione-notification-main">ACCESS DENIED</span><span id="ioneNotificationState">INACTIVE</span>';
-    button.title=on?"ACCESS TRENDING ACTIVE — press once to turn off":"ACCESS DENIED INACTIVE — press once to turn on";
+      : '<span class="ione-notification-main">ACCESS TRENDING</span><span id="ioneNotificationState">'+state+'</span>';
+    button.title=on?"ACCESS TRENDING ACTIVE — press once to turn off":permission==="denied"?"Notifications are blocked. Open this site's browser settings and allow notifications.":permission==="default"?"Enable Access Trending to receive I|ONE updates.":"Notifications are unavailable in this browser.";
     button.setAttribute("aria-label",button.title);
   }
 
@@ -188,6 +190,10 @@ const lessonHints = [
     const button=document.getElementById("ioneNotificationBtn");
     if(button) button.disabled=true;
     try{
+      if ("Notification" in window && Notification.permission === "denied") {
+        alert("Access Trending is blocked for this website. Open your browser site settings, choose Notifications, and change it to Allow. Then return to I|ONE and tap Access Trending again.");
+        return;
+      }
       if("Notification" in window && Notification.permission==="granted"){
         const registration=await navigator.serviceWorker.ready;
         const subscription=await registration.pushManager.getSubscription();
