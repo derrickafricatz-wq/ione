@@ -637,8 +637,8 @@
           const pdfPage = await pdfDocument.getPage(item.pdfPage);
           if (closed || !pageEl.isConnected) return;
           const base = pdfPage.getViewport({ scale: 1 });
-          const availableWidth = Math.max(240, stage.clientWidth - 24);
-          const availableHeight = Math.max(240, stage.clientHeight - 90);
+          const availableWidth = Math.max(1, bookEl.clientWidth - 12);
+          const availableHeight = Math.max(1, bookEl.clientHeight - 12);
           const fitScale = Math.min(availableWidth / base.width, availableHeight / base.height);
           const outputScale = Math.min(window.devicePixelRatio || 1, 2);
           const viewport = pdfPage.getViewport({ scale: Math.max(0.35, fitScale * outputScale * readerZoom) });
@@ -673,6 +673,7 @@
         closed = true;
         clearTimeout(turnTimer);
         if (resizeHandler) window.removeEventListener("resize", resizeHandler);
+        if (resizeHandler && window.visualViewport) window.visualViewport.removeEventListener("resize", resizeHandler);
         if (pdfDocument) { try { pdfDocument.destroy(); } catch (_) {} }
         if (reader) reader.remove();
         document.body.style.overflow = "";
@@ -709,6 +710,7 @@
         renderCurrentPdfPage();
       };
       window.addEventListener("resize", resizeHandler);
+      if (window.visualViewport) window.visualViewport.addEventListener("resize", resizeHandler);
 
       const loadingPage = document.createElement("div");
       loadingPage.className = "hr-pdf-loading";
