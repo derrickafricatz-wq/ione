@@ -539,6 +539,7 @@
           <div class="hr-counter" id="hrTopCount">1 / 1</div>
         </div>
         <div class="hr-stage" id="hrStage">
+          <div class="hr-reading-size" role="group" aria-label="Reading size controls"><button type="button" id="hrTextSmaller">A−</button><span id="hrTextSizeLabel">100%</span><button type="button" id="hrTextLarger">A+</button><button type="button" id="hrTextReset">RESET</button></div>
           <div class="hr-book" id="hrBook"></div>
           <div class="hr-controls">
             <button class="hr-nav" id="hrPrev" type="button" aria-label="Previous page">‹</button>
@@ -556,6 +557,28 @@
       const pages = [];
       const rendered = new Map();
       let currentPage = 0, turning = false, turnTimer = null, pdfDocument = null;
+      const readerZoomKey = "ione-book-reader-zoom:" + bookId;
+      let readerZoom = 1;
+      try { const savedZoom = Number(localStorage.getItem(readerZoomKey)); if (Number.isFinite(savedZoom) && savedZoom > 0) readerZoom = Math.max(0.8, Math.min(1.8, savedZoom)); } catch (_) {}
+      const zoomLabel = reader.querySelector("#hrTextSizeLabel");
+      function updateZoomLabel(){ if(zoomLabel) zoomLabel.textContent=Math.round(readerZoom*100)+"%"; }
+      function rerenderCurrentPdfPage(){
+        const item=pages[currentPage]; if(!item||item.kind!=="pdf")return;
+        rendered.delete(item.pdfPage);
+        const canvas=item.element.querySelector("canvas"),inner=item.element.querySelector(".hr-page-inner");
+        if(canvas){canvas.width=1;canvas.height=1;canvas.style.width="1px";canvas.style.height="1px";}
+        if(inner&&!inner.querySelector(".hr-pdf-loading")){const loading=document.createElement("div");loading.className="hr-pdf-loading";loading.textContent="Adjusting reading size…";inner.appendChild(loading);}
+        renderCurrentPdfPage();
+      }
+      function setReaderZoom(value){
+        readerZoom=Math.max(0.8,Math.min(1.8,Math.round(value*20)/20));
+        try{localStorage.setItem(readerZoomKey,String(readerZoom));}catch(_){}
+        updateZoomLabel();rerenderCurrentPdfPage();
+      }
+      reader.querySelector("#hrTextSmaller").addEventListener("click",()=>setReaderZoom(readerZoom-0.1));
+      reader.querySelector("#hrTextLarger").addEventListener("click",()=>setReaderZoom(readerZoom+0.1));
+      reader.querySelector("#hrTextReset").addEventListener("click",()=>setReaderZoom(1));
+      updateZoomLabel();
 
       function addCoverPage() {
         const page = document.createElement("article");
@@ -618,7 +641,7 @@
           const availableHeight = Math.max(240, stage.clientHeight - 90);
           const fitScale = Math.min(availableWidth / base.width, availableHeight / base.height);
           const outputScale = Math.min(window.devicePixelRatio || 1, 2);
-          const viewport = pdfPage.getViewport({ scale: Math.max(0.35, fitScale * outputScale) });
+          const viewport = pdfPage.getViewport({ scale: Math.max(0.35, fitScale * outputScale * readerZoom) });
           canvas.width = Math.ceil(viewport.width);
           canvas.height = Math.ceil(viewport.height);
           canvas.style.width = Math.max(1, Math.round(viewport.width / outputScale)) + "px";
