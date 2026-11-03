@@ -64,6 +64,7 @@
   }
 
   let locationWatch=null,lastLocationSent=0;
+  let lastDirectorySignature="",lastJobsSignature="";
   async function enableTransportPush(){
     try{
       if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window))throw new Error("This browser does not support push notifications.");
@@ -157,7 +158,13 @@
   async function refresh() {
     try {
       const [d,j]=await Promise.all([call({action:"active_drivers",service_type:$("itoFilter")?.value||"",area:$("itoArea")?.value||""}),call({action:"my_jobs"})]);
-      directory=d.drivers||[];renderDrivers(directory);renderTrips(j.jobs||[]);manageDriverLocationSharing(j.jobs||[]);
+      directory=d.drivers||[];
+      const directorySignature=directory.map(x=>[x.id,x.availability,x.driver_name].join(":")).join("|");
+      if(directorySignature!==lastDirectorySignature){lastDirectorySignature=directorySignature;renderDrivers(directory);}
+      const jobs=j.jobs||[];
+      const jobsSignature=jobs.map(x=>[x.id,x.viewer_role,x.status,x.driver?.driver_name,x.passenger_name].join(":")).join("|");
+      if(jobsSignature!==lastJobsSignature){lastJobsSignature=jobsSignature;renderTrips(jobs);}
+      manageDriverLocationSharing(jobs);
     } catch(err){$("itoDrivers").innerHTML='<div class="ito-empty">'+esc(err.message)+'</div>';}
   }
   function renderDrivers(rows) {
@@ -243,7 +250,7 @@
     install();if(!$("itoPassenger"))return;
     try{await session();await status();await refresh();}catch(err){say("itoBookingStatus",err.message,true);}
     if(poll)clearInterval(poll);if(heartbeat)clearInterval(heartbeat);
-    poll=setInterval(()=>{if($(overlayId)?.style.display==="block")refresh();},10000);
+    poll=setInterval(()=>{if($(overlayId)?.style.display==="block")refresh();},5000);
     heartbeat=setInterval(async()=>{if($(overlayId)?.style.display!=="block")return;try{const r=await call({action:"heartbeat"});if(r.driver)availability(r.driver.availability,r.driver.return_online_after_job);}catch(_){}},30000);
   }
   function closeNetwork(){if(poll)clearInterval(poll);if(heartbeat)clearInterval(heartbeat);poll=null;heartbeat=null;if(locationWatch!==null&&navigator.geolocation){navigator.geolocation.clearWatch(locationWatch);locationWatch=null;}}
