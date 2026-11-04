@@ -93,7 +93,7 @@ Deno.serve(async (req: Request) => {
       if (existing && existing.status === "locked") return json({ success: false, error: "Your three-book package is complete. Use RENEW PACKAGE to keep your saved details." }, 409);
       const { data, error } = await admin.from("ione_author_access").upsert({
         user_id: userId, real_name: realName, phone, terms_accepted: true, fee_tzs: 10000,
-        merchant_name: "DERRICK KIPAJI OF AFRIKA & CO", merchant_number: "140001788", merchant_network: "Airtel Money",
+        merchant_name: "DERRICK KIPAJI OF AFRIKA & CO", merchant_number: "23544652", merchant_network: "HaloPesa",
         status: "pending_payment", renewal_requested: false, submitted_at: new Date().toISOString(), updated_at: new Date().toISOString()
       }, { onConflict: "user_id" }).select("user_id,real_name,phone,fee_tzs,merchant_name,merchant_number,merchant_network,status,package_number,books_used,renewal_requested,submitted_at").single();
       if (error) return json({ success: false, error: "Could not save your application. Please try again." }, 500);
