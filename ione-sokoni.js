@@ -154,7 +154,7 @@
         <div class="is-status" id="isSubmitStatus" role="status" aria-live="polite"></div>
         <div class="is-payment" id="isPaymentInstructions">
           <strong>Maelekezo ya malipo ya mkono</strong><br>
-          Mtandao: <strong>HaloPesa</strong><br>
+          Mtandao: <strong><span class="ione-halopesa-provider"><span class="ione-halopesa-mark" aria-hidden="true">HP</span>HaloPesa</span></strong><br>
           Jina la mfanyabiashara: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
           Namba ya malipo: <strong>23544652</strong><br>
           Kiasi: <strong>TZS 1,000</strong><br>
@@ -277,7 +277,7 @@
         <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
         <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
           <strong>MAELEKEZO YA MALIPO YA BODA YANGU</strong><br>
-          Mtoa huduma / Mtandao: <strong>HaloPesa</strong><br>
+          Mtoa huduma / Mtandao: <strong><span class="ione-halopesa-provider"><span class="ione-halopesa-mark" aria-hidden="true">HP</span>HaloPesa</span></strong><br>
           Jina la mfanyabiashara: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
           Namba ya malipo: <strong>23544652</strong><br>
           Ada: <strong>TZS 5,000</strong><br>
