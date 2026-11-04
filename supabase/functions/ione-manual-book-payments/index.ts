@@ -129,7 +129,7 @@ Deno.serve(async (req: Request) => {
       if (insertError || !order) return json({ success: false, error: "Could not submit your manual payment request." }, 500);
       return json({
         success: true, order, recovery_code: recoveryCode,
-        merchant: { name: "DERRICK KIPAJI OF AFRIKA & CO", number: "140001788", network: "Airtel Money" },
+        merchant: { name: "DERRICK KIPAJI OF AFRIKA & CO", number: "23544652", network: "HaloPesa" },
         message: "Request submitted. Authority Press must verify the actual transaction before book access opens.",
       });
     }
