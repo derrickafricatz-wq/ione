@@ -154,9 +154,9 @@
         <div class="is-status" id="isSubmitStatus" role="status" aria-live="polite"></div>
         <div class="is-payment" id="isPaymentInstructions">
           <strong>Maelekezo ya malipo ya mkono</strong><br>
-          Mtandao: <strong>Airtel Money</strong><br>
+          Mtandao: <strong>HaloPesa</strong><br>
           Jina la mfanyabiashara: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
-          Namba ya malipo: <strong>140001788</strong><br>
+          Namba ya malipo: <strong>23544652</strong><br>
           Kiasi: <strong>TZS 1,000</strong><br>
           <span class="is-muted">Baada ya kulipa, subiri uthibitisho wa Authority Press. Usitumie huduma ya kuuza kabla ruhusa haijafunguliwa.</span>
         </div>
@@ -277,9 +277,9 @@
         <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
         <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
           <strong>MAELEKEZO YA MALIPO YA BODA YANGU</strong><br>
-          Mtoa huduma / Mtandao: <strong>Airtel Money</strong><br>
+          Mtoa huduma / Mtandao: <strong>HaloPesa</strong><br>
           Jina la mfanyabiashara: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
-          Namba ya malipo: <strong>140001788</strong><br>
+          Namba ya malipo: <strong>23544652</strong><br>
           Ada: <strong>TZS 5,000</strong><br>
           Muda wa ruhusa: <strong>Miezi 3 (siku 90)</strong><br>
           Baada ya kutuma maombi, lipa ada hii. Ruhusa haitafunguliwa mpaka Authority Press ithibitishe malipo kwa mkono.
