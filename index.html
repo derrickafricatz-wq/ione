@@ -3233,8 +3233,9 @@ body.ione-gentle-boot #ioneTopActions{animation-delay:.58s!important;animation-d
 @media(prefers-reduced-motion:reduce){#ioneDocCategoryFilters .ione-doc-category-chip{transition:none!important}}
 
 </style>
-  <script src="./ione-smart-ads.js?v=2" defer></script>
+  <script src="./ione-smart-ads.js?v=3" defer></script>
 <script src="./ione-opportunities.js" defer></script>
+<style id="ione-halopesa-brand-style">.ione-halopesa-provider{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.ione-halopesa-mark{display:inline-grid;place-items:center;width:18px;height:18px;flex:0 0 18px;border-radius:50%;background:linear-gradient(135deg,#20b66a,#087a4a);border:1px solid rgba(255,255,255,.28);color:#fff;font:900 7px/1 Arial,sans-serif;letter-spacing:-.4px;box-shadow:0 1px 4px rgba(0,0,0,.22)}</style>
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true">
@@ -3300,7 +3301,7 @@ Install App
       <div style="padding:12px;border:1px solid #365f67;border-radius:12px;background:#0a1820;color:#d6e9ef;font-size:13px;line-height:1.6">
         <strong style="color:#82f3db">AUTHOR PACKAGE • TSh 10,000</strong><br>
         Payment is made outside the app. Merchant: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
-        Network: <strong>Airtel Money</strong><br>Merchant number: <strong>140001788</strong><br>
+        Network: <strong>HaloPesa</strong><br>Merchant number: <strong>23544652</strong><br>
         One confirmed package covers up to <strong>3 published books</strong>. When all three are published, Author Studio locks until the next package payment is confirmed by Authority Press.
       </div>
       <section id="ioneAuthorTermsPanel" aria-labelledby="ioneAuthorTermsHeading">
@@ -5203,8 +5204,8 @@ function ioneSubscriptionGate(mode="publish",existing=null){
             </div>
             <div style="display:grid;gap:7px;font-size:12px;line-height:1.5;">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:8px 9px;border-radius:9px;background:rgba(0,0,0,.2);"><span style="color:#a9c8b8;">Merchant</span><strong style="color:#f0fff7;text-align:right;">DERRICK KIPAJI OF AFRIKA &amp; CO</strong></div>
-              <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:9px;background:rgba(0,0,0,.2);"><span style="color:#a9c8b8;">Network</span><strong style="color:#f0fff7;">Airtel Money</strong></div>
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 9px;border-radius:9px;background:rgba(0,0,0,.2);"><span style="color:#a9c8b8;">Merchant number</span><strong style="color:#a8f1ca;font-size:14px;letter-spacing:.5px;">140001788</strong></div>
+              <div style="display:flex;justify-content:space-between;gap:10px;padding:8px 9px;border-radius:9px;background:rgba(0,0,0,.2);"><span style="color:#a9c8b8;">Network</span><strong style="color:#f0fff7;">HaloPesa</strong></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 9px;border-radius:9px;background:rgba(0,0,0,.2);"><span style="color:#a9c8b8;">Merchant number</span><strong style="color:#a8f1ca;font-size:14px;letter-spacing:.5px;">23544652</strong></div>
             </div>
             <p style="margin:10px 0 0;color:#c6d8cf;font-size:11px;line-height:1.5;">Keep your payment confirmation. Your selected plan is activated only after I|ONE verifies the payment.</p>
           </div>
@@ -10403,7 +10404,7 @@ async function startManualBookPayment(book,store){
     }
     const amount=Math.round(Number(book.price||0));
     if(!Number.isSafeInteger(amount)||amount<=0)throw new Error("This book has no valid price.");
-    const instructions="I|ONE MANUAL BOOK PAYMENT\n\nBook: "+String(book.title||"Book")+"\nAmount: TZS "+amount.toLocaleString("en-US")+"\n\nMerchant: DERRICK KIPAJI OF AFRIKA & CO\nNetwork: Airtel Money\nMerchant number: 140001788\n\nPay the exact amount using your mobile-money service first. Then press OK to submit the payer details. The book unlocks only after Authority Press verifies the transaction.";
+    const instructions="I|ONE MANUAL BOOK PAYMENT\n\nBook: "+String(book.title||"Book")+"\nAmount: TZS "+amount.toLocaleString("en-US")+"\n\nMerchant: DERRICK KIPAJI OF AFRIKA & CO\nNetwork: HaloPesa\nMerchant number: 23544652\n\nPay the exact amount using your mobile-money service first. Then press OK to submit the payer details. The book unlocks only after Authority Press verifies the transaction.";
     if(!confirm(instructions+"\n\nHave you completed the payment?"))return;
     const payerName=prompt("Enter the name shown on the mobile-money transaction:");
     if(!payerName||payerName.trim().length<3)return;
@@ -12088,7 +12089,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     const next=btn.getAttribute("data-ione-author-action");
     const userId=card.getAttribute("data-ione-author-user");
     const note=card.querySelector(".ione-author-authority-notes")?.value||"";
-    if(next==="active"&&!confirm("Confirm you personally verified the TSh 10,000 payment to DERRICK KIPAJI OF AFRIKA & CO, Airtel Money 140001788? This activates the next three-book package."))return;
+    if(next==="active"&&!confirm("Confirm you personally verified the TSh 10,000 payment to DERRICK KIPAJI OF AFRIKA & CO, HaloPesa 23544652? This activates the next three-book package."))return;
     if(next==="locked"&&!confirm("Lock this author's publishing access? The saved form and book records will remain."))return;
     btn.disabled=true;
     try{await call({action:"authority_set_status",user_id:userId,status:next,payment_confirmed:next==="active",authority_notes:note});await refresh();}
@@ -13722,10 +13723,10 @@ function ioneRunBackgroundMediaPreload(){ return; }
 })();
 </script>
 
-<script src="./chapchap.js?v=16"></script>
+<script src="./chapchap.js?v=17"></script>
 <script src="./ione-find-it-for-me.js?v=1" defer></script>
 <script src="./ione-launch-observatory.js?v=4" defer></script>
-<script src="./ione-sokoni.js?v=13" defer></script>
+<script src="./ione-sokoni.js?v=14" defer></script>
 <script src="./ione-transport.js?v=7" defer></script>
 <script src="./ione-transport-operations.js?v=9" defer></script>
 <script src="./ione-expert.js?v=4" defer></script>
