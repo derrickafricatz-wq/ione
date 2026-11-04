@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
         await admin.from("ione_single_products").update({ status: "active", updated_at: now }).eq("id", productId).eq("status", "pending_payment");
         return json({ success: false, error: "Could not create the manual purchase request." }, 500);
       }
-      return json({ success: true, order, merchant: { name: "DERRICK KIPAJI OF AFRIKA & CO", network: "Airtel Money", number: "140001788" },
+      return json({ success: true, order, merchant: { name: "DERRICK KIPAJI OF AFRIKA & CO", network: "HaloPesa", number: "23544652" },
         amount_tzs: amount, platform_fee_tzs: fee, seller_share_tzs: sellerShare,
         message: "Manual purchase submitted. Pay the displayed amount, then wait for Authority Press to verify it. The item is not sold until confirmed." });
     }
