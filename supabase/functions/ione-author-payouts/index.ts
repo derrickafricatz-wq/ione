@@ -139,7 +139,7 @@ Deno.serve(async (req: Request) => {
         if (e.status === "paid") g.paid_tzs += Number(e.author_share_tzs || 0);
       }
       const list = await Promise.all([...groups.values()].map(async (g) => ({ ...g, author_name: await resolveAuthorName(g.author_id, (earnings || []).filter((e: any) => String(e.author_id) === g.author_id)) })));
-      return json({ success: true, merchant: { name: "DERRICK KIPAJI OF AFRIKA & CO", number: "140001788", network: "Airtel Money" }, policy: { author_percent: 95, provider_percent: 3, platform_percent: 2, standard: "monthly", urgent_requires_reason: true }, authors: list, recent_payouts: payouts || [] });
+      return json({ success: true, merchant: { name: "DERRICK KIPAJI OF AFRIKA & CO", number: "23544652", network: "HaloPesa" }, policy: { author_percent: 95, provider_percent: 3, platform_percent: 2, standard: "monthly", urgent_requires_reason: true }, authors: list, recent_payouts: payouts || [] });
     }
 
     if (action === "quote") {
