@@ -1066,10 +1066,10 @@ if (order.status === "new" || order.status === "accepted") {
         if (riderTripAlertsReady && !seenPassengerRequests[trip.id] && typeof Notification !== "undefined" && Notification.permission === "granted") {
           const notification = { body: trip.pickup_area + " → " + trip.destination_area + ". Fungua Sokoni kuona ombi.", tag: "ione-passenger-trip-" + trip.id, renotify: false };
           if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-            navigator.serviceWorker.ready.then((registration) => registration.showNotification("I|ONE Boda Yangu • Abiria mpya", notification))
-              .catch(() => { try { new Notification("I|ONE Boda Yangu • Abiria mpya", notification); } catch (_) {} });
+            navigator.serviceWorker.ready.then((registration) => registration.showNotification("I|ONE Sokoni • Abiria mpya", notification))
+              .catch(() => { try { new Notification("I|ONE Sokoni • Abiria mpya", notification); } catch (_) {} });
           } else {
-            try { new Notification("I|ONE Boda Yangu • Abiria mpya", notification); } catch (_) {}
+            try { new Notification("I|ONE Sokoni • Abiria mpya", notification); } catch (_) {}
           }
         }
         seenPassengerRequests[trip.id] = true;
