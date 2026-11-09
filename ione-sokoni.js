@@ -141,7 +141,8 @@
       <section class="is-sections" aria-label="Huduma za Sokoni">
         <div class="is-category"><div aria-hidden="true">🥬</div><b>Mama Sokoni</b><span>Mboga, matunda na bidhaa za kila siku kutoka kwa wauzaji waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🍲</div><b>Mama wa Pishi</b><span>Chakula, chapati, supu na vitafunwa vya karibu nawe.</span></div>
-        <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Angalia bodaboda waliothibitishwa, omba safari ya abiria, au jiunge kama dereva. Safari hupokelewa na madereva walioidhinishwa na walio tayari.</span></div>
+        <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Usafiri wa pikipiki na huduma za delivery kutoka kwa madereva waliothibitishwa.</span></div>
+        <div class="is-category"><div aria-hidden="true">🛺</div><b>Bajaji</b><span>Omba safari ya bajaji au jiunge kama dereva wa bajaji baada ya uthibitisho wa Authority Press.</span></div>
       </section>
       <section class="is-card">
         <h2>Jiunge kama muuzaji</h2>
@@ -249,8 +250,8 @@
       </section>
       <div class="is-boda-section">
         <div class="is-boda-panel is-boda-board">
-        <div class="is-boda-heading"><span>🏍️</span><div><h2>Boda Yangu</h2><p>Orodha ya madereva waliothibitishwa na walio tayari kupokea safari.</p></div></div>
-        <p class="is-muted">Waendesha bodaboda huanza kupokea safari baada ya kuthibitishwa na Authority Press. Ada ya safari itaonyeshwa tofauti na bei ya bidhaa, na muuzaji pamoja na mnunuzi lazima waikubali kabla ya kuchukua bidhaa.</p>
+        <div class="is-boda-heading"><span>🏍️ 🛺</span><div><h2>Boda Boda na Bajaji</h2><p>Orodha ya madereva waliothibitishwa wa pikipiki na bajaji walio tayari kupokea safari.</p></div></div>
+        <p class="is-muted">Madereva wa Boda Boda na Bajaji huonekana baada ya uthibitisho wa Authority Press na ruhusa hai. Safari ya bidhaa za Sokoni inapatikana kwa Boda Boda pekee.</p>
         <button class="is-button" type="button" id="isRefreshRiders">Angalia bodaboda waliopo</button>
         <div class="is-vendors" id="isPublicRiders"><p class="is-muted">Orodha ya bodaboda itasasishwa hapa.</p></div>
         </div>
@@ -273,7 +274,7 @@
         <div class="is-vendors" id="isPassengerTrips"><p class="is-muted">Maombi na makubaliano ya safari yataonekana hapa.</p></div>
         </div>
         <div class="is-boda-panel is-boda-register">
-        <h3 class="is-boda-title">Jiunge kama dereva wa bodaboda</h3>
+        <h3 class="is-boda-title">Jiunge kama dereva wa Boda Boda au Bajaji</h3>
         <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
         <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
           <strong>MAELEKEZO YA MALIPO YA BODA YANGU</strong><br>
@@ -287,13 +288,14 @@
         <form class="is-form" id="isRiderForm">
           <div><label for="isRiderName">Jina kamili</label><input id="isRiderName" maxlength="120" required autocomplete="name" placeholder="Andika jina lako kamili"></div>
           <div><label for="isRiderPhone">Namba yako ya simu</label><input id="isRiderPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
+          <div><label for="isRiderVehicleType">Aina ya usafiri</label><select id="isRiderVehicleType" required><option value="boda">🏍️ Boda Boda</option><option value="bajaji">🛺 Bajaji</option></select></div>
           <div><label for="isRiderDocumentType">Chagua kitambulisho kimoja</label><select id="isRiderDocumentType" required><option value="">Chagua aina ya kitambulisho</option><option value="driving_license">Leseni ya udereva</option><option value="national_id">Kitambulisho cha Taifa (NIDA)</option><option value="rider_group_id">Kitambulisho cha kikundi cha bodaboda</option></select></div>
           <div><label for="isRiderProfileFile">Pakia picha yako ya wasifu</label><input id="isRiderProfileFile" type="file" accept="image/jpeg,image/png,image/webp" required><small class="is-muted">Picha itaonekana kwa watumiaji wa Sokoni. Tumia picha yako halisi, hadi MB 3.</small></div>
           <div><label for="isRiderIdentityFile">Pakia picha au PDF ya kitambulisho</label><input id="isRiderIdentityFile" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required><small class="is-muted">Faili la faragha, hadi MB 5. Litaonekana kwa Authority Press pekee.</small></div>
-          <div><label for="isRiderPlate">Namba ya usajili wa pikipiki</label><input id="isRiderPlate" maxlength="24" required placeholder="Mfano: MC 123 ABC"></div>
-          <div><label for="isRiderGroup">Jina la kikundi cha bodaboda</label><input id="isRiderGroup" maxlength="140" required placeholder="Jina la kikundi chako"></div>
-          <div><label for="isRiderChairmanPhone">Namba ya simu ya mwenyekiti wa kikundi</label><input id="isRiderChairmanPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div>
-          <button class="is-button primary" type="submit" id="isRiderSubmit">Tuma maombi ya bodaboda</button>
+          <div><label for="isRiderPlate">Namba ya usajili wa chombo</label><input id="isRiderPlate" maxlength="24" required placeholder="Mfano: MC 123 ABC au namba ya bajaji"></div>
+          <div id="isBodaGroupFields"><div><label for="isRiderGroup">Jina la kikundi cha bodaboda</label><input id="isRiderGroup" maxlength="140" required placeholder="Jina la kikundi chako"></div>
+          <div><label for="isRiderChairmanPhone">Namba ya simu ya mwenyekiti wa kikundi</label><input id="isRiderChairmanPhone" type="tel" inputmode="tel" maxlength="20" required placeholder="Mfano: 07XXXXXXXX"></div></div>
+          <button class="is-button primary" type="submit" id="isRiderSubmit">Tuma maombi ya usafiri</button>
         </form>
         <div class="is-status" id="isRiderApplyStatus" role="status" aria-live="polite"></div>
         </div>
@@ -1405,6 +1407,13 @@ if (order.status === "new" || order.status === "accepted") {
     }
   }
   $("isRefreshRiders").addEventListener("click", loadPublicRiders);
+  $("isRiderVehicleType").addEventListener("change", () => {
+    const isBoda = $("isRiderVehicleType").value === "boda";
+    $("isBodaGroupFields").style.display = isBoda ? "grid" : "none";
+    $("isRiderGroup").required = isBoda;
+    $("isRiderChairmanPhone").required = isBoda;
+    $("isRiderSubmit").textContent = isBoda ? "Tuma maombi ya bodaboda" : "Tuma maombi ya bajaji";
+  });
   $("isRiderForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const button = $("isRiderSubmit");
@@ -1439,6 +1448,7 @@ if (order.status === "new" || order.status === "accepted") {
       const result = await invoke("rider_apply", {
         rider_name: $("isRiderName").value.trim(),
         phone_number: $("isRiderPhone").value.trim(),
+        vehicle_type: $("isRiderVehicleType").value,
         identity_document_type: $("isRiderDocumentType").value,
         identity_document_path: uploadedPath,
         profile_path: profilePath,
@@ -1811,8 +1821,10 @@ if (order.status === "new" || order.status === "accepted") {
         status.textContent = "Hali: " + (statusLabels[application.status] || escText(application.status));
         const phone = document.createElement("p");
         phone.textContent = "Simu ya dereva: " + escText(application.phone_number);
+        const vehicleType = document.createElement("p");
+        vehicleType.textContent = "Aina ya chombo: " + (application.vehicle_type === "bajaji" ? "Bajaji 🛺" : "Boda Boda 🏍️");
         const plate = document.createElement("p");
-        plate.textContent = "Namba ya pikipiki: " + (application.motorcycle_plate ? escText(application.motorcycle_plate) : "Haipo kwenye maombi ya zamani");
+        plate.textContent = "Namba ya usajili: " + (application.motorcycle_plate ? escText(application.motorcycle_plate) : "Haipo kwenye maombi ya zamani");
         const group = document.createElement("p");
         group.textContent = "Kikundi: " + (application.rider_group_name ? escText(application.rider_group_name) : "Haipo kwenye maombi ya zamani");
         const chairman = document.createElement("p");
@@ -1822,7 +1834,7 @@ if (order.status === "new" || order.status === "accepted") {
         docType.textContent = "Aina ya kitambulisho: " + (docTypeLabels[application.identity_document_type] || "Hakikuambatanishwa kwenye ombi la zamani");
         const date = document.createElement("p");
         date.textContent = "Tarehe ya ombi: " + new Date(application.created_at).toLocaleString("en-GB");
-        row.append(name, status, phone, plate, group, chairman, docType, date);
+        row.append(name, status, phone, vehicleType, plate, group, chairman, docType, date);
         if (application.identity_document_url) {
           const doc = document.createElement("button");
           doc.type = "button";
