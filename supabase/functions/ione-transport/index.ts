@@ -8,7 +8,7 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const BUCKET = "ione-transport-documents";
-const CATEGORIES = new Set(["taxi", "special_hire", "shuttle", "bus"]);
+const CATEGORIES = new Set(["taxi", "special_hire", "shuttle", "bus", "bajaji"]);
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
