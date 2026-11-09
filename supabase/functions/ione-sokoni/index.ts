@@ -615,7 +615,7 @@ Deno.serve(async (req) => {
             const riders:any[]=[];
             let riderQueryError:any=null;
             for(let offset=0;;offset+=1000){
-              const batch=await admin.from("ione_sokoni_riders").select("user_id,phone_number").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
+              const batch=await admin.from("ione_sokoni_riders").select("user_id,phone_number").eq("vehicle_type","boda").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
               if(batch.error){riderQueryError=batch.error;break;}
               riders.push(...(batch.data||[]));
               if((batch.data||[]).length<1000)break;
@@ -695,6 +695,7 @@ Deno.serve(async (req) => {
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const name = String(body?.rider_name || "").trim().replace(/\s+/g, " ");
       const phone = normalizeTanzaniaPhone(body?.phone_number);
+      const vehicleType = String(body?.vehicle_type || "boda").trim().toLowerCase();
       const profilePath = String(body?.profile_path || "").trim();
       const documentType = String(body?.identity_document_type || "").trim();
       const documentPath = String(body?.identity_document_path || "").trim();
@@ -702,10 +703,11 @@ Deno.serve(async (req) => {
       const groupName = String(body?.rider_group_name || "").trim().replace(/\s+/g, " ");
       const chairmanPhone = normalizeTanzaniaPhone(body?.chairman_phone);
       const allowedDocumentTypes = ["driving_license", "national_id", "rider_group_id"];
-      if (name.length < 2 || name.length > 120 || !validPhone(phone) ||
-          !allowedDocumentTypes.includes(documentType) || plate.length < 4 || plate.length > 24 ||
-          groupName.length < 2 || groupName.length > 140 || !validPhone(chairmanPhone)) {
-        return json({ success: false, error: "Enter your full name, valid phone numbers, one identity document, motorcycle plate and rider group details." }, 400);
+      const validVehicleType = vehicleType === "boda" || vehicleType === "bajaji";
+      const bodaDetailsValid = vehicleType !== "boda" || (groupName.length >= 2 && groupName.length <= 140 && validPhone(chairmanPhone));
+      if (name.length < 2 || name.length > 120 || !validPhone(phone) || !validVehicleType ||
+          !allowedDocumentTypes.includes(documentType) || plate.length < 4 || plate.length > 24 || !bodaDetailsValid) {
+        return json({ success: false, error: "Enter your full name, valid phone, vehicle type, registration number and one identity document. Boda Boda applicants must also provide their group and chairman details." }, 400);
       }
       const profileParts = profilePath.split("/");
       if (profileParts.length !== 2 || profileParts[0] !== user.id || !/^[A-Za-z0-9._-]{5,180}$/.test(profileParts[1]) ||
@@ -731,9 +733,10 @@ Deno.serve(async (req) => {
         .eq("user_id", user.id).eq("status", "pending").maybeSingle();
       if (pending) return json({ success: true, already_pending: true, message: "Your rider application is already waiting for Authority Press." });
       const result = await admin.from("ione_sokoni_rider_applications").insert({
-        user_id: user.id, rider_name: name, phone_number: phone, identity_document_type: documentType,
-        identity_document_path: documentPath, profile_path: profilePath, motorcycle_plate: plate, rider_group_name: groupName,
-        chairman_phone: chairmanPhone, status: "pending"
+        user_id: user.id, rider_name: name, phone_number: phone, vehicle_type: vehicleType, identity_document_type: documentType,
+        identity_document_path: documentPath, profile_path: profilePath, motorcycle_plate: plate,
+        rider_group_name: vehicleType === "boda" ? groupName : null,
+        chairman_phone: vehicleType === "boda" ? chairmanPhone : null, status: "pending"
       }).select("id,status,created_at").single();
       if (result.error) return json({ success: false, error: "Could not submit the rider application. Please retry." }, 500);
       return json({ success: true, application: result.data, message: "Rider application submitted. Authority Press must verify you before you can receive trips." });
@@ -769,7 +772,7 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const [riderResult, applicationResult] = await Promise.all([
-        admin.from("ione_sokoni_riders").select("id,rider_name,phone_number,status,available,last_seen_at,location_updated_at")
+        admin.from("ione_sokoni_riders").select("id,rider_name,phone_number,vehicle_type,status,available,last_seen_at,location_updated_at")
           .eq("user_id", user.id).maybeSingle(),
         admin.from("ione_sokoni_rider_applications").select("id,rider_name,status,created_at,reviewed_at,admin_note")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1)
@@ -800,7 +803,7 @@ Deno.serve(async (req) => {
         ...(available ? {} : { location_lat: null, location_lng: null, location_updated_at: null })
       }).eq("id", rider.id).select("available").single();
       if (saved.error) return json({ success: false, error: "Could not update rider availability." }, 500);
-      return json({ success: true, available: saved.data.available, message: available ? "You are now available for Boda Yangu requests." : "You are now off duty." });
+      return json({ success: true, available: saved.data.available, message: available ? "You are now available for Sokoni passenger trips." : "You are now off duty." });
     }
 
     if (action === "rider_heartbeat") {
@@ -827,12 +830,12 @@ Deno.serve(async (req) => {
       // Availability only changes the displayed status; trip matching keeps its stricter
       // available + recent-heartbeat checks, so offline riders cannot accept live requests.
       const { data, error } = await admin.from("ione_sokoni_riders")
-        .select("id,rider_name,profile_path,available,last_seen_at,access_payment_confirmed,access_expires_at")
+        .select("id,rider_name,vehicle_type,profile_path,available,last_seen_at,access_payment_confirmed,access_expires_at")
         .eq("status", "active").eq("access_payment_confirmed", true).gt("access_expires_at", new Date(now).toISOString())
         .order("available", { ascending: false }).order("last_seen_at", { ascending: false, nullsFirst: false }).limit(100);
       if (error) return json({ success: false, error: "Could not load the verified rider board." }, 500);
       const riders = (data || []).map((rider: any) => ({
-        id: rider.id, rider_name: rider.rider_name,
+        id: rider.id, rider_name: rider.rider_name, vehicle_type: rider.vehicle_type || "boda",
         available: rider.available === true && !!rider.last_seen_at && Date.parse(rider.last_seen_at) > Date.parse(freshSince),
         profile_url: rider.profile_path ? admin.storage.from("ione-sokoni-rider-profiles").getPublicUrl(rider.profile_path).data?.publicUrl || null : null
       }));
@@ -872,7 +875,7 @@ Deno.serve(async (req) => {
       // The rider board remains the source of truth; push is an additional alert.
       const [{ data: availableRiders, error: ridersError }, { data: product }] = await Promise.all([
         admin.from("ione_sokoni_riders").select("user_id,phone_number")
-          .eq("status", "active").eq("access_payment_confirmed", true).gt("access_expires_at", new Date().toISOString()).eq("available", true).limit(100),
+          .eq("vehicle_type", "boda").eq("status", "active").eq("access_payment_confirmed", true).gt("access_expires_at", new Date().toISOString()).eq("available", true).limit(100),
         admin.from("ione_sokoni_products").select("product_name").eq("id", order.product_id).maybeSingle()
       ]);
       if (ridersError) console.warn("Could not load available riders for delivery alerts:", ridersError.message);
@@ -937,7 +940,7 @@ Deno.serve(async (req) => {
       }
       const pushResults = await Promise.all(availableRiders.map((rider: any) =>
         sendSokoniPush(admin, rider.user_id, {
-          title: "I|ONE Boda Yangu • Safari mpya", body: pickupArea + " → " + destinationArea + ". Fungua Sokoni kuona ombi.",
+          title: "I|ONE Sokoni • Safari ya abiria", body: pickupArea + " → " + destinationArea + ". Fungua Sokoni kuona ombi.",
           url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + saved.data.id
         })
       ));
@@ -1011,7 +1014,7 @@ Deno.serve(async (req) => {
       if (saved.error) return json({ success: false, error: "Could not save fare proposal." }, 500);
       const recipient = role === "rider" ? trip.passenger_user_id : (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: "I|ONE Boda Yangu • Nauli imependekezwa", body: "Pendekezo la nauli ni TZS " + fare.toLocaleString("en-TZ") + ". Fungua Sokoni kujibu.",
+        title: "I|ONE Sokoni • Nauli ya abiria imependekezwa", body: "Pendekezo la nauli ni TZS " + fare.toLocaleString("en-TZ") + ". Fungua Sokoni kujibu.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-fare-" + tripId
       });
       return json({ success: true, message: "Nauli imetumwa. Upande mwingine anaweza kukubali au kutoa pendekezo jingine." });
@@ -1031,7 +1034,7 @@ Deno.serve(async (req) => {
       if (saved.error) return json({ success: false, error: "Could not confirm the fare." }, 500);
       const recipient = role === "rider" ? trip.passenger_user_id : (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: "I|ONE Boda Yangu • Nauli imekubaliwa", body: "Nauli ya TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " imekubaliwa.",
+        title: "I|ONE Sokoni • Nauli ya abiria imekubaliwa", body: "Nauli ya TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " imekubaliwa.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-fare-" + tripId
       });
       return json({ success: true, message: "Nauli imekubaliwa. Malipo yatafanyika moja kwa moja kati yenu." });
@@ -1072,7 +1075,7 @@ Deno.serve(async (req) => {
       if (next === "cancelled" && trip.rider_id && trip.status !== "picked_up") await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", trip.rider_id);
       const recipient = ["rider_ready", "picked_up", "completed"].includes(next) ? trip.passenger_user_id : null;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: next === "rider_ready" ? "I|ONE Boda Yangu • Dereva yuko njiani" : next === "picked_up" ? "I|ONE Boda Yangu • Abiria amechukuliwa" : "I|ONE Boda Yangu • Safari imekamilika",
+        title: next === "rider_ready" ? "I|ONE Sokoni • Dereva yuko njiani" : next === "picked_up" ? "I|ONE Sokoni • Abiria amechukuliwa" : "I|ONE Sokoni • Safari imekamilika",
         body: next === "rider_ready" ? "Dereva amekubali safari na yuko njiani kukuchukua. Mpigie simu ikiwa unahitaji kuwasiliana naye." : next === "picked_up" ? "Dereva amekuchukua." : "Dereva amethibitisha safari imekamilika.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + tripId
       });
@@ -1082,14 +1085,14 @@ Deno.serve(async (req) => {
     if (action === "rider_open_deliveries") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
-      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,vehicle_type,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
       if (riderError || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now()) {
-        return json({ success: false, error: "Authority Press must approve your active Boda Yangu access before viewing trips." }, 403);
+        return json({ success: false, error: "Authority Press must approve your active Sokoni transport access before viewing trips." }, 403);
       }
       // Keep accepted passenger negotiation in the central board after availability
       // is switched off; only available riders see unassigned work.
       const [deliveriesResult, openPassengerResult, myPassengerResult] = await Promise.all([
-        rider.available
+        rider.available && (rider.vehicle_type || "boda") === "boda"
           ? admin.from("ione_sokoni_deliveries").select("id,order_id,vendor_id,pickup_location,dropoff_location,dropoff_lat,dropoff_lng,created_at").eq("status", "requested").is("rider_user_id", null).order("created_at", { ascending: true }).limit(100)
           : Promise.resolve({ data: [], error: null }),
         rider.available
@@ -1116,8 +1119,8 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const deliveryId = String(body?.delivery_id || "").trim();
-      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
-      if (riderError || !rider || rider.status !== "active" || !rider.available || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now()) return json({ success: false, error: "Washa upatikanaji na hakikisha ruhusa ya Boda Yangu bado inatumika." }, 403);
+      const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,status,available,vehicle_type,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
+      if (riderError || !rider || rider.vehicle_type === "bajaji" || rider.vehicle_type === "boda" && (!rider.available || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now())) return json({ success: false, error: "Huduma ya delivery ya bidhaa inapatikana kwa Boda Boda pekee; hakikisha ruhusa yako iko hai." }, 403);
       const active = await admin.from("ione_sokoni_deliveries").select("id,status").eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]);
       if (active.error) return json({ success: false, error: "Imeshindikana kuthibitisha safari nyingine." }, 500);
       if ((active.data || []).length) return json({ success: false, error: "Maliza safari uliyoanza kabla ya kukubali nyingine." }, 409);
@@ -1388,7 +1391,7 @@ Deno.serve(async (req) => {
         const riderId = String(body?.rider_id || "").trim();
         const grant = body?.grant === true;
         if (!/^[0-9a-f-]{36}$/i.test(riderId)) return json({ success: false, error: "Invalid rider record." }, 400);
-        const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,rider_name,status").eq("id", riderId).maybeSingle();
+        const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,rider_name,vehicle_type,status").eq("id", riderId).maybeSingle();
         if (riderError || !rider) return json({ success: false, error: "Verified rider record not found." }, 404);
         const now = new Date();
         let patch: Record<string, unknown>;
@@ -1404,7 +1407,8 @@ Deno.serve(async (req) => {
         }
         const saved = await admin.from("ione_sokoni_riders").update(patch).eq("id", riderId).select("id,rider_name,access_payment_confirmed,access_started_at,access_expires_at").single();
         if (saved.error) return json({ success: false, error: "Could not save rider access dates and status." }, 500);
-        return json({ success: true, rider: saved.data, message: grant ? "Boda Yangu access granted and dates saved." : "Boda Yangu access locked. The rider is now off duty." });
+        const serviceName = rider.vehicle_type === "bajaji" ? "Bajaji" : "Boda Yangu";
+        return json({ success: true, rider: saved.data, message: grant ? serviceName + " access granted and dates saved." : serviceName + " access locked. The driver is now off duty." });
       }
 
       if (action === "authority_dashboard") {
@@ -1419,7 +1423,7 @@ Deno.serve(async (req) => {
           admin.from("ione_sokoni_vendors").select("id,vendor_name,phone_number,status,paid_until,approved_at")
             .order("paid_until", { ascending: false }).limit(200),
           admin.from("ione_sokoni_rider_applications")
-            .select("id,user_id,rider_name,phone_number,identity_document_type,identity_document_path,motorcycle_plate,rider_group_name,chairman_phone,status,created_at,reviewed_at,reviewed_by,admin_note")
+            .select("id,user_id,rider_name,phone_number,vehicle_type,identity_document_type,identity_document_path,motorcycle_plate,rider_group_name,chairman_phone,status,created_at,reviewed_at,reviewed_by,admin_note")
             .order("created_at", { ascending: false }).limit(500),
           admin.from("ione_sokoni_rider_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
           admin.from("ione_sokoni_riders").select("id", { count: "exact", head: true }).eq("status", "active"),
@@ -1493,7 +1497,7 @@ Deno.serve(async (req) => {
         }
         const riderWrite = await admin.from("ione_sokoni_riders").upsert({
           user_id: application.user_id, rider_name: application.rider_name, phone_number: application.phone_number,
-          profile_path: application.profile_path || null,
+          vehicle_type: application.vehicle_type || "boda", profile_path: application.profile_path || null,
           status: "active", available: false, verified_at: now, updated_at: now
         }, { onConflict: "user_id" }).select("id").single();
         if (riderWrite.error) {
@@ -1509,7 +1513,7 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_rider_applications").update({ status: "pending" }).eq("id", application.id).eq("status", "processing");
           return json({ success: false, error: "Rider approval was rolled back because the review record could not be saved." }, 500);
         }
-        return json({ success: true, message: "Rider verified. They can now sign in to Boda Yangu and turn availability on." });
+        return json({ success: true, message: "Driver verified. They can now sign in to Sokoni Transport and turn availability on." });
       }
 
       const requestId = String(body?.request_id || "").trim();

@@ -2,13 +2,16 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
+// Supabase Edge Runtime exposes this global at execution time; declare it for Deno type-checking.
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
+
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-ione-authority-session",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const BUCKET = "ione-transport-documents";
-const CATEGORIES = new Set(["taxi", "special_hire", "shuttle", "bus"]);
+const CATEGORIES = new Set(["taxi", "special_hire", "shuttle", "bus", "bajaji"]);
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
