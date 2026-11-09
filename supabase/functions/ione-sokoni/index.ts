@@ -615,7 +615,7 @@ Deno.serve(async (req) => {
             const riders:any[]=[];
             let riderQueryError:any=null;
             for(let offset=0;;offset+=1000){
-              const batch=await admin.from("ione_sokoni_riders").select("user_id,phone_number").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
+              const batch=await admin.from("ione_sokoni_riders").select("user_id,phone_number").eq("vehicle_type","boda").eq("status","active").eq("access_payment_confirmed",true).gt("access_expires_at",new Date().toISOString()).eq("available",true).order("created_at",{ascending:true}).range(offset,offset+999);
               if(batch.error){riderQueryError=batch.error;break;}
               riders.push(...(batch.data||[]));
               if((batch.data||[]).length<1000)break;
@@ -772,7 +772,7 @@ Deno.serve(async (req) => {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
       const [riderResult, applicationResult] = await Promise.all([
-        admin.from("ione_sokoni_riders").select("id,rider_name,phone_number,status,available,last_seen_at,location_updated_at")
+        admin.from("ione_sokoni_riders").select("id,rider_name,phone_number,vehicle_type,status,available,last_seen_at,location_updated_at")
           .eq("user_id", user.id).maybeSingle(),
         admin.from("ione_sokoni_rider_applications").select("id,rider_name,status,created_at,reviewed_at,admin_note")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(1)
