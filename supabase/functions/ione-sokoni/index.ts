@@ -1391,7 +1391,7 @@ Deno.serve(async (req) => {
         const riderId = String(body?.rider_id || "").trim();
         const grant = body?.grant === true;
         if (!/^[0-9a-f-]{36}$/i.test(riderId)) return json({ success: false, error: "Invalid rider record." }, 400);
-        const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,rider_name,status").eq("id", riderId).maybeSingle();
+        const { data: rider, error: riderError } = await admin.from("ione_sokoni_riders").select("id,rider_name,vehicle_type,status").eq("id", riderId).maybeSingle();
         if (riderError || !rider) return json({ success: false, error: "Verified rider record not found." }, 404);
         const now = new Date();
         let patch: Record<string, unknown>;
@@ -1407,7 +1407,8 @@ Deno.serve(async (req) => {
         }
         const saved = await admin.from("ione_sokoni_riders").update(patch).eq("id", riderId).select("id,rider_name,access_payment_confirmed,access_started_at,access_expires_at").single();
         if (saved.error) return json({ success: false, error: "Could not save rider access dates and status." }, 500);
-        return json({ success: true, rider: saved.data, message: grant ? "Boda Yangu access granted and dates saved." : "Boda Yangu access locked. The rider is now off duty." });
+        const serviceName = rider.vehicle_type === "bajaji" ? "Bajaji" : "Boda Yangu";
+        return json({ success: true, rider: saved.data, message: grant ? serviceName + " access granted and dates saved." : serviceName + " access locked. The driver is now off duty." });
       }
 
       if (action === "authority_dashboard") {
