@@ -21,7 +21,7 @@
     .it-kicker{font-size:10px;font-weight:900;letter-spacing:2.5px;color:#a6e4b9}
     .it-hero h1{margin:11px 0 8px;font-size:clamp(34px,8vw,58px);line-height:1;letter-spacing:-1.4px;color:#f3fff7}
     .it-hero p{max-width:720px;margin:0;color:#c7dfcf;font-size:14px;line-height:1.7}
-    .it-services{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+    .it-services{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:14px 0}
     .it-service{min-width:0;padding:16px 12px;border:1px solid #294e3a;border-radius:16px;background:#0d2118}
     .it-service .it-emoji{font-size:25px}
     .it-service strong{display:block;margin:8px 0 5px;font-size:13px;color:#f4fff7}
@@ -75,13 +75,14 @@
       <section class="it-hero">
         <div class="it-kicker">GLOBAL NETWORK • AUTHORITY-VERIFIED DRIVERS</div>
         <h1>i1 Transport</h1>
-        <p>One connected transport network for private journeys. Choose Taxi, Special Hire, Shuttle or Bus services. Drivers apply here and every application is reviewed by Authority Press before approval.</p>
+        <p>One connected transport network for private journeys. Choose Taxi, Special Hire, Shuttle, Bus or Bajaji services. Drivers apply here and every application is reviewed by Authority Press before approval.</p>
       </section>
       <section class="it-services" aria-label="Transport services">
         <article class="it-service"><div class="it-emoji">🚕</div><strong>Taxi</strong><span>Private point-to-point journeys in your area</span></article>
         <article class="it-service"><div class="it-emoji">🚘</div><strong>Special Hire</strong><span>Private hires, business trips and airport transfers</span></article>
         <article class="it-service"><div class="it-emoji">🚐</div><strong>Shuttle</strong><span>Group transport and scheduled shuttle services</span></article>
         <article class="it-service"><div class="it-emoji">🚌</div><strong>Bus</strong><span>Private bus hire, group travel and transfers</span></article>
+        <article class="it-service"><div class="it-emoji">🛺</div><strong>Bajaji</strong><span>Three-wheel passenger trips and local rides</span></article>
       </section>
       <div class="it-note"><strong>Verified-driver standard:</strong> Submitting an application does not make a driver active. Authority Press must review the driver's details and driving-licence document and approve the application first.</div>
       <section class="it-card">
@@ -97,6 +98,7 @@
             <label class="it-check"><input type="checkbox" name="service_types" value="special_hire"> Special Hire</label>
             <label class="it-check"><input type="checkbox" name="service_types" value="shuttle"> Shuttle</label>
             <label class="it-check"><input type="checkbox" name="service_types" value="bus"> Bus</label>
+            <label class="it-check"><input type="checkbox" name="service_types" value="bajaji"> 🛺 Bajaji</label>
           </div></div>
           <div class="it-field"><label for="itVehicle">VEHICLE MAKE / MODEL</label><input id="itVehicle" name="vehicle_make_model" maxlength="120" required placeholder="e.g. Toyota Noah"></div>
           <div class="it-field"><label for="itPlate">VEHICLE REGISTRATION</label><input id="itPlate" name="vehicle_registration" maxlength="30" required placeholder="Registration number"></div>
@@ -169,7 +171,7 @@
   if (tile) {
     tile.classList.remove("smart-coming-soon");
     tile.classList.add("ione-transport-tile");
-    tile.innerHTML = '<span class="smart-icon" aria-hidden="true">🚕</span><strong>i1 TRANSPORT</strong><small>TAXI • SPECIAL HIRE • SHUTTLE • BUS</small>';
+    tile.innerHTML = '<span class="smart-icon" aria-hidden="true">🚕</span><strong>i1 TRANSPORT</strong><small>TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI</small>';
     tile.addEventListener("click", open);
   }
 
