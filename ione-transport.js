@@ -282,7 +282,7 @@
       } else {
         host.innerHTML = data.applications.map(app => {
           const services = (app.service_types || []).map(v => ({
-            taxi:"Taxi",special_hire:"Special Hire",shuttle:"Shuttle",bus:"Bus"
+            taxi:"Taxi",special_hire:"Special Hire",shuttle:"Shuttle",bus:"Bus",bajaji:"Bajaji"
           }[v] || v)).join(" • ");
           const links = [
             app.profile_photo_url ? '<a href="' + esc(app.profile_photo_url) + '" target="_blank" rel="noopener">Driver photo</a>' : "",
