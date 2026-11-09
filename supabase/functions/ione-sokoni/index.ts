@@ -803,7 +803,7 @@ Deno.serve(async (req) => {
         ...(available ? {} : { location_lat: null, location_lng: null, location_updated_at: null })
       }).eq("id", rider.id).select("available").single();
       if (saved.error) return json({ success: false, error: "Could not update rider availability." }, 500);
-      return json({ success: true, available: saved.data.available, message: available ? "You are now available for Boda Yangu requests." : "You are now off duty." });
+      return json({ success: true, available: saved.data.available, message: available ? "You are now available for Sokoni passenger trips." : "You are now off duty." });
     }
 
     if (action === "rider_heartbeat") {
@@ -1513,7 +1513,7 @@ Deno.serve(async (req) => {
           await admin.from("ione_sokoni_rider_applications").update({ status: "pending" }).eq("id", application.id).eq("status", "processing");
           return json({ success: false, error: "Rider approval was rolled back because the review record could not be saved." }, 500);
         }
-        return json({ success: true, message: "Rider verified. They can now sign in to Boda Yangu and turn availability on." });
+        return json({ success: true, message: "Driver verified. They can now sign in to Sokoni Transport and turn availability on." });
       }
 
       const requestId = String(body?.request_id || "").trim();
