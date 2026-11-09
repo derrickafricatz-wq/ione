@@ -54,7 +54,7 @@ assert.match(riderMigration, /ione-sokoni-rider-documents/);
 assert.match(riderMigration, /create policy "Sokoni riders upload own verification documents"/);
 assert.match(bajajiMigration, /ione_sokoni_rider_applications/);
 assert.match(bajajiMigration, /ione_sokoni_riders/);
-assert.match(bajajiMigration, /vehicle_type in \\('boda','bajaji'\\)/);
+assert.match(bajajiMigration, /vehicle_type in \('boda','bajaji'\)/);
 assert.match(moduleSource, /id="isRiderVehicleType"/);
 assert.match(moduleSource, /🛺/);
 assert.match(edge, /vehicle_type: vehicleType/);
