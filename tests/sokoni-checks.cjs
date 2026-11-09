@@ -30,11 +30,11 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert", "openBusBooking"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=13/);
+assert.match(html, /ione-sokoni\.js\?v=15/);
 assert.match(html, /ione-expert\.js\?v=4/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
-assert.match(html, /sw\.js\?v=141/);
+assert.match(html, /sw\.js\?v=150/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
@@ -54,7 +54,7 @@ assert.match(riderMigration, /ione-sokoni-rider-documents/);
 assert.match(riderMigration, /create policy "Sokoni riders upload own verification documents"/);
 assert.match(bajajiMigration, /ione_sokoni_rider_applications/);
 assert.match(bajajiMigration, /ione_sokoni_riders/);
-assert.match(bajajiMigration, /vehicle_type in \\(\x27boda\x27,\x27bajaji\x27\\)/);
+assert.match(bajajiMigration, /vehicle_type in \\('boda','bajaji'\\)/);
 assert.match(moduleSource, /id="isRiderVehicleType"/);
 assert.match(moduleSource, /🛺/);
 assert.match(edge, /vehicle_type: vehicleType/);
