@@ -277,7 +277,7 @@
         <h3 class="is-boda-title">Jiunge kama dereva wa Boda Boda au Bajaji</h3>
         <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
         <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
-          <strong>MAELEKEZO YA MALIPO YA BODA YANGU</strong><br>
+          <strong>MAELEKEZO YA MALIPO YA USAFIRI SOKONI</strong><br>
           Mtoa huduma / Mtandao: <strong><span class="ione-halopesa-provider"><span class="ione-halopesa-mark" aria-hidden="true">HP</span>HaloPesa</span></strong><br>
           Jina la mfanyabiashara: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
           Namba ya malipo: <strong>23544652</strong><br>
@@ -304,7 +304,7 @@
           <div class="is-status" id="isRiderStatus" role="status" aria-live="polite"></div>
           <button class="is-button" type="button" id="isRiderAvailability">Washa upatikanaji</button>
           <form class="is-form" id="isRiderProfileUpdateForm" style="margin:12px 0">
-            <div><label for="isRiderProfileUpdateFile">Sasisha picha ya wasifu wa bodaboda</label><input id="isRiderProfileUpdateFile" type="file" accept="image/jpeg,image/png,image/webp" required><small class="is-muted">Picha hii itaonekana kwa watumiaji wa Sokoni. JPG, PNG au WEBP hadi MB 3.</small></div>
+            <div><label for="isRiderProfileUpdateFile">Sasisha picha yako ya wasifu wa dereva</label><input id="isRiderProfileUpdateFile" type="file" accept="image/jpeg,image/png,image/webp" required><small class="is-muted">Picha hii itaonekana kwa watumiaji wa Sokoni. JPG, PNG au WEBP hadi MB 3.</small></div>
             <button class="is-button" type="submit" id="isRiderProfileUpdateSubmit">Sasisha picha ya wasifu</button>
           </form>
           <div class="is-status" id="isRiderProfileUpdateStatus" role="status" aria-live="polite"></div>
@@ -1827,9 +1827,9 @@ if (order.status === "new" || order.status === "accepted") {
         const plate = document.createElement("p");
         plate.textContent = "Namba ya usajili: " + (application.motorcycle_plate ? escText(application.motorcycle_plate) : "Haipo kwenye maombi ya zamani");
         const group = document.createElement("p");
-        group.textContent = "Kikundi: " + (application.rider_group_name ? escText(application.rider_group_name) : "Haipo kwenye maombi ya zamani");
+        group.textContent = "Kikundi: " + (application.vehicle_type === "bajaji" ? "Haitumiki kwa Bajaji" : (application.rider_group_name ? escText(application.rider_group_name) : "Haipo kwenye maombi ya zamani"));
         const chairman = document.createElement("p");
-        chairman.textContent = "Simu ya mwenyekiti: " + (application.chairman_phone ? escText(application.chairman_phone) : "Haipo kwenye maombi ya zamani");
+        chairman.textContent = "Simu ya mwenyekiti: " + (application.vehicle_type === "bajaji" ? "Haitumiki kwa Bajaji" : (application.chairman_phone ? escText(application.chairman_phone) : "Haipo kwenye maombi ya zamani"));
         const docTypeLabels = { driving_license: "Leseni ya udereva", national_id: "Kitambulisho cha Taifa", rider_group_id: "Kitambulisho cha kikundi" };
         const docType = document.createElement("p");
         docType.textContent = "Aina ya kitambulisho: " + (docTypeLabels[application.identity_document_type] || "Hakikuambatanishwa kwenye ombi la zamani");
