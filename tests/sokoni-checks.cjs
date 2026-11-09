@@ -12,6 +12,7 @@ const edge = fs.readFileSync("supabase/functions/ione-sokoni/index.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20261017080000_ione_sokoni_vendor_access.sql", "utf8");
 const profileMigration = fs.readFileSync("supabase/migrations/20261019090000_ione_sokoni_profiles_and_order_items.sql", "utf8");
 const riderMigration = fs.readFileSync("supabase/migrations/20261017110000_ione_sokoni_rider_verification.sql", "utf8");
+const bajajiMigration = fs.readFileSync("supabase/migrations/20261109093000_ione_sokoni_bajaji_driver_type.sql", "utf8");
 const expertMigration = fs.readFileSync("supabase/migrations/20261017140000_ione_expert_passenger_rides_profiles.sql", "utf8");
 
 new vm.Script(moduleSource, { filename: "ione-sokoni.js" });
@@ -32,7 +33,7 @@ for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority
 assert.match(html, /ione-sokoni\.js\?v=13/);
 assert.match(html, /ione-expert\.js\?v=4/);
 assert.match(html, /i1 TRANSPORT/);
-assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS/);
+assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
 assert.match(html, /sw\.js\?v=141/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
@@ -51,6 +52,13 @@ for (const column of ["identity_document_type", "identity_document_path", "motor
 }
 assert.match(riderMigration, /ione-sokoni-rider-documents/);
 assert.match(riderMigration, /create policy "Sokoni riders upload own verification documents"/);
+assert.match(bajajiMigration, /ione_sokoni_rider_applications/);
+assert.match(bajajiMigration, /ione_sokoni_riders/);
+assert.match(bajajiMigration, /vehicle_type in \\(\x27boda\x27,\x27bajaji\x27\\)/);
+assert.match(moduleSource, /id="isRiderVehicleType"/);
+assert.match(moduleSource, /🛺/);
+assert.match(edge, /vehicle_type: vehicleType/);
+assert.match(edge, /rider.vehicle_type === "bajaji"/);
 console.log("PASS: private rider identity upload and verification fields");
 
 for (const action of ["submit", "my_status", "public_vendors", "public_products", "my_products", "save_product", "save_vendor_profile", "save_vendor_presence", "delete_product", "place_order", "place_order_batch", "my_orders", "update_order_status", "save_pickup_location", "rider_apply", "rider_update_profile", "rider_status", "rider_availability", "rider_heartbeat", "public_riders", "request_delivery", "rider_open_deliveries", "accept_delivery", "set_delivery_fee", "counter_delivery_fee", "confirm_delivery_fee", "accept_delivery_route", "update_delivery_status", "update_rider_location", "my_deliveries", "complete_delivery", "passenger_trip_request", "passenger_trip_list", "passenger_trip_accept", "passenger_trip_offer_fare", "passenger_trip_agree_fare", "passenger_trip_status", "authority_dashboard", "approve", "reject", "approve_rider", "reject_rider"]) {
