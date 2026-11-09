@@ -49,7 +49,7 @@
   document.head.appendChild(style);
   const $ = id => document.getElementById(id);
   const esc = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const labels = {taxi:"Taxi",special_hire:"Special Hire",shuttle:"Shuttle",bus:"Bus / Private bus hire"};
+  const labels = {taxi:"Taxi",special_hire:"Special Hire",shuttle:"Shuttle",bus:"Bus / Private bus hire",bajaji:"Bajaji"};
   let me = null, directory = [], poll = null, heartbeat = null, chosen = null;
   const say = (id,msg,error) => { const el=$(id); if(el){el.textContent=msg||"";el.classList.toggle("error",!!error);} };
   async function session() {
@@ -152,7 +152,7 @@
       <h2>Find your i1 Transport driver</h2>
       <p class="ito-muted">ACTIVE drivers can receive a journey request. BUSY drivers remain visible so you can see they have already accepted a trip.</p>
       <p class="ito-muted">All currently active, Authority-verified drivers from every region appear automatically below. Region search is optional.</p>
-      <div class="ito-actions"><input id="itoArea" class="ito-filter" style="max-width:260px" maxlength="120" placeholder="Optional: search region — e.g. Arusha"><select id="itoFilter" class="ito-filter" style="max-width:240px"><option value="">All services</option><option value="taxi">Taxi</option><option value="special_hire">Special Hire</option><option value="shuttle">Shuttle</option><option value="bus">Bus / Private bus hire</option></select><button class="ito-btn" id="itoRefresh">REFRESH DRIVERS</button><button class="ito-btn" id="itoEnablePush">ENABLE ALERTS</button></div>
+      <div class="ito-actions"><input id="itoArea" class="ito-filter" style="max-width:260px" maxlength="120" placeholder="Optional: search region — e.g. Arusha"><select id="itoFilter" class="ito-filter" style="max-width:240px"><option value="">All services</option><option value="taxi">Taxi</option><option value="special_hire">Special Hire</option><option value="shuttle">Shuttle</option><option value="bus">Bus / Private bus hire</option><option value="bajaji">🛺 Bajaji</option></select><button class="ito-btn" id="itoRefresh">REFRESH DRIVERS</button><button class="ito-btn" id="itoEnablePush">ENABLE ALERTS</button></div>
       <div class="ito-grid" id="itoDrivers"><div class="ito-empty">Loading verified drivers…</div></div>
       <form class="ito-booking" id="itoBooking">
         <h2>Request this driver</h2><p class="ito-muted" id="itoChosen"></p><input type="hidden" id="itoDriverId">
