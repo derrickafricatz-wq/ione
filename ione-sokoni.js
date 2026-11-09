@@ -1009,7 +1009,7 @@ if (order.status === "new" || order.status === "accepted") {
       box.replaceChildren();
       if (!data.riders?.length) {
         const empty = document.createElement("p"); empty.className = "is-muted";
-        empty.textContent = "Hakuna bodaboda aliyethibitisha upatikanaji hivi sasa. Tafadhali angalia tena baadaye.";
+        empty.textContent = "Hakuna dereva wa Boda Boda au Bajaji aliyethibitisha upatikanaji hivi sasa. Tafadhali angalia tena baadaye.";
         box.appendChild(empty); return;
       }
       data.riders.forEach((rider) => {
@@ -1023,7 +1023,7 @@ if (order.status === "new" || order.status === "accepted") {
           row.appendChild(photo);
         }
         const info = document.createElement("div");
-        const name = document.createElement("strong"); name.textContent = rider.rider_name;
+        const name = document.createElement("strong"); name.textContent = (rider.vehicle_type === "bajaji" ? "🛺 Bajaji • " : "🏍️ Boda Boda • ") + rider.rider_name;
         const status = document.createElement("small");
         status.textContent = rider.available
           ? "Amethibitishwa • yupo tayari kupokea safari"
@@ -1043,7 +1043,8 @@ if (order.status === "new" || order.status === "accepted") {
         currentRiderId = data.rider.id;
         $("isRiderAvailability").dataset.available = String(!!data.rider.available);
         $("isRiderAvailability").textContent = data.rider.available ? "Zima upatikanaji" : "Washa upatikanaji";
-        setStatus("isRiderStatus", data.rider.status === "active" ? (data.rider.available ? "Umeidhinishwa na upo tayari kupokea safari." : "Umeidhinishwa. Washa upatikanaji ukiwa tayari.") : "Akaunti yako imesimamishwa.", data.rider.status !== "active");
+        const vehicleLabel = data.rider.vehicle_type === "bajaji" ? "Bajaji" : "Boda Boda";
+        setStatus("isRiderStatus", data.rider.status === "active" ? (data.rider.available ? "Umeidhinishwa (" + vehicleLabel + ") na upo tayari kupokea safari." : "Umeidhinishwa (" + vehicleLabel + "). Washa upatikanaji ukiwa tayari.") : "Akaunti yako imesimamishwa.", data.rider.status !== "active");
       } else if (data.application) {
         setStatus("isRiderApplyStatus", ({ pending: "Ombi lako linasubiri uthibitisho wa Authority Press.", processing: "Authority Press inakagua ombi lako.", rejected: "Ombi halikuidhinishwa. Wasiliana na I|ONE Support.", approved: "Umeidhinishwa." })[data.application.status] || "Hali ya ombi imepatikana.");
       }
