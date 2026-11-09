@@ -940,7 +940,7 @@ Deno.serve(async (req) => {
       }
       const pushResults = await Promise.all(availableRiders.map((rider: any) =>
         sendSokoniPush(admin, rider.user_id, {
-          title: "I|ONE Boda Yangu • Safari mpya", body: pickupArea + " → " + destinationArea + ". Fungua Sokoni kuona ombi.",
+          title: "I|ONE Sokoni • Safari ya abiria", body: pickupArea + " → " + destinationArea + ". Fungua Sokoni kuona ombi.",
           url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + saved.data.id
         })
       ));
@@ -1014,7 +1014,7 @@ Deno.serve(async (req) => {
       if (saved.error) return json({ success: false, error: "Could not save fare proposal." }, 500);
       const recipient = role === "rider" ? trip.passenger_user_id : (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: "I|ONE Boda Yangu • Nauli imependekezwa", body: "Pendekezo la nauli ni TZS " + fare.toLocaleString("en-TZ") + ". Fungua Sokoni kujibu.",
+        title: "I|ONE Sokoni • Nauli ya abiria imependekezwa", body: "Pendekezo la nauli ni TZS " + fare.toLocaleString("en-TZ") + ". Fungua Sokoni kujibu.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-fare-" + tripId
       });
       return json({ success: true, message: "Nauli imetumwa. Upande mwingine anaweza kukubali au kutoa pendekezo jingine." });
@@ -1034,7 +1034,7 @@ Deno.serve(async (req) => {
       if (saved.error) return json({ success: false, error: "Could not confirm the fare." }, 500);
       const recipient = role === "rider" ? trip.passenger_user_id : (await admin.from("ione_sokoni_riders").select("user_id").eq("id", trip.rider_id).maybeSingle()).data?.user_id;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: "I|ONE Boda Yangu • Nauli imekubaliwa", body: "Nauli ya TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " imekubaliwa.",
+        title: "I|ONE Sokoni • Nauli ya abiria imekubaliwa", body: "Nauli ya TZS " + Number(trip.proposed_fare_tzs).toLocaleString("en-TZ") + " imekubaliwa.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-fare-" + tripId
       });
       return json({ success: true, message: "Nauli imekubaliwa. Malipo yatafanyika moja kwa moja kati yenu." });
@@ -1075,7 +1075,7 @@ Deno.serve(async (req) => {
       if (next === "cancelled" && trip.rider_id && trip.status !== "picked_up") await admin.from("ione_sokoni_riders").update({ available: true, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", trip.rider_id);
       const recipient = ["rider_ready", "picked_up", "completed"].includes(next) ? trip.passenger_user_id : null;
       if (recipient) await sendSokoniPush(admin, recipient, {
-        title: next === "rider_ready" ? "I|ONE Boda Yangu • Dereva yuko njiani" : next === "picked_up" ? "I|ONE Boda Yangu • Abiria amechukuliwa" : "I|ONE Boda Yangu • Safari imekamilika",
+        title: next === "rider_ready" ? "I|ONE Sokoni • Dereva yuko njiani" : next === "picked_up" ? "I|ONE Sokoni • Abiria amechukuliwa" : "I|ONE Sokoni • Safari imekamilika",
         body: next === "rider_ready" ? "Dereva amekubali safari na yuko njiani kukuchukua. Mpigie simu ikiwa unahitaji kuwasiliana naye." : next === "picked_up" ? "Dereva amekuchukua." : "Dereva amethibitisha safari imekamilika.",
         url: "./?ionePushDestination=sokoni", tag: "ione-passenger-trip-" + tripId
       });
