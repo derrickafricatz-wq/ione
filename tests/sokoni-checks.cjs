@@ -169,7 +169,7 @@ const mamaFood = fs.readFileSync("ione-mama-chakula.js", "utf8");
 const mamaFoodEdge = fs.readFileSync("supabase/functions/ione-mama-chakula/index.ts", "utf8");
 const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_mama_chakula.sql", "utf8");
 new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
-assert.match(html, /ione-mama-chakula\\.js\\?v=1/);
+assert.match(html, /ione-mama-chakula\.js\?v=1/);
 assert.match(sw, /ione-mama-chakula\\.js/);
 assert.match(mamaFood, /Mama Chakula/);
 assert.match(mamaFood, /mfCheckout/);
