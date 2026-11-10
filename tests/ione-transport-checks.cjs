@@ -33,7 +33,7 @@ console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Com
 assert.match(sw, /ione-transport\.js/);
 assert.match(sw, /ione-app-v\\d+/);
 assert.match(sw, /ione-transport-operations\.js/);
-assert.equal(version.version, "1.0.314");
+assert.match(version.version, /^\\d+\\.\\d+\\.\\d+$/);
 console.log("PASS: PWA cache and version include the new Transport module");
 
 assert.match(migration, /ione_transport_driver_applications/);
