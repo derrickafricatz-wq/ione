@@ -181,5 +181,5 @@ assert.match(mamaFoodEdge, /action === "update_order_status"/);
 assert.match(mamaFoodMigration, /amount_tzs integer not null default 1000 check \(amount_tzs = 1000\)/);
 assert.match(mamaFoodMigration, /period_days integer not null default 30 check \(period_days = 30\)/);
 assert.match(mamaFoodMigration, /enable row level security/);
-assert.match(mamaFoodMigration, /public = false/);
+assert.match(mamaFoodMigration, /values.*ione-mama-chakula-menu.*false/);
 console.log("PASS: isolated Mama Chakula registration, menu, order workflow and Authority approval");
