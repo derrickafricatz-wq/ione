@@ -140,7 +140,7 @@
       </section>
       <section class="is-sections" aria-label="Huduma za Sokoni">
         <div class="is-category"><div aria-hidden="true">🥬</div><b>Mama Sokoni</b><span>Mboga, matunda na bidhaa za kila siku kutoka kwa wauzaji waliothibitishwa.</span></div>
-        <div class="is-category"><div aria-hidden="true">🍲</div><b>Mama wa Pishi</b><span>Chakula, chapati, supu na vitafunwa vya karibu nawe.</span></div>
+        <div class="is-category"><div aria-hidden="true">🍲</div><b>Mama Chakula</b><span>Oda chapati, wali, nyama, chips, supu na vinywaji kutoka kwa wapishi waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Usafiri wa pikipiki na huduma za delivery kutoka kwa madereva waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🛺</div><b>Bajaji</b><span>Omba safari ya bajaji au jiunge kama dereva wa bajaji baada ya uthibitisho wa Authority Press.</span></div>
       </section>
