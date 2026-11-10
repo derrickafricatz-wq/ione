@@ -163,3 +163,23 @@ console.log("PASS: passenger ride requests, fare negotiation, expert moderation,
 assert.match(moduleSource, /textContent = "Piga Abiria"/);
 assert.match(moduleSource, /trip\.status === "picked_up"[\s\S]*?textContent = "Imekamilika"/);
 console.log("PASS: passenger rider call and trip-completion controls are present");
+
+// Mama Chakula is isolated from the existing Mama Sokoni seller/order tables.
+const mamaFood = fs.readFileSync("ione-mama-chakula.js", "utf8");
+const mamaFoodEdge = fs.readFileSync("supabase/functions/ione-mama-chakula/index.ts", "utf8");
+const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_mama_chakula.sql", "utf8");
+new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
+assert.match(html, /ione-mama-chakula\\.js\\?v=1/);
+assert.match(sw, /ione-mama-chakula\\.js/);
+assert.match(mamaFood, /Mama Chakula/);
+assert.match(mamaFood, /mfCheckout/);
+assert.match(mamaFood, /mfMenuTrack|mf-menu-track/);
+assert.match(mamaFoodEdge, /action === "place_order"/);
+assert.match(mamaFoodEdge, /action === "authority_dashboard"/);
+assert.match(mamaFoodEdge, /action === "approve"/);
+assert.match(mamaFoodEdge, /action === "update_order_status"/);
+assert.match(mamaFoodMigration, /amount_tzs integer not null default 1000 check \\(amount_tzs = 1000\\)/);
+assert.match(mamaFoodMigration, /period_days integer not null default 30 check \\(period_days = 30\\)/);
+assert.match(mamaFoodMigration, /enable row level security/);
+assert.match(mamaFoodMigration, /public = false/);
+console.log("PASS: isolated Mama Chakula registration, menu, order workflow and Authority approval");
