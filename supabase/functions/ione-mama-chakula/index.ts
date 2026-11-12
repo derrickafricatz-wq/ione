@@ -54,7 +54,7 @@ async function sendMamaSms(admin: any, idempotencyKey: string, eventType: string
   const apiKey = Deno.env.get("DARSMS_API_KEY");
   const phone = normalizePhone(rawPhone);
   if (!apiKey || !validPhone(phone)) return { status: "skipped" };
-  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 150);
+  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 320);
   if (!message) return { status: "skipped" };
   const claim = await admin.from("ione_sokoni_sms_log").insert({
     idempotency_key: idempotencyKey, event_type: eventType, recipient_phone: phone, status: "pending"
@@ -321,9 +321,9 @@ Deno.serve(async (req) => {
         await admin.from("ione_mama_chakula_orders").delete().eq("id", created.data.id);
         return json({ success: false, error: "Oda haikukamilika kuhifadhiwa. Tafadhali tuma tena." }, 500);
       }
-      const itemSummary = lines.map((x: any) => x.item_name + " x" + x.quantity).join(", ").slice(0, 58);
-      const sellerSms = "I|ONE ODA MPYA: " + name + " (" + phone + "). " + itemSummary +
-        (method === "delivery" ? ". Peleka: " + address : ". Mteja atachukua.") + ". Fungua I|ONE.";
+      const itemSummary = lines.map((x: any) => x.item_name + " x" + x.quantity).join(", ").slice(0, 80);
+      const sellerSms = "I|ONE ODA MPYA. Mteja: " + name.slice(0, 40) + ". Simu: " + phone + ". " + itemSummary +
+        (method === "delivery" ? ". Peleka: " + address.slice(0, 140) : ". Mteja atachukua.") + ". Fungua I|ONE kuona oda kamili.";
       const buyerSms = "I|ONE: Oda yako imetumwa kwa " + vendor.business_name +
         ". Simu ya Mama Chakula: " + vendor.phone_number + ". Utapokea taarifa akikubali.";
       await Promise.allSettled([
