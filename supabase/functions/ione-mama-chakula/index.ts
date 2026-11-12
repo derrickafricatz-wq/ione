@@ -376,7 +376,7 @@ Deno.serve(async (req) => {
       const orderId = String(body?.order_id || "").trim();
       const { data: order, error } = await admin.from("ione_mama_chakula_orders").select("id,status,buyer_user_id,seller_user_id,vendor_id,fulfillment_method,delivery_address").eq("id", orderId).maybeSingle();
       if (error || !order || order.buyer_user_id !== user.id) return json({ success: false, error: "Oda hii haipo kwenye akaunti yako." }, 404);
-      if (order.status !== "accepted" || order.fulfillment_method !== "delivery" || !order.delivery_address) return json({ success: false, error: "Usafirishaji unaombwa baada ya Mama Chakula kukubali oda ya kupelekewa." }, 409);
+      if (!["accepted","preparing","ready"].includes(order.status) || order.fulfillment_method !== "delivery" || !order.delivery_address) return json({ success: false, error: "Usafirishaji unaombwa baada ya Mama Chakula kukubali oda ya kupelekewa." }, 409);
       const existing = await admin.from("ione_mama_chakula_deliveries").select("id,status").eq("order_id", order.id).maybeSingle();
       if (existing.error) return json({ success: false, error: "Imeshindikana kukagua ombi la usafirishaji." }, 500);
       if (existing.data) return json({ success: true, delivery: existing.data, already_requested: true, message: "Ombi la usafirishaji tayari limetumwa." });
