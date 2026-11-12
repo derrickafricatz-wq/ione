@@ -392,7 +392,7 @@ Deno.serve(async (req) => {
       }
       const { data: riders } = await admin.from("ione_sokoni_riders").select("user_id")
         .eq("status", "active").eq("available", true).eq("access_payment_confirmed", true)
-        .gt("access_expires_at", new Date().toISOString()).not("vehicle_type", "is", null);
+        .gt("access_expires_at", new Date().toISOString()).gt("last_seen_at", new Date(Date.now() - 3 * 60 * 1000).toISOString()).in("vehicle_type", ["boda","bajaji"]);
       await Promise.allSettled((riders || []).map((r: any) => sendMamaPush(admin, r.user_id, {
         title: "I|ONE • Oda mpya ya chakula ya kupeleka",
         body: vendor.business_name + " anahitaji dereva wa chakula. Fungua Sokoni kuona safari.",
