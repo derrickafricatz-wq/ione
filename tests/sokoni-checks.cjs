@@ -178,6 +178,16 @@ assert.match(mamaFoodEdge, /action === "place_order"/);
 assert.match(mamaFoodEdge, /action === "authority_dashboard"/);
 assert.match(mamaFoodEdge, /action === "approve"/);
 assert.match(mamaFoodEdge, /action === "update_order_status"/);
+assert.match(mamaFood, /Mpigie mteja/);
+assert.match(mamaFoodEdge, /sendMamaSms/);
+assert.match(mamaFoodEdge, /sendMamaPush/);
+assert.match(mamaFoodEdge, /mama_food_order_new_seller/);
+assert.match(mamaFoodEdge, /mama_food_order_accepted_buyer/);
+assert.match(mamaFoodEdge, /reserve_ione_sokoni_sms_credit/);
+assert.match(moduleSource, /id="isSmallSupplierCategory"/);
+assert.match(moduleSource, /Duka la Mtaa/);
+assert.match(moduleSource, /Vinywaji, chai, kahawa, vitafunwa/);
+
 assert.match(mamaFoodMigration, /amount_tzs integer not null default 1000 check \(amount_tzs = 1000\)/);
 assert.match(mamaFoodMigration, /period_days integer not null default 30 check \(period_days = 30\)/);
 assert.match(mamaFoodMigration, /enable row level security/);
