@@ -167,10 +167,12 @@ console.log("PASS: passenger rider call and trip-completion controls are present
 const mamaFood = fs.readFileSync("ione-mama-chakula.js", "utf8");
 const mamaFoodEdge = fs.readFileSync("supabase/functions/ione-mama-chakula/index.ts", "utf8");
 const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_mama_chakula.sql", "utf8");
-const mamaFoodDeliveryMigration = fs.readFileSync("supabase/migrations/20261112120000_mama_chakula_delivery.sql", "utf8");
+const mamaFoodDeliveryMigration = fs.readFileSync("supabase/migrations/20261112120401_ione_mama_chakula_delivery.sql", "utf8");
 new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
 assert.match(html, /ione-mama-chakula\.js\?v=3/);
-assert.match(html, /ione-sokoni\.js\?v=17/);
+assert.match(html, /ione-sokoni\.js\?v=18/);
+assert.match(moduleSource, /document\.addEventListener\("click", \(event\) =>/);
+assert.match(moduleSource, /event\.target\.closest\("#openSokoni"\)/);
 assert.match(sw, /ione-mama-chakula\.js/);
 assert.match(mamaFood, /Mama Chakula/);
 assert.match(mamaFood, /mfCheckout/);
