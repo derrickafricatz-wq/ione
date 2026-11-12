@@ -30,7 +30,7 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert", "openBusBooking"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\\.js\\?v=16/);
+assert.match(html, /ione-sokoni\.js\?v=16/);
 assert.match(html, /ione-expert\.js\?v=4/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
@@ -169,7 +169,7 @@ const mamaFood = fs.readFileSync("ione-mama-chakula.js", "utf8");
 const mamaFoodEdge = fs.readFileSync("supabase/functions/ione-mama-chakula/index.ts", "utf8");
 const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_mama_chakula.sql", "utf8");
 new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
-assert.match(html, /ione-mama-chakula\\.js\\?v=2/);
+assert.match(html, /ione-mama-chakula\.js\?v=2/);
 assert.match(sw, /ione-mama-chakula\.js/);
 assert.match(mamaFood, /Mama Chakula/);
 assert.match(mamaFood, /mfCheckout/);
