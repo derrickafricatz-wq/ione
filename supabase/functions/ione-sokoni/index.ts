@@ -794,10 +794,10 @@ Deno.serve(async (req) => {
       const available = body?.available === true;
       const { data: rider, error } = await admin.from("ione_sokoni_riders").select("id,status,available,access_payment_confirmed,access_expires_at").eq("user_id", user.id).maybeSingle();
       if (error || !rider || rider.status !== "active" || !rider.access_payment_confirmed || !rider.access_expires_at || Date.parse(rider.access_expires_at) <= Date.now()) return json({ success: false, error: "Authority Press must approve your rider access and dates before you can go on duty." }, 403);
-      const [activeDeliveries, activePassengerTrips] = await Promise.all([admin.from("ione_sokoni_deliveries").select("id,status,route_accepted").eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]),admin.from("ione_sokoni_passenger_trips").select("id,status").eq("rider_id", rider.id).in("status", ["rider_ready", "picked_up"])]);
-      if (activeDeliveries.error || activePassengerTrips.error) return json({ success: false, error: "Could not check your active trip." }, 500);
+      const [activeDeliveries, activePassengerTrips, activeMamaFood] = await Promise.all([admin.from("ione_sokoni_deliveries").select("id,status,route_accepted").eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"]),admin.from("ione_sokoni_passenger_trips").select("id,status").eq("rider_id", rider.id).in("status", ["rider_ready", "picked_up"]),admin.from("ione_mama_chakula_deliveries").select("id,status").eq("rider_user_id", user.id).in("status", ["accepted", "picked_up", "delivered"])]);
+      if (activeDeliveries.error || activePassengerTrips.error || activeMamaFood.error) return json({ success: false, error: "Could not check your active trip." }, 500);
       const routeInProgress = (activeDeliveries.data || []).some((d: any) => d.status === "picked_up" || d.status === "delivered" || (d.status === "accepted" && d.route_accepted === true));
-      if (available && (routeInProgress || !!activePassengerTrips.data?.length)) return json({ success: false, error: "Kamilisha safari uliyoanza kabla ya kuwasha upatikanaji tena." }, 409);
+      if (available && (routeInProgress || !!activePassengerTrips.data?.length || !!activeMamaFood.data?.length)) return json({ success: false, error: "Kamilisha safari uliyoanza kabla ya kuwasha upatikanaji tena." }, 409);
       const saved = await admin.from("ione_sokoni_riders").update({
         available, last_seen_at: new Date().toISOString(), updated_at: new Date().toISOString(),
         ...(available ? {} : { location_lat: null, location_lng: null, location_updated_at: null })
