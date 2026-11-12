@@ -351,8 +351,56 @@ Deno.serve(async (req) => {
       const contacts = vendors.length ? await admin.from("ione_mama_chakula_vendors").select("id,business_name,phone_number").in("id", vendors) : { data: [], error: null };
       if (contacts.error) return json({ success: false, error: "Imeshindikana kupakia mawasiliano ya migahawa." }, 500);
       const contactMap = new Map((contacts.data || []).map((x: any) => [x.id, x]));
-      const decorate = (x: any) => ({ ...x, items: byOrder.get(x.id) || [], vendor_name: contactMap.get(x.vendor_id)?.business_name || null, vendor_phone: contactMap.get(x.vendor_id)?.phone_number || null });
+      const deliveryResult = ids.length ? await admin.from("ione_mama_chakula_deliveries").select("id,order_id,rider_user_id,status,pickup_location,dropoff_location").in("order_id", ids) : { data: [], error: null };
+      if (deliveryResult.error) return json({ success: false, error: "Imeshindikana kupakia taarifa za usafirishaji." }, 500);
+      const riderIds = [...new Set((deliveryResult.data || []).map((x: any) => x.rider_user_id).filter(Boolean))];
+      const riderResult = riderIds.length ? await admin.from("ione_sokoni_riders").select("user_id,rider_name,phone_number,vehicle_type").in("user_id", riderIds) : { data: [], error: null };
+      if (riderResult.error) return json({ success: false, error: "Imeshindikana kupakia mawasiliano ya dereva." }, 500);
+      const riderMap = new Map((riderResult.data || []).map((x: any) => [x.user_id, x]));
+      const deliveryMap = new Map((deliveryResult.data || []).map((x: any) => [x.order_id, x]));
+      const decorate = (x: any) => {
+        const delivery: any = deliveryMap.get(x.id);
+        const rider: any = delivery?.rider_user_id ? riderMap.get(delivery.rider_user_id) : null;
+        return { ...x, items: byOrder.get(x.id) || [], vendor_name: contactMap.get(x.vendor_id)?.business_name || null,
+          vendor_phone: contactMap.get(x.vendor_id)?.phone_number || null,
+          food_delivery: delivery ? { id: delivery.id, status: delivery.status, pickup_location: delivery.pickup_location,
+            dropoff_location: delivery.dropoff_location, rider_name: rider?.rider_name || null,
+            rider_phone: rider?.phone_number || null, vehicle_type: rider?.vehicle_type || null } : null };
+      };
       return json({ success: true, seller_orders: (seller.data || []).map(decorate), buyer_orders: (buyer.data || []).map(decorate) });
+    }
+
+    if (action === "request_delivery") {
+      const user = await verifiedUser(admin, req);
+      if (!user) return json({ success: false, error: "Ingia tena kisha ujaribu." }, 401);
+      const orderId = String(body?.order_id || "").trim();
+      const { data: order, error } = await admin.from("ione_mama_chakula_orders").select("id,status,buyer_user_id,seller_user_id,vendor_id,fulfillment_method,delivery_address").eq("id", orderId).maybeSingle();
+      if (error || !order || order.buyer_user_id !== user.id) return json({ success: false, error: "Oda hii haipo kwenye akaunti yako." }, 404);
+      if (order.status !== "accepted" || order.fulfillment_method !== "delivery" || !order.delivery_address) return json({ success: false, error: "Usafirishaji unaombwa baada ya Mama Chakula kukubali oda ya kupelekewa." }, 409);
+      const existing = await admin.from("ione_mama_chakula_deliveries").select("id,status").eq("order_id", order.id).maybeSingle();
+      if (existing.error) return json({ success: false, error: "Imeshindikana kukagua ombi la usafirishaji." }, 500);
+      if (existing.data) return json({ success: true, delivery: existing.data, already_requested: true, message: "Ombi la usafirishaji tayari limetumwa." });
+      const { data: vendor, error: vendorError } = await admin.from("ione_mama_chakula_vendors").select("business_name,location_text,status,paid_until").eq("id", order.vendor_id).maybeSingle();
+      if (vendorError || !vendor || vendor.status !== "active" || !vendor.location_text.trim()) return json({ success: false, error: "Mama Chakula lazima ahifadhi eneo la kuchukulia chakula kwanza." }, 409);
+      const created = await admin.from("ione_mama_chakula_deliveries").insert({
+        order_id: order.id, buyer_user_id: order.buyer_user_id, seller_user_id: order.seller_user_id,
+        vendor_id: order.vendor_id, pickup_location: vendor.location_text, dropoff_location: order.delivery_address, status: "requested"
+      }).select("id,status").single();
+      if (created.error) {
+        if (created.error.code === "23505") return json({ success: false, error: "Ombi la usafirishaji tayari lipo." }, 409);
+        return json({ success: false, error: "Ombi la usafirishaji halikutumwa." }, 500);
+      }
+      const { data: riders } = await admin.from("ione_sokoni_riders").select("user_id")
+        .eq("status", "active").eq("available", true).eq("access_payment_confirmed", true)
+        .gt("access_expires_at", new Date().toISOString()).not("vehicle_type", "is", null);
+      await Promise.allSettled((riders || []).map((r: any) => sendMamaPush(admin, r.user_id, {
+        title: "I|ONE • Oda mpya ya chakula ya kupeleka",
+        body: vendor.business_name + " anahitaji dereva wa chakula. Fungua Sokoni kuona safari.",
+        url: "./?ionePushDestination=sokoni", tag: "ione-mama-food-delivery-" + created.data.id
+      })));
+      await sendMamaPush(admin, order.seller_user_id, { title: "I|ONE • Dereva wa chakula anaombwa",
+        body: "Ombi la dereva limetumwa kwa madereva wa Sokoni.", url: "./?ionePushDestination=mama-chakula", tag: "ione-mama-food-delivery-seller-" + created.data.id });
+      return json({ success: true, delivery: created.data, message: "Ombi la dereva limetumwa kwa madereva wa Sokoni." });
     }
 
     if (action === "update_order_status") {
