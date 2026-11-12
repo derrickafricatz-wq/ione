@@ -174,7 +174,7 @@
         const fd=o.food_delivery,labels={requested:"Inatafuta dereva wa Sokoni",accepted:"Dereva amekubali safari",picked_up:"Chakula kimechukuliwa",delivered:"Chakula kimefikishwa",completed:"Usafirishaji umekamilika",cancelled:"Usafirishaji umeghairiwa"};
         const deliveryNote=document.createElement("p");deliveryNote.textContent="Usafirishaji: "+(labels[fd.status]||fd.status)+(fd.rider_name?" • "+fd.rider_name:"");card.appendChild(deliveryNote);
         if(!seller&&fd.rider_phone&&["accepted","picked_up","delivered"].includes(fd.status)){const callRider=document.createElement("a");callRider.className="mf-btn mf-primary";callRider.href="tel:"+String(fd.rider_phone).replace(/[^+0-9]/g,"");callRider.textContent="Mpigie dereva";callRider.style.display="inline-flex";callRider.style.textDecoration="none";card.appendChild(callRider);}
-      } else if(!seller&&o.status==="accepted"&&o.fulfillment_method==="delivery"){
+      } else if(!seller&&["accepted","preparing","ready"].includes(o.status)&&o.fulfillment_method==="delivery"){
         const request=document.createElement("button");request.type="button";request.className="mf-btn mf-primary";request.textContent="Omba dereva wa Boda / Bajaji";
         request.addEventListener("click",async()=>{request.disabled=true;try{const out=await api("request_delivery",{order_id:o.id});alert(out.message||"Ombi limetumwa.");await loadOrders();}catch(e){alert(e.message||"Ombi la dereva halikutumwa.");request.disabled=false;}});
         card.appendChild(request);
