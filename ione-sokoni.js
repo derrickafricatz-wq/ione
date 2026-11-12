@@ -1070,6 +1070,8 @@ if (order.status === "new" || order.status === "accepted") {
     const box = $("isOpenTrips");
     try {
       const data = await invoke("rider_open_deliveries");
+      const foodData = await invoke("mama_food_open_deliveries").catch(() => ({ deliveries: [] }));
+      const foodDeliveries = foodData.deliveries || [];
       const deliveries = data.deliveries || [];
       const passengerTrips = data.passenger_trips || [];
       // Replace the visible board only after a successful refresh, so a temporary
@@ -1090,7 +1092,7 @@ if (order.status === "new" || order.status === "accepted") {
         seenPassengerRequests[trip.id] = true;
       });
       window.__ioneSokoniRiderTripAlertsReady = true;
-      if (!deliveries.length && !passengerTrips.length) {
+      if (!deliveries.length && !passengerTrips.length && !foodDeliveries.length) {
         const empty = document.createElement("p"); empty.className = "is-muted";
         empty.textContent = "Hakuna ombi jipya la uwasilishaji au abiria kwa sasa."; box.appendChild(empty); return;
       }
@@ -1203,6 +1205,15 @@ if (order.status === "new" || order.status === "accepted") {
         }
         row.style.marginBottom = "10px"; box.appendChild(row);
       });
+      foodDeliveries.forEach((trip) => {
+        const row=document.createElement("article");row.className="is-vendor";
+        const title=document.createElement("strong");title.textContent="Oda ya Mama Chakula • "+trip.vendor_name;
+        const route=document.createElement("p");route.textContent="Chukua: "+trip.pickup_location+" • Peleka: "+trip.dropoff_location;
+        const buyer=document.createElement("small");buyer.textContent="Mteja: "+trip.buyer_name+" • "+new Date(trip.created_at).toLocaleString("sw-TZ");
+        const accept=document.createElement("button");accept.type="button";accept.className="is-button primary";accept.textContent="Kubali kupeleka chakula";
+        accept.addEventListener("click",async()=>{accept.disabled=true;try{const out=await invoke("accept_mama_food_delivery",{delivery_id:trip.id});setStatus("isRiderStatus",out.message);await Promise.all([loadOpenTrips(),loadMyDeliveries(),loadRiderStatus()]);}catch(e){setStatus("isRiderStatus",e.message||"Oda haikukubaliwa.",true);accept.disabled=false;}});
+        row.append(title,route,buyer,accept);box.appendChild(row);
+      });
     } catch (e) {
       setStatus("isRiderStatus", e.message || "Maombi ya safari hayapatikani kwa muda. Jaribu kusasisha tena.", true);
       if (!box.childElementCount) {
@@ -1314,9 +1325,11 @@ if (order.status === "new" || order.status === "accepted") {
     if (!box) return;
     try {
       const data = await invoke("my_deliveries");
+      const foodData = await invoke("mama_food_my_deliveries").catch(() => ({ deliveries: [] }));
+      const foodDeliveries = foodData.deliveries || [];
       box.replaceChildren();
       const trips = data.deliveries || [];
-      if (!trips.length) {
+      if (!trips.length && !foodDeliveries.length) {
         const empty = document.createElement("p"); empty.className = "is-muted";
         empty.textContent = "Bado hakuna safari zinazohusiana na akaunti yako."; box.appendChild(empty);
         renderDeliveryMap(null, false); return;
@@ -1354,6 +1367,21 @@ if (order.status === "new" || order.status === "accepted") {
           const gps = document.createElement("button"); gps.type="button"; gps.className="is-button"; gps.textContent="Washa ufuatiliaji wa GPS";
           gps.addEventListener("click",()=>startRiderGps(trip)); row.appendChild(gps);
         }
+        box.appendChild(row);
+      });
+      foodDeliveries.forEach((trip) => {
+        const row=document.createElement("article");row.className="is-vendor";row.dataset.deliveryId=trip.id;
+        const labels={requested:"Inasubiri dereva",accepted:"Dereva amekubali",picked_up:"Chakula kimechukuliwa",delivered:"Chakula kimefikishwa",completed:"Safari imekamilika",cancelled:"Safari imeghairiwa"};
+        const title=document.createElement("strong");title.textContent="Mama Chakula • "+trip.vendor_name+" • "+(labels[trip.status]||trip.status);
+        const route=document.createElement("small");route.textContent="Chukua: "+trip.pickup_location+" • Peleka: "+trip.dropoff_location;row.append(title,route);
+        const addCall=(label,phone)=>{if(!phone)return;const a=document.createElement("a");a.className="is-button";a.href="tel:"+String(phone).replace(/[^+0-9]/g,"");a.textContent=label;a.style.display="inline-flex";a.style.textDecoration="none";row.appendChild(a);};
+        if(trip.is_rider&&["accepted","picked_up"].includes(trip.status)){addCall("Mpigie Mama Chakula",trip.vendor_phone);addCall("Mpigie mteja",trip.buyer_phone);}
+        if((trip.is_buyer||trip.is_seller)&&trip.rider_phone&&["accepted","picked_up","delivered"].includes(trip.status))addCall("Mpigie dereva",trip.rider_phone);
+        if(trip.is_buyer&&trip.vendor_phone)addCall("Piga Mama Chakula",trip.vendor_phone);
+        const update=(status,label,action)=>{const b=document.createElement("button");b.type="button";b.className="is-button primary";b.textContent=label;b.addEventListener("click",async()=>{b.disabled=true;try{const out=await invoke(action,{delivery_id:trip.id,...(status?{status}:{})});setStatus("isMapStatus",out.message||"Imesasishwa.");await Promise.all([loadMyDeliveries(),loadOpenTrips(),loadRiderStatus()]);}catch(e){setStatus("isMapStatus",e.message||"Imeshindikana kusasisha.",true);b.disabled=false;}});row.appendChild(b);};
+        if(trip.is_rider&&trip.status==="accepted")update("picked_up","Nimechukua chakula","update_mama_food_delivery_status");
+        if(trip.is_rider&&trip.status==="picked_up")update("delivered","Nimefikisha chakula","update_mama_food_delivery_status");
+        if(trip.is_rider&&trip.status==="delivered")update(null,"Safari imekamilika","complete_mama_food_delivery");
         box.appendChild(row);
       });
       if (selectedMapTripId) {
