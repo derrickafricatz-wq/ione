@@ -54,7 +54,7 @@ async function sendMamaSms(admin: any, idempotencyKey: string, eventType: string
   const apiKey = Deno.env.get("DARSMS_API_KEY");
   const phone = normalizePhone(rawPhone);
   if (!apiKey || !validPhone(phone)) return { status: "skipped" };
-  const message = String(rawMessage || "").replace(/\\s+/g, " ").trim().slice(0, 150);
+  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 150);
   if (!message) return { status: "skipped" };
   const claim = await admin.from("ione_sokoni_sms_log").insert({
     idempotency_key: idempotencyKey, event_type: eventType, recipient_phone: phone, status: "pending"
