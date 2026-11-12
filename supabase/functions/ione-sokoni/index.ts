@@ -1141,6 +1141,70 @@ Deno.serve(async (req) => {
       return json({ success: true, delivery: claimed.data, message: "Umeanza safari. Upatikanaji wako utawashwa tena utakapobonyeza Kazi Imekamilika." });
     }
 
+    if (action === "mama_food_open_deliveries") {
+      const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Ingia tena."},401);
+      const {data:r,error}=await admin.from("ione_sokoni_riders").select("id,status,available,vehicle_type,access_payment_confirmed,access_expires_at").eq("user_id",user.id).maybeSingle();
+      if(error||!r||r.status!=="active"||!r.access_payment_confirmed||!r.access_expires_at||Date.parse(r.access_expires_at)<=Date.now())return json({success:false,error:"Dereva lazima awe ameidhinishwa na ruhusa yake iwe hai."},403);
+      const rows=await admin.from("ione_mama_chakula_deliveries").select("id,order_id,vendor_id,pickup_location,dropoff_location,created_at").eq("status","requested").is("rider_user_id",null).order("created_at").limit(100);
+      if(rows.error)return json({success:false,error:"Imeshindikana kupakia oda za chakula."},500);
+      const ids=[...new Set((rows.data||[]).map((d:any)=>d.order_id))],vids=[...new Set((rows.data||[]).map((d:any)=>d.vendor_id))];
+      const [orders,vendors]=await Promise.all([ids.length?admin.from("ione_mama_chakula_orders").select("id,buyer_name,total_tzs").in("id",ids):Promise.resolve({data:[],error:null}),vids.length?admin.from("ione_mama_chakula_vendors").select("id,business_name").in("id",vids):Promise.resolve({data:[],error:null})]);
+      if(orders.error||vendors.error)return json({success:false,error:"Imeshindikana kupakia taarifa za oda."},500);
+      const om=new Map((orders.data||[]).map((x:any)=>[x.id,x])),vm=new Map((vendors.data||[]).map((x:any)=>[x.id,x]));
+      return json({success:true,deliveries:r.available&&["boda","bajaji"].includes(r.vehicle_type||"boda")?(rows.data||[]).map((d:any)=>({id:d.id,pickup_location:d.pickup_location,dropoff_location:d.dropoff_location,created_at:d.created_at,buyer_name:om.get(d.order_id)?.buyer_name||"Mteja",vendor_name:vm.get(d.vendor_id)?.business_name||"Mama Chakula"})):[]});
+    }
+
+    if (action === "accept_mama_food_delivery") {
+      const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Ingia tena."},401);
+      const id=String(body?.delivery_id||"");
+      const {data:r,error}=await admin.from("ione_sokoni_riders").select("id,status,available,vehicle_type,access_payment_confirmed,access_expires_at").eq("user_id",user.id).maybeSingle();
+      if(error||!r||r.status!=="active"||!r.available||!r.access_payment_confirmed||!r.access_expires_at||Date.parse(r.access_expires_at)<=Date.now()||!["boda","bajaji"].includes(r.vehicle_type||"boda"))return json({success:false,error:"Unahitaji ruhusa hai ya dereva wa Boda au Bajaji na uwe tayari."},403);
+      const [a,b,c]=await Promise.all([admin.from("ione_sokoni_deliveries").select("id").eq("rider_user_id",user.id).in("status",["accepted","picked_up","delivered"]),admin.from("ione_sokoni_passenger_trips").select("id").eq("rider_id",r.id).in("status",["accepted","fare_proposed","fare_countered","fare_agreed","rider_ready","picked_up"]),admin.from("ione_mama_chakula_deliveries").select("id").eq("rider_user_id",user.id).in("status",["accepted","picked_up","delivered"])]);
+      if(a.error||b.error||c.error)return json({success:false,error:"Imeshindikana kukagua safari zako."},500);
+      if((a.data||[]).length||(b.data||[]).length||(c.data||[]).length)return json({success:false,error:"Kamilisha safari uliyonayo kwanza."},409);
+      const now=new Date().toISOString(),reserved=await admin.from("ione_sokoni_riders").update({available:false,updated_at:now}).eq("id",r.id).eq("available",true).select("id").maybeSingle();
+      if(reserved.error||!reserved.data)return json({success:false,error:"Upatikanaji umebadilika. Sasisha tena."},409);
+      const claim=await admin.from("ione_mama_chakula_deliveries").update({rider_user_id:user.id,status:"accepted",updated_at:now}).eq("id",id).eq("status","requested").is("rider_user_id",null).select("id,buyer_user_id,seller_user_id").maybeSingle();
+      if(claim.error||!claim.data){await admin.from("ione_sokoni_riders").update({available:true,updated_at:now}).eq("id",r.id);return json({success:false,error:"Safari hii imechukuliwa tayari."},409);}
+      await Promise.allSettled([claim.data.buyer_user_id,claim.data.seller_user_id].map((uid:string)=>sendSokoniPush(admin,uid,{title:"I|ONE • Dereva wa chakula amepatikana",body:"Dereva wa Sokoni amekubali kupeleka oda yako.",url:"./?ionePushDestination=mama-chakula",tag:"mama-food-"+id})));
+      return json({success:true,message:"Umekubali safari ya chakula."});
+    }
+
+    if (action === "mama_food_my_deliveries") {
+      const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Ingia tena."},401);
+      const [a,b,c]=await Promise.all([admin.from("ione_mama_chakula_deliveries").select("*").eq("buyer_user_id",user.id).order("created_at",{ascending:false}).limit(30),admin.from("ione_mama_chakula_deliveries").select("*").eq("seller_user_id",user.id).order("created_at",{ascending:false}).limit(30),admin.from("ione_mama_chakula_deliveries").select("*").eq("rider_user_id",user.id).order("created_at",{ascending:false}).limit(30)]);
+      if(a.error||b.error||c.error)return json({success:false,error:"Imeshindikana kupakia safari za chakula."},500);
+      const map=new Map<string,any>();[...(a.data||[]),...(b.data||[]),...(c.data||[])].forEach((d:any)=>map.set(d.id,d));
+      const rows=[...map.values()],vs=[...new Set(rows.map((d:any)=>d.vendor_id))],rs=[...new Set(rows.map((d:any)=>d.rider_user_id).filter(Boolean))],os=[...new Set(rows.map((d:any)=>d.order_id))];
+      const [v,o,r]=await Promise.all([vs.length?admin.from("ione_mama_chakula_vendors").select("id,business_name,phone_number").in("id",vs):Promise.resolve({data:[],error:null}),os.length?admin.from("ione_mama_chakula_orders").select("id,buyer_name,buyer_phone").in("id",os):Promise.resolve({data:[],error:null}),rs.length?admin.from("ione_sokoni_riders").select("user_id,rider_name,phone_number,vehicle_type").in("user_id",rs):Promise.resolve({data:[],error:null})]);
+      if(v.error||o.error||r.error)return json({success:false,error:"Imeshindikana kupakia mawasiliano."},500);
+      const vm=new Map((v.data||[]).map((x:any)=>[x.id,x])),om=new Map((o.data||[]).map((x:any)=>[x.id,x])),rm=new Map((r.data||[]).map((x:any)=>[x.user_id,x]));
+      return json({success:true,deliveries:rows.map((d:any)=>({id:d.id,status:d.status,pickup_location:d.pickup_location,dropoff_location:d.dropoff_location,created_at:d.created_at,is_buyer:d.buyer_user_id===user.id,is_seller:d.seller_user_id===user.id,is_rider:d.rider_user_id===user.id,vendor_name:vm.get(d.vendor_id)?.business_name||"Mama Chakula",vendor_phone:vm.get(d.vendor_id)?.phone_number||"",buyer_name:om.get(d.order_id)?.buyer_name||"Mteja",buyer_phone:om.get(d.order_id)?.buyer_phone||"",rider_name:rm.get(d.rider_user_id)?.rider_name||"",rider_phone:rm.get(d.rider_user_id)?.phone_number||"",vehicle_type:rm.get(d.rider_user_id)?.vehicle_type||null}))});
+    }
+
+    if (action === "update_mama_food_delivery_status") {
+      const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Ingia tena."},401);
+      const id=String(body?.delivery_id||""),next=String(body?.status||"");if(!["picked_up","delivered"].includes(next))return json({success:false,error:"Hatua si sahihi."},400);
+      const {data:d,error}=await admin.from("ione_mama_chakula_deliveries").select("*").eq("id",id).eq("rider_user_id",user.id).maybeSingle();
+      if(error||!d)return json({success:false,error:"Safari haipo kwenye akaunti yako."},404);
+      if(!((d.status==="accepted"&&next==="picked_up")||(d.status==="picked_up"&&next==="delivered")))return json({success:false,error:"Huwezi kubadilisha hatua hii sasa."},409);
+      const saved=await admin.from("ione_mama_chakula_deliveries").update({status:next,updated_at:new Date().toISOString()}).eq("id",id).eq("status",d.status).eq("rider_user_id",user.id).select("id").maybeSingle();
+      if(saved.error||!saved.data)return json({success:false,error:"Safari imesasishwa sehemu nyingine."},409);
+      const msg=next==="picked_up"?"Dereva amechukua chakula na yuko njiani.":"Dereva amesema chakula kimefikishwa.";
+      await Promise.allSettled([d.buyer_user_id,d.seller_user_id].map((uid:string)=>sendSokoniPush(admin,uid,{title:"I|ONE • "+(next==="picked_up"?"Chakula kimechukuliwa":"Chakula kimefikishwa"),body:msg,url:"./?ionePushDestination=mama-chakula",tag:"mama-food-"+id+"-"+next})));
+      return json({success:true,message:msg});
+    }
+
+    if (action === "complete_mama_food_delivery") {
+      const user=await getVerifiedUser(admin,req);if(!user)return json({success:false,error:"Ingia tena."},401);
+      const id=String(body?.delivery_id||""),{data:d,error}=await admin.from("ione_mama_chakula_deliveries").select("id,status").eq("id",id).eq("rider_user_id",user.id).maybeSingle();
+      if(error||!d||d.status!=="delivered")return json({success:false,error:"Thibitisha chakula kimefikishwa kwanza."},409);
+      const now=new Date().toISOString(),done=await admin.from("ione_mama_chakula_deliveries").update({status:"completed",updated_at:now}).eq("id",id).eq("status","delivered").eq("rider_user_id",user.id).select("id").maybeSingle();
+      if(done.error||!done.data)return json({success:false,error:"Safari haikufungwa."},409);
+      await admin.from("ione_sokoni_riders").update({available:true,last_seen_at:now,location_lat:null,location_lng:null,location_updated_at:null,updated_at:now}).eq("user_id",user.id);
+      return json({success:true,message:"Safari ya chakula imekamilika. Upatikanaji wako umewashwa tena."});
+    }
+
     if (action === "set_delivery_fee") {
       const user = await getVerifiedUser(admin, req);
       if (!user) return json({ success: false, error: "Your session is not ready. Reload and try again." }, 401);
