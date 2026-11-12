@@ -6,12 +6,15 @@ on:
     paths:
       - "index.html"
       - "ione-sokoni.js"
+      - "ione-mama-chakula.js"
       - "ione-expert.js"
       - "sw.js"
       - "version.json"
       - "supabase/functions/ione-sokoni/**"
+      - "supabase/functions/ione-mama-chakula/**"
       - "supabase/functions/ione-expert/**"
       - "supabase/migrations/*ione_sokoni*"
+      - "supabase/migrations/*mama_chakula*"
       - "supabase/migrations/*ione_expert*"
       - "tests/sokoni-checks.cjs"
       - ".github/workflows/sokoni-checks.yml"
@@ -33,5 +36,7 @@ jobs:
           deno-version: v2.x
       - name: Type-check the Sokoni Edge Function
         run: deno check supabase/functions/ione-sokoni/index.ts
+      - name: Type-check the Mama Chakula Edge Function
+        run: deno check supabase/functions/ione-mama-chakula/index.ts
       - name: Type-check the I|ONE Expert Edge Function
         run: deno check supabase/functions/ione-expert/index.ts

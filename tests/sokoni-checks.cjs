@@ -30,7 +30,6 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert", "openBusBooking"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-sokoni\.js\?v=15/);
 assert.match(html, /ione-expert\.js\?v=4/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
@@ -168,8 +167,10 @@ console.log("PASS: passenger rider call and trip-completion controls are present
 const mamaFood = fs.readFileSync("ione-mama-chakula.js", "utf8");
 const mamaFoodEdge = fs.readFileSync("supabase/functions/ione-mama-chakula/index.ts", "utf8");
 const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_mama_chakula.sql", "utf8");
+const mamaFoodDeliveryMigration = fs.readFileSync("supabase/migrations/20261112120000_mama_chakula_delivery.sql", "utf8");
 new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
-assert.match(html, /ione-mama-chakula\.js\?v=1/);
+assert.match(html, /ione-mama-chakula\.js\?v=3/);
+assert.match(html, /ione-sokoni\.js\?v=17/);
 assert.match(sw, /ione-mama-chakula\.js/);
 assert.match(mamaFood, /Mama Chakula/);
 assert.match(mamaFood, /mfCheckout/);
@@ -178,8 +179,35 @@ assert.match(mamaFoodEdge, /action === "place_order"/);
 assert.match(mamaFoodEdge, /action === "authority_dashboard"/);
 assert.match(mamaFoodEdge, /action === "approve"/);
 assert.match(mamaFoodEdge, /action === "update_order_status"/);
+assert.match(mamaFood, /Mpigie mteja/);
+assert.match(mamaFoodEdge, /sendMamaSms/);
+assert.match(mamaFoodEdge, /sendMamaPush/);
+assert.match(mamaFoodEdge, /mama_food_order_new_seller/);
+assert.match(mamaFoodEdge, /"mama_food_order_" \+ next/);
+assert.match(mamaFoodEdge, /reserve_ione_sokoni_sms_credit/);
+assert.match(moduleSource, /id="isSmallSupplierCategory"/);
+assert.match(moduleSource, /Duka la Mtaa/);
+assert.match(moduleSource, /Vinywaji, chai, kahawa, vitafunwa/);
+
 assert.match(mamaFoodMigration, /amount_tzs integer not null default 1000 check \(amount_tzs = 1000\)/);
 assert.match(mamaFoodMigration, /period_days integer not null default 30 check \(period_days = 30\)/);
 assert.match(mamaFoodMigration, /enable row level security/);
 assert.match(mamaFoodMigration, /values.*ione-mama-chakula-menu.*false/);
+assert.match(mamaFoodEdge, /action === "request_delivery"/);
+assert.match(mamaFoodEdge, /ione_mama_chakula_deliveries/);
+assert.match(mamaFood, /Omba dereva wa Boda \/ Bajaji/);
+assert.match(mamaFood, /Mpigie dereva/);
+assert.match(edge, /action === "mama_food_open_deliveries"/);
+assert.match(edge, /action === "accept_mama_food_delivery"/);
+assert.match(edge, /action === "mama_food_my_deliveries"/);
+assert.match(edge, /action === "update_mama_food_delivery_status"/);
+assert.match(edge, /action === "complete_mama_food_delivery"/);
+assert.match(moduleSource, /mama_food_open_deliveries/);
+assert.match(moduleSource, /Mpigie Mama Chakula/);
+assert.match(moduleSource, /Mpigie mteja/);
+assert.match(mamaFoodDeliveryMigration, /create table if not exists public\.ione_mama_chakula_deliveries/);
+assert.match(mamaFoodDeliveryMigration, /enable row level security/);
+assert.match(mamaFoodDeliveryMigration, /revoke all on public\.ione_mama_chakula_deliveries from anon, authenticated/);
+assert.match(mamaFoodDeliveryMigration, /ione_mama_chakula_one_active_delivery_per_rider/);
+
 console.log("PASS: isolated Mama Chakula registration, menu, order workflow and Authority approval");
