@@ -1999,8 +1999,16 @@ if (order.status === "new" || order.status === "accepted") {
   }
 
   function wireTile() {
-    const tile = document.getElementById("openSokoni");
-    if (tile) tile.addEventListener("click", open);
+    // Delegate from the document so the Sokoni tile remains clickable even if
+    // the home grid is rebuilt after this module has initialized.
+    document.addEventListener("click", (event) => {
+      const tile = event.target && typeof event.target.closest === "function"
+        ? event.target.closest("#openSokoni")
+        : null;
+      if (!tile) return;
+      event.preventDefault();
+      open();
+    }, true);
     installAuthorityDashboard();
     try {
       const pushParams=new URLSearchParams(window.location.search);
