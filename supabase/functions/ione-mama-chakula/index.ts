@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,6 +49,71 @@ async function activeVendor(admin: any, userId: string) {
   }
   return data;
 }
+
+async function sendMamaSms(admin: any, idempotencyKey: string, eventType: string, rawPhone: unknown, rawMessage: string) {
+  const apiKey = Deno.env.get("DARSMS_API_KEY");
+  const phone = normalizePhone(rawPhone);
+  if (!apiKey || !validPhone(phone)) return { status: "skipped" };
+  const message = String(rawMessage || "").replace(/\\s+/g, " ").trim().slice(0, 150);
+  if (!message) return { status: "skipped" };
+  const claim = await admin.from("ione_sokoni_sms_log").insert({
+    idempotency_key: idempotencyKey, event_type: eventType, recipient_phone: phone, status: "pending"
+  }).select("id").maybeSingle();
+  if (claim.error) return { status: claim.error.code === "23505" ? "duplicate" : "failed" };
+  if (!claim.data?.id) return { status: "duplicate" };
+  const quota = await admin.rpc("reserve_ione_sokoni_sms_credit");
+  if (quota.error || quota.data !== true) {
+    await admin.from("ione_sokoni_sms_log").update({ status: "skipped",
+      error_message: quota.error ? "SMS quota unavailable" : "SMS trial limit reached",
+      updated_at: new Date().toISOString() }).eq("idempotency_key", idempotencyKey);
+    return { status: "skipped" };
+  }
+  try {
+    const response = await fetch("https://dev.darsms.co.tz/api/v1/integrations/sms/send", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+      body: JSON.stringify({ senderId: "DARSMS", to: [phone], message }), signal: AbortSignal.timeout(12000)
+    });
+    let result: any = {}; try { result = await response.json(); } catch (_) {}
+    const ok = response.ok && result?.success === true;
+    const ids = result?.data?.messageIds;
+    await admin.from("ione_sokoni_sms_log").update({
+      status: ok ? "queued" : "failed",
+      provider_message_id: Array.isArray(ids) ? String(ids[0] || "") : String(ids || "") || null,
+      error_message: ok ? null : String(result?.message || ("DARSMS HTTP " + response.status)).slice(0, 240),
+      provider_response: { http_status: response.status, success: ok },
+      updated_at: new Date().toISOString()
+    }).eq("idempotency_key", idempotencyKey);
+    return { status: ok ? "queued" : "failed" };
+  } catch (error) {
+    await admin.from("ione_sokoni_sms_log").update({ status: "failed",
+      error_message: String((error as any)?.message || error).slice(0, 240),
+      updated_at: new Date().toISOString() }).eq("idempotency_key", idempotencyKey);
+    return { status: "failed" };
+  }
+}
+async function sendMamaPush(admin: any, userId: string, payload: any) {
+  try {
+    const { data: config } = await admin.from("ione_push_config")
+      .select("vapid_public_key,vapid_private_key,vapid_subject").eq("id", true).maybeSingle();
+    if (!config?.vapid_public_key || !config?.vapid_private_key) return 0;
+    webpush.setVapidDetails(config.vapid_subject || "mailto:notifications@ione.app", config.vapid_public_key, config.vapid_private_key);
+    const { data: subs } = await admin.from("ione_push_subscriptions")
+      .select("id,endpoint,p256dh,auth").eq("user_id", userId).eq("active", true);
+    let sent = 0;
+    for (const sub of subs || []) {
+      try {
+        await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, JSON.stringify(payload));
+        sent++;
+      } catch (error: any) {
+        if ([404, 410].includes(Number(error?.statusCode || 0))) {
+          await admin.from("ione_push_subscriptions").update({ active: false, updated_at: new Date().toISOString() }).eq("id", sub.id);
+        }
+      }
+    }
+    return sent;
+  } catch (error) { console.warn("Mama Chakula push skipped:", error); return 0; }
+}
+
 async function signedPhoto(admin: any, path: string | null) {
   if (!path) return null;
   const { data, error } = await admin.storage.from(BUCKET).createSignedUrl(path, 3600);
@@ -235,7 +301,7 @@ Deno.serve(async (req) => {
       if (vendorIds.length !== 1) return json({ success: false, error: "Oda moja inapaswa kutoka kwa Mama Chakula mmoja. Tuma oda tofauti kwa mgahawa mwingine." }, 400);
       if ((rows || []).some((x: any) => !x.available || x.user_id === buyer.id)) return json({ success: false, error: "Chakula hakipatikani au huwezi kuagiza kwenye menyu yako mwenyewe." }, 409);
       const { data: vendor, error: vendorError } = await admin.from("ione_mama_chakula_vendors")
-        .select("id,user_id,status,paid_until,is_open").eq("id", vendorIds[0]).maybeSingle();
+        .select("id,user_id,business_name,phone_number,location_text,status,paid_until,is_open").eq("id", vendorIds[0]).maybeSingle();
       if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until || "") <= Date.now()) return json({ success: false, error: "Ruhusa ya mgahawa huu haipo tena." }, 409);
       if (!vendor.is_open) return json({ success: false, error: "Mgahawa umefunga oda kwa sasa. Jaribu baadaye." }, 409);
       const lines = (rows || []).map((x: any) => ({ ...x, quantity: quantities.get(x.id) || 0, total: Number(x.price_tzs) * (quantities.get(x.id) || 0) }));
@@ -255,7 +321,17 @@ Deno.serve(async (req) => {
         await admin.from("ione_mama_chakula_orders").delete().eq("id", created.data.id);
         return json({ success: false, error: "Oda haikukamilika kuhifadhiwa. Tafadhali tuma tena." }, 500);
       }
-      return json({ success: true, order: created.data, message: "Oda imetumwa kwa " + (vendor.business_name || "Mama Chakula") + ". Atakujibu muda mfupi." });
+      const itemSummary = lines.map((x: any) => x.item_name + " x" + x.quantity).join(", ").slice(0, 58);
+      const sellerSms = "I|ONE ODA MPYA: " + name + " (" + phone + "). " + itemSummary +
+        (method === "delivery" ? ". Peleka: " + address : ". Mteja atachukua.") + ". Fungua I|ONE.";
+      const buyerSms = "I|ONE: Oda yako imetumwa kwa " + vendor.business_name +
+        ". Simu ya Mama Chakula: " + vendor.phone_number + ". Utapokea taarifa akikubali.";
+      await Promise.allSettled([
+        sendMamaSms(admin, "mama-food:" + created.data.id + ":seller:new", "mama_food_order_new_seller", vendor.phone_number, sellerSms),
+        sendMamaSms(admin, "mama-food:" + created.data.id + ":buyer:received", "mama_food_order_received_buyer", phone, buyerSms),
+        sendMamaPush(admin, vendor.user_id, { title: "I|ONE • Oda mpya ya chakula", body: name + " ametuma oda mpya. Fungua Mama Chakula kuiona.", url: "./?ionePushDestination=mama-chakula", tag: "ione-mama-food-order-" + created.data.id })
+      ]);
+      return json({ success: true, order: created.data, message: "Oda imetumwa kwa " + (vendor.business_name || "Mama Chakula") + ". Utapokea SMS ya uthibitisho na namba ya mpishi." });
     }
 
     if (action === "my_orders") {
@@ -286,12 +362,33 @@ Deno.serve(async (req) => {
       const id = String(body?.order_id || "");
       const next = String(body?.status || "");
       const allowed: Record<string, string[]> = { new: ["accepted", "rejected"], accepted: ["preparing"], preparing: ["ready"], ready: ["completed"] };
-      const order = await admin.from("ione_mama_chakula_orders").select("id,status").eq("id", id).eq("seller_user_id", user.id).maybeSingle();
+      const order = await admin.from("ione_mama_chakula_orders").select("id,status,buyer_user_id,buyer_phone,buyer_name,vendor_id,total_tzs,fulfillment_method,delivery_address").eq("id", id).eq("seller_user_id", user.id).maybeSingle();
       if (order.error || !order.data) return json({ success: false, error: "Oda haipo kwenye akaunti yako." }, 404);
       if (!(allowed[order.data.status] || []).includes(next)) return json({ success: false, error: "Hatua hii ya oda haiwezi kufanyika kwa sasa." }, 409);
       const saved = await admin.from("ione_mama_chakula_orders").update({ status: next, updated_at: new Date().toISOString() })
         .eq("id", id).eq("status", order.data.status).select("id,status").maybeSingle();
       if (saved.error || !saved.data) return json({ success: false, error: "Oda imesasishwa na hatua nyingine. Sasisha kisha ujaribu tena." }, 409);
+      const { data: vendorContact } = await admin.from("ione_mama_chakula_vendors")
+        .select("business_name,phone_number").eq("id", order.data.vendor_id).maybeSingle();
+      const vendorName = vendorContact?.business_name || "Mama Chakula";
+      const vendorPhone = vendorContact?.phone_number || "";
+      const statusMessages: Record<string, string> = {
+        accepted: "I|ONE: Habari " + order.data.buyer_name + ", " + vendorName + " amekubali oda yako. Mpigie: " + vendorPhone + ".",
+        rejected: "I|ONE: Samahani " + order.data.buyer_name + ", " + vendorName + " hawezi kupokea oda yako kwa sasa. Tafadhali chagua mwingine.",
+        preparing: "I|ONE: " + vendorName + " ameanza kuandaa oda yako.",
+        ready: "I|ONE: Oda yako iko tayari kwa kuchukua. " + vendorName + " • " + vendorPhone,
+        completed: "I|ONE: Oda yako imekamilika. Asante kwa kutumia I|ONE Sokoni."
+      };
+      if (statusMessages[next]) {
+        await sendMamaSms(admin, "mama-food:" + id + ":buyer:" + next, "mama_food_order_" + next + "_buyer", order.data.buyer_phone, statusMessages[next]);
+      }
+      if (["accepted","rejected","ready","completed"].includes(next)) {
+        const titles: Record<string, string> = { accepted: "Oda imekubaliwa", rejected: "Oda imekataliwa", ready: "Chakula kiko tayari", completed: "Oda imekamilika" };
+        await sendMamaPush(admin, order.data.buyer_user_id, {
+          title: "I|ONE • " + titles[next], body: statusMessages[next],
+          url: "./?ionePushDestination=mama-chakula", tag: "ione-mama-food-order-status-" + id
+        });
+      }
       return json({ success: true, order: saved.data, message: "Hali ya oda imesasishwa." });
     }
 
