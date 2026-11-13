@@ -141,7 +141,7 @@
       <section class="is-sections" aria-label="Huduma za Sokoni">
         <div class="is-category"><div aria-hidden="true">🥬</div><b>Mama Sokoni</b><span>Mboga, matunda na bidhaa za kila siku kutoka kwa wauzaji waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🍲</div><b>Mama Chakula</b><span>Oda chapati, wali, nyama, chips, supu na vinywaji kutoka kwa wapishi waliothibitishwa.</span></div>
-        <div class="is-category" id="isSmallSupplierCategory" role="button" tabindex="0" aria-label="Fungua bidhaa za maduka ya mtaa"><div aria-hidden="true">🛒</div><b>Duka la Mtaa</b><span>Vinywaji, chai, kahawa, vitafunwa, bidhaa za nyumbani na mahitaji madogo kutoka kwa wauzaji waliothibitishwa.</span></div>
+        <div class="is-category" id="isSmallSupplierCategory" role="button" tabindex="0" aria-label="Fungua Mini Market"><div aria-hidden="true">🛒</div><b>Mini Market</b><span>Nunua bidhaa za maduka yaliyosajiliwa na kuthibitishwa na Authority Press.</span></div>
         <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Usafiri wa pikipiki na huduma za delivery kutoka kwa madereva waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🛺</div><b>Bajaji</b><span>Omba safari ya bajaji au jiunge kama dereva wa bajaji baada ya uthibitisho wa Authority Press.</span></div>
       </section>
@@ -322,20 +322,6 @@
   document.body.appendChild(overlay);
 
   const $ = (id) => document.getElementById(id);
-  const smallSupplierCategory = $("isSmallSupplierCategory");
-  if (smallSupplierCategory) {
-    const openSmallSuppliers = () => {
-      const catalog = $("isProductCatalog");
-      if (catalog) {
-        loadProductCatalog();
-        catalog.closest(".is-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    };
-    smallSupplierCategory.addEventListener("click", openSmallSuppliers);
-    smallSupplierCategory.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openSmallSuppliers(); }
-    });
-  }
   const escText = (value) => String(value == null ? "" : value);
   function setStatus(id, message, error) {
     const el = $(id);
