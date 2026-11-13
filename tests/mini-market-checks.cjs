@@ -28,10 +28,13 @@ for (const table of ["ione_mini_market_vendors","ione_mini_market_payment_reques
   assert.ok(migration.includes("create table if not exists public." + table));
   assert.ok(migration.includes("alter table public." + table + " enable row level security"));
 }
-for (const action of ["submit","my_status","public_products","my_products","save_product","delete_product","set_open","place_order","my_orders","update_order_status","authority_dashboard","approve","reject"]) {
+for (const action of ["submit","my_status","public_products","my_products","save_product","delete_product","set_open","place_order","my_orders","update_order_status","authority_dashboard","approve","reject","approve_vendor"]) {
   assert.ok(edge.includes('action === "' + action + '"'), "Missing Mini Market action: " + action);
 }
 assert.ok(edge.includes("authorityOk(admin, token)"));
+assert.ok(edge.includes('if (action === "approve_vendor")'));
+assert.ok(moduleSource.includes('api("approve_vendor"'));
+assert.ok(moduleSource.includes("result.error.context.clone()"));
 assert.ok(edge.includes("ione-mini-market-products"));
 assert.ok(!edge.includes("ione_mama_chakula"));
 assert.ok(!edge.includes("request_delivery"));

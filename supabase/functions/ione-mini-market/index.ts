@@ -392,7 +392,7 @@ Deno.serve(async (req) => {
       return json({ success: true, order: saved.data, message: "Hali ya oda imesasishwa." });
     }
 
-    if (action === "authority_dashboard" || action === "approve" || action === "reject") {
+    if (action === "authority_dashboard" || action === "approve" || action === "reject" || action === "approve_vendor") {
       const token = body?.authority_session || req.headers.get("x-ione-authority-session");
       if (!(await authorityOk(admin, token))) return json({ success: false, error: "Authority Press session expired. Unlock Authority Press again." }, 401);
       if (action === "authority_dashboard") {
@@ -402,6 +402,53 @@ Deno.serve(async (req) => {
         ]);
         if (requests.error || vendors.error) return json({ success: false, error: "Imeshindikana kupakia dashibodi ya Mini Market." }, 500);
         return json({ success: true, requests: requests.data || [], vendors: vendors.data || [] });
+      }
+      if (action === "approve_vendor") {
+        const vendorId = String(body?.vendor_id || "");
+        if (!/^[0-9a-f-]{36}$/i.test(vendorId)) return json({ success: false, error: "Mini Market hakupatikana. Sasisha dashibodi." }, 400);
+        const { data: vendor, error: vendorError } = await admin.from("ione_mini_market_vendors")
+          .select("id,user_id,business_name,phone_number,status,paid_until").eq("id", vendorId).maybeSingle();
+        if (vendorError || !vendor) return json({ success: false, error: "Taarifa za Mini Market hazipo." }, 404);
+        if (vendor.status === "active" && Date.parse(vendor.paid_until || "") > Date.now()) return json({ success: true, message: "Mini Market tayari ana ruhusa hai." });
+        if (vendor.status !== "pending") return json({ success: false, error: "Hali ya Mini Market imebadilika. Sasisha dashibodi." }, 409);
+        const { data: latest, error: latestError } = await admin.from("ione_mini_market_payment_requests")
+          .select("id,status").eq("vendor_id", vendor.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        if (latestError) return json({ success: false, error: "Imeshindikana kukagua historia ya malipo." }, 500);
+        if (latest?.status === "pending") return json({ success: false, error: "Ombi la malipo linasubiri uthibitisho. Tumia kitufe chake cha kuthibitisha." }, 409);
+        const now = new Date().toISOString();
+        const start = Math.max(Date.now(), Date.parse(vendor.paid_until || "") || 0);
+        const expiry = new Date(start + PERIOD_DAYS * 86400000).toISOString();
+        let auditId = latest?.id || null;
+        if (latest?.status === "rejected") {
+          const restored = await admin.from("ione_mini_market_payment_requests").update({
+            status: "approved", admin_note: String(body?.note || "Malipo ya mkono yamethibitishwa na Authority Press.").slice(0, 500),
+            approved_at: now, approved_by: "Authority Press", updated_at: now
+          }).eq("id", latest.id).eq("status", "rejected").select("id").maybeSingle();
+          if (restored.error || !restored.data) return json({ success: false, error: "Ombi limebadilishwa. Sasisha dashibodi kisha ujaribu tena." }, 409);
+        } else {
+          const created = await admin.from("ione_mini_market_payment_requests").insert({
+            vendor_id: vendor.id, user_id: vendor.user_id, business_name: vendor.business_name,
+            phone_number: vendor.phone_number, amount_tzs: FEE_TZS, period_days: PERIOD_DAYS,
+            status: "approved", admin_note: String(body?.note || "Malipo ya mkono yamethibitishwa na Authority Press.").slice(0, 500),
+            approved_at: now, approved_by: "Authority Press"
+          }).select("id").single();
+          if (created.error || !created.data) return json({ success: false, error: "Rekodi ya uthibitisho haikuhifadhiwa." }, 500);
+          auditId = created.data.id;
+        }
+        const activated = await admin.from("ione_mini_market_vendors").update({
+          status: "active", paid_until: expiry, approved_at: now, approved_by: "Authority Press", updated_at: now
+        }).eq("id", vendor.id).eq("status", "pending").select("id").maybeSingle();
+        if (activated.error || !activated.data) {
+          if (latest?.status === "rejected" && auditId) {
+            await admin.from("ione_mini_market_payment_requests").update({
+              status: "rejected", approved_at: null, approved_by: null, updated_at: new Date().toISOString()
+            }).eq("id", auditId).eq("status", "approved");
+          } else if (auditId) {
+            await admin.from("ione_mini_market_payment_requests").delete().eq("id", auditId).eq("status", "approved");
+          }
+          return json({ success: false, error: "Ruhusa haikufunguliwa. Uthibitisho umerudishwa nyuma; sasisha na ujaribu tena." }, 500);
+        }
+        return json({ success: true, message: "Malipo yamethibitishwa. Mini Market amepewa ruhusa ya siku 30.", paid_until: expiry });
       }
       const id = String(body?.request_id || "");
       const request = await admin.from("ione_mini_market_payment_requests").select("*").eq("id", id).eq("status", "pending").maybeSingle();
