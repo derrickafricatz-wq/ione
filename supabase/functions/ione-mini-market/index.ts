@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
       const { data: items, error } = await admin.from("ione_mini_market_products")
         .select("id,vendor_id,item_name,description,category,price_tzs,unit_name,photo_path,available,sort_order")
         .eq("available", true).order("sort_order", { ascending: true }).order("created_at", { ascending: false }).limit(500);
-      if (error) return json({ success: false, error: "Imeshindikana kupakia menyu." }, 500);
+      if (error) return json({ success: false, error: "Imeshindikana kupakia bidhaa." }, 500);
       const vendorIds = [...new Set((items || []).map((x: any) => x.vendor_id))];
       const vr = vendorIds.length ? await admin.from("ione_mini_market_vendors")
         .select("id,business_name,phone_number,location_text,status,paid_until,is_open,profile_photo_path").in("id", vendorIds) : { data: [], error: null };
@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
       const vendor = await activeVendor(admin, user.id);
       const { data, error } = await admin.from("ione_mini_market_products").select("*")
         .eq("vendor_id", vendor.id).order("sort_order").order("created_at", { ascending: false }).limit(150);
-      if (error) return json({ success: false, error: "Imeshindikana kupakia menyu yako." }, 500);
+      if (error) return json({ success: false, error: "Imeshindikana kupakia bidhaa yako." }, 500);
       const menu = await Promise.all((data || []).map(async (x: any) => ({ ...x, photo_url: await signedProductPhoto(admin, x.photo_path) })));
       return json({ success: true, menu, vendor });
     }
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
       const vendor = await activeVendor(admin, user.id);
       const name = String(body?.item_name || "").trim().replace(/\s+/g, " ");
       const description = String(body?.description || "").trim().slice(0, 600);
-      const category = String(body?.category || "Bidhaa").trim().slice(0, 60);
+      const category = String(body?.category || "Mahitaji ya nyumbani").trim().slice(0, 60);
       const portion = String(body?.unit_name || "kipande").trim().slice(0, 30);
       const price = Number(body?.price_tzs);
       if (name.length < 2 || name.length > 120 || category.length < 2 || portion.length < 2 || !Number.isSafeInteger(price) || price < 1 || price > 100000000) {
@@ -226,7 +226,7 @@ Deno.serve(async (req) => {
       if (id) {
         const old = await admin.from("ione_mini_market_products").select("id,photo_path")
           .eq("id", id).eq("vendor_id", vendor.id).maybeSingle();
-        if (old.error || !old.data) return json({ success: false, error: "Bidhaa hicho hakipo kwenye menyu yako." }, 404);
+        if (old.error || !old.data) return json({ success: false, error: "Bidhaa hicho hakipo kwenye bidhaa yako." }, 404);
         prior = old.data;
       }
       let photoPath = prior?.photo_path || null;
@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
         ? await admin.from("ione_mini_market_products").update(payload).eq("id", id).eq("vendor_id", vendor.id).select("id").single()
         : await admin.from("ione_mini_market_products").insert(payload).select("id").single();
       if (saved.error) return json({ success: false, error: "Bidhaa hakikuhifadhiwa." }, 500);
-      return json({ success: true, message: "Bidhaa kimehifadhiwa kwenye menyu." });
+      return json({ success: true, message: "Bidhaa kimehifadhiwa kwenye bidhaa." });
     }
 
     if (action === "delete_product") {
@@ -260,7 +260,7 @@ Deno.serve(async (req) => {
       const result = await admin.from("ione_mini_market_products").delete()
         .eq("id", String(body?.item_id || "")).eq("vendor_id", vendor.id).select("id").maybeSingle();
       if (result.error || !result.data) return json({ success: false, error: "Bidhaa hakikufutwa." }, 404);
-      return json({ success: true, message: "Bidhaa kimeondolewa kwenye menyu." });
+      return json({ success: true, message: "Bidhaa kimeondolewa kwenye bidhaa." });
     }
 
     if (action === "set_open") {
@@ -269,7 +269,7 @@ Deno.serve(async (req) => {
       const vendor = await activeVendor(admin, user.id);
       const result = await admin.from("ione_mini_market_vendors").update({ is_open: body?.is_open === true, updated_at: new Date().toISOString() })
         .eq("id", vendor.id).select("is_open").single();
-      if (result.error) return json({ success: false, error: "Hali ya mgahawa haikuhifadhiwa." }, 500);
+      if (result.error) return json({ success: false, error: "Hali ya duka haikuhifadhiwa." }, 500);
       return json({ success: true, is_open: result.data.is_open });
     }
 
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
       if (error || (rows || []).length !== quantities.size) return json({ success: false, error: "Baadhi ya bidhaa hazipatikani tena. Sasisha bidhaa." }, 409);
       const vendorIds = [...new Set((rows || []).map((x: any) => x.vendor_id))];
       if (vendorIds.length !== 1) return json({ success: false, error: "Oda moja inapaswa kutoka kwa duka moja. Tuma oda tofauti kwa duka jingine." }, 400);
-      if ((rows || []).some((x: any) => !x.available || x.user_id === buyer.id)) return json({ success: false, error: "Bidhaa haipatikani au huwezi kuagiza kwenye menyu yako mwenyewe." }, 409);
+      if ((rows || []).some((x: any) => !x.available || x.user_id === buyer.id)) return json({ success: false, error: "Bidhaa haipatikani au huwezi kuagiza kwenye bidhaa yako mwenyewe." }, 409);
       const { data: vendor, error: vendorError } = await admin.from("ione_mini_market_vendors")
         .select("id,user_id,business_name,phone_number,location_text,status,paid_until,is_open").eq("id", vendorIds[0]).maybeSingle();
       if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until || "") <= Date.now()) return json({ success: false, error: "Ruhusa ya duka hili haipo tena." }, 409);
