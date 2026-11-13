@@ -6,7 +6,7 @@ const html = fs.readFileSync("index.html", "utf8");
 const sokoni = fs.readFileSync("ione-sokoni.js", "utf8");
 const moduleSource = fs.readFileSync("ione-mini-market.js", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-mini-market/index.ts", "utf8");
-const migration = fs.readFileSync("supabase/migrations/20261113090000_ione_mini_market.sql", "utf8");
+const migration = fs.readFileSync("supabase/migrations/20261113100801_ione_mini_market.sql", "utf8");
 const sw = fs.readFileSync("sw.js", "utf8");
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 
