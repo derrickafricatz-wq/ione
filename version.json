@@ -1,5 +1,5 @@
 {
-  "version": "1.0.320",
-  "message": "Mini Market registration, product catalogue and Authority approval",
+  "version": "1.0.321",
+  "message": "Mini Market Authority approval recovery and clearer error reporting",
   "force": true
 }
