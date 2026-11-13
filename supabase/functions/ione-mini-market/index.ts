@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
       const vendorIds = [...new Set((items || []).map((x: any) => x.vendor_id))];
       const vr = vendorIds.length ? await admin.from("ione_mini_market_vendors")
         .select("id,business_name,phone_number,location_text,status,paid_until,is_open,profile_photo_path").in("id", vendorIds) : { data: [], error: null };
-      if (vr.error) return json({ success: false, error: "Imeshindikana kupakia migahawa." }, 500);
+      if (vr.error) return json({ success: false, error: "Imeshindikana kupakia maduka." }, 500);
       const now = Date.now();
       const vendors = new Map((vr.data || []).filter((v: any) => v.status === "active" && Date.parse(v.paid_until || "") > now).map((v: any) => [v.id, v]));
       const menu = await Promise.all((items || []).filter((x: any) => vendors.has(x.vendor_id)).map(async (x: any) => {
@@ -290,20 +290,20 @@ Deno.serve(async (req) => {
         const id = String(line?.product_id || "");
         const qty = Number(line?.quantity);
         if (!/^[0-9a-f-]{36}$/i.test(id) || quantities.has(id) || !Number.isSafeInteger(qty) || qty < 1 || qty > 1000) {
-          return json({ success: false, error: "Kiasi cha kipande si sahihi. Kagua kikapu." }, 400);
+          return json({ success: false, error: "Idadi ya bidhaa si sahihi. Kagua kikapu." }, 400);
         }
         quantities.set(id, qty);
       }
       const { data: rows, error } = await admin.from("ione_mini_market_products")
         .select("id,vendor_id,user_id,item_name,unit_name,price_tzs,available").in("id", [...quantities.keys()]);
-      if (error || (rows || []).length !== quantities.size) return json({ success: false, error: "Baadhi ya vyakula havipatikani tena. Sasisha menyu." }, 409);
+      if (error || (rows || []).length !== quantities.size) return json({ success: false, error: "Baadhi ya bidhaa hazipatikani tena. Sasisha bidhaa." }, 409);
       const vendorIds = [...new Set((rows || []).map((x: any) => x.vendor_id))];
-      if (vendorIds.length !== 1) return json({ success: false, error: "Oda moja inapaswa kutoka kwa Mini Market mmoja. Tuma oda tofauti kwa mgahawa mwingine." }, 400);
-      if ((rows || []).some((x: any) => !x.available || x.user_id === buyer.id)) return json({ success: false, error: "Bidhaa hakipatikani au huwezi kuagiza kwenye menyu yako mwenyewe." }, 409);
+      if (vendorIds.length !== 1) return json({ success: false, error: "Oda moja inapaswa kutoka kwa duka moja. Tuma oda tofauti kwa duka jingine." }, 400);
+      if ((rows || []).some((x: any) => !x.available || x.user_id === buyer.id)) return json({ success: false, error: "Bidhaa haipatikani au huwezi kuagiza kwenye menyu yako mwenyewe." }, 409);
       const { data: vendor, error: vendorError } = await admin.from("ione_mini_market_vendors")
         .select("id,user_id,business_name,phone_number,location_text,status,paid_until,is_open").eq("id", vendorIds[0]).maybeSingle();
-      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until || "") <= Date.now()) return json({ success: false, error: "Ruhusa ya mgahawa huu haipo tena." }, 409);
-      if (!vendor.is_open) return json({ success: false, error: "Mgahawa umefunga oda kwa sasa. Jaribu baadaye." }, 409);
+      if (vendorError || !vendor || vendor.status !== "active" || Date.parse(vendor.paid_until || "") <= Date.now()) return json({ success: false, error: "Ruhusa ya duka hili haipo tena." }, 409);
+      if (!vendor.is_open) return json({ success: false, error: "Duka limefunga oda kwa sasa. Jaribu baadaye." }, 409);
       const lines = (rows || []).map((x: any) => ({ ...x, quantity: quantities.get(x.id) || 0, total: Number(x.price_tzs) * (quantities.get(x.id) || 0) }));
       const total = lines.reduce((sum: number, x: any) => sum + x.total, 0);
       if (!Number.isSafeInteger(total) || total < 1 || total > 1000000000) return json({ success: false, error: "Jumla ya oda si sahihi." }, 400);
@@ -344,12 +344,12 @@ Deno.serve(async (req) => {
       if (seller.error || buyer.error) return json({ success: false, error: "Imeshindikana kupakia oda zako." }, 500);
       const ids = [...new Set([...(seller.data || []), ...(buyer.data || [])].map((x: any) => x.id))];
       const itemResult = ids.length ? await admin.from("ione_mini_market_order_items").select("*").in("order_id", ids).order("created_at") : { data: [], error: null };
-      if (itemResult.error) return json({ success: false, error: "Imeshindikana kupakia vyakula vya oda." }, 500);
+      if (itemResult.error) return json({ success: false, error: "Imeshindikana kupakia bidhaa za oda." }, 500);
       const byOrder = new Map<string, any[]>();
       for (const item of itemResult.data || []) { const list = byOrder.get(item.order_id) || []; list.push(item); byOrder.set(item.order_id, list); }
       const vendors = [...new Set((buyer.data || []).map((x: any) => x.vendor_id))];
       const contacts = vendors.length ? await admin.from("ione_mini_market_vendors").select("id,business_name,phone_number").in("id", vendors) : { data: [], error: null };
-      if (contacts.error) return json({ success: false, error: "Imeshindikana kupakia mawasiliano ya migahawa." }, 500);
+      if (contacts.error) return json({ success: false, error: "Imeshindikana kupakia mawasiliano ya maduka." }, 500);
       const contactMap = new Map((contacts.data || []).map((x: any) => [x.id, x]));
       const decorate = (x: any) => ({ ...x, items: byOrder.get(x.id) || [], vendor_name: contactMap.get(x.vendor_id)?.business_name || null, vendor_phone: contactMap.get(x.vendor_id)?.phone_number || null });
       return json({ success: true, seller_orders: (seller.data || []).map(decorate), buyer_orders: (buyer.data || []).map(decorate) });
