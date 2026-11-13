@@ -188,8 +188,9 @@ assert.match(mamaFoodEdge, /mama_food_order_new_seller/);
 assert.match(mamaFoodEdge, /"mama_food_order_" \+ next/);
 assert.match(mamaFoodEdge, /reserve_ione_sokoni_sms_credit/);
 assert.match(moduleSource, /id="isSmallSupplierCategory"/);
-assert.match(moduleSource, /Duka la Mtaa/);
-assert.match(moduleSource, /Vinywaji, chai, kahawa, vitafunwa/);
+assert.match(moduleSource, /Mini Market/);
+assert.doesNotMatch(moduleSource, /Duka la Mtaa/);
+assert.match(moduleSource, /Nunua bidhaa za maduka yaliyosajiliwa/);
 
 assert.match(mamaFoodMigration, /amount_tzs integer not null default 1000 check \(amount_tzs = 1000\)/);
 assert.match(mamaFoodMigration, /period_days integer not null default 30 check \(period_days = 30\)/);
