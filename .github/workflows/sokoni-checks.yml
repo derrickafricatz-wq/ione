@@ -7,16 +7,20 @@ on:
       - "index.html"
       - "ione-sokoni.js"
       - "ione-mama-chakula.js"
+      - "ione-mini-market.js"
       - "ione-expert.js"
       - "sw.js"
       - "version.json"
       - "supabase/functions/ione-sokoni/**"
       - "supabase/functions/ione-mama-chakula/**"
+      - "supabase/functions/ione-mini-market/**"
       - "supabase/functions/ione-expert/**"
       - "supabase/migrations/*ione_sokoni*"
       - "supabase/migrations/*mama_chakula*"
+      - "supabase/migrations/*mini_market*"
       - "supabase/migrations/*ione_expert*"
       - "tests/sokoni-checks.cjs"
+      - "tests/mini-market-checks.cjs"
       - ".github/workflows/sokoni-checks.yml"
   push:
     branches: [feature/ione-sokoni]
@@ -38,5 +42,9 @@ jobs:
         run: deno check supabase/functions/ione-sokoni/index.ts
       - name: Type-check the Mama Chakula Edge Function
         run: deno check supabase/functions/ione-mama-chakula/index.ts
+      - name: Type-check the Mini Market Edge Function
+        run: deno check supabase/functions/ione-mini-market/index.ts
+      - name: Run Mini Market regression checks
+        run: node tests/mini-market-checks.cjs
       - name: Type-check the I|ONE Expert Edge Function
         run: deno check supabase/functions/ione-expert/index.ts
