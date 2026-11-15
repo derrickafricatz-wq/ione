@@ -41,6 +41,7 @@ assert.match(moduleSource, /id="isVendorRegistration" style="display:none"/);
 assert.match(moduleSource, /id="isRiderRegistration" style="display:none"/);
 assert.match(moduleSource, /openRegistration\(kind\)/);
 assert.match(expertSource, /openRegistration/);
+assert.match(expertSource, /Ask the community, explore answers and read official advice/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
 assert.match(html, /sw\.js\?v=150/);
