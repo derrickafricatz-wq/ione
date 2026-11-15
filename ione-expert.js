@@ -119,7 +119,7 @@
     try {
       const [state, feed] = await Promise.all([invoke("my_status"), invoke("list_feed")]);
       expertStatus = { ...state, is_expert: !!feed.is_expert };
-      status("ioneExpertStatus", state.expert ? "Verified expert access: " + state.expert.specialty : state.application ? "Expert application: " + state.application.status + (state.application.admin_note ? " • " + state.application.admin_note : "") : "Ask a question or apply to become a verified expert.");
+      status("ioneExpertStatus", state.expert ? "Verified expert access: " + state.expert.specialty : state.application ? "Expert application: " + state.application.status + (state.application.admin_note ? " • " + state.application.admin_note : "") : "Ask the community, explore answers and read official advice.");
       if (state.expert) { $("ioneExpertApplyForm", root).style.display = "none"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; }
       renderFeed(feed);
     } catch (error) { status("ioneExpertStatus", error.message || "I|ONE Expert could not load.", true); }
