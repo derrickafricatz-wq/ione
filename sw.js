@@ -25,6 +25,7 @@ const APP_FILES = [
   "./ione-sokoni.js",
   "./ione-mama-chakula.js",
   "./ione-mini-market.js",
+  "./ione-register.js",
   "./ione-transport.js",
   "./ione-transport-operations.js",
   "./ione-expert.js",
