@@ -368,6 +368,7 @@
     sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); loadPassengerTrips(); invoke("rider_heartbeat").catch(() => {}); if ($("isRiderDashboard").style.display !== "none") loadOpenTrips(); } }, 20000);
   }
   function close() {
+    ["isVendorRegistration", "isVendorStatusSection", "isRiderRegistration"].forEach(id => { const section = $(id); if (section) section.style.display = "none"; });
     overlay.style.display = "none";
     overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
