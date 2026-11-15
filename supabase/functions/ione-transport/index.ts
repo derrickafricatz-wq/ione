@@ -11,7 +11,7 @@ const cors = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const BUCKET = "ione-transport-documents";
-const CATEGORIES = new Set(["taxi", "special_hire", "shuttle", "bus", "bajaji"]);
+const CATEGORIES = new Set(["taxi", "special_hire", "shuttle", "bus", "bajaji", "boda"]);
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), {
   status, headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
@@ -50,7 +50,7 @@ async function sendTransportSms(admin: any, jobId: string, eventType: string, us
   const apiKey = Deno.env.get("DARSMS_API_KEY");
   const phone = normalizePhone(rawPhone);
   if (!apiKey || !validPhone(phone)) return { status: "skipped" };
-  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 150);
+  const message = String(rawMessage || "").replace(/\s+/g, " ").trim().slice(0, 450);
   if (!message) return { status: "skipped" };
   const idempotencyKey = jobId + ":" + eventType + ":" + userId;
   let claim: any;
@@ -267,7 +267,7 @@ Deno.serve(async (req: Request) => {
       const {data:job,error}=await admin.from("ione_transport_jobs").insert({passenger_user_id:user.id,driver_id:driver.id,driver_user_id:driver.user_id,service_type:service,passenger_name:name,passenger_phone:phone,pickup_location:pickup,destination,passenger_count:count,notes,pickup_lat:pickupLat,pickup_lng:pickupLng,status:"requested"}).select("id,status,service_type,pickup_location,destination,passenger_count,requested_at").single();
       if(error){console.error("ione-transport create_request insert failed:",{code:error.code,message:error.message,details:error.details,hint:error.hint});if(error.code==="23505")return json({success:false,error:"You already have an active request. Open My Trips."},409);return json({success:false,error:"We could not save this trip. Please refresh and try again."},500);}
       // Return the confirmed booking independently of external notification delivery.
-      EdgeRuntime.waitUntil(notifyTransport(admin,job,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","i1 Transport: "+name+" requested a "+service.replace("_"," ")+" trip from "+pickup+". Open i1 Transport to accept."));
+      EdgeRuntime.waitUntil(notifyTransport(admin,job,driver.user_id,driver.phone_number,"request_received","i1 Transport • New ride request",name+" requested "+service.replace("_"," ")+" from "+pickup+".","I1 Transport NEW RIDE | Passenger: "+name.slice(0,40)+" | Call: +"+phone+" | Pickup: "+pickup.slice(0,80)+" | Destination: "+destination.slice(0,80)+" | Service: "+service.replace("_"," ")+" | Call to agree fare; open i1 to accept."));
       return json({success:true,job,message:"Your trip request has been sent. The driver will be alerted when notifications are available."});
     }
     if (action === "location_update") {

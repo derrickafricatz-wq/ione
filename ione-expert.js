@@ -75,7 +75,7 @@
           <div><label for="ioneExpertQuestionDetails">Explain what happened</label><textarea id="ioneExpertQuestionDetails" maxlength="5000" required placeholder="Device, error message, what you have tried, and the result"></textarea></div>
           <button class="primary" id="ioneExpertAskSubmit" type="submit">Publish question</button>
         </form></section>
-        <section class="iex-card"><h2>Become a verified expert</h2><p>Send your specialty and a credential or work sample. Authority Press reviews each application; only approved experts can post expert answers.</p>
+        <section class="iex-card" id="ioneExpertRegistration" style="display:none"><h2>Become a verified expert</h2><p>Send your specialty and a credential or work sample. Authority Press reviews each application; only approved experts can post expert answers.</p>
           <form id="ioneExpertApplyForm" class="iex-form">
             <div><label for="ioneExpertFullName">Full name</label><input id="ioneExpertFullName" maxlength="120" required></div>
             <div><label for="ioneExpertPhone">Phone number</label><input id="ioneExpertPhone" type="tel" maxlength="20" required placeholder="07XXXXXXXX"></div>
@@ -101,7 +101,8 @@
     if (el) { el.textContent = message || ""; el.classList.toggle("error", !!error); }
   }
   function close() { if (root) { root.style.display = "none"; root.setAttribute("aria-hidden", "true"); } document.body.style.overflow = ""; }
-  function open() { ensureOverlay().style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh(); }
+  function open() { ensureOverlay(); const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh(); }
+  function openRegistration() { open(); const registration = $("ioneExpertRegistration", root); if (registration && !expertStatus.is_expert) { registration.style.display = "block"; registration.scrollIntoView({ behavior: "smooth", block: "start" }); } }
   async function invoke(action, extra = {}) {
     if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
     const result = await heavensSupabase.functions.invoke("ione-expert", { body: { action, ...extra } });
@@ -119,7 +120,7 @@
       const [state, feed] = await Promise.all([invoke("my_status"), invoke("list_feed")]);
       expertStatus = { ...state, is_expert: !!feed.is_expert };
       status("ioneExpertStatus", state.expert ? "Verified expert access: " + state.expert.specialty : state.application ? "Expert application: " + state.application.status + (state.application.admin_note ? " • " + state.application.admin_note : "") : "Ask a question or apply to become a verified expert.");
-      if (state.expert) $("ioneExpertApplyForm", root).style.display = "none";
+      if (state.expert) { $("ioneExpertApplyForm", root).style.display = "none"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; }
       renderFeed(feed);
     } catch (error) { status("ioneExpertStatus", error.message || "I|ONE Expert could not load.", true); }
   }
@@ -369,6 +370,7 @@
       if (close) close.addEventListener("click", () => { const section = $("ioneExpertAuthority"); if (section) section.remove(); });
     }
   }
+  window.IoneExpert = Object.freeze({ open, close, openRegistration, refresh });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind, { once: true }); else bind();
   window.addEventListener("load", bind, { once: true });
 })();

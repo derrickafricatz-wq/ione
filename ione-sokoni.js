@@ -145,7 +145,7 @@
         <div class="is-category"><div aria-hidden="true">🏍️</div><b>Boda Yangu</b><span>Usafiri wa pikipiki na huduma za delivery kutoka kwa madereva waliothibitishwa.</span></div>
         <div class="is-category"><div aria-hidden="true">🛺</div><b>Bajaji</b><span>Omba safari ya bajaji au jiunge kama dereva wa bajaji baada ya uthibitisho wa Authority Press.</span></div>
       </section>
-      <section class="is-card">
+      <section class="is-card" id="isVendorRegistration" style="display:none">
         <h2>Jiunge kama muuzaji</h2>
         <p class="is-muted">Jaza jina na namba yako ya simu pekee. Ada ni TZS 1,000 kwa siku 30. Baada ya malipo, Authority Press itathibitisha kabla ya kufungua ruhusa ya kuuza.</p>
         <form class="is-form" id="isVendorForm">
@@ -163,7 +163,7 @@
           <span class="is-muted">Baada ya kulipa, subiri uthibitisho wa Authority Press. Usitumie huduma ya kuuza kabla ruhusa haijafunguliwa.</span>
         </div>
       </section>
-      <section class="is-card">
+      <section class="is-card" id="isVendorStatusSection" style="display:none">
         <h2>Hali ya ombi langu</h2>
         <p class="is-muted">Angalia kama ombi lako bado linasubiri, limekubaliwa, au kama muda wako wa kutumia Sokoni umeisha.</p>
         <button class="is-button" type="button" id="isCheckStatus">Angalia hali yangu</button>
@@ -274,7 +274,7 @@
         <button class="is-button" type="button" id="isRefreshPassengerTrips">Sasisha safari za abiria</button>
         <div class="is-vendors" id="isPassengerTrips"><p class="is-muted">Maombi na makubaliano ya safari yataonekana hapa.</p></div>
         </div>
-        <div class="is-boda-panel is-boda-register">
+        <div class="is-boda-panel is-boda-register" id="isRiderRegistration" style="display:none">
         <h3 class="is-boda-title">Jiunge kama dereva wa Boda Boda au Bajaji</h3>
         <p class="is-muted">Ada ya usajili ni <strong>TZS 5,000 kwa miezi mitatu (siku 90)</strong>. Jaza taarifa zako kwanza, kisha lipa kwa kutumia maelekezo yaliyo hapa chini. Authority Press itakagua taarifa na kuthibitisha malipo kabla ya kukupa ruhusa.</p>
         <div class="is-payment" id="isRiderPaymentInstructions" style="display:block">
@@ -368,6 +368,7 @@
     sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); loadPassengerTrips(); invoke("rider_heartbeat").catch(() => {}); if ($("isRiderDashboard").style.display !== "none") loadOpenTrips(); } }, 20000);
   }
   function close() {
+    ["isVendorRegistration", "isVendorStatusSection", "isRiderRegistration"].forEach(id => { const section = $(id); if (section) section.style.display = "none"; });
     overlay.style.display = "none";
     overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
@@ -2009,5 +2010,12 @@ if (order.status === "new" || order.status === "accepted") {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wireTile, { once: true });
   else wireTile();
-  window.IoneSokoni = Object.freeze({ open, close, refreshStatus: loadStatus, refreshVendors: loadVendors, refreshAuthorityDashboard: loadAuthorityDashboard });
+  function openRegistration(kind) {
+    open();
+    const vendor = kind === "vendor";
+    const targets = vendor ? ["isVendorRegistration", "isVendorStatusSection"] : ["isRiderRegistration"];
+    targets.forEach(id => { const section = $(id); if (section) section.style.display = "block"; });
+    const first = $(targets[0]); if (first) first.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  window.IoneSokoni = Object.freeze({ open, close, openRegistration, refreshStatus: loadStatus, refreshVendors: loadVendors, refreshAuthorityDashboard: loadAuthorityDashboard });
 })();
