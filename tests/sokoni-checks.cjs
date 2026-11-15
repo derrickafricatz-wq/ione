@@ -7,6 +7,7 @@ const sw = fs.readFileSync("sw.js", "utf8");
 const version = JSON.parse(fs.readFileSync("version.json", "utf8"));
 const moduleSource = fs.readFileSync("ione-sokoni.js", "utf8");
 const expertSource = fs.readFileSync("ione-expert.js", "utf8");
+const registerSource = fs.readFileSync("ione-register.js", "utf8");
 const expertEdge = fs.readFileSync("supabase/functions/ione-expert/index.ts", "utf8");
 const edge = fs.readFileSync("supabase/functions/ione-sokoni/index.ts", "utf8");
 const migration = fs.readFileSync("supabase/migrations/20261017080000_ione_sokoni_vendor_access.sql", "utf8");
@@ -17,6 +18,7 @@ const expertMigration = fs.readFileSync("supabase/migrations/20261017140000_ione
 
 new vm.Script(moduleSource, { filename: "ione-sokoni.js" });
 new vm.Script(expertSource, { filename: "ione-expert.js" });
+new vm.Script(registerSource, { filename: "ione-register.js" });
 console.log("PASS: Sokoni and I|ONE Expert frontend modules parse");
 
 const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
@@ -33,7 +35,8 @@ for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority
 assert.match(html, /ione-expert\.js\?v=5/);
 assert.match(html, /ione-register\.js\?v=1/);
 assert.match(html, /id="ioneRegisterBtn"/);
-for (const key of ["expert","sokoni-vendor","sokoni-rider","mama-food","mini-market","transport"]) assert.match(html, new RegExp('data-register="' + key + '"'));
+for (const key of ["expert","sokoni-vendor","sokoni-rider","mama-food","mini-market","transport"]) assert.match(registerSource, new RegExp('data-register="' + key + '"'));
+assert.match(sw, /ione-register\.js/);
 assert.match(moduleSource, /id="isVendorRegistration" style="display:none"/);
 assert.match(moduleSource, /id="isRiderRegistration" style="display:none"/);
 assert.match(moduleSource, /openRegistration\(kind\)/);
