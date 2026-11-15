@@ -9,6 +9,7 @@ on:
       - "ione-mama-chakula.js"
       - "ione-mini-market.js"
       - "ione-expert.js"
+      - "ione-register.js"
       - "sw.js"
       - "version.json"
       - "supabase/functions/ione-sokoni/**"
