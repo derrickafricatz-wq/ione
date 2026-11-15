@@ -83,9 +83,10 @@
         <article class="it-service"><div class="it-emoji">🚐</div><strong>Shuttle</strong><span>Group transport and scheduled shuttle services</span></article>
         <article class="it-service"><div class="it-emoji">🚌</div><strong>Bus</strong><span>Private bus hire, group travel and transfers</span></article>
         <article class="it-service"><div class="it-emoji">🛺</div><strong>Bajaji</strong><span>Three-wheel passenger trips and local rides</span></article>
+        <article class="it-service"><div class="it-emoji">🏍️</div><strong>Boda Boda</strong><span>Motorcycle passenger trips and local rides</span></article>
       </section>
       <div class="it-note"><strong>Verified-driver standard:</strong> Submitting an application does not make a driver active. Authority Press must review the driver's details and driving-licence document and approve the application first.</div>
-      <section class="it-card">
+      <section class="it-card" id="itDriverRegistration" style="display:none">
         <h2>Register as an i1 Transport driver</h2>
         <p class="it-muted">Complete your profile carefully. Your documents are stored privately and can only be reviewed by authorized Authority Press staff.</p>
         <form class="it-form" id="itDriverForm">
@@ -99,6 +100,7 @@
             <label class="it-check"><input type="checkbox" name="service_types" value="shuttle"> Shuttle</label>
             <label class="it-check"><input type="checkbox" name="service_types" value="bus"> Bus</label>
             <label class="it-check"><input type="checkbox" name="service_types" value="bajaji"> 🛺 Bajaji</label>
+            <label class="it-check"><input type="checkbox" name="service_types" value="boda"> 🏍️ Boda Boda</label>
           </div></div>
           <div class="it-field"><label for="itVehicle">VEHICLE MAKE / MODEL</label><input id="itVehicle" name="vehicle_make_model" maxlength="120" required placeholder="e.g. Toyota Noah"></div>
           <div class="it-field"><label for="itPlate">VEHICLE REGISTRATION</label><input id="itPlate" name="vehicle_registration" maxlength="30" required placeholder="Registration number"></div>
@@ -160,6 +162,7 @@
     // i1 Transport operations module loads the driver and passenger workspaces.
   }
   function close() {
+    const registration = $("itDriverRegistration"); if (registration) registration.style.display = "none";
     overlay.style.display = "none";
     overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
@@ -167,11 +170,13 @@
   $("itClose").addEventListener("click", close);
   overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
   document.addEventListener("keydown", event => { if (event.key === "Escape" && overlay.style.display === "block") close(); });
+  function openRegistration() { open(); const registration = $("itDriverRegistration"); if (registration) { registration.style.display = "block"; registration.scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  window.IoneTransport = Object.freeze({ open, close, openRegistration });
   const tile = $("openBusBooking");
   if (tile) {
     tile.classList.remove("smart-coming-soon");
     tile.classList.add("ione-transport-tile");
-    tile.innerHTML = '<span class="smart-icon" aria-hidden="true">🚕</span><strong>i1 TRANSPORT</strong><small>TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI</small>';
+    tile.innerHTML = '<span class="smart-icon" aria-hidden="true">🚕</span><strong>i1 TRANSPORT</strong><small>TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI • BODA</small>';
     tile.addEventListener("click", open);
   }
 
