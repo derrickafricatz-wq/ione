@@ -30,7 +30,14 @@ console.log("PASS: existing inline scripts parse");
 for (const id of ["openAfrilink", "openTranscript", "openHealth", "openAuthority", "openIoneGift", "openIoneSupport", "openSokoni", "openIoneExpert", "openBusBooking"]) {
   assert.ok(html.includes('id="' + id + '"'), "Missing home service tile: " + id);
 }
-assert.match(html, /ione-expert\.js\?v=4/);
+assert.match(html, /ione-expert\.js\?v=5/);
+assert.match(html, /ione-register\.js\?v=1/);
+assert.match(html, /id="ioneRegisterBtn"/);
+for (const key of ["expert","sokoni-vendor","sokoni-rider","mama-food","mini-market","transport"]) assert.match(html, new RegExp('data-register="' + key + '"'));
+assert.match(moduleSource, /id="isVendorRegistration" style="display:none"/);
+assert.match(moduleSource, /id="isRiderRegistration" style="display:none"/);
+assert.match(moduleSource, /openRegistration\(kind\)/);
+assert.match(expertSource, /openRegistration/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
 assert.match(html, /sw\.js\?v=150/);
