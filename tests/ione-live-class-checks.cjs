@@ -14,6 +14,7 @@ assert.match(moduleText,/authority_create_upload/,"Authority must prepare record
 assert.match(edge,/validAuthoritySession/,"server actions must validate Authority sessions");
 assert.match(edge,/playback_access/,"playback must be issued by the server");
 assert.match(edge,/payment_status","paid"/,"paid playback must require a verified enrollment");
+assert.match(edge,/Paid class publishing is disabled/,"paid classes must stay unpublished until checkout is connected");
 assert.match(edge,/Tus-Resumable/,"recorded uploads must use resumable TUS");
 assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64/,"signed playback must use a server-side signing key");
 assert.match(edge,/authority_get_live_input/,"instructors must retrieve their private WHIP endpoint through Authority");
