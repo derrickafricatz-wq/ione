@@ -22,7 +22,7 @@
   function closeTopLayer(){
     const candidates=[
       "#ioneDocReaderLive .ione-doc-reader-back","#ioneTransportOverlay #itClose","#ioneSokoniOverlay #isClose",
-      "#ioneMamaFood #mfClose","#ioneMiniMarket #mmClose","#ioneExpertOverlay #ioneExpertClose","#ioneRegisterOverlay #ioneRegisterClose"
+      "#ioneMamaFood #mfClose","#ioneMiniMarket #mmClose","#ioneExpertOverlay #ioneExpertClose","#ioneRegisterOverlay #ioneRegisterClose","#authorityPressClose"
     ].map(selector=>document.querySelector(selector)).filter(el=>el&&visible(el)&&!el.disabled);
     const healthy=document.getElementById("healthyContainer");
     if(visible(healthy)){
@@ -68,7 +68,7 @@
   document.addEventListener("click",event=>{
     const target=event.target;
     if(!(target instanceof Element))return;
-    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,.ione-doc-reader-back")){
+    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,#authorityPressClose,.ione-doc-reader-back")){
       if(!closingFromHistory&&history.state?.ioneInternalBack){
         skipNextPopClose=true;
         queueMicrotask(()=>history.back());
