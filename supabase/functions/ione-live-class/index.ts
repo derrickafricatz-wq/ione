@@ -52,7 +52,7 @@ async function requireAuthority(admin:any,req:Request,body:any){
 }
 function base64Url(value:string|Uint8Array){
   const bytes=typeof value==="string"?new TextEncoder().encode(value):value;
-  return btoa(String.fromCharCode(...bytes)).replace(/=/g,"").replace(/\\+/g,"-").replace(/\\//g,"_");
+  return btoa(String.fromCharCode(...bytes)).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
 }
 async function createStreamSignedToken(videoUid:string,expiresInSeconds=900){
   const keyId=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_ID");
