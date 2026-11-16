@@ -123,6 +123,11 @@
       const date=item.scheduled_start?new Date(item.scheduled_start).toLocaleString():"Schedule to be announced";
       card.innerHTML='<div class="ilc-card-top"><span class="ilc-chip">'+esc(chip)+'</span><strong>'+esc(money(item.price_tzs))+'</strong></div><h3>'+esc(item.title)+'</h3><div class="ilc-meta">'+esc(item.category||"General")+' • '+esc(item.instructor_name||"I|ONE Instructor")+(type==="live_broadcast"?"<br>"+esc(date):"")+'</div><p class="ilc-desc">'+esc(item.description||"")+'</p><button class="ilc-action" type="button" data-play="'+esc(item.id)+'">'+(Number(item.price_tzs)>0?"GET ACCESS":(type==="live_broadcast"?"JOIN LIVE CLASS":"WATCH LESSON"))+'</button>';
       host.appendChild(card);
+      const playButton=card.querySelector("[data-play]");
+      if(type==="live_broadcast"&&item.scheduled_start&&new Date(item.scheduled_start)>new Date()){
+        playButton.disabled=true;
+        playButton.textContent="STARTS "+new Date(item.scheduled_start).toLocaleString();
+      }
     });
     host.querySelectorAll("[data-play]").forEach(button=>button.addEventListener("click",()=>playClass(button.dataset.play,button)));
   }
@@ -189,6 +194,8 @@
     const form=$("ilcCreateForm");if(!form)return;
     const type=form.elements.class_type.value;
     $("ilcScheduleFields").style.display=type==="recorded"?"none":"grid";
+    form.elements.scheduled_start.required=type==="live_broadcast";
+    form.elements.scheduled_end.required=type==="live_broadcast";
     form.elements.video_file.disabled=type!=="recorded";
     form.elements.duration_minutes.disabled=type!=="recorded";
   }
