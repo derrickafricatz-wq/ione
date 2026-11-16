@@ -12,6 +12,7 @@
   const sb=()=>typeof heavensSupabase!=="undefined"?heavensSupabase:null;
   let overlay=null,manager=null,activeTab="recorded",classes=[],authorityClasses=[],busy=false;
   let selectedClass=null;
+  const pendingUploads=new Map();
 
   function invoke(action,extra){
     const client=sb();
@@ -215,12 +216,21 @@
   }
   async function uploadRecordedFile(classId,file,message){
     if(!file||!file.size)throw new Error("Choose an MP4 or WebM video file.");
-    status(message,"Preparing resumable video upload…");
-    const ticket=await invoke("authority_create_upload",{class_id:classId,file_name:file.name,file_size:file.size});
-    if(!ticket.upload_url)throw new Error("Cloudflare did not return a video upload URL.");
+    let ticket=pendingUploads.get(classId);
+    const matches=ticket&&ticket.file_size===file.size&&ticket.file_name===file.name&&ticket.file_last_modified===file.lastModified;
+    if(!matches){
+      status(message,"Preparing resumable video upload…");
+      const created=await invoke("authority_create_upload",{class_id:classId,file_name:file.name,file_size:file.size});
+      if(!created.upload_url)throw new Error("Cloudflare did not return a video upload URL.");
+      ticket={upload_url:created.upload_url,file_size:file.size,file_name:file.name,file_last_modified:file.lastModified};
+      pendingUploads.set(classId,ticket);
+    }else{
+      status(message,"Resuming the previous video upload…");
+    }
     await uploadTus(file,ticket.upload_url,percent=>status(message,"Uploading video… "+percent+"%"));
     status(message,"Video uploaded. Checking processing status…");
     await invoke("authority_check_upload",{class_id:classId});
+    pendingUploads.delete(classId);
     status(message,"Upload complete. Refresh the class list to confirm processing status.");
   }
 
