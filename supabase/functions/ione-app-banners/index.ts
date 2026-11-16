@@ -158,10 +158,11 @@ Deno.serve(async (req: Request) => {
       const requestedEvents=Array.isArray(body?.notify_events)?body.notify_events.map((x:unknown)=>String(x||"").trim()).filter(Boolean):[];
       const validEvents=["banners","word_of_day","top_trending","new_books","ione_update","important_notice"];
       const explicitEvents=requestedEvents.filter((x:string)=>validEvents.includes(x));
+      const previousRecord=(previous||{}) as Record<string,unknown>;
       const same=(a:any,b:any)=>JSON.stringify(a??null)===JSON.stringify(b??null);
       const events=explicitEvents.length?explicitEvents:validEvents.filter((event:string)=>{
         if(event==="banners") return !same(previous?.banners,banners);
-        return !same(previous?.[event], event==="word_of_day"?word_of_day:event==="top_trending"?top_trending:event==="new_books"?new_books:event==="ione_update"?ione_update:important_notice);
+        return !same(previousRecord[event], event==="word_of_day"?word_of_day:event==="top_trending"?top_trending:event==="new_books"?new_books:event==="ione_update"?ione_update:important_notice);
       });
       const pushResults:any[]=[];
       for(const event of events){
