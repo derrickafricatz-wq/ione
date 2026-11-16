@@ -9,7 +9,6 @@
   let sequence=0;
   let pendingLaunches=0;
   let closingFromHistory=false;
-  let skipNextPopClose=false;
   let scanQueued=false;
 
   const overlays=[
@@ -36,7 +35,7 @@
   function visible(el){
     if(!el||!el.isConnected||el.hidden)return false;
     const style=getComputedStyle(el);
-    return style.display!=="none"&&style.visibility!=="hidden"&&Number(style.opacity||1)>.01&&el.getAttribute("aria-hidden")!=="true";
+    return style.display!=="none"&&style.visibility!=="hidden"&&Number(style.opacity||1)>.01;
   }
   function allVisible(){
     const found=[];
@@ -60,7 +59,10 @@
       "#authorityChapChapPanel #authorityChapChapClose",
       ".ione-feature-overlay .ione-feature-close"
     ];
-    const candidates=selectors.map(selector=>document.querySelector(selector)).filter(el=>el&&visible(el)&&!el.disabled);
+    const candidates=[];
+    selectors.forEach(selector=>document.querySelectorAll(selector).forEach(el=>{
+      if(visible(el)&&!el.disabled&&!candidates.includes(el))candidates.push(el);
+    }));
     const healthy=document.getElementById("healthyContainer");
     if(visible(healthy)){
       const exit=[...healthy.querySelectorAll("button")].find(button=>/^(EXIT|BACK|CLOSE)$/i.test(button.textContent.trim()));
@@ -117,7 +119,8 @@
     ].join(","));
     if(close){
       if(!closingFromHistory&&history.state?.ioneInternalBack){
-        skipNextPopClose=true;
+        // The feature has already closed itself. Consume only its own history
+        // layer; the resulting popstate sees no visible overlay and is harmless.
         queueMicrotask(()=>history.back());
       }
       return;
@@ -151,8 +154,10 @@
     history.back();
   },true);
 
+  // Browser Back and Android's installed-PWA Back button normally arrive here
+  // as popstate, not as a keyboard event. Listen in capture phase and determine
+  // visibility from rendered CSS (aria-hidden can be stale in legacy panels).
   window.addEventListener("popstate",()=>{
-    if(skipNextPopClose){skipNextPopClose=false;return;}
     const open=allVisible();
     if(open.length||pendingLaunches>0){
       pendingLaunches=0;
