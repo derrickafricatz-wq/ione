@@ -25,7 +25,7 @@ function streamConfig() {
   if (!account || !token) throw new Error("Cloudflare Stream is not configured. Add the Stream account ID and API token to the ione-live-class Edge Function secrets.");
   return {account,token};
 }
-async function streamRequest(path:string,method:"GET"|"POST",token:string,body?:unknown,extraHeaders:Record<string,string>={}) {
+async function streamRequest(path:string,method:"GET"|"POST"|"PUT",token:string,body?:unknown,extraHeaders:Record<string,string>={}) {
   const response = await fetch("https://api.cloudflare.com/client/v4"+path,{
     method,headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json",...extraHeaders},
     ...(body===undefined?{}:{body:JSON.stringify(body)})
@@ -242,6 +242,12 @@ Deno.serve(async(req:Request)=>{
     }
     if(action==="authority_suspend"){
       const classId=clean(body?.class_id,64);
+      const {data:row,error:readError}=await admin.from("ione_live_classes").select("id,class_type,live_input_uid").eq("id",classId).eq("status","published").maybeSingle();
+      if(readError||!row)return json(req,{success:false,error:"Published class was not found."},404);
+      if(row.class_type==="live_broadcast"&&row.live_input_uid){
+        const {account,token}=streamConfig();
+        await streamRequest("/accounts/"+account+"/stream/live_inputs/"+row.live_input_uid,"PUT",token,{enabled:false});
+      }
       const {data,error}=await admin.from("ione_live_classes").update({status:"suspended"}).eq("id",classId).eq("status","published").select("id,status").maybeSingle();
       if(error||!data)return json(req,{success:false,error:"Could not suspend this class."},400);
       return json(req,{success:true,class:data});
