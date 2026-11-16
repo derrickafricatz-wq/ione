@@ -242,6 +242,7 @@ Deno.serve(async(req:Request)=>{
       const {data:row,error}=await admin.from("ione_live_classes").select("*").eq("id",classId).eq("status","draft").maybeSingle();
       if(error||!row)return json(req,{success:false,error:"Class draft was not found."},404);
       if(row.class_type==="interactive")return json(req,{success:false,error:"Interactive classrooms are reserved for the next development stage."},409);
+      if(Number(row.price_tzs)>0)return json(req,{success:false,error:"Paid class publishing is disabled until the training checkout and verified payment callback are configured."},409);
       if(row.class_type==="recorded"&&(!row.media_uid||row.stream_status!=="ready"))return json(req,{success:false,error:"Upload and finish processing the recorded lesson before publishing."},409);
       if(row.class_type==="live_broadcast"&&!row.live_input_uid)return json(req,{success:false,error:"Create the secure live broadcast input before publishing."},409);
       const {data,error:updateError}=await admin.from("ione_live_classes").update({status:"published",published_at:new Date().toISOString()}).eq("id",classId).select("*").single();
