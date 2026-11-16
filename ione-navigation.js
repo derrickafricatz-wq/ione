@@ -92,7 +92,9 @@
     });
     if(candidates.length){
       closingFromHistory=true;
+      window.__ioneNavigationClosingFromHistory=true;
       candidates[0].click();
+      window.__ioneNavigationClosingFromHistory=false;
       queueMicrotask(()=>{closingFromHistory=false;});
       return true;
     }
@@ -175,6 +177,7 @@
   // as popstate, not as a keyboard event. Listen in capture phase and determine
   // visibility from rendered CSS (aria-hidden can be stale in legacy panels).
   window.addEventListener("popstate",()=>{
+    if(window.__ioneNavigationSkipNextPopstateClose){window.__ioneNavigationSkipNextPopstateClose=false;return;}
     const open=allVisible();
     if(open.length||pendingLaunches>0){
       pendingLaunches=0;
