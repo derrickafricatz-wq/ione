@@ -19,7 +19,7 @@
     "#authorityPasswordOverlay","#authorityPressPanel","#authorityChapChapPanel",
     "#ioneOpportunitiesOverlay","#ioneOppDetail","#ioneTransportOverlay","#ioneSokoniOverlay","#ioneMamaFood","#ioneMiniMarket",
     "#ioneExpertOverlay","#ioneRegisterOverlay","#ioneDocReaderLive",
-    "#ioneDocAccessOverlay",".ione-coming-soon-overlay",".ione-feature-overlay"
+    "#ioneDocAccessOverlay","#ioneLiveClassOverlay","#ioneLiveClassManager",".ione-coming-soon-overlay",".ione-feature-overlay"
   ];
   const active=new Set();
 
@@ -53,7 +53,7 @@
     return found;
   }
   function overlayForClose(button){
-    return button.closest("#afrilinkOverlay,#aflServiceOverlay,#aflOwnerOverlay,#aflEditorOverlay,#aflIncomingCallOverlay,#aflDeleteOverlay,#transcriptPanel,#healthyContainer,#heavensBookstore,#heavensReader,#heavensPaymentDialog,#ioneManualRecoveryCodeOverlay,#ioneBookReceiptOverlay,#ministryAccessOverlay,#guideOverlay,#authorityPasswordOverlay,#authorityPressPanel,#authorityChapChapPanel,#ioneOpportunitiesOverlay,#ioneOppDetail,#ioneTransportOverlay,#ioneSokoniOverlay,#ioneMamaFood,#ioneMiniMarket,#ioneExpertOverlay,#ioneRegisterOverlay,#ioneDocReaderLive,#ioneDocAccessOverlay,.ione-coming-soon-overlay,.ione-feature-overlay")||button;
+    return button.closest("#afrilinkOverlay,#aflServiceOverlay,#aflOwnerOverlay,#aflEditorOverlay,#aflIncomingCallOverlay,#aflDeleteOverlay,#transcriptPanel,#healthyContainer,#heavensBookstore,#heavensReader,#heavensPaymentDialog,#ioneManualRecoveryCodeOverlay,#ioneBookReceiptOverlay,#ministryAccessOverlay,#guideOverlay,#authorityPasswordOverlay,#authorityPressPanel,#authorityChapChapPanel,#ioneOpportunitiesOverlay,#ioneOppDetail,#ioneTransportOverlay,#ioneSokoniOverlay,#ioneMamaFood,#ioneMiniMarket,#ioneExpertOverlay,#ioneRegisterOverlay,#ioneDocReaderLive,#ioneDocAccessOverlay,#ioneLiveClassOverlay,#ioneLiveClassManager,.ione-coming-soon-overlay,.ione-feature-overlay")||button;
   }
   function closeTopLayer(){
     const selectors=[
@@ -62,7 +62,7 @@
       "#heavensBookstore #hbClose","#heavensReader .hr-back",
       "#heavensPaymentDialog .heavens-payment-close",
       "#ioneManualRecoveryCodeOverlay button:last-of-type","#ioneBookReceiptOverlay button:first-of-type",
-      "#ioneDocReaderLive .ione-doc-reader-back","#ioneDocAccessClose",
+      "#ioneDocReaderLive .ione-doc-reader-back","#ioneDocAccessClose","#ioneLiveClassOverlay #ilcClose","#ioneLiveClassManager #ilcAdminClose",
       "#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#ioneTransportOverlay #itClose","#ioneSokoniOverlay #isClose",
       "#ioneMamaFood #mfClose","#ioneMiniMarket #mmClose",
       "#ioneExpertOverlay #ioneExpertClose","#ioneRegisterOverlay #ioneRegisterClose",
