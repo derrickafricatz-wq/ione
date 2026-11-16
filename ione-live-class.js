@@ -11,7 +11,7 @@
   const money=v=>"TZS "+Number(v||0).toLocaleString("en-US");
   const sb=()=>typeof heavensSupabase!=="undefined"?heavensSupabase:null;
   let overlay=null,manager=null,activeTab="recorded",classes=[],authorityClasses=[],busy=false,activeDraftId=null,activeDraftType=null;
-  let selectedClass=null;
+  let selectedClass=null,activeBroadcast=null;
   const pendingUploads=new Map();
 
   function invoke(action,extra){
@@ -91,6 +91,7 @@
   }
   function closeOverlay(){
     if(!overlay)return;
+    if(activeBroadcast)stopActiveBroadcast();
     if(!window.__ioneNavigationClosingFromHistory)window.__ioneNavigationSkipNextPopstateClose=true;
     overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");
     if(manager){manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
@@ -194,7 +195,7 @@
   function openManager(){
     ensureManager();manager.classList.add("is-open");manager.setAttribute("aria-hidden","false");loadAuthority();
   }
-  function closeManager(){if(!manager)return;if(!window.__ioneNavigationClosingFromHistory)window.__ioneNavigationSkipNextPopstateClose=true;manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
+  function closeManager(){if(!manager)return;if(activeBroadcast)stopActiveBroadcast();if(!window.__ioneNavigationClosingFromHistory)window.__ioneNavigationSkipNextPopstateClose=true;manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
   async function uploadTus(file,uploadUrl,onProgress){
     const head=await fetch(uploadUrl,{method:"HEAD",headers:{"Tus-Resumable":"1.0.0"}});
     if(!head.ok)throw new Error("Could not resume the secure video upload ("+head.status+").");
@@ -254,17 +255,72 @@
       }else if(type==="live_broadcast"){
         status(message,"Preparing live broadcast input…");
         const stream=await invoke("authority_create_live_input",{class_id:data.class.id});
-        line="Live input created. Copy and save the private stream key now.";
-        const secret=document.createElement("div");secret.className="ilc-secret";
-        secret.innerHTML="<strong>PRIVATE BROADCAST DETAILS — DO NOT SHARE</strong><br>RTMPS server: "+esc(stream.rtmps_url)+"<br>Stream key: "+esc(stream.stream_key);
-        message.after(secret);
+        line="Live input created. Open the Live Studio to start your camera and microphone broadcast.";
       }else if(type==="interactive"){
         line="Draft saved. Interactive classroom support will be enabled in a later stage.";
       }
-      form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();
+      form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();if(type==="live_broadcast"&&data.class)await openLiveStudio(data.class);
     }catch(e){status(message,e.message||"Could not create class.",true);}
     finally{busy=false;button.disabled=false;}
   }
+  async function stopActiveBroadcast(){
+    const active=activeBroadcast;if(!active)return;
+    activeBroadcast=null;
+    try{if(active.session_url)await fetch(active.session_url,{method:"DELETE"});}catch(_){}
+    try{active.pc.close();}catch(_){}
+    try{active.media.getTracks().forEach(track=>track.stop());}catch(_){}
+  }
+  async function openLiveStudio(item){
+    const list=$("ilcAdminList");if(!list)return;
+    if(activeBroadcast&&activeBroadcast.class_id!==item.id){alert("Stop the current live broadcast before opening another class.");return;}
+    const old=$("ilcLiveStudio");if(old)old.remove();
+    const card=document.createElement("section");card.id="ilcLiveStudio";card.className="ilc-card";
+    card.innerHTML='<div class="ilc-card-top"><span class="ilc-chip">INSTRUCTOR LIVE STUDIO</span><strong>'+esc(item.title)+'</strong></div><video id="ilcBroadcastPreview" autoplay muted playsinline style="display:block;width:100%;max-height:48vh;aspect-ratio:16/9;object-fit:cover;background:#000;border-radius:12px"></video><p id="ilcBroadcastStatus" class="ilc-meta">Preparing secure camera connection…</p><div class="ilc-form-row"><button class="ilc-action" id="ilcBroadcastStart" type="button">START LIVE CLASS</button><button class="ilc-action secondary" id="ilcBroadcastStop" type="button" hidden>END LIVE CLASS</button></div><p class="ilc-meta">Allow camera and microphone access. Keep this screen open while teaching. Live WebRTC broadcasts are not automatically recorded; upload a replay separately as a recorded lesson if you want students to watch it later.</p>';
+    list.prepend(card);
+    const start=$("ilcBroadcastStart"),stop=$("ilcBroadcastStop"),preview=$("ilcBroadcastPreview"),message=$("ilcBroadcastStatus");
+    let whipUrl="";
+    try{
+      const info=await invoke("authority_get_live_input",{class_id:item.id});
+      whipUrl=info.whip_url;
+      status(message,"Camera and microphone are ready when you are.",false);
+    }catch(e){status(message,e.message||"Could not load the broadcast connection.",true);start.disabled=true;return;}
+    start.addEventListener("click",async()=>{
+      if(activeBroadcast)return;
+      start.disabled=true;status(message,"Requesting camera and microphone permission…");
+      let media=null,pc=null;
+      try{
+        if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error("Camera streaming requires HTTPS and a browser that supports WebRTC.");
+        media=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"},audio:true});
+        preview.srcObject=media;await preview.play().catch(()=>{});
+        pc=new RTCPeerConnection();
+        media.getTracks().forEach(track=>pc.addTransceiver(track,{direction:"sendonly"}));
+        const offer=await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        status(message,"Connecting to I|ONE Live Class…");
+        const response=await fetch(whipUrl,{method:"POST",headers:{"Content-Type":"application/sdp"},body:offer.sdp});
+        if(!response.ok)throw new Error("Live connection failed ("+response.status+"). Please check your network and try again.");
+        const answer=await response.text();
+        await pc.setRemoteDescription({type:"answer",sdp:answer});
+        const location=response.headers.get("Location");
+        const sessionUrl=location?new URL(location,whipUrl).toString():"";
+        activeBroadcast={pc,media,session_url:sessionUrl,class_id:item.id};
+        start.hidden=true;stop.hidden=false;
+        status(message,"YOU ARE LIVE • Students can now join the published class.",false);
+      }catch(e){
+        try{if(pc)pc.close();}catch(_){}
+        try{if(media)media.getTracks().forEach(track=>track.stop());}catch(_){}
+        preview.srcObject=null;start.disabled=false;
+        status(message,e.message||"Could not start the live broadcast.",true);
+      }
+    });
+    stop.addEventListener("click",async()=>{
+      stop.disabled=true;status(message,"Ending the live class…");
+      await stopActiveBroadcast();
+      preview.srcObject=null;stop.hidden=true;stop.disabled=false;start.hidden=false;start.disabled=false;
+      status(message,"Live class ended. You can start another session if needed.",false);
+    });
+  }
+
   async function loadAuthority(){
     const list=$("ilcAdminList");if(!list)return;list.innerHTML='<div class="ilc-empty">Loading classes…</div>';
     try{
@@ -289,7 +345,8 @@
           retry.addEventListener("click",()=>picker.click());card.append(retry,picker);
         }
         if(item.class_type==="live_broadcast"&&item.live_input_uid){
-          const help=document.createElement("p");help.className="ilc-meta";help.textContent="Live input is ready. Start your encoder at the scheduled time. The class can be published after the stream input is provisioned.";card.append(help);
+          const help=document.createElement("p");help.className="ilc-meta";help.textContent="Start a live broadcast directly from your browser camera and microphone. Live WebRTC sessions are not automatically recorded.";card.append(help);
+          const studio=document.createElement("button");studio.className="ilc-action secondary";studio.textContent="OPEN LIVE STUDIO";studio.addEventListener("click",()=>openLiveStudio(item));card.append(studio);
         }
         if(item.status==="draft"&&((item.class_type==="recorded"&&item.stream_status==="ready")||(item.class_type==="live_broadcast"&&item.stream_status==="live_input_ready"))){
           const publish=document.createElement("button");publish.className="ilc-action";publish.textContent="PUBLISH CLASS";publish.addEventListener("click",async()=>{publish.disabled=true;try{await invoke("authority_publish",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);publish.disabled=false;}});card.append(publish);
