@@ -26,7 +26,7 @@ This feature is intentionally isolated on `feature/ione-live-class-foundation`. 
 Configure these on the dedicated `ione-live-class` function only:
 
 - `CLOUDFLARE_ACCOUNT_ID`
-- `CLOUDFLARE_STREAM_API_TOKEN` — scoped to the minimum Cloudflare Stream permissions needed to create uploads/live inputs, read media state and mint signed playback tokens.
+- `CLOUDFLARE_STREAM_API_TOKEN` — scoped to Cloudflare Stream Read and Write permissions needed to create uploads/live inputs and read media state. Signed playback tokens are generated server-side using the private signing JWK.
 - `CLOUDFLARE_STREAM_SIGNING_KEY_ID`
 - `CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64` — the base64-encoded private JWK returned by Cloudflare when the signing key is created. Store it as a secret; it contains private key material.
 
