@@ -68,7 +68,7 @@
   document.addEventListener("click",event=>{
     const target=event.target;
     if(!(target instanceof Element))return;
-    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,#authorityPressClose,.ione-doc-reader-back")){
+    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,#authorityPressClose,.ione-doc-reader-back") || (target.closest("#healthyContainer button,.ione-coming-soon-overlay button") && /^(EXIT|BACK|CLOSE)$/i.test(target.textContent.trim()))){
       if(!closingFromHistory&&history.state?.ioneInternalBack){
         skipNextPopClose=true;
         queueMicrotask(()=>history.back());
