@@ -17,7 +17,7 @@
     "#aflIncomingCallOverlay","#aflDeleteOverlay",
     "#transcriptPanel","#healthyContainer",
     "#authorityPasswordOverlay","#authorityPressPanel","#authorityChapChapPanel",
-    "#ioneTransportOverlay","#ioneSokoniOverlay","#ioneMamaFood","#ioneMiniMarket",
+    "#ioneOpportunitiesOverlay","#ioneOppDetail","#ioneTransportOverlay","#ioneSokoniOverlay","#ioneMamaFood","#ioneMiniMarket",
     "#ioneExpertOverlay","#ioneRegisterOverlay","#ioneDocReaderLive",
     "#ioneDocAccessOverlay",".ione-coming-soon-overlay",".ione-feature-overlay"
   ];
@@ -44,12 +44,12 @@
     return found;
   }
   function overlayForClose(button){
-    return button.closest("#afrilinkOverlay,#aflServiceOverlay,#aflOwnerOverlay,#aflEditorOverlay,#aflIncomingCallOverlay,#aflDeleteOverlay,#transcriptPanel,#healthyContainer,#authorityPasswordOverlay,#authorityPressPanel,#authorityChapChapPanel,#ioneTransportOverlay,#ioneSokoniOverlay,#ioneMamaFood,#ioneMiniMarket,#ioneExpertOverlay,#ioneRegisterOverlay,#ioneDocReaderLive,#ioneDocAccessOverlay,.ione-coming-soon-overlay,.ione-feature-overlay")||button;
+    return button.closest("#afrilinkOverlay,#aflServiceOverlay,#aflOwnerOverlay,#aflEditorOverlay,#aflIncomingCallOverlay,#aflDeleteOverlay,#transcriptPanel,#healthyContainer,#authorityPasswordOverlay,#authorityPressPanel,#authorityChapChapPanel,#ioneOpportunitiesOverlay,#ioneOppDetail,#ioneTransportOverlay,#ioneSokoniOverlay,#ioneMamaFood,#ioneMiniMarket,#ioneExpertOverlay,#ioneRegisterOverlay,#ioneDocReaderLive,#ioneDocAccessOverlay,.ione-coming-soon-overlay,.ione-feature-overlay")||button;
   }
   function closeTopLayer(){
     const selectors=[
       "#ioneDocReaderLive .ione-doc-reader-back","#ioneDocAccessClose",
-      "#ioneTransportOverlay #itClose","#ioneSokoniOverlay #isClose",
+      "#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#ioneTransportOverlay #itClose","#ioneSokoniOverlay #isClose",
       "#ioneMamaFood #mfClose","#ioneMiniMarket #mmClose",
       "#ioneExpertOverlay #ioneExpertClose","#ioneRegisterOverlay #ioneRegisterClose",
       "#transcriptPanel #closeTranscript","#afrilinkOverlay #aflClose",
@@ -108,7 +108,7 @@
     if(!(target instanceof Element))return;
 
     const close=target.closest([
-      "#itClose","#isClose","#mfClose","#mmClose","#ioneExpertClose","#ioneRegisterClose",
+      "#itClose","#isClose","#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#mfClose","#mmClose","#ioneExpertClose","#ioneRegisterClose",
       "#authorityPressClose","#authorityPasswordCancel","#authorityChapChapClose",
       "#closeTranscript","#aflClose","#aflServiceClose","#aflOwnerClose","#aflEditorCancel",
       "#aflDeleteCancel","#aflCallDecline","#aflCallEndActive","#ioneDocAccessClose",
