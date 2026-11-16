@@ -17,6 +17,7 @@ assert.match(edge,/payment_status","paid"/,"paid playback must require a verifie
 assert.match(edge,/Tus-Resumable/,"recorded uploads must use resumable TUS");
 assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64/,"signed playback must use a server-side signing key");
 assert.match(edge,/authority_get_live_input/,"instructors must retrieve their private WHIP endpoint through Authority");
+assert.match(edge,/enabled:false/,"suspending a live class must disable its Cloudflare input");
 assert.match(moduleText,/getUserMedia/,"instructors must be able to broadcast from their camera and microphone");
 assert.doesNotThrow(()=>new Function(moduleText),"Live Class browser module must parse");
 assert.match(edge,/scheduled_end/,"live classes must enforce a scheduled end time");
