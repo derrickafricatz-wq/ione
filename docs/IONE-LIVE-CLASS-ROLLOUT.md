@@ -7,8 +7,8 @@ This feature is intentionally isolated on `feature/ione-live-class-foundation`. 
 - A homepage tile and separate Live Class catalogue.
 - Recorded training drafts with resumable Cloudflare Stream TUS uploads.
 - A hard 60-minute maximum for recorded training, enforced by Cloudflare Stream and the database.
-- Scheduled one-instructor live broadcasts using Cloudflare Stream live inputs and RTMPS credentials.
-- Automatic replay recording for live broadcasts.
+- Browser-based one-instructor live broadcasts using Cloudflare Stream WebRTC (WHIP publishing and WHEP playback), directly from the instructor's camera and microphone.
+- Short-lived signed playback tokens for both recorded lessons and WebRTC live inputs.
 - Authority Press create, list, publish and suspend controls.
 - Server-side signed playback tokens. The browser never receives the Cloudflare API token or signing private key.
 - Isolated Supabase tables for classes, paid enrollments and attendance, all protected by RLS with no direct browser-role table grants.
@@ -56,7 +56,7 @@ Never put any of these values in `index.html`, JavaScript assets, GitHub commits
 - Authority Press can create a draft only with an active Authority session.
 - A recorded upload is resumable, rejects videos over 60 minutes, and cannot be published until Stream reports it ready.
 - A live broadcast draft requires a schedule and a provisioned live input before publication.
-- RTMPS stream keys are shown only to Authority at provisioning time and are never saved in a public table or returned by public catalogue actions.
+- The private WHIP publishing URL is returned only to a verified Authority session, kept in memory by the instructor's browser, and never saved in a public table or returned by public catalogue actions.
 - Free playback receives a short-lived signed token; paid playback fails unless a verified, unexpired enrollment exists.
 - Suspended classes disappear from the public catalogue.
 - Existing Documentary, Shelf, payments, Transport, Sokoni, Mama Chakula, Mini Market and Opportunities regressions remain clean.
