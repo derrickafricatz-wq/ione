@@ -188,7 +188,7 @@ const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_ma
 const mamaFoodDeliveryMigration = fs.readFileSync("supabase/migrations/20261112120401_ione_mama_chakula_delivery.sql", "utf8");
 new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
 assert.match(html, /ione-mama-chakula\.js\?v=5/);
-assert.match(html, /ione-sokoni\\.js\\?v=21/);
+assert.match(html, /ione-sokoni\.js\?v=21/);
 assert.match(moduleSource, /document\.addEventListener\("click", \(event\) =>/);
 assert.match(moduleSource, /event\.target\.closest\("#openSokoni"\)/);
 assert.match(sw, /ione-mama-chakula\.js/);
