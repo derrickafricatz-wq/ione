@@ -43,12 +43,15 @@ assert.match(moduleSource, /openRegistration\(kind\)/);
 assert.match(moduleSource, /is-register-vendor/);
 assert.match(moduleSource, /is-register-rider/);
 assert.match(moduleSource, /registrationStyle\.textContent/);
+assert.match(moduleSource, /is-register-vendor #isVendorRegistration/);
+assert.match(moduleSource, /is-register-rider #isRiderRegistration/);
+assert.doesNotMatch(moduleSource, /is-registration-only #isVendorRegistration/);
 assert.match(expertSource, /openRegistration/);
 assert.match(expertSource, /iex-registration-only/);
 assert.match(expertSource, /Ask the community, explore answers and read official advice/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
-assert.match(html, /sw\.js\?v=151/);
+assert.match(html, /sw\.js\?v=152/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
@@ -185,7 +188,7 @@ const mamaFoodMigration = fs.readFileSync("supabase/migrations/20261110090000_ma
 const mamaFoodDeliveryMigration = fs.readFileSync("supabase/migrations/20261112120401_ione_mama_chakula_delivery.sql", "utf8");
 new vm.Script(mamaFood, { filename: "ione-mama-chakula.js" });
 assert.match(html, /ione-mama-chakula\.js\?v=5/);
-assert.match(html, /ione-sokoni\.js\?v=20/);
+assert.match(html, /ione-sokoni\.js\?v=21/);
 assert.match(moduleSource, /document\.addEventListener\("click", \(event\) =>/);
 assert.match(moduleSource, /event\.target\.closest\("#openSokoni"\)/);
 assert.match(sw, /ione-mama-chakula\.js/);

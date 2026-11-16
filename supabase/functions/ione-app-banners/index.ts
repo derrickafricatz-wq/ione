@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "get") {
       const { data,error } = await admin.from("ione_app_banners")
-        .select("id,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,updated_at")
+        .select("id,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,feature_slides,updated_at")
         .eq("id",1).maybeSingle();
       if(error) return json({success:false,error:"Could not load I|ONE communication data."},500);
       const banners=Array.isArray(data?.banners)?data.banners.map((x:unknown)=>String(x||"").trim()).filter(Boolean):[];
@@ -72,7 +72,59 @@ Deno.serve(async (req: Request) => {
       const new_books=String(data?.new_books||"").trim();
       const ione_update=String(data?.ione_update||"").trim();
       const important_notice=String(data?.important_notice||"").trim();
-      return json({success:true,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice});
+      const feature_slides=(Array.isArray(data?.feature_slides)?data.feature_slides:[]).map((item:any)=>({
+        id:String(item.id||item.path||""),
+        path:String(item.path||""),
+        caption:String(item.caption||"").slice(0,48),
+        url:admin.storage.from("ione-feature-showcase").getPublicUrl(String(item.path||"")).data.publicUrl
+      })).filter((item:any)=>item.path&&item.caption);
+      return json({success:true,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,feature_slides});
+    }
+
+    if(action==="feature_slides_save"){
+      if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session")))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+      const incoming=Array.isArray(body?.slides)?body.slides:[];
+      if(incoming.length>10)return json({success:false,error:"A maximum of 10 feature images is allowed."},400);
+      const {data:current,error:readError}=await admin.from("ione_app_banners").select("feature_slides").eq("id",1).maybeSingle();
+      if(readError)return json({success:false,error:"Could not read the current showcase."},500);
+      const previous=Array.isArray(current?.feature_slides)?current.feature_slides:[];
+      const allowedPaths=new Set(previous.map((x:any)=>String(x.path||"")));
+      const saved:any[]=[];const uploaded:string[]=[];
+      try{
+        for(const raw of incoming){
+          const caption=String(raw?.caption||"").trim().slice(0,48);
+          if(!caption)throw new Error("Every feature image needs a short caption.");
+          if(raw?.data_base64){
+            if(String(raw.content_type||"")!=="image/jpeg")throw new Error("Feature images must be JPEG files.");
+            const encoded=String(raw.data_base64);
+            if(encoded.length>2450000)throw new Error("An image is too large. Please compress it and try again.");
+            const binary=atob(encoded);const bytes=new Uint8Array(binary.length);
+            for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+            if(bytes.length>1800000)throw new Error("An image is too large. Please choose a smaller image.");
+            const path="home/"+crypto.randomUUID()+".jpg";
+            const up=await admin.storage.from("ione-feature-showcase").upload(path,bytes,{contentType:"image/jpeg",cacheControl:"31536000",upsert:false});
+            if(up.error)throw new Error("Could not upload a feature image.");
+            uploaded.push(path);saved.push({id:crypto.randomUUID(),path,caption});
+          }else{
+            const path=String(raw?.path||"");
+            if(!allowedPaths.has(path))throw new Error("A saved image is no longer available. Refresh the page and try again.");
+            saved.push({id:String(raw.id||path),path,caption});
+          }
+        }
+      }catch(error){
+        if(uploaded.length)await admin.storage.from("ione-feature-showcase").remove(uploaded);
+        throw error;
+      }
+      const {error:saveError}=await admin.from("ione_app_banners").upsert({id:1,feature_slides:saved,updated_at:new Date().toISOString()},{onConflict:"id"});
+      if(saveError){
+        if(uploaded.length)await admin.storage.from("ione-feature-showcase").remove(uploaded);
+        return json({success:false,error:"Could not publish homepage feature images."},500);
+      }
+      const keep=new Set(saved.map((x:any)=>x.path));
+      const removed=previous.map((x:any)=>String(x.path||"")).filter((path:string)=>path&&!keep.has(path));
+      if(removed.length)await admin.storage.from("ione-feature-showcase").remove(removed);
+      const feature_slides=saved.map((item:any)=>({...item,url:admin.storage.from("ione-feature-showcase").getPublicUrl(item.path).data.publicUrl}));
+      return json({success:true,feature_slides});
     }
 
     if(action==="update"){
@@ -106,10 +158,11 @@ Deno.serve(async (req: Request) => {
       const requestedEvents=Array.isArray(body?.notify_events)?body.notify_events.map((x:unknown)=>String(x||"").trim()).filter(Boolean):[];
       const validEvents=["banners","word_of_day","top_trending","new_books","ione_update","important_notice"];
       const explicitEvents=requestedEvents.filter((x:string)=>validEvents.includes(x));
+      const previousRecord=(previous||{}) as Record<string,unknown>;
       const same=(a:any,b:any)=>JSON.stringify(a??null)===JSON.stringify(b??null);
       const events=explicitEvents.length?explicitEvents:validEvents.filter((event:string)=>{
         if(event==="banners") return !same(previous?.banners,banners);
-        return !same(previous?.[event], event==="word_of_day"?word_of_day:event==="top_trending"?top_trending:event==="new_books"?new_books:event==="ione_update"?ione_update:important_notice);
+        return !same(previousRecord[event], event==="word_of_day"?word_of_day:event==="top_trending"?top_trending:event==="new_books"?new_books:event==="ione_update"?ione_update:important_notice);
       });
       const pushResults:any[]=[];
       for(const event of events){

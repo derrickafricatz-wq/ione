@@ -3628,6 +3628,7 @@ function getMedia(id){
 <div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
 <div id="ioneHomeShell">
 <section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText" class="ione-word-loading">Loading today's word…</div></section>
+<section id="ioneFeatureShowcase" aria-label="Explore I|ONE features" hidden><div class="ione-feature-showcase-head"><span>DISCOVER I|ONE</span><small>Explore what you can do</small></div><div class="ione-feature-showcase-viewport"><div class="ione-feature-showcase-track" id="ioneFeatureShowcaseTrack"></div></div></section>
 <a id="ioneHomeCallButton" href="tel:+255742097868" aria-label="Call I1 support at 0742097868">☎ CALL I1 <span>+255 742 097 868</span></a><style>#ioneHomeCallButton{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;box-sizing:border-box;width:calc(100% - 28px);max-width:560px;margin:12px auto 16px;padding:12px 16px;border:1px solid rgba(114,244,218,.48);border-radius:14px;background:linear-gradient(110deg,#123f3d,#10272c 65%,#0b1a20);color:#eafff7;text-decoration:none;font:900 13px/1.2 Arial,sans-serif;letter-spacing:1px;box-shadow:0 5px 14px rgba(0,0,0,.22)}#ioneHomeCallButton span{color:#9fffe0;font-size:12px;letter-spacing:.6px}#ioneHomeCallButton:active{transform:scale(.99)}</style>
 
 <section id="ioneBooksShowcase" aria-label="Discover published books" hidden>
@@ -4250,7 +4251,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=151", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=152", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -10968,6 +10969,30 @@ function ioneRunBackgroundMediaPreload(){ return; }
 }
 
 </style>
+<style id="ione-word-day-responsive-v1">
+#ioneHomeShell{min-height:100dvh;height:auto!important;max-height:none!important;overflow-y:auto!important;overflow-x:hidden!important}
+#wordOfDayPanel{height:auto!important;min-height:0!important;max-height:none!important;flex:0 0 auto!important;align-self:stretch!important;width:min(92vw,900px)!important;padding:clamp(14px,2.4vw,24px)!important;overflow:visible!important;contain:none!important}
+.word-day-kicker{display:block!important;width:fit-content!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important;font-size:clamp(14px,2.5vw,24px)!important;line-height:1.2!important;letter-spacing:clamp(.6px,.28vw,2.2px)!important;margin:0 auto 12px!important;padding:0 0 9px!important}
+#wordOfDayText{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:normal!important;font-size:clamp(15px,2.35vw,28px)!important;line-height:1.45!important;padding:0 2px!important;transform:none}
+#wordOfDayText.ione-word-swapping{transform:translateY(3px)!important}
+@media(max-height:560px){#ioneHomeShell{padding-top:calc(58px + env(safe-area-inset-top,0px))!important;gap:9px!important}#wordOfDayPanel{padding:12px 14px!important}.word-day-kicker{margin-bottom:7px!important;padding-bottom:6px!important}#wordOfDayText{line-height:1.35!important}}
+@media(min-width:900px){#wordOfDayPanel{width:min(88vw,1040px)!important}.word-day-kicker{font-size:clamp(18px,2vw,26px)!important}#wordOfDayText{font-size:clamp(20px,2vw,30px)!important}}
+</style>
+<style id="ione-feature-showcase-style-v1">
+#ioneFeatureShowcase{display:block;position:relative;flex:0 0 auto;width:min(92vw,900px);min-width:0;box-sizing:border-box;align-self:stretch;padding:12px 0 14px;border:1px solid rgba(116,220,220,.17);border-left:0;border-right:0;border-radius:18px;background:linear-gradient(145deg,rgba(8,28,32,.9),rgba(3,12,16,.94));overflow:hidden}
+#ioneFeatureShowcase[hidden]{display:none!important}
+.ione-feature-showcase-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px 10px;color:#a8f5ec;font:900 10px/1.2 Arial,sans-serif;letter-spacing:1.8px}
+.ione-feature-showcase-head small{color:#9ab8b9;font:600 10px/1.3 Arial,sans-serif;letter-spacing:.2px;text-align:right}
+.ione-feature-showcase-viewport{width:100%;overflow:hidden;touch-action:pan-y;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.ione-feature-showcase-track{display:flex;align-items:stretch;gap:12px;width:max-content;padding:0 12px;animation:ioneFeatureShowcaseLoop var(--ione-showcase-duration,36s) linear infinite;will-change:transform}
+#ioneFeatureShowcase:hover .ione-feature-showcase-track,#ioneFeatureShowcase:focus-within .ione-feature-showcase-track{animation-play-state:paused}
+.ione-feature-slide{position:relative;display:block;flex:0 0 clamp(220px,62vw,320px);width:clamp(220px,62vw,320px);height:clamp(132px,35vw,178px);overflow:hidden;border:1px solid rgba(163,244,234,.22);border-radius:15px;background:#0d252b;box-shadow:0 8px 20px rgba(0,0,0,.26)}
+.ione-feature-slide img{display:block;width:100%;height:100%;object-fit:cover}
+.ione-feature-slide:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.68));pointer-events:none}
+.ione-feature-slide-caption{position:absolute;z-index:1;left:12px;right:12px;bottom:10px;color:#fff;font:900 clamp(12px,2.8vw,15px)/1.2 Arial,sans-serif;letter-spacing:.3px;text-shadow:0 1px 5px rgba(0,0,0,.8);overflow-wrap:anywhere}
+@keyframes ioneFeatureShowcaseLoop{to{transform:translate3d(-50%,0,0)}}
+@media(prefers-reduced-motion:reduce){.ione-feature-showcase-track{animation:none!important;transform:none!important;overflow-x:auto}}
+</style>
 
 <script>
 /* ================= BILLBOARD MEDIA BINDINGS ================= */
@@ -13727,13 +13752,15 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./chapchap.js?v=17"></script>
 <script src="./ione-find-it-for-me.js?v=1" defer></script>
 <script src="./ione-launch-observatory.js?v=4" defer></script>
-<script src="./ione-sokoni.js?v=20" defer></script>
+<script src="./ione-sokoni.js?v=21" defer></script>
 <script src="./ione-mama-chakula.js?v=5" defer></script>
 <script src="./ione-mini-market.js?v=4" defer></script>
 <script src="./ione-transport.js?v=10" defer></script>
 <script src="./ione-transport-operations.js?v=11" defer></script>
 <script src="./ione-expert.js?v=6" defer></script>
 <script src="./ione-register.js?v=1" defer></script>
+<script src="./ione-feature-showcase.js?v=1" defer></script>
+<script src="./ione-navigation.js?v=1" defer></script>
 <script>
 /* I|ONE DOCUMENTARY AUTO-SCROLL • waits for the library to open and for cards to render */
 (function(){
