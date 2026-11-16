@@ -8,6 +8,11 @@
     #ioneExpertOverlay{position:fixed;inset:0;z-index:100900;display:none;overflow:auto;background:#f7fbf6;color:#243b2d;padding:14px;box-sizing:border-box;font-family:Arial,sans-serif}
     #ioneExpertOverlay *{box-sizing:border-box}
     #ioneExpertOverlay .iex-shell{width:min(940px,100%);margin:0 auto;background:#fff;border:1px solid #d9e7d8;border-radius:22px;padding:clamp(16px,4vw,30px);box-shadow:0 12px 42px rgba(30,70,40,.12)}
+    #ioneExpertOverlay.iex-registration-only .iex-shell>section:not(#ioneExpertRegistration){display:none!important}
+    #ioneExpertOverlay.iex-registration-only .iex-top{justify-content:flex-end;border-bottom:0;padding-bottom:0;margin-bottom:8px}
+    #ioneExpertOverlay.iex-registration-only .iex-top>div{display:none!important}
+    #ioneExpertOverlay.iex-registration-only #ioneExpertRegistration{display:block!important;margin:0}
+    #ioneExpertOverlay.iex-registration-only #ioneExpertRegistration>p{display:none!important}
     #ioneExpertOverlay .iex-top{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #e5eee4;padding-bottom:14px;margin-bottom:16px}
     #ioneExpertOverlay .iex-kicker{font-size:11px;letter-spacing:2px;font-weight:900;color:#59805b}
     #ioneExpertOverlay h1{font-size:clamp(28px,6vw,42px);margin:10px 0;color:#23472c}
@@ -58,6 +63,7 @@
 
   let root;
   let expertStatus = { is_expert: false };
+  let registrationOnly = false;
   function ensureOverlay() {
     if (root) return root;
     root = document.createElement("div");
@@ -101,8 +107,8 @@
     if (el) { el.textContent = message || ""; el.classList.toggle("error", !!error); }
   }
   function close() { if (root) { root.style.display = "none"; root.setAttribute("aria-hidden", "true"); } document.body.style.overflow = ""; }
-  function open() { ensureOverlay(); const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh(); }
-  function openRegistration() { open(); const registration = $("ioneExpertRegistration", root); if (registration && !expertStatus.is_expert) { registration.style.display = "block"; registration.scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  function open() { ensureOverlay(); registrationOnly = false; root.classList.remove("iex-registration-only"); const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh(); }
+  function openRegistration() { ensureOverlay(); registrationOnly = true; root.classList.add("iex-registration-only"); root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = expertStatus.is_expert ? "none" : "block"; const message = $("ioneExpertApplicationStatus", root); if (message) message.textContent = expertStatus.is_expert ? "Your I|ONE Expert account is already verified." : ""; }
   async function invoke(action, extra = {}) {
     if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
     const result = await heavensSupabase.functions.invoke("ione-expert", { body: { action, ...extra } });
@@ -167,7 +173,7 @@
         await heavensSupabase.storage.from("ione-expert-credentials").remove([path]);
         path = "";
       }
-      status("ioneExpertApplicationStatus", result.message || "Application sent."); $("ioneExpertApplyForm", root).reset(); await refresh();
+      status("ioneExpertApplicationStatus", result.message || "Application sent."); $("ioneExpertApplyForm", root).reset(); if (!registrationOnly) await refresh();
     } catch (error) {
       if (path) try { await heavensSupabase.storage.from("ione-expert-credentials").remove([path]); } catch (_) {}
       status("ioneExpertApplicationStatus", error.message || "Application failed.", true);
