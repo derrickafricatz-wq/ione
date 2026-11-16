@@ -7,6 +7,7 @@ This feature is intentionally isolated on `feature/ione-live-class-foundation`. 
 - A homepage tile and separate Live Class catalogue.
 - Recorded training drafts with resumable Cloudflare Stream TUS uploads.
 - A hard 60-minute maximum for recorded training, enforced by Cloudflare Stream and the database.
+- Scheduled live broadcasts require start/end times, are capped at six hours, reject early/late joining, and stop automatically at the scheduled end.
 - Browser-based one-instructor live broadcasts using Cloudflare Stream WebRTC (WHIP publishing and WHEP playback), directly from the instructor's camera and microphone.
 - Short-lived signed playback tokens for both recorded lessons and WebRTC live inputs.
 - Authority Press create, list, publish and suspend controls.
@@ -55,7 +56,8 @@ Never put any of these values in `index.html`, JavaScript assets, GitHub commits
 - Android system Back and browser Back close the correct Live Class layer.
 - Authority Press can create a draft only with an active Authority session.
 - A recorded upload is resumable, rejects videos over 60 minutes, and cannot be published until Stream reports it ready.
-- A live broadcast draft requires a schedule and a provisioned live input before publication.
+- A live broadcast draft requires a valid start/end schedule (maximum six hours) and a provisioned live input before publication.
+- The instructor can start and stop the camera/microphone broadcast from the browser; the client stops it at the scheduled end.
 - The private WHIP publishing URL is returned only to a verified Authority session, kept in memory by the instructor's browser, and never saved in a public table or returned by public catalogue actions.
 - Free playback receives a short-lived signed token; paid playback fails unless a verified, unexpired enrollment exists.
 - Suspended classes disappear from the public catalogue.
