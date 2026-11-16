@@ -1,5 +1,5 @@
 {
-  "version": "1.0.330",
-  "message": "Fix nested I|ONE panel detection and Back navigation",
+  "version": "1.0.331",
+  "message": "Add I|ONE Live Class foundation",
   "force": true
 }
