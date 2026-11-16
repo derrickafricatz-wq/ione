@@ -1,5 +1,5 @@
 {
-  "version": "1.0.329",
-  "message": "Improve installed-app and browser Back handling for visible feature panels",
+  "version": "1.0.330",
+  "message": "Fix nested I|ONE panel detection and Back navigation",
   "force": true
 }
