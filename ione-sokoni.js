@@ -131,8 +131,8 @@
     #ioneSokoniOverlay.is-register-vendor .is-shell > *:not(.is-top):not(#isVendorRegistration){display:none!important}
     #ioneSokoniOverlay.is-register-rider .is-shell > *:not(.is-top):not(.is-boda-section){display:none!important}
     #ioneSokoniOverlay.is-register-rider .is-boda-section > *:not(#isRiderRegistration){display:none!important}
-    #ioneSokoniOverlay.is-registration-only #isVendorRegistration,
-    #ioneSokoniOverlay.is-registration-only #isRiderRegistration{display:block!important}
+    #ioneSokoniOverlay.is-register-vendor #isVendorRegistration{display:block!important}
+    #ioneSokoniOverlay.is-register-rider #isRiderRegistration{display:block!important}
   `;
   document.head.appendChild(registrationStyle);
 
