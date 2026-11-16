@@ -366,7 +366,7 @@
             try{
               await invoke("authority_publish",{class_id:item.id});
               item.status="published";chip.textContent="published • "+(item.stream_status||"ready");
-              if(activeBroadcast&&activeBroadcast.class_id===item.id){
+              if(activeBroadcast){
                 publish.textContent="CLASS PUBLISHED";
                 const suspend=document.createElement("button");suspend.className="ilc-action secondary";suspend.textContent="SUSPEND CLASS";
                 suspend.addEventListener("click",async()=>{suspend.disabled=true;try{stopActiveBroadcast();await invoke("authority_suspend",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);suspend.disabled=false;}});
