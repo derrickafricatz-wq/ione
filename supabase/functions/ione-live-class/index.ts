@@ -142,6 +142,7 @@ Deno.serve(async(req:Request)=>{
         const start=Date.parse(String(input.scheduled_start||"")),end=Date.parse(String(input.scheduled_end||""));
         if(!Number.isFinite(start)||!Number.isFinite(end))return json(req,{success:false,error:"Choose both the live class start and end time."},400);
         if(end<=start)return json(req,{success:false,error:"The live class end time must be after its start time."},400);
+        if(end-start>21600000)return json(req,{success:false,error:"A live class can be scheduled for up to 6 hours."},400);
       }
       const payload={title,description:clean(input.description,4000),category:clean(input.category,80)||"General",instructor_name:clean(input.instructor_name,120),class_type:type,price_tzs:price,duration_seconds:duration,scheduled_start:input.scheduled_start||null,scheduled_end:input.scheduled_end||null,record_replay:type!=="live_broadcast",status:"draft",stream_status:"not_configured"};
       const {data,error}=await admin.from("ione_live_classes").insert(payload).select("*").single();
@@ -219,9 +220,16 @@ Deno.serve(async(req:Request)=>{
     }
     if(action==="authority_get_live_input"){
       const classId=clean(body?.class_id,64);
-      const {data:row,error}=await admin.from("ione_live_classes").select("live_input_uid,class_type,status").eq("id",classId).eq("class_type","live_broadcast").maybeSingle();
+      const {data:row,error}=await admin.from("ione_live_classes").select("live_input_uid,class_type,status,scheduled_start,scheduled_end").eq("id",classId).eq("class_type","live_broadcast").maybeSingle();
       if(error||!row?.live_input_uid)return json(req,{success:false,error:"No live broadcast input is linked to this class."},404);
       const {account,token}=streamConfig();
+      const now=Date.now();
+      if(row.scheduled_start&&new Date(row.scheduled_start).getTime()>now)return json(req,{success:false,error:"This live class has not started yet. Return at the scheduled start time."},409);
+      if(row.scheduled_end&&new Date(row.scheduled_end).getTime()<=now){
+        await streamRequest("/accounts/"+account+"/stream/live_inputs/"+row.live_input_uid,"PUT",token,{enabled:false});
+        await admin.from("ione_live_classes").update({stream_status:"ended"}).eq("id",classId);
+        return json(req,{success:false,error:"The scheduled live class has ended."},410);
+      }
       const live=await streamRequest("/accounts/"+account+"/stream/live_inputs/"+row.live_input_uid,"GET",token);
       const whipUrl=String(live?.webRTC?.url||"");
       if(!whipUrl)return json(req,{success:false,error:"The browser broadcast endpoint is unavailable for this live input."},409);
