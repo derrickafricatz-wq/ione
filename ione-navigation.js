@@ -130,7 +130,7 @@
       "#itClose","#isClose","#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#mfClose","#mmClose","#ioneExpertClose","#ioneRegisterClose",
       "#authorityPressClose","#authorityPasswordCancel","#authorityChapChapClose",
       "#closeTranscript","#aflClose","#aflServiceClose","#aflOwnerClose","#aflEditorCancel",
-      "#aflDeleteCancel","#aflCallDecline","#aflCallEndActive","#ioneDocAccessClose",
+      "#aflDeleteCancel","#aflCallDecline","#aflCallEndActive","#ioneDocAccessClose","#ilcClose","#ilcAdminClose",
       ".ione-feature-overlay .ione-feature-close",".ione-doc-reader-back",
       "#healthyContainer button",".ione-coming-soon-overlay button"
     ].join(","));
