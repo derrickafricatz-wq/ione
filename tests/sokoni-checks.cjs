@@ -48,7 +48,7 @@ assert.match(expertSource, /iex-registration-only/);
 assert.match(expertSource, /Ask the community, explore answers and read official advice/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI/);
-assert.match(html, /sw\.js\?v=150/);
+assert.match(html, /sw\.js\?v=151/);
 assert.match(html, /"ione-manual-subscriptions", "ione-sokoni", "ione-expert"/);
 console.log("PASS: Sokoni is additive; existing service buttons remain present");
 
