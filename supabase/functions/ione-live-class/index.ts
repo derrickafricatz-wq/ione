@@ -50,6 +50,24 @@ async function requireAuthority(admin:any,req:Request,body:any){
   const token=body?.authority_session||req.headers.get("x-ione-authority-session");
   if(!(await validAuthoritySession(admin,token)))throw new Error("Authority Press session expired. Unlock Authority Press again.");
 }
+function base64Url(value:string|Uint8Array){
+  const bytes=typeof value==="string"?new TextEncoder().encode(value):value;
+  return btoa(String.fromCharCode(...bytes)).replace(/=/g,"").replace(/\\+/g,"-").replace(/\\//g,"_");
+}
+async function createStreamSignedToken(videoUid:string,expiresInSeconds=900){
+  const keyId=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_ID");
+  const jwkEncoded=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64");
+  if(!keyId||!jwkEncoded)throw new Error("Cloudflare Stream signing key is not configured.");
+  let jwk:any;
+  try{jwk=JSON.parse(atob(jwkEncoded));}catch{throw new Error("Cloudflare Stream signing JWK secret is invalid.");}
+  const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
+  const now=Math.floor(Date.now()/1000);
+  const header=base64Url(JSON.stringify({alg:"RS256",kid:keyId}));
+  const payload=base64Url(JSON.stringify({sub:videoUid,kid:keyId,exp:now+Math.min(Math.max(expiresInSeconds,60),3600),nbf:now}));
+  const unsigned=header+"."+payload;
+  const signature=await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,new TextEncoder().encode(unsigned));
+  return unsigned+"."+base64Url(new Uint8Array(signature));
+}
 function safePublic(row:any){
   return {
     id:row.id,title:row.title,description:row.description,category:row.category,
@@ -92,13 +110,8 @@ Deno.serve(async(req:Request)=>{
       }
       const uid=row.class_type==="recorded"?row.media_uid:row.live_input_uid;
       if(!uid||!["ready","live_input_ready","live"].includes(row.stream_status))return json(req,{success:false,error:"The class video is not ready yet."},409);
-      const {account,token}=streamConfig();
-      const signingId=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_ID");
-      const signingPem=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_PEM_B64");
-      if(!signingId||!signingPem)return json(req,{success:false,error:"Secure playback signing is not configured yet."},503);
-      const signed=await streamRequest("/accounts/"+account+"/stream/"+uid+"/token","POST",token,{id:signingId,pem:signingPem,exp:Math.floor(Date.now()/1000)+3600});
-      if(!signed?.token)throw new Error("Cloudflare did not return a playback token.");
-      return json(req,{success:true,playback_token:String(signed.token),expires_in:3600});
+      const signedToken=await createStreamSignedToken(String(uid),900);
+      return json(req,{success:true,playback_token:signedToken,expires_in:900});
     }
 
     await requireAuthority(admin,req,body);
@@ -184,11 +197,25 @@ Deno.serve(async(req:Request)=>{
       const {account,token}=streamConfig();
       const live=await streamRequest("/accounts/"+account+"/stream/live_inputs","POST",token,{
         defaultCreator:"ione-live-class",enabled:true,preferLowLatency:false,
-        recording:{mode:row.record_replay?"automatic":"off",requireSignedURLs:true,allowedOrigins:["intoione.space","www.intoione.space"]}
+        recording:{mode:"off",requireSignedURLs:true,allowedOrigins:["intoione.space","www.intoione.space"]}
       },{"Idempotency-Key":"ione-live-class-"+classId});
-      const {error:updateError}=await admin.from("ione_live_classes").update({live_input_uid:String(live.uid||""),stream_status:"live_input_ready"}).eq("id",classId);
+      const publishUrl=String(live?.webRTC?.url||"");
+      if(!publishUrl)throw new Error("Cloudflare did not return the secure browser broadcast URL.");
+      const {error:updateError}=await admin.from("ione_live_classes").update({live_input_uid:String(live.uid||""),stream_status:"live_input_ready",record_replay:false}).eq("id",classId);
       if(updateError)throw new Error("Live input was created but its class record could not be updated. Contact Authority before retrying.");
-      return json(req,{success:true,live_input_uid:String(live.uid||""),rtmps_url:String(live?.rtmps?.url||""),stream_key:String(live?.rtmps?.streamKey||"")});
+      return json(req,{success:true,live_input_uid:String(live.uid||""),whip_url:publishUrl,replay_available:false});
+    }
+    if(action==="authority_get_live_input"){
+      const classId=clean(body?.class_id,64);
+      const {data:row,error}=await admin.from("ione_live_classes").select("live_input_uid,class_type,status").eq("id",classId).eq("class_type","live_broadcast").maybeSingle();
+      if(error||!row?.live_input_uid)return json(req,{success:false,error:"No live broadcast input is linked to this class."},404);
+      const {account,token}=streamConfig();
+      const live=await streamRequest("/accounts/"+account+"/stream/live_inputs/"+row.live_input_uid,"GET",token);
+      const whipUrl=String(live?.webRTC?.url||"");
+      if(!whipUrl)return json(req,{success:false,error:"The browser broadcast endpoint is unavailable for this live input."},409);
+      const nextStatus=live?.status==="connected"?"live":"live_input_ready";
+      await admin.from("ione_live_classes").update({stream_status:nextStatus}).eq("id",classId);
+      return json(req,{success:true,whip_url:whipUrl,stream_status:nextStatus});
     }
     if(action==="authority_publish"){
       const classId=clean(body?.class_id,64);
