@@ -132,6 +132,25 @@
     }
   },true);
 
+  // Some Android WebViews translate the system Back key into Escape before
+  // dispatching popstate. Feature modules also have their own Escape handlers.
+  // Capture it first and route it through the same history layer so the first
+  // Back action closes the feature instead of leaving a stale history entry.
+  window.addEventListener("keydown",event=>{
+    if(event.defaultPrevented||event.repeat)return;
+    const escape=event.key==="Escape";
+    const backspace=event.key==="Backspace"&&!/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName||"")&&!event.target?.isContentEditable;
+    if(!escape&&!backspace)return;
+    if(!allVisible().length)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if(!history.state?.ioneInternalBack&&!pushLayer()){
+      closeTopLayer();
+      return;
+    }
+    history.back();
+  },true);
+
   window.addEventListener("popstate",()=>{
     if(skipNextPopClose){skipNextPopClose=false;return;}
     const open=allVisible();
