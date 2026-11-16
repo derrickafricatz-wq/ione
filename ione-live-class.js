@@ -137,7 +137,7 @@
   async function loadPublic(){
     const host=$("ilcContent");if(host)host.innerHTML='<div class="ilc-empty">Loading published classes…</div>';
     try{const data=await invoke("public_list");classes=Array.isArray(data.classes)?data.classes:[];renderPublic();}
-    catch(e){if(host)host.innerHTML='<div class="ilc-empty">'+esc(e.message||"Could not load classes.")+'</div>';}
+    catch(e){if(host)host.innerHTML='<div class="ilc-empty">I|ONE Live Class is being prepared. Recorded lessons and live broadcasts will appear here after the secure streaming service is connected.</div>';}
   }
   async function playClass(id,button){
     const item=classes.find(c=>c.id===id);if(!item)return;
@@ -395,7 +395,7 @@
         }
         list.appendChild(card);
       });
-    }catch(e){list.innerHTML='<div class="ilc-empty">'+esc(e.message||"Could not load Authority classes.")+'</div>';}
+    }catch(e){list.innerHTML='<div class="ilc-empty">Live Class management is waiting for its dedicated Supabase service and Cloudflare Stream setup. Existing I|ONE features remain available.</div>';}
   }
   function installAuthoritySection(){
     const panel=$("authorityPressPanel");
