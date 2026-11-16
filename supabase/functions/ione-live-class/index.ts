@@ -90,7 +90,7 @@ Deno.serve(async(req:Request)=>{
 
     if(action==="public_list"){
       const {data,error}=await admin.from("ione_live_classes").select("id,title,description,category,instructor_name,class_type,status,price_tzs,duration_seconds,scheduled_start,scheduled_end,record_replay,cover_image_url,published_at")
-        .eq("status","published").order("scheduled_start",{ascending:true,nullsFirst:false}).order("created_at",{ascending:false}).limit(60);
+        .eq("status","published").or("class_type.eq.recorded,scheduled_end.is.null,scheduled_end.gt."+new Date().toISOString()).order("scheduled_start",{ascending:true,nullsFirst:false}).order("created_at",{ascending:false}).limit(60);
       if(error)throw new Error("Could not load published classes.");
       return json(req,{success:true,classes:(data||[]).map(safePublic)});
     }
@@ -98,8 +98,13 @@ Deno.serve(async(req:Request)=>{
     if(action==="playback_access"){
       const classId=clean(body?.class_id,64);
       if(!/^[0-9a-f-]{36}$/i.test(classId))return json(req,{success:false,error:"Choose a valid class."},400);
-      const {data:row,error}=await admin.from("ione_live_classes").select("id,class_type,status,price_tzs,media_uid,live_input_uid,stream_status").eq("id",classId).eq("status","published").maybeSingle();
+      const {data:row,error}=await admin.from("ione_live_classes").select("id,class_type,status,price_tzs,media_uid,live_input_uid,stream_status,scheduled_start,scheduled_end").eq("id",classId).eq("status","published").maybeSingle();
       if(error||!row)return json(req,{success:false,error:"This class is not available."},404);
+      if(row.class_type==="live_broadcast"){
+        const now=Date.now();
+        if(row.scheduled_start&&new Date(row.scheduled_start).getTime()>now)return json(req,{success:false,error:"This live class has not started yet. Please return at the scheduled time."},409);
+        if(row.scheduled_end&&new Date(row.scheduled_end).getTime()<=now)return json(req,{success:false,error:"This live class has ended."},410);
+      }
       if(Number(row.price_tzs)>0){
         const bearer=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");
         if(!bearer)return json(req,{success:false,error:"Sign in and purchase this class before watching."},403);
@@ -130,8 +135,12 @@ Deno.serve(async(req:Request)=>{
       if(!Number.isSafeInteger(price)||price<0)return json(req,{success:false,error:"Enter a valid whole-number TZS price."},400);
       const duration=input.duration_seconds==null?null:Number(input.duration_seconds);
       if(duration!==null&&(!Number.isInteger(duration)||duration<1||duration>(type==="recorded"?3600:21600)))return json(req,{success:false,error:type==="recorded"?"Recorded lessons can be up to 60 minutes.":"Enter a valid class duration."},400);
-      if(type==="live_broadcast"&&!input.scheduled_start)return json(req,{success:false,error:"Choose the live class date and starting time."},400);
-      const payload={title,description:clean(input.description,4000),category:clean(input.category,80)||"General",instructor_name:clean(input.instructor_name,120),class_type:type,price_tzs:price,duration_seconds:duration,scheduled_start:input.scheduled_start||null,scheduled_end:input.scheduled_end||null,record_replay:true,status:"draft",stream_status:"not_configured"};
+      if(type==="live_broadcast"){
+        const start=Date.parse(String(input.scheduled_start||"")),end=Date.parse(String(input.scheduled_end||""));
+        if(!Number.isFinite(start)||!Number.isFinite(end))return json(req,{success:false,error:"Choose both the live class start and end time."},400);
+        if(end<=start)return json(req,{success:false,error:"The live class end time must be after its start time."},400);
+      }
+      const payload={title,description:clean(input.description,4000),category:clean(input.category,80)||"General",instructor_name:clean(input.instructor_name,120),class_type:type,price_tzs:price,duration_seconds:duration,scheduled_start:input.scheduled_start||null,scheduled_end:input.scheduled_end||null,record_replay:type!=="live_broadcast",status:"draft",stream_status:"not_configured"};
       const {data,error}=await admin.from("ione_live_classes").insert(payload).select("*").single();
       if(error)throw new Error("Could not save the class draft.");
       return json(req,{success:true,class:data});
