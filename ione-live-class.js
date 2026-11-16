@@ -10,7 +10,7 @@
   const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&gt;",">":"&lt;",'"':"&quot;","'":"&#39;"}[c]));
   const money=v=>"TZS "+Number(v||0).toLocaleString("en-US");
   const sb=()=>typeof heavensSupabase!=="undefined"?heavensSupabase:null;
-  let overlay=null,manager=null,activeTab="recorded",classes=[],authorityClasses=[],busy=false;
+  let overlay=null,manager=null,activeTab="recorded",classes=[],authorityClasses=[],busy=false,activeDraftId=null,activeDraftType=null;
   let selectedClass=null;
   const pendingUploads=new Map();
 
@@ -244,8 +244,9 @@
     const payload={title:f.get("title"),instructor_name:f.get("instructor_name"),class_type:type,category:f.get("category"),description:f.get("description"),price_tzs:Number(f.get("price_tzs")||0),duration_seconds:minutes?minutes*60:null,scheduled_start:start,scheduled_end:end};
     try{
       const file=f.get("video_file");
-      button.disabled=true;status(message,"Saving draft…");
-      const data=await invoke("authority_create",{class_data:payload});
+      button.disabled=true;status(message,activeDraftId&&activeDraftType===type?"Continuing saved draft…":"Saving draft…");
+      const data=activeDraftId&&activeDraftType===type?{class:{id:activeDraftId}}:await invoke("authority_create",{class_data:payload});
+      activeDraftId=data.class.id;activeDraftType=type;
       let line="Draft created.";
       if(type==="recorded"&&file&&file.size){
         await uploadRecordedFile(data.class.id,file,message);
@@ -260,7 +261,7 @@
       }else if(type==="interactive"){
         line="Draft saved. Interactive classroom support will be enabled in a later stage.";
       }
-      form.reset();updateAdminFields();status(message,line);await loadAuthority();
+      form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();
     }catch(e){status(message,e.message||"Could not create class.",true);}
     finally{busy=false;button.disabled=false;}
   }
@@ -284,7 +285,7 @@
         if(item.class_type==="recorded"&&item.stream_status!=="ready"){
           const retry=document.createElement("button");retry.className="ilc-action secondary";retry.textContent=item.stream_status==="upload_pending"?"RESUME / REPLACE VIDEO":"UPLOAD TRAINING VIDEO";
           const picker=document.createElement("input");picker.type="file";picker.accept="video/mp4,video/webm";picker.hidden=true;
-          picker.addEventListener("change",async()=>{const file=picker.files&&picker.files[0];if(!file)return;retry.disabled=true;try{await uploadRecordedFile(item.id,file,$("ilcAdminStatus"));await loadAuthority();}catch(e){alert(e.message);}finally{retry.disabled=false;}});
+          picker.addEventListener("change",async()=>{const file=picker.files&&picker.files[0];if(!file)return;retry.disabled=true;try{await uploadRecordedFile(item.id,file,$("ilcAdminStatus"));await loadAuthority();}catch(e){alert(e.message);}finally{retry.disabled=false;picker.value="";}});
           retry.addEventListener("click",()=>picker.click());card.append(retry,picker);
         }
         if(item.class_type==="live_broadcast"&&item.live_input_uid){
