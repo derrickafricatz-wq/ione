@@ -103,7 +103,7 @@
   observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["style","class","aria-hidden","hidden"]});
   queueScan();
 
-  document.addEventListener("click",event=>{
+  window.addEventListener("click",event=>{
     const target=event.target;
     if(!(target instanceof Element))return;
 
