@@ -63,7 +63,7 @@ async function createStreamSignedToken(videoUid:string,expiresInSeconds=3600){
   const key=await crypto.subtle.importKey("jwk",jwk,{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);
   const now=Math.floor(Date.now()/1000);
   const header=base64Url(JSON.stringify({alg:"RS256",kid:keyId}));
-  const payload=base64Url(JSON.stringify({sub:videoUid,kid:keyId,exp:now+Math.min(Math.max(expiresInSeconds,60),3600),nbf:now}));
+  const payload=base64Url(JSON.stringify({sub:videoUid,kid:keyId,exp:now+Math.min(Math.max(expiresInSeconds,60),21600),nbf:now}));
   const unsigned=header+"."+payload;
   const signature=await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,new TextEncoder().encode(unsigned));
   return unsigned+"."+base64Url(new Uint8Array(signature));
@@ -115,8 +115,11 @@ Deno.serve(async(req:Request)=>{
       }
       const uid=row.class_type==="recorded"?row.media_uid:row.live_input_uid;
       if(!uid||!["ready","live_input_ready","live"].includes(row.stream_status))return json(req,{success:false,error:"The class video is not ready yet."},409);
-      const signedToken=await createStreamSignedToken(String(uid),3600);
-      return json(req,{success:true,playback_token:signedToken,expires_in:3600});
+      const liveTtl=row.class_type==="live_broadcast"&&row.scheduled_end
+        ?Math.min(21600,Math.max(300,Math.ceil((new Date(row.scheduled_end).getTime()-Date.now())/1000)+300))
+        :3600;
+      const signedToken=await createStreamSignedToken(String(uid),liveTtl);
+      return json(req,{success:true,playback_token:signedToken,expires_in:liveTtl});
     }
 
     await requireAuthority(admin,req,body);
