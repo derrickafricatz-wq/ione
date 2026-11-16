@@ -25,9 +25,9 @@ function streamConfig() {
   if (!account || !token) throw new Error("Cloudflare Stream is not configured. Add the Stream account ID and API token to the ione-live-class Edge Function secrets.");
   return {account,token};
 }
-async function streamRequest(path:string,method:"GET"|"POST",token:string,body?:unknown) {
+async function streamRequest(path:string,method:"GET"|"POST",token:string,body?:unknown,extraHeaders:Record<string,string>={}) {
   const response = await fetch("https://api.cloudflare.com/client/v4"+path,{
-    method,headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json"},
+    method,headers:{"Authorization":"Bearer "+token,"Content-Type":"application/json",...extraHeaders},
     ...(body===undefined?{}:{body:JSON.stringify(body)})
   });
   const data:any = await response.json().catch(()=>({}));
@@ -185,7 +185,7 @@ Deno.serve(async(req:Request)=>{
       const live=await streamRequest("/accounts/"+account+"/stream/live_inputs","POST",token,{
         defaultCreator:"ione-live-class",enabled:true,preferLowLatency:false,
         recording:{mode:row.record_replay?"automatic":"off",requireSignedURLs:true,allowedOrigins:["intoione.space","www.intoione.space"]}
-      });
+      },{"Idempotency-Key":"ione-live-class-"+classId});
       const {error:updateError}=await admin.from("ione_live_classes").update({live_input_uid:String(live.uid||""),stream_status:"live_input_ready"}).eq("id",classId);
       if(updateError)throw new Error("Live input was created but its class record could not be updated. Contact Authority before retrying.");
       return json(req,{success:true,live_input_uid:String(live.uid||""),rtmps_url:String(live?.rtmps?.url||""),stream_key:String(live?.rtmps?.streamKey||"")});
