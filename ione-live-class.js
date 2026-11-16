@@ -359,11 +359,27 @@
           const help=document.createElement("p");help.className="ilc-meta";help.textContent="Start a live broadcast directly from your browser camera and microphone. Live WebRTC sessions are not automatically recorded.";card.append(help);
           const studio=document.createElement("button");studio.className="ilc-action secondary";studio.textContent="OPEN LIVE STUDIO";studio.addEventListener("click",()=>openLiveStudio(item));card.append(studio);
         }
-        if(item.status==="draft"&&((item.class_type==="recorded"&&item.stream_status==="ready")||(item.class_type==="live_broadcast"&&item.stream_status==="live_input_ready"))){
-          const publish=document.createElement("button");publish.className="ilc-action";publish.textContent="PUBLISH CLASS";publish.addEventListener("click",async()=>{publish.disabled=true;try{await invoke("authority_publish",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);publish.disabled=false;}});card.append(publish);
+        if(item.status==="draft"&&((item.class_type==="recorded"&&item.stream_status==="ready")||(item.class_type==="live_broadcast"&&item.live_input_uid))){
+          const publish=document.createElement("button");publish.className="ilc-action";publish.textContent="PUBLISH CLASS";
+          publish.addEventListener("click",async()=>{
+            publish.disabled=true;
+            try{
+              await invoke("authority_publish",{class_id:item.id});
+              item.status="published";chip.textContent="published • "+(item.stream_status||"ready");
+              if(activeBroadcast&&activeBroadcast.class_id===item.id){
+                publish.textContent="CLASS PUBLISHED";
+                const suspend=document.createElement("button");suspend.className="ilc-action secondary";suspend.textContent="SUSPEND CLASS";
+                suspend.addEventListener("click",async()=>{suspend.disabled=true;try{stopActiveBroadcast();await invoke("authority_suspend",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);suspend.disabled=false;}});
+                card.append(suspend);
+              }else await loadAuthority();
+            }catch(e){alert(e.message);publish.disabled=false;}
+          });
+          card.append(publish);
         }
         if(item.status==="published"){
-          const suspend=document.createElement("button");suspend.className="ilc-action secondary";suspend.textContent="SUSPEND CLASS";suspend.addEventListener("click",async()=>{suspend.disabled=true;try{await invoke("authority_suspend",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);suspend.disabled=false;}});card.append(suspend);
+          const suspend=document.createElement("button");suspend.className="ilc-action secondary";suspend.textContent="SUSPEND CLASS";
+          suspend.addEventListener("click",async()=>{suspend.disabled=true;try{if(activeBroadcast&&activeBroadcast.class_id===item.id)stopActiveBroadcast();await invoke("authority_suspend",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);suspend.disabled=false;}});
+          card.append(suspend);
         }
         list.appendChild(card);
       });
