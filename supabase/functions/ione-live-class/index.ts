@@ -161,7 +161,7 @@ Deno.serve(async(req:Request)=>{
         "name "+toBase64(clean(body?.file_name,120)||row.title),
         "requiresignedurls",
         "allowedorigins "+toBase64("intoione.space,www.intoione.space"),
-        "maxdurationseconds "+toBase64("3600")
+        "maxDurationSeconds "+toBase64("3600")
       ].join(",");
       const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+account+"/stream?direct_user=true",{
         method:"POST",
