@@ -118,7 +118,7 @@
       const card=document.createElement("article");card.className="ilc-card";
       const chip=type==="recorded"?"RECORDED TRAINING":(new Date(item.scheduled_start||0)>new Date()?"UPCOMING LIVE CLASS":"LIVE CLASS");
       const date=item.scheduled_start?new Date(item.scheduled_start).toLocaleString():"Schedule to be announced";
-      card.innerHTML='<div class="ilc-card-top"><span class="ilc-chip">'+esc(chip)+'</span><strong>'+esc(money(item.price_tzs))+'</strong></div><h3>'+esc(item.title)+'</h3><div class="ilc-meta">'+esc(item.category||"General")+' • '+esc(item.instructor_name||"I|ONE Instructor")+(type==="live_broadcast"?"<br>"+esc(date):"")+'</div><p class="ilc-desc">'+esc(item.description||"")+'</p><button class="ilc-action" type="button" data-play="'+esc(item.id)+'">'+(Number(item.price_tzs)>0?"GET ACCESS":"WATCH CLASS")+'</button>';
+      card.innerHTML='<div class="ilc-card-top"><span class="ilc-chip">'+esc(chip)+'</span><strong>'+esc(money(item.price_tzs))+'</strong></div><h3>'+esc(item.title)+'</h3><div class="ilc-meta">'+esc(item.category||"General")+' • '+esc(item.instructor_name||"I|ONE Instructor")+(type==="live_broadcast"?"<br>"+esc(date):"")+'</div><p class="ilc-desc">'+esc(item.description||"")+'</p><button class="ilc-action" type="button" data-play="'+esc(item.id)+'">'+(Number(item.price_tzs)>0?"GET ACCESS":(type==="live_broadcast"?"JOIN LIVE CLASS":"WATCH LESSON"))+'</button>';
       host.appendChild(card);
     });
     host.querySelectorAll("[data-play]").forEach(button=>button.addEventListener("click",()=>playClass(button.dataset.play,button)));
@@ -202,14 +202,14 @@
     const end=f.get("scheduled_end")?new Date(f.get("scheduled_end")).toISOString():null;
     const payload={title:f.get("title"),instructor_name:f.get("instructor_name"),class_type:type,category:f.get("category"),description:f.get("description"),price_tzs:Number(f.get("price_tzs")||0),duration_seconds:minutes?minutes*60:null,scheduled_start:start,scheduled_end:end};
     try{
+      const file=f.get("video_file");
+      if(type==="recorded"&&file&&file.size>200*1024*1024)throw new Error("This first upload flow supports files up to 200 MB. Large resumable uploads will be added after the initial Stream test.");
       button.disabled=true;status(message,"Saving draft…");
       const data=await invoke("authority_create",{class_data:payload});
       let line="Draft created.";
-      const file=f.get("video_file");
       if(type==="recorded"&&file&&file.size){
         status(message,"Preparing secure video upload…");
         const ticket=await invoke("authority_create_upload",{class_id:data.class.id,file_name:file.name});
-        if(file.size>200*1024*1024)throw new Error("This first upload flow supports files up to 200 MB. Large resumable uploads will be added after the initial Stream test.");
         const upload=new FormData();upload.append("file",file,file.name);
         const response=await fetch(ticket.upload_url,{method:"POST",body:upload});
         if(!response.ok)throw new Error("Cloudflare Stream upload failed ("+response.status+").");
