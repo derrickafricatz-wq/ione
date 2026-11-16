@@ -21,6 +21,7 @@ assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64/,"signed playback must 
 assert.match(edge,/authority_get_live_input/,"instructors must retrieve their private WHIP endpoint through Authority");
 assert.match(edge,/enabled:false/,"suspending a live class must disable its Cloudflare input");
 assert.match(moduleText,/getUserMedia/,"instructors must be able to broadcast from their camera and microphone");
+assert.match(moduleText,/I\|ONE Live Class is being prepared/,"public users must see a friendly setup state before backend activation");
 assert.doesNotThrow(()=>new Function(moduleText),"Live Class browser module must parse");
 assert.match(edge,/scheduled_end/,"live classes must enforce a scheduled end time");
 assert.match(edge,/up to 6 hours/,"live class duration must be capped");
