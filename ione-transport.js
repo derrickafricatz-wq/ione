@@ -12,6 +12,8 @@
     #openBusBooking.ione-transport-tile strong{letter-spacing:.5px}
     #ioneTransportOverlay{position:fixed;inset:0;z-index:100800;display:none;overflow:auto;overscroll-behavior:contain;background:#071410;color:#f3fff7;font-family:Arial,sans-serif}
     #ioneTransportOverlay *{box-sizing:border-box}
+    #ioneTransportOverlay.it-registration-only .it-shell > *:not(.it-top):not(#itDriverRegistration){display:none!important}
+    #ioneTransportOverlay.it-registration-only #itDriverRegistration{display:block!important}
     .it-shell{width:min(1000px,100%);min-height:100%;margin:0 auto;padding:clamp(14px,4vw,30px)}
     .it-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
     .it-brand{font-size:11px;font-weight:900;letter-spacing:3px;color:#9de1b5}
@@ -156,12 +158,15 @@
     });
   }
   function open() {
+    overlay.classList.remove("it-registration-only");
+    const registration = $("itDriverRegistration"); if (registration) registration.style.display = "none";
     overlay.style.display = "block";
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     // i1 Transport operations module loads the driver and passenger workspaces.
   }
   function close() {
+    overlay.classList.remove("it-registration-only");
     const registration = $("itDriverRegistration"); if (registration) registration.style.display = "none";
     overlay.style.display = "none";
     overlay.setAttribute("aria-hidden", "true");
@@ -170,7 +175,7 @@
   $("itClose").addEventListener("click", close);
   overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
   document.addEventListener("keydown", event => { if (event.key === "Escape" && overlay.style.display === "block") close(); });
-  function openRegistration() { open(); const registration = $("itDriverRegistration"); if (registration) { registration.style.display = "block"; registration.scrollIntoView({ behavior: "smooth", block: "start" }); } }
+  function openRegistration() { open(); overlay.classList.add("it-registration-only"); const registration = $("itDriverRegistration"); if (registration) { registration.style.display = "block"; registration.scrollIntoView({ behavior: "smooth", block: "start" }); } }
   window.IoneTransport = Object.freeze({ open, close, openRegistration });
   const tile = $("openBusBooking");
   if (tile) {
