@@ -270,10 +270,10 @@
     }catch(e){status(message,e.message||"Could not create class.",true);}
     finally{busy=false;button.disabled=false;}
   }
-  async function stopActiveBroadcast(){
+  function stopActiveBroadcast(){
     const active=activeBroadcast;if(!active)return;
     activeBroadcast=null;
-    try{if(active.session_url)await fetch(active.session_url,{method:"DELETE"});}catch(_){}
+    try{if(active.session_url)fetch(active.session_url,{method:"DELETE"}).catch(()=>{});}catch(_){}
     try{active.pc.close();}catch(_){}
     try{active.media.getTracks().forEach(track=>track.stop());}catch(_){}
   }
