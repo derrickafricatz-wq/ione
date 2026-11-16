@@ -266,7 +266,7 @@
       }else if(type==="interactive"){
         line="Draft saved. Interactive classroom support will be enabled in a later stage.";
       }
-      form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();if(type==="live_broadcast"&&data.class)await openLiveStudio(data.class);
+      form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();if(type==="live_broadcast"&&data.class){if(data.class.scheduled_start&&new Date(data.class.scheduled_start)>new Date())status(message,"Live class scheduled. Open the Live Studio at the scheduled start time.",false);else await openLiveStudio(data.class);}
     }catch(e){status(message,e.message||"Could not create class.",true);}
     finally{busy=false;button.disabled=false;}
   }
