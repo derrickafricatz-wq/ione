@@ -99,7 +99,7 @@
   }
   function intro(){
     const copy={
-      recorded:["Learn at your own pace","Practical lessons from skilled instructors. Purchase access and learn whenever it suits you."],
+      recorded:["Learn at your own pace","Practical lessons from skilled instructors. Free published lessons are available to watch online; paid enrollment will be enabled when secure checkout is connected."],
       broadcast:["Join a live lesson","Watch instructors teach in real time. Upcoming sessions show their scheduled date and starting time."],
       interactive:["Enter the learning room","A two-way classroom for instructors and students, with camera, microphone and discussion. This experience is being prepared for a later release."]
     }[activeTab];
@@ -177,11 +177,11 @@
             <label>START DATE & TIME<input name="scheduled_start" type="datetime-local"></label>
             <label>END DATE & TIME<input name="scheduled_end" type="datetime-local"></label>
           </div>
-          <label><span>RECORDED VIDEO (MP4, up to 200 MB; maximum lesson duration 60 minutes)</span><input name="video_file" type="file" accept="video/mp4,video/webm"></label>
+          <label><span>RECORDED VIDEO (MP4 or WebM; maximum lesson duration 60 minutes)</span><input name="video_file" type="file" accept="video/mp4,video/webm"></label>
           <button class="ilc-action" type="submit" id="ilcCreateButton">SAVE CLASS AS DRAFT</button>
           <div id="ilcAdminStatus" class="ilc-meta" role="status"></div>
         </form>
-        <div class="ilc-note">Live broadcast classes receive private RTMPS credentials. Keep the stream key confidential and enter it only in the instructor's broadcasting software. Interactive classrooms are reserved for the next stage.</div>
+        <div class="ilc-note">Live broadcasts use the phone or computer camera and microphone directly in this browser. Keep the instructor's Authority session open during the class. Cloudflare WebRTC broadcasts are live-only in this release; automatic recording/replay is not supported. Upload a separate recorded lesson if you need a replay. Interactive classrooms are reserved for the next stage.</div>
         <div class="ilc-card-top"><strong>YOUR CLASSES</strong><button class="ilc-action secondary" type="button" id="ilcAdminRefresh">REFRESH</button></div>
         <div id="ilcAdminList"><div class="ilc-empty">Loading…</div></div>
       </div>`;
@@ -286,7 +286,7 @@
     if(activeBroadcast&&activeBroadcast.class_id!==item.id){alert("Stop the current live broadcast before opening another class.");return;}
     const old=$("ilcLiveStudio");if(old)old.remove();
     const card=document.createElement("section");card.id="ilcLiveStudio";card.className="ilc-card";
-    card.innerHTML='<div class="ilc-card-top"><span class="ilc-chip">INSTRUCTOR LIVE STUDIO</span><strong>'+esc(item.title)+'</strong></div><video id="ilcBroadcastPreview" autoplay muted playsinline style="display:block;width:100%;max-height:48vh;aspect-ratio:16/9;object-fit:cover;background:#000;border-radius:12px"></video><p id="ilcBroadcastStatus" class="ilc-meta">Preparing secure camera connection…</p><div class="ilc-form-row"><button class="ilc-action" id="ilcBroadcastStart" type="button">START LIVE CLASS</button><button class="ilc-action secondary" id="ilcBroadcastStop" type="button" hidden>END LIVE CLASS</button></div><p class="ilc-meta">Allow camera and microphone access. Keep this screen open while teaching. Live WebRTC broadcasts are not automatically recorded; upload a replay separately as a recorded lesson if you want students to watch it later.</p>';
+    card.innerHTML='<div class="ilc-card-top"><span class="ilc-chip">INSTRUCTOR LIVE STUDIO</span><strong>'+esc(item.title)+'</strong></div><video id="ilcBroadcastPreview" autoplay muted playsinline style="display:block;width:100%;max-height:48vh;aspect-ratio:16/9;object-fit:cover;background:#000;border-radius:12px"></video><p id="ilcBroadcastStatus" class="ilc-meta">Preparing secure camera connection…</p><div class="ilc-form-row"><button class="ilc-action" id="ilcBroadcastStart" type="button">START LIVE CLASS</button><button class="ilc-action secondary" id="ilcBroadcastStop" type="button" hidden>END LIVE CLASS</button></div><p class="ilc-meta">Allow camera and microphone access. Keep this screen open while teaching. Cloudflare WebRTC broadcasts are live-only in this release; automatic recording/replay is not supported. Upload a separate recorded lesson if students need to watch it later.</p>';
     list.prepend(card);
     const start=$("ilcBroadcastStart"),stop=$("ilcBroadcastStop"),preview=$("ilcBroadcastPreview"),message=$("ilcBroadcastStatus");
     let whipUrl="";
@@ -368,7 +368,7 @@
           retry.addEventListener("click",()=>picker.click());card.append(retry,picker);
         }
         if(item.class_type==="live_broadcast"&&item.live_input_uid){
-          const help=document.createElement("p");help.className="ilc-meta";help.textContent="Start a live broadcast directly from your browser camera and microphone. Live WebRTC sessions are not automatically recorded.";card.append(help);
+          const help=document.createElement("p");help.className="ilc-meta";help.textContent="Start a live broadcast directly from your browser camera and microphone. Cloudflare WebRTC broadcasts are live-only in this release; automatic recording/replay is not supported.";card.append(help);
           const studio=document.createElement("button");studio.className="ilc-action secondary";studio.textContent="OPEN LIVE STUDIO";studio.addEventListener("click",()=>openLiveStudio(item));card.append(studio);
         }
         if(item.status==="draft"&&((item.class_type==="recorded"&&item.stream_status==="ready")||(item.class_type==="live_broadcast"&&item.live_input_uid))){
