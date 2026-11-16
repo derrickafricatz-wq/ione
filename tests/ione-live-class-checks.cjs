@@ -1,0 +1,18 @@
+const fs = require("fs");
+const assert = require("assert");
+const html = fs.readFileSync("index.html","utf8");
+const sw = fs.readFileSync("sw.js","utf8");
+const moduleText = fs.readFileSync("ione-live-class.js","utf8");
+const migration = fs.readFileSync("supabase/migrations/20261116190000_ione_live_class_foundation.sql","utf8");
+const edge = fs.readFileSync("supabase/functions/ione-live-class/index.ts","utf8");
+assert.match(html,/id="openIoneLiveClass"/,"homepage must expose the Live Class tile");
+assert.match(html,/ione-live-class\.js\?v=1/,"homepage must load the isolated Live Class module");
+assert.match(sw,/ione-live-class\.js/,"service worker must cache the feature module");
+assert.match(moduleText,/authority_create_live_input/,"Authority must provision a live broadcast input");
+assert.match(moduleText,/authority_create_upload/,"Authority must prepare recorded uploads");
+assert.match(edge,/validAuthoritySession/,"server actions must validate Authority sessions");
+assert.match(edge,/playback_access/,"playback must be issued by the server");
+assert.match(edge,/payment_status","paid"/,"paid playback must require a verified enrollment");
+assert.match(migration,/enable row level security/i,"all Live Class tables must have RLS enabled");
+assert.match(migration,/revoke all on public\.ione_live_class_enrollments from anon, authenticated/i,"enrollments must not be directly exposed");
+console.log("I|ONE Live Class static checks passed.");
