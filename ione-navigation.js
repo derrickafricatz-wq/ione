@@ -126,7 +126,7 @@
 
     const close=target.closest([
       "#hbClose",".hr-back",".heavens-payment-close","#ioneManualRecoveryCodeOverlay button:last-of-type","#ioneBookReceiptOverlay button:first-of-type",
-      "#closeGuideHome","#closeGuideMap","#guideDetailBack","#ministryAccessCancel",
+      "#closeGuideHome","#closeGuideMap","#ministryAccessCancel",
       "#itClose","#isClose","#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#mfClose","#mmClose","#ioneExpertClose","#ioneRegisterClose",
       "#authorityPressClose","#authorityPasswordCancel","#authorityChapChapClose",
       "#closeTranscript","#aflClose","#aflServiceClose","#aflOwnerClose","#aflEditorCancel",
