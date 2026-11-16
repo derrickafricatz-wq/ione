@@ -4,7 +4,7 @@
   "use strict";
   if(window.__ioneNavigationBackBooted)return;
   window.__ioneNavigationBackBooted=true;
-  let sequence=0;
+  let sequence=0;\n  let closingFromHistory=false;
   function pushLayer(){
     try{history.pushState({ioneInternalBack:true,ioneLayer:++sequence},"",location.href);}catch(e){console.warn("I|ONE navigation history:",e);}
   }
@@ -16,7 +16,7 @@
   function clickFirst(selectors){
     for(const selector of selectors){
       const el=document.querySelector(selector);
-      if(el&&visible(el)&&!el.disabled){el.click();return true;}
+      if(el&&visible(el)&&!el.disabled){closingFromHistory=true;el.click();queueMicrotask(()=>{closingFromHistory=false;});return true;}
     }
     return false;
   }
@@ -41,7 +41,7 @@
   document.addEventListener("click",event=>{
     const target=event.target;
     if(!(target instanceof Element))return;
-    if(target.closest("[data-register]")){
+    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,.ione-doc-reader-back")){\n      if(!closingFromHistory&&history.state?.ioneInternalBack)queueMicrotask(()=>history.back());\n      return;\n    }\n    if(target.closest("[data-register]")){
       try{history.replaceState({ioneInternalBack:true,ioneLayer:++sequence},"",location.href);}catch(_){}
       return;
     }
