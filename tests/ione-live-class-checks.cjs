@@ -15,7 +15,9 @@ assert.match(edge,/validAuthoritySession/,"server actions must validate Authorit
 assert.match(edge,/playback_access/,"playback must be issued by the server");
 assert.match(edge,/payment_status","paid"/,"paid playback must require a verified enrollment");
 assert.match(edge,/Tus-Resumable/,"recorded uploads must use resumable TUS");
-assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_PEM_B64/,"signed playback must use a server-side signing key");
+assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64/,"signed playback must use a server-side signing key");
+assert.match(edge,/authority_get_live_input/,"instructors must retrieve their private WHIP endpoint through Authority");
+assert.match(moduleText,/getUserMedia/,"instructors must be able to broadcast from their camera and microphone");
 assert.match(edge,/authority_create_live_input/,"Authority must provision live broadcast inputs");
 assert.match(nav,/ioneLiveClassOverlay/,"Live Class must participate in Back navigation");
 assert.match(migration,/enable row level security/i,"all Live Class tables must have RLS enabled");
