@@ -273,6 +273,7 @@
   function stopActiveBroadcast(){
     const active=activeBroadcast;if(!active)return;
     activeBroadcast=null;
+    try{if(active.end_timer)clearTimeout(active.end_timer);}catch(_){}
     try{if(active.session_url)fetch(active.session_url,{method:"DELETE"}).catch(()=>{});}catch(_){}
     try{active.pc.close();}catch(_){}
     try{active.media.getTracks().forEach(track=>track.stop());}catch(_){}
@@ -310,7 +311,15 @@
         await pc.setRemoteDescription({type:"answer",sdp:answer});
         const location=response.headers.get("Location");
         const sessionUrl=location?new URL(location,whipUrl).toString():"";
-        activeBroadcast={pc,media,session_url:sessionUrl,class_id:item.id};
+        const endAt=item.scheduled_end?new Date(item.scheduled_end).getTime():0;
+        const endTimer=endAt?setTimeout(()=>{
+          if(activeBroadcast&&activeBroadcast.class_id===item.id){
+            stopActiveBroadcast();preview.srcObject=null;stop.hidden=true;start.hidden=false;start.disabled=true;
+            status(message,"Scheduled class time has ended. The live broadcast was stopped.",false);
+            invoke("authority_get_live_input",{class_id:item.id}).catch(()=>{});
+          }
+        },Math.max(0,endAt-Date.now())):null;
+        activeBroadcast={pc,media,session_url:sessionUrl,class_id:item.id,end_timer:endTimer};
         start.hidden=true;stop.hidden=false;
         try{await invoke("authority_get_live_input",{class_id:item.id});}catch(_){}
         status(message,item.status==="published"?"YOU ARE LIVE • Students can now join this class.":"YOU ARE LIVE • Publish this class when you are ready for students.",false);
@@ -400,7 +409,7 @@
   }
   function boot(){
     installTile();installAuthoritySection();
-    window.addEventListener("pagehide",()=>{if(activeBroadcast){try{activeBroadcast.pc.close();}catch(_){}try{activeBroadcast.media.getTracks().forEach(track=>track.stop());}catch(_){}activeBroadcast=null;}});
+    window.addEventListener("pagehide",()=>{if(activeBroadcast){try{if(activeBroadcast.end_timer)clearTimeout(activeBroadcast.end_timer);}catch(_){}try{activeBroadcast.pc.close();}catch(_){}try{activeBroadcast.media.getTracks().forEach(track=>track.stop());}catch(_){}activeBroadcast=null;}});
     const panel=$("authorityPressPanel");
     if(panel)new MutationObserver(installAuthoritySection).observe(panel,{childList:true,subtree:true});
     setTimeout(installTile,1200);
