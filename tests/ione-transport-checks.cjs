@@ -28,7 +28,7 @@ assert.doesNotMatch(html, /id="openBusBooking"[^>]*smart-coming-soon/);
 assert.match(html, /ione-transport\.js\?v=10/);
 assert.match(ui, /it-registration-only/);
 assert.match(html, /ione-transport-operations\.js\?v=11/);
-assert.match(html, /sw\.js\?v=152/);
+assert.match(html, /sw\.js\?v=153/);
 assert.match(html, /\["transport","🚕","i1 TRANSPORT"/);
 console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Coming Soon tile");
 
