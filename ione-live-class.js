@@ -350,7 +350,7 @@
           const check=document.createElement("button");check.className="ilc-action secondary";check.textContent="CHECK VIDEO PROCESSING";check.addEventListener("click",async()=>{try{await invoke("authority_check_upload",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);}});card.append(check);
         }
         if(item.class_type==="recorded"&&item.stream_status!=="ready"){
-          const retry=document.createElement("button");retry.className="ilc-action secondary";retry.textContent=item.stream_status==="upload_pending"?"RESUME / REPLACE VIDEO":"UPLOAD TRAINING VIDEO";
+          const retry=document.createElement("button");retry.className="ilc-action secondary";retry.textContent=item.stream_status==="upload_pending"?"RETRY / REPLACE VIDEO":"UPLOAD TRAINING VIDEO";
           const picker=document.createElement("input");picker.type="file";picker.accept="video/mp4,video/webm";picker.hidden=true;
           picker.addEventListener("change",async()=>{const file=picker.files&&picker.files[0];if(!file)return;retry.disabled=true;try{await uploadRecordedFile(item.id,file,$("ilcAdminStatus"));await loadAuthority();}catch(e){alert(e.message);}finally{retry.disabled=false;picker.value="";}});
           retry.addEventListener("click",()=>picker.click());card.append(retry,picker);
