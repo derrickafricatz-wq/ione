@@ -24,6 +24,8 @@ assert.ok(navigation.includes("popstate"));
 assert.ok(navigation.includes("#smartPanel .smart-item"));
 assert.ok(navigation.includes("#afrilinkOverlay"));
 assert.ok(navigation.includes("#transcriptPanel"));
+assert.ok(navigation.includes("#ioneOpportunitiesOverlay"));
+assert.ok(navigation.includes("#ioneOppDetail"));
 assert.ok(navigation.includes("pendingLaunches"));
 assert.ok(navigation.includes("history.back()"));
 assert.ok(navigation.includes("window.addEventListener(\"click\""));
