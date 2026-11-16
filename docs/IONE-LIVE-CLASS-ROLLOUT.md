@@ -1,6 +1,6 @@
 # I|ONE Live Class — rollout and verification notes
 
-This feature is intentionally isolated on `feature/ione-live-class-foundation`. It is not merged or deployed to the live I|ONE site.
+This document describes the Live Class release and production activation sequence. Merging the source code does not by itself apply the Supabase migration, deploy the Edge Function, or activate Cloudflare Stream.
 
 ## What is included
 
