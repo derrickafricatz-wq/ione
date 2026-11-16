@@ -13,6 +13,10 @@ assert.match(moduleText,/authority_create_upload/,"Authority must prepare record
 assert.match(edge,/validAuthoritySession/,"server actions must validate Authority sessions");
 assert.match(edge,/playback_access/,"playback must be issued by the server");
 assert.match(edge,/payment_status","paid"/,"paid playback must require a verified enrollment");
+assert.match(edge,/Tus-Resumable/,"recorded uploads must use resumable TUS");
+assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_PEM_B64/,"signed playback must use a server-side signing key");
+assert.match(edge,/authority_create_live_input/,"Authority must provision live broadcast inputs");
+assert.match(nav,/ioneLiveClassOverlay/,"Live Class must participate in Back navigation");
 assert.match(migration,/enable row level security/i,"all Live Class tables must have RLS enabled");
 assert.match(migration,/revoke all on public\.ione_live_class_enrollments from anon, authenticated/i,"enrollments must not be directly exposed");
 console.log("I|ONE Live Class static checks passed.");
