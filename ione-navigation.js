@@ -4,9 +4,11 @@
   "use strict";
   if(window.__ioneNavigationBackBooted)return;
   window.__ioneNavigationBackBooted=true;
-  let sequence=0;\n  let closingFromHistory=false;
+  let sequence=0;
+  let closingFromHistory=false;
   function pushLayer(){
-    try{history.pushState({ioneInternalBack:true,ioneLayer:++sequence},"",location.href);}catch(e){console.warn("I|ONE navigation history:",e);}
+    try{history.pushState({ioneInternalBack:true,ioneLayer:++sequence},"",location.href);}
+    catch(e){console.warn("I|ONE navigation history:",e);}
   }
   function visible(el){
     if(!el||!el.isConnected)return false;
@@ -16,7 +18,11 @@
   function clickFirst(selectors){
     for(const selector of selectors){
       const el=document.querySelector(selector);
-      if(el&&visible(el)&&!el.disabled){closingFromHistory=true;el.click();queueMicrotask(()=>{closingFromHistory=false;});return true;}
+      if(el&&visible(el)&&!el.disabled){
+        closingFromHistory=true;el.click();
+        queueMicrotask(()=>{closingFromHistory=false;});
+        return true;
+      }
     }
     return false;
   }
@@ -25,14 +31,14 @@
     const healthy=document.getElementById("healthyContainer");
     if(visible(healthy)){
       const exit=[...healthy.querySelectorAll("button")].find(b=>/^(EXIT|BACK|CLOSE)$/i.test(b.textContent.trim()));
-      if(exit){exit.click();return true;}
+      if(exit){closingFromHistory=true;exit.click();queueMicrotask(()=>{closingFromHistory=false;});return true;}
     }
     const coming=document.querySelector(".ione-coming-soon-overlay");
     if(visible(coming)){coming.querySelector("button")?.click();return true;}
     const authority=document.getElementById("authorityPressPanel");
     if(visible(authority)){
       const close=authority.querySelector("[data-authority-close],.authority-close-button,#authorityPressClose");
-      if(close){close.click();return true;}
+      if(close){closingFromHistory=true;close.click();queueMicrotask(()=>{closingFromHistory=false;});return true;}
     }
     document.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true,cancelable:true}));
     window.dispatchEvent(new KeyboardEvent("keydown",{key:"Escape",bubbles:true,cancelable:true}));
@@ -41,20 +47,20 @@
   document.addEventListener("click",event=>{
     const target=event.target;
     if(!(target instanceof Element))return;
-    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,.ione-doc-reader-back")){\n      if(!closingFromHistory&&history.state?.ioneInternalBack)queueMicrotask(()=>history.back());\n      return;\n    }\n    if(target.closest("[data-register]")){
+    if(target.closest("#itClose,#isClose,#mfClose,#mmClose,#ioneExpertClose,#ioneRegisterClose,.ione-doc-reader-back")){
+      if(!closingFromHistory&&history.state?.ioneInternalBack)queueMicrotask(()=>history.back());
+      return;
+    }
+    if(target.closest("[data-register]")){
       try{history.replaceState({ioneInternalBack:true,ioneLayer:++sequence},"",location.href);}catch(_){}
       return;
     }
-    if(target.closest(".smart-grid .smart-item,#settingsBtn,#ioneRegisterBtn")){
-      pushLayer();
-    }
+    if(target.closest(".smart-grid .smart-item,#settingsBtn,#ioneRegisterBtn"))pushLayer();
   },true);
-  window.addEventListener("popstate",event=>{
+  window.addEventListener("popstate",()=>{
     const hasFeature=document.body.classList.contains("ione-non-home")||
       ["ioneSokoniOverlay","ioneTransportOverlay","ioneMamaFood","ioneMiniMarket","ioneExpertOverlay","ioneRegisterOverlay","healthyContainer","ioneDocReaderLive"].some(id=>visible(document.getElementById(id)))||
       !!document.querySelector(".ione-coming-soon-overlay");
-    if(event.state?.ioneInternalBack||hasFeature){
-      closeTopLayer();
-    }
+    if(hasFeature)closeTopLayer();
   });
 })();
