@@ -9,6 +9,8 @@
   #ioneMamaFood{position:fixed;inset:0;z-index:100070;display:none;overflow:auto;overscroll-behavior:contain;background:#fff8ef;color:#38291f;font-family:Arial,sans-serif}
   #ioneMamaFood *{box-sizing:border-box}
   #ioneMamaFood .mf-tabs [data-tab="join"]{display:none!important}
+  #ioneMamaFood.mf-registration-only .mf-shell > *:not(.mf-head):not(#mfJoinView){display:none!important}
+  #ioneMamaFood.mf-registration-only #mfJoinView > *:not(.mf-panel){display:none!important}
   .mf-shell{width:min(1040px,100%);margin:auto;padding:14px 14px calc(30px + env(safe-area-inset-bottom))}
   .mf-head{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0 13px;background:#fff8ef}
   .mf-brand{font-size:11px;font-weight:900;letter-spacing:2px;color:#a64d2c}
@@ -107,8 +109,8 @@
     if (tab === "orders") loadOrders();
     if (tab === "seller") { loadMyMenu(); loadOrders(); }
   }
-  function open() { root.style.display = "block"; document.body.style.overflow = "hidden"; showTab("menu"); checkStatus(); if (refreshTimer) clearInterval(refreshTimer); refreshTimer = setInterval(() => { if (root.style.display !== "none") { loadMenu(); if ($("mfSellerView").style.display !== "none") loadOrders(); } }, 25000); }
-  function close() { root.style.display = "none"; document.body.style.overflow = ""; if (refreshTimer) clearInterval(refreshTimer); refreshTimer = null; }
+  function open() { root.classList.remove("mf-registration-only"); root.style.display = "block"; document.body.style.overflow = "hidden"; showTab("menu"); checkStatus(); if (refreshTimer) clearInterval(refreshTimer); refreshTimer = setInterval(() => { if (root.style.display !== "none") { loadMenu(); if ($("mfSellerView").style.display !== "none") loadOrders(); } }, 25000); }
+  function close() { root.classList.remove("mf-registration-only"); root.style.display = "none"; document.body.style.overflow = ""; if (refreshTimer) clearInterval(refreshTimer); refreshTimer = null; }
   function renderMenu(menu) {
     const host = $("mfMenuList"); host.replaceChildren();
     if (!menu.length) { const e=document.createElement("div");e.className="mf-empty";e.textContent="Bado hakuna menyu iliyochapishwa. Rudi tena baadaye.";host.appendChild(e);return; }
@@ -206,6 +208,6 @@
     category.addEventListener("click",open);category.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();open();}});
   }
   const categoryObserver=new MutationObserver(wireCategory);categoryObserver.observe(document.body,{childList:true,subtree:true});wireCategory();
-  function openRegistration() { open(); showTab("join"); const form = $("mfJoinForm"); if (form) form.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  function openRegistration() { root.classList.add("mf-registration-only"); root.style.display = "block"; document.body.style.overflow = "hidden"; showTab("join"); const form = $("mfJoinForm"); if (form) form.scrollIntoView({ behavior: "smooth", block: "start" }); }
   window.IoneMamaChakula=Object.freeze({open,close,openRegistration,refresh:loadMenu});
 })();
