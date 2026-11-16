@@ -2,6 +2,7 @@ const fs = require("fs");
 const assert = require("assert");
 const html = fs.readFileSync("index.html","utf8");
 const sw = fs.readFileSync("sw.js","utf8");
+const nav = fs.readFileSync("ione-navigation.js","utf8");
 const moduleText = fs.readFileSync("ione-live-class.js","utf8");
 const migration = fs.readFileSync("supabase/migrations/20261116190000_ione_live_class_foundation.sql","utf8");
 const edge = fs.readFileSync("supabase/functions/ione-live-class/index.ts","utf8");
