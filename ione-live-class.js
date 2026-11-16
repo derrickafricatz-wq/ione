@@ -254,7 +254,7 @@
         line="Draft saved and video uploaded. Refresh to confirm processing status.";
       }else if(type==="live_broadcast"){
         status(message,"Preparing live broadcast input…");
-        const stream=await invoke("authority_create_live_input",{class_id:data.class.id});
+        await invoke("authority_create_live_input",{class_id:data.class.id});
         line="Live input created. Open the Live Studio to start your camera and microphone broadcast.";
       }else if(type==="interactive"){
         line="Draft saved. Interactive classroom support will be enabled in a later stage.";
@@ -305,7 +305,8 @@
         const sessionUrl=location?new URL(location,whipUrl).toString():"";
         activeBroadcast={pc,media,session_url:sessionUrl,class_id:item.id};
         start.hidden=true;stop.hidden=false;
-        status(message,"YOU ARE LIVE • Students can now join the published class.",false);
+        try{await invoke("authority_get_live_input",{class_id:item.id});}catch(_){}
+        status(message,item.status==="published"?"YOU ARE LIVE • Students can now join this class.":"YOU ARE LIVE • Publish this class when you are ready for students.",false);
       }catch(e){
         try{if(pc)pc.close();}catch(_){}
         try{if(media)media.getTracks().forEach(track=>track.stop());}catch(_){}
@@ -316,13 +317,16 @@
     stop.addEventListener("click",async()=>{
       stop.disabled=true;status(message,"Ending the live class…");
       await stopActiveBroadcast();
+      try{await invoke("authority_get_live_input",{class_id:item.id});}catch(_){}
       preview.srcObject=null;stop.hidden=true;stop.disabled=false;start.hidden=false;start.disabled=false;
       status(message,"Live class ended. You can start another session if needed.",false);
     });
   }
 
   async function loadAuthority(){
-    const list=$("ilcAdminList");if(!list)return;list.innerHTML='<div class="ilc-empty">Loading classes…</div>';
+    const list=$("ilcAdminList");if(!list)return;
+    if(activeBroadcast){alert("End the current live broadcast before refreshing the class list.");return;}
+    list.innerHTML='<div class="ilc-empty">Loading classes…</div>';
     try{
       const data=await invoke("authority_list");authorityClasses=Array.isArray(data.classes)?data.classes:[];
       list.replaceChildren();
@@ -373,6 +377,7 @@
   }
   function boot(){
     installTile();installAuthoritySection();
+    window.addEventListener("pagehide",()=>{if(activeBroadcast){try{activeBroadcast.pc.close();}catch(_){}try{activeBroadcast.media.getTracks().forEach(track=>track.stop());}catch(_){}activeBroadcast=null;}});
     const panel=$("authorityPressPanel");
     if(panel)new MutationObserver(installAuthoritySection).observe(panel,{childList:true,subtree:true});
     setTimeout(installTile,1200);
