@@ -54,7 +54,7 @@ function base64Url(value:string|Uint8Array){
   const bytes=typeof value==="string"?new TextEncoder().encode(value):value;
   return btoa(String.fromCharCode(...bytes)).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
 }
-async function createStreamSignedToken(videoUid:string,expiresInSeconds=900){
+async function createStreamSignedToken(videoUid:string,expiresInSeconds=3600){
   const keyId=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_ID");
   const jwkEncoded=Deno.env.get("CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64");
   if(!keyId||!jwkEncoded)throw new Error("Cloudflare Stream signing key is not configured.");
@@ -110,8 +110,8 @@ Deno.serve(async(req:Request)=>{
       }
       const uid=row.class_type==="recorded"?row.media_uid:row.live_input_uid;
       if(!uid||!["ready","live_input_ready","live"].includes(row.stream_status))return json(req,{success:false,error:"The class video is not ready yet."},409);
-      const signedToken=await createStreamSignedToken(String(uid),900);
-      return json(req,{success:true,playback_token:signedToken,expires_in:900});
+      const signedToken=await createStreamSignedToken(String(uid),3600);
+      return json(req,{success:true,playback_token:signedToken,expires_in:3600});
     }
 
     await requireAuthority(admin,req,body);
