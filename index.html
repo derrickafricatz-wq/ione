@@ -4251,7 +4251,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=152", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=153", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -10978,20 +10978,24 @@ function ioneRunBackgroundMediaPreload(){ return; }
 @media(max-height:560px){#ioneHomeShell{padding-top:calc(58px + env(safe-area-inset-top,0px))!important;gap:9px!important}#wordOfDayPanel{padding:12px 14px!important}.word-day-kicker{margin-bottom:7px!important;padding-bottom:6px!important}#wordOfDayText{line-height:1.35!important}}
 @media(min-width:900px){#wordOfDayPanel{width:min(88vw,1040px)!important}.word-day-kicker{font-size:clamp(18px,2vw,26px)!important}#wordOfDayText{font-size:clamp(20px,2vw,30px)!important}}
 </style>
-<style id="ione-feature-showcase-style-v1">
+<style id="ione-feature-showcase-style-v2">
 #ioneFeatureShowcase{display:block;position:relative;flex:0 0 auto;width:min(92vw,900px);min-width:0;box-sizing:border-box;align-self:stretch;padding:12px 0 14px;border:1px solid rgba(116,220,220,.17);border-left:0;border-right:0;border-radius:18px;background:linear-gradient(145deg,rgba(8,28,32,.9),rgba(3,12,16,.94));overflow:hidden}
 #ioneFeatureShowcase[hidden]{display:none!important}
 .ione-feature-showcase-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px 10px;color:#a8f5ec;font:900 10px/1.2 Arial,sans-serif;letter-spacing:1.8px}
 .ione-feature-showcase-head small{color:#9ab8b9;font:600 10px/1.3 Arial,sans-serif;letter-spacing:.2px;text-align:right}
 .ione-feature-showcase-viewport{width:100%;overflow:hidden;touch-action:pan-y;mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
 .ione-feature-showcase-track{display:flex;align-items:stretch;gap:12px;width:max-content;padding:0 12px;animation:ioneFeatureShowcaseLoop var(--ione-showcase-duration,36s) linear infinite;will-change:transform}
-#ioneFeatureShowcase:hover .ione-feature-showcase-track,#ioneFeatureShowcase:focus-within .ione-feature-showcase-track{animation-play-state:paused}
+.ione-feature-showcase-track{animation-play-state:running!important}
+#ioneFeatureShowcase:hover .ione-feature-showcase-track,
+#ioneFeatureShowcase:focus-within .ione-feature-showcase-track,
+#ioneFeatureShowcase:active .ione-feature-showcase-track,
+#ioneFeatureShowcase .ione-feature-slide:active .ione-feature-showcase-track{animation-play-state:running!important}
 .ione-feature-slide{position:relative;display:block;flex:0 0 clamp(220px,62vw,320px);width:clamp(220px,62vw,320px);height:clamp(132px,35vw,178px);overflow:hidden;border:1px solid rgba(163,244,234,.22);border-radius:15px;background:#0d252b;box-shadow:0 8px 20px rgba(0,0,0,.26)}
 .ione-feature-slide img{display:block;width:100%;height:100%;object-fit:cover}
 .ione-feature-slide:after{content:"";position:absolute;inset:35% 0 0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.68));pointer-events:none}
 .ione-feature-slide-caption{position:absolute;z-index:1;left:12px;right:12px;bottom:10px;color:#fff;font:900 clamp(12px,2.8vw,15px)/1.2 Arial,sans-serif;letter-spacing:.3px;text-shadow:0 1px 5px rgba(0,0,0,.8);overflow-wrap:anywhere}
 @keyframes ioneFeatureShowcaseLoop{to{transform:translate3d(-50%,0,0)}}
-@media(prefers-reduced-motion:reduce){.ione-feature-showcase-track{animation:none!important;transform:none!important;overflow-x:auto}}
+@media(prefers-reduced-motion:reduce){.ione-feature-showcase-track{animation-duration:calc(var(--ione-showcase-duration,36s)*1.5)!important}}
 </style>
 
 <script>
@@ -13760,7 +13764,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-expert.js?v=6" defer></script>
 <script src="./ione-register.js?v=1" defer></script>
 <script src="./ione-feature-showcase.js?v=1" defer></script>
-<script src="./ione-navigation.js?v=1" defer></script>
+<script src="./ione-navigation.js?v=2" defer></script>
 <script>
 /* I|ONE DOCUMENTARY AUTO-SCROLL • waits for the library to open and for cards to render */
 (function(){
