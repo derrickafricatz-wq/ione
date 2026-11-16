@@ -1,5 +1,5 @@
 {
-  "version": "1.0.330",
-  "message": "Fix nested I|ONE panel detection and Back navigation",
+  "version": "1.0.333",
+  "message": "Prepare I|ONE Live Class production handoff",
   "force": true
 }
