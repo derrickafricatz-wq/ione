@@ -20,7 +20,7 @@ assert.match(edge,/authority_get_live_input/,"instructors must retrieve their pr
 assert.match(moduleText,/getUserMedia/,"instructors must be able to broadcast from their camera and microphone");
 assert.doesNotThrow(()=>new Function(moduleText),"Live Class browser module must parse");
 assert.match(edge,/scheduled_end/,"live classes must enforce a scheduled end time");
-assert.match(edge,/recording:\{mode:"off"/,"WebRTC broadcasts must not claim automatic replay recording");
+assert.ok(edge.includes('recording:{mode:"off"'),"WebRTC broadcasts must not claim automatic replay recording");
 assert.match(edge,/authority_create_live_input/,"Authority must provision live broadcast inputs");
 assert.match(nav,/ioneLiveClassOverlay/,"Live Class must participate in Back navigation");
 assert.match(migration,/enable row level security/i,"all Live Class tables must have RLS enabled");
