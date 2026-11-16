@@ -90,6 +90,7 @@
   }
   function closeOverlay(){
     if(!overlay)return;
+    if(!window.__ioneNavigationClosingFromHistory)window.__ioneNavigationSkipNextPopstateClose=true;
     overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");
     if(manager){manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
     document.body.style.overflow="";
@@ -192,7 +193,7 @@
   function openManager(){
     ensureManager();manager.classList.add("is-open");manager.setAttribute("aria-hidden","false");loadAuthority();
   }
-  function closeManager(){if(!manager)return;manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
+  function closeManager(){if(!manager)return;if(!window.__ioneNavigationClosingFromHistory)window.__ioneNavigationSkipNextPopstateClose=true;manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
   async function uploadTus(file,uploadUrl,onProgress){
     const head=await fetch(uploadUrl,{method:"HEAD",headers:{"Tus-Resumable":"1.0.0"}});
     if(!head.ok)throw new Error("Could not resume the secure video upload ("+head.status+").");
