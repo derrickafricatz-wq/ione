@@ -125,17 +125,39 @@ Deno.serve(async(req:Request)=>{
     }
     if(action==="authority_create_upload"){
       const classId=clean(body?.class_id,64);
+      const fileSize=Number(body?.file_size);
+      if(!Number.isSafeInteger(fileSize)||fileSize<1)return json(req,{success:false,error:"The selected video file size is invalid."},400);
       const {data:row,error}=await admin.from("ione_live_classes").select("*").eq("id",classId).eq("class_type","recorded").eq("status","draft").maybeSingle();
       if(error||!row)return json(req,{success:false,error:"Recorded class draft was not found."},404);
       const {account,token}=streamConfig();
-      const upload=await streamRequest("/accounts/"+account+"/stream/direct_upload","POST",token,{
-        maxDurationSeconds:3600,requireSignedURLs:true,allowedOrigins:["intoione.space","www.intoione.space"],
-        expiry:new Date(Date.now()+30*60*1000).toISOString(),
-        meta:{name:clean(body?.file_name,120)||row.title,class_id:row.id,product:"ione-live-class"}
+      const toBase64=(value:string)=>btoa(String.fromCharCode(...new TextEncoder().encode(value)));
+      const metadata=[
+        "name "+toBase64(clean(body?.file_name,120)||row.title),
+        "requiresignedurls",
+        "allowedorigins "+toBase64("intoione.space,www.intoione.space"),
+        "maxdurationseconds "+toBase64("3600")
+      ].join(",");
+      const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+account+"/stream?direct_user=true",{
+        method:"POST",
+        headers:{
+          "Authorization":"Bearer "+token,
+          "Tus-Resumable":"1.0.0",
+          "Upload-Length":String(fileSize),
+          "Upload-Metadata":metadata,
+          "Upload-Creator":"ione-live-class"
+        }
       });
-      const {error:updateError}=await admin.from("ione_live_classes").update({media_uid:String(upload.uid||""),stream_status:"upload_pending"}).eq("id",classId);
+      if(response.status!==201){
+        const failure:any=await response.json().catch(()=>({}));
+        const message=Array.isArray(failure?.errors)?failure.errors.map((e:any)=>e.message).join("; "):"Cloudflare could not prepare the resumable upload.";
+        throw new Error(message+" (HTTP "+response.status+")");
+      }
+      const uploadUrl=response.headers.get("Location")||"";
+      const mediaUid=response.headers.get("Stream-Media-ID")||"";
+      if(!uploadUrl||!mediaUid)throw new Error("Cloudflare did not return the resumable upload URL and video ID.");
+      const {error:updateError}=await admin.from("ione_live_classes").update({media_uid:mediaUid,stream_status:"upload_pending"}).eq("id",classId);
       if(updateError)throw new Error("Upload was prepared but the class record could not be updated. Contact Authority before retrying.");
-      return json(req,{success:true,upload_url:String(upload.uploadURL||""),media_uid:String(upload.uid||"")});
+      return json(req,{success:true,upload_url:uploadUrl,media_uid:mediaUid});
     }
     if(action==="authority_check_upload"){
       const classId=clean(body?.class_id,64);
