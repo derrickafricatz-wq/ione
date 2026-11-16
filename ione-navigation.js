@@ -14,7 +14,8 @@
   const overlays=[
     "#afrilinkOverlay","#aflServiceOverlay","#aflOwnerOverlay","#aflEditorOverlay",
     "#aflIncomingCallOverlay","#aflDeleteOverlay",
-    "#transcriptPanel","#healthyContainer",
+    "#transcriptPanel","#healthyContainer","#heavensBookstore","#heavensReader","#heavensPaymentDialog",
+    "#ioneManualRecoveryCodeOverlay","#ioneBookReceiptOverlay","#ministryAccessOverlay","#guideOverlay",
     "#authorityPasswordOverlay","#authorityPressPanel","#authorityChapChapPanel",
     "#ioneOpportunitiesOverlay","#ioneOppDetail","#ioneTransportOverlay","#ioneSokoniOverlay","#ioneMamaFood","#ioneMiniMarket",
     "#ioneExpertOverlay","#ioneRegisterOverlay","#ioneDocReaderLive",
@@ -33,9 +34,18 @@
     }
   }
   function visible(el){
-    if(!el||!el.isConnected||el.hidden)return false;
-    const style=getComputedStyle(el);
-    return style.display!=="none"&&style.visibility!=="hidden"&&Number(style.opacity||1)>.01;
+    if(!el||!el.isConnected)return false;
+    // A child's own computed display can be "block" while an ancestor is
+    // display:none. Walk the full ancestor chain so hidden nested panels and
+    // their close buttons are never treated as active layers.
+    for(let node=el;node&&node.nodeType===1;node=node.parentElement){
+      if(node.hidden)return false;
+      const style=getComputedStyle(node);
+      if(style.display==="none"||style.visibility==="hidden"||style.visibility==="collapse")return false;
+      const opacity=Number.parseFloat(style.opacity);
+      if(Number.isFinite(opacity)&&opacity<=.01)return false;
+    }
+    return typeof el.getClientRects!=="function"||el.getClientRects().length>0;
   }
   function allVisible(){
     const found=[];
@@ -43,10 +53,15 @@
     return found;
   }
   function overlayForClose(button){
-    return button.closest("#afrilinkOverlay,#aflServiceOverlay,#aflOwnerOverlay,#aflEditorOverlay,#aflIncomingCallOverlay,#aflDeleteOverlay,#transcriptPanel,#healthyContainer,#authorityPasswordOverlay,#authorityPressPanel,#authorityChapChapPanel,#ioneOpportunitiesOverlay,#ioneOppDetail,#ioneTransportOverlay,#ioneSokoniOverlay,#ioneMamaFood,#ioneMiniMarket,#ioneExpertOverlay,#ioneRegisterOverlay,#ioneDocReaderLive,#ioneDocAccessOverlay,.ione-coming-soon-overlay,.ione-feature-overlay")||button;
+    return button.closest("#afrilinkOverlay,#aflServiceOverlay,#aflOwnerOverlay,#aflEditorOverlay,#aflIncomingCallOverlay,#aflDeleteOverlay,#transcriptPanel,#healthyContainer,#heavensBookstore,#heavensReader,#heavensPaymentDialog,#ioneManualRecoveryCodeOverlay,#ioneBookReceiptOverlay,#ministryAccessOverlay,#guideOverlay,#authorityPasswordOverlay,#authorityPressPanel,#authorityChapChapPanel,#ioneOpportunitiesOverlay,#ioneOppDetail,#ioneTransportOverlay,#ioneSokoniOverlay,#ioneMamaFood,#ioneMiniMarket,#ioneExpertOverlay,#ioneRegisterOverlay,#ioneDocReaderLive,#ioneDocAccessOverlay,.ione-coming-soon-overlay,.ione-feature-overlay")||button;
   }
   function closeTopLayer(){
     const selectors=[
+      "#guideOverlay #closeGuideHome","#guideOverlay #closeGuideMap","#guideOverlay #guideDetailBack",
+      "#ministryAccessOverlay #ministryAccessCancel",
+      "#heavensBookstore #hbClose","#heavensReader .hr-back",
+      "#heavensPaymentDialog .heavens-payment-close",
+      "#ioneManualRecoveryCodeOverlay button:last-of-type","#ioneBookReceiptOverlay button:first-of-type",
       "#ioneDocReaderLive .ione-doc-reader-back","#ioneDocAccessClose",
       "#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#ioneTransportOverlay #itClose","#ioneSokoniOverlay #isClose",
       "#ioneMamaFood #mfClose","#ioneMiniMarket #mmClose",
@@ -110,6 +125,8 @@
     if(!(target instanceof Element))return;
 
     const close=target.closest([
+      "#hbClose",".hr-back",".heavens-payment-close","#ioneManualRecoveryCodeOverlay button:last-of-type","#ioneBookReceiptOverlay button:first-of-type",
+      "#closeGuideHome","#closeGuideMap","#guideDetailBack","#ministryAccessCancel",
       "#itClose","#isClose","#ioneOpportunitiesOverlay [data-action=close]","#ioneOppDetail [data-action=detail-close]","#mfClose","#mmClose","#ioneExpertClose","#ioneRegisterClose",
       "#authorityPressClose","#authorityPasswordCancel","#authorityChapChapClose",
       "#closeTranscript","#aflClose","#aflServiceClose","#aflOwnerClose","#aflEditorCancel",
@@ -168,5 +185,5 @@
         if(allVisible().length)pushLayer();
       },420);
     }
-  });
+  },true);
 })();
