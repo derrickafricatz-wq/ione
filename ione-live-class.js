@@ -193,6 +193,36 @@
     ensureManager();manager.classList.add("is-open");manager.setAttribute("aria-hidden","false");loadAuthority();
   }
   function closeManager(){if(!manager)return;manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
+  async function uploadTus(file,uploadUrl,onProgress){
+    const head=await fetch(uploadUrl,{method:"HEAD",headers:{"Tus-Resumable":"1.0.0"}});
+    if(!head.ok)throw new Error("Could not resume the secure video upload ("+head.status+").");
+    let offset=Number(head.headers.get("Upload-Offset")||0);
+    if(!Number.isFinite(offset)||offset<0||offset>file.size)throw new Error("Cloudflare returned an invalid upload offset.");
+    const chunkSize=8*1024*1024;
+    while(offset<file.size){
+      const end=Math.min(file.size,offset+chunkSize);
+      const response=await fetch(uploadUrl,{
+        method:"PATCH",
+        headers:{"Tus-Resumable":"1.0.0","Upload-Offset":String(offset),"Content-Type":"application/offset+octet-stream"},
+        body:file.slice(offset,end)
+      });
+      if(!response.ok)throw new Error("Video upload stopped at "+Math.round(offset/file.size*100)+"% (HTTP "+response.status+"). You can retry the upload from Authority Press.");
+      const returned=Number(response.headers.get("Upload-Offset"));
+      offset=Number.isFinite(returned)&&returned>end-1?returned:end;
+      if(typeof onProgress==="function")onProgress(Math.min(100,Math.round(offset/file.size*100)));
+    }
+  }
+  async function uploadRecordedFile(classId,file,message){
+    if(!file||!file.size)throw new Error("Choose an MP4 or WebM video file.");
+    status(message,"Preparing resumable video upload…");
+    const ticket=await invoke("authority_create_upload",{class_id:classId,file_name:file.name,file_size:file.size});
+    if(!ticket.upload_url)throw new Error("Cloudflare did not return a video upload URL.");
+    await uploadTus(file,ticket.upload_url,percent=>status(message,"Uploading video… "+percent+"%"));
+    status(message,"Video uploaded. Checking processing status…");
+    await invoke("authority_check_upload",{class_id:classId});
+    status(message,"Upload complete. Refresh the class list to confirm processing status.");
+  }
+
   async function createClass(event){
     event.preventDefault();if(busy)return;busy=true;
     const form=$("ilcCreateForm"),button=$("ilcCreateButton"),message=$("ilcAdminStatus");
@@ -203,17 +233,11 @@
     const payload={title:f.get("title"),instructor_name:f.get("instructor_name"),class_type:type,category:f.get("category"),description:f.get("description"),price_tzs:Number(f.get("price_tzs")||0),duration_seconds:minutes?minutes*60:null,scheduled_start:start,scheduled_end:end};
     try{
       const file=f.get("video_file");
-      if(type==="recorded"&&file&&file.size>200*1024*1024)throw new Error("This first upload flow supports files up to 200 MB. Large resumable uploads will be added after the initial Stream test.");
       button.disabled=true;status(message,"Saving draft…");
       const data=await invoke("authority_create",{class_data:payload});
       let line="Draft created.";
       if(type==="recorded"&&file&&file.size){
-        status(message,"Preparing secure video upload…");
-        const ticket=await invoke("authority_create_upload",{class_id:data.class.id,file_name:file.name});
-        const upload=new FormData();upload.append("file",file,file.name);
-        const response=await fetch(ticket.upload_url,{method:"POST",body:upload});
-        if(!response.ok)throw new Error("Cloudflare Stream upload failed ("+response.status+").");
-        await invoke("authority_check_upload",{class_id:data.class.id});
+        await uploadRecordedFile(data.class.id,file,message);
         line="Draft saved and video uploaded. Refresh to confirm processing status.";
       }else if(type==="live_broadcast"){
         status(message,"Preparing live broadcast input…");
@@ -243,8 +267,14 @@
         head.append(title,chip);
         const meta=document.createElement("div");meta.className="ilc-meta";meta.textContent=item.class_type+" • "+money(item.price_tzs)+" • "+(item.instructor_name||"No instructor");
         card.append(head,meta);
-        if(item.class_type==="recorded"&&item.stream_status==="upload_pending"){
+        if(item.class_type==="recorded"&&item.stream_status==="processing"){
           const check=document.createElement("button");check.className="ilc-action secondary";check.textContent="CHECK VIDEO PROCESSING";check.addEventListener("click",async()=>{try{await invoke("authority_check_upload",{class_id:item.id});await loadAuthority();}catch(e){alert(e.message);}});card.append(check);
+        }
+        if(item.class_type==="recorded"&&item.stream_status!=="ready"){
+          const retry=document.createElement("button");retry.className="ilc-action secondary";retry.textContent=item.stream_status==="upload_pending"?"RESUME / REPLACE VIDEO":"UPLOAD TRAINING VIDEO";
+          const picker=document.createElement("input");picker.type="file";picker.accept="video/mp4,video/webm";picker.hidden=true;
+          picker.addEventListener("change",async()=>{const file=picker.files&&picker.files[0];if(!file)return;retry.disabled=true;try{await uploadRecordedFile(item.id,file,$("ilcAdminStatus"));await loadAuthority();}catch(e){alert(e.message);}finally{retry.disabled=false;}});
+          retry.addEventListener("click",()=>picker.click());card.append(retry,picker);
         }
         if(item.class_type==="live_broadcast"&&item.live_input_uid){
           const help=document.createElement("p");help.className="ilc-meta";help.textContent="Live input is ready. Start your encoder at the scheduled time. The class can be published after the stream input is provisioned.";card.append(help);
