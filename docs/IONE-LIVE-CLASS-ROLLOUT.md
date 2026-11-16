@@ -6,7 +6,7 @@ This feature is intentionally isolated on `feature/ione-live-class-foundation`. 
 
 - A homepage tile and separate Live Class catalogue.
 - Recorded training drafts with resumable Cloudflare Stream TUS uploads.
-- A hard 60-minute maximum for recorded training, enforced by Cloudflare Stream and the database.
+- A hard 60-minute maximum for recorded training, enforced by Cloudflare Stream's `maxDurationSeconds` upload constraint and the database.
 - Scheduled live broadcasts require start/end times, are capped at six hours, reject early/late joining, and stop automatically at the scheduled end.
 - Browser-based one-instructor live broadcasts using Cloudflare Stream WebRTC (WHIP publishing and WHEP playback), directly from the instructor's camera and microphone.
 - Short-lived signed playback tokens for both recorded lessons and WebRTC live inputs.
@@ -19,7 +19,7 @@ This feature is intentionally isolated on `feature/ione-live-class-foundation`. 
 
 1. **Paid checkout:** the UI displays prices, but paid access is deliberately denied until the I|ONE training payment flow is connected to a confirmed provider and writes a verified paid enrollment. No existing book, documentary, transport or other payment function is reused or changed.
 2. **Interactive classroom:** the tab is present as a planned experience, but camera/microphone multi-participant rooms are not active. This requires a separate realtime media integration and its own testing.
-3. **Live replay:** Cloudflare Stream WebRTC currently does not support automatic recording or HLS/DASH replay for the same live input. If a replay is needed, the instructor must upload a separate recorded lesson after the session.
+3. **Live replay:** Cloudflare Stream's WHIP/WHEP WebRTC path is live-only and does not currently support recording the same input or HLS/DASH replay. This release intentionally uses that live-only path; if a replay is needed, the instructor must upload a separate recorded lesson after the session.
 4. **Production streaming:** no Cloudflare Stream live input or upload has been created by this change. The feature remains unavailable until the required account secrets are configured and the end-to-end test is completed.
 
 ## Required Supabase Edge Function secrets
