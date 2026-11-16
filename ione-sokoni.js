@@ -126,6 +126,15 @@
   style.id = "ioneSokoniStyles";
   style.textContent = css;
   document.head.appendChild(style);
+  const registrationStyle = document.createElement("style");
+  registrationStyle.textContent = `
+    #ioneSokoniOverlay.is-register-vendor .is-shell > *:not(.is-top):not(#isVendorRegistration){display:none!important}
+    #ioneSokoniOverlay.is-register-rider .is-shell > *:not(.is-top):not(.is-boda-section){display:none!important}
+    #ioneSokoniOverlay.is-register-rider .is-boda-section > *:not(#isRiderRegistration){display:none!important}
+    #ioneSokoniOverlay.is-registration-only #isVendorRegistration,
+    #ioneSokoniOverlay.is-registration-only #isRiderRegistration{display:block!important}
+  `;
+  document.head.appendChild(registrationStyle);
 
   const overlay = document.createElement("div");
   overlay.id = "ioneSokoniOverlay";
@@ -330,6 +339,7 @@
     el.classList.toggle("error", !!error);
   }
   function open() {
+    overlay.classList.remove("is-registration-only", "is-register-vendor", "is-register-rider");
     overlay.style.display = "block";
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
@@ -368,6 +378,7 @@
     sokoniRefreshHandle = setInterval(() => { if (overlay.style.display !== "none") { loadMyOrders(); loadMyDeliveries(); loadPublicRiders(); loadPassengerTrips(); invoke("rider_heartbeat").catch(() => {}); if ($("isRiderDashboard").style.display !== "none") loadOpenTrips(); } }, 20000);
   }
   function close() {
+    overlay.classList.remove("is-registration-only", "is-register-vendor", "is-register-rider");
     ["isVendorRegistration", "isVendorStatusSection", "isRiderRegistration"].forEach(id => { const section = $(id); if (section) section.style.display = "none"; });
     overlay.style.display = "none";
     overlay.setAttribute("aria-hidden", "true");
@@ -2011,10 +2022,14 @@ if (order.status === "new" || order.status === "accepted") {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wireTile, { once: true });
   else wireTile();
   function openRegistration(kind) {
-    open();
     const vendor = kind === "vendor";
-    const targets = vendor ? ["isVendorRegistration", "isVendorStatusSection"] : ["isRiderRegistration"];
-    targets.forEach(id => { const section = $(id); if (section) section.style.display = "block"; });
+    overlay.classList.remove("is-register-vendor", "is-register-rider");
+    overlay.classList.add("is-registration-only", vendor ? "is-register-vendor" : "is-register-rider");
+    overlay.style.display = "block";
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    const targets = vendor ? ["isVendorRegistration"] : ["isRiderRegistration"];
+    ["isVendorRegistration", "isVendorStatusSection", "isRiderRegistration"].forEach(id => { const section = $(id); if (section) section.style.display = targets.includes(id) ? "block" : "none"; });
     const first = $(targets[0]); if (first) first.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   window.IoneSokoni = Object.freeze({ open, close, openRegistration, refreshStatus: loadStatus, refreshVendors: loadVendors, refreshAuthorityDashboard: loadAuthorityDashboard });

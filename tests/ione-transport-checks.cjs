@@ -25,9 +25,10 @@ assert.match(html, /id="openBusBooking"/);
 assert.match(html, /i1 TRANSPORT/);
 assert.match(html, /TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI • BODA/);
 assert.doesNotMatch(html, /id="openBusBooking"[^>]*smart-coming-soon/);
-assert.match(html, /ione-transport\.js\?v=9/);
+assert.match(html, /ione-transport\.js\?v=10/);
+assert.match(ui, /it-registration-only/);
 assert.match(html, /ione-transport-operations\.js\?v=11/);
-assert.match(html, /sw\.js\?v=150/);
+assert.match(html, /sw\.js\?v=151/);
 assert.match(html, /\["transport","🚕","i1 TRANSPORT"/);
 console.log("PASS: homepage and guide expose i1 Transport instead of the Bus Coming Soon tile");
 
