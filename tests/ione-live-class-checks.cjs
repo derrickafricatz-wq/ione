@@ -7,7 +7,7 @@ const moduleText = fs.readFileSync("ione-live-class.js","utf8");
 const migration = fs.readFileSync("supabase/migrations/20261116190000_ione_live_class_foundation.sql","utf8");
 const edge = fs.readFileSync("supabase/functions/ione-live-class/index.ts","utf8");
 assert.match(html,/id="openIoneLiveClass"/,"homepage must expose the Live Class tile");
-assert.match(html,/ione-live-class\.js\?v=1/,"homepage must load the isolated Live Class module");
+assert.match(html,/ione-live-class\\.js\\?v=2/,"homepage must load the isolated Live Class module");
 assert.match(sw,/ione-live-class\.js/,"service worker must cache the feature module");
 assert.match(moduleText,/authority_create_live_input/,"Authority must provision a live broadcast input");
 assert.match(moduleText,/authority_create_upload/,"Authority must prepare recorded uploads");
@@ -20,6 +20,9 @@ assert.match(edge,/maxDurationSeconds/,"Cloudflare must enforce the 60-minute up
 assert.match(edge,/CLOUDFLARE_STREAM_SIGNING_KEY_JWK_B64/,"signed playback must use a server-side signing key");
 assert.match(edge,/authority_get_live_input/,"instructors must retrieve their private WHIP endpoint through Authority");
 assert.match(edge,/enabled:false/,"suspending a live class must disable its Cloudflare input");
+assert.match(moduleText,/#ioneLiveClassManager\\{position:fixed!important/,"Authority manager must render as a top-level fixed overlay");
+assert.match(moduleText,/event\.stopPropagation\(\);openManager/,"Manage Live Class click must not bubble into Authority navigation");
+assert.match(moduleText,/Draft saved\. \+detail/,"a draft must remain saved when Cloudflare upload configuration is pending");
 assert.match(moduleText,/getUserMedia/,"instructors must be able to broadcast from their camera and microphone");
 assert.match(moduleText,/I\|ONE Live Class is being prepared/,"public users must see a friendly setup state before backend activation");
 assert.doesNotThrow(()=>new Function(moduleText),"Live Class browser module must parse");
