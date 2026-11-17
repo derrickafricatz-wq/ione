@@ -52,8 +52,8 @@
       .ilc-action.secondary{background:#10252a;border-color:#38565d;color:#d6eff0}.ilc-action:disabled{opacity:.45;filter:grayscale(.6)}
       .ilc-empty,.ilc-note{padding:16px;border:1px dashed #31525a;border-radius:14px;color:#9bb4b9;font-size:12px;line-height:1.6;text-align:center}
       .ilc-player{width:100%;aspect-ratio:16/9;border:0;border-radius:13px;background:#000}
-      #ioneLiveClassManager{position:fixed;inset:0;z-index:1200;display:none;flex-direction:column;background:#071316;color:#fff;font-family:Arial,sans-serif;overflow:hidden}
-      #ioneLiveClassManager.is-open{display:flex}
+      #ioneLiveClassManager{position:fixed!important;inset:0!important;z-index:2147483647!important;display:none;isolation:isolate;flex-direction:column;background:#071316;color:#fff;font-family:Arial,sans-serif;overflow:hidden}
+      #ioneLiveClassManager.is-open{display:flex!important}
       .ilc-form{display:grid;gap:10px;padding:14px;border:1px solid #29464d;border-radius:16px;background:#0c1d22;margin-bottom:14px}
       .ilc-form label{display:grid;gap:5px;color:#b9d0d4;font-size:10px;font-weight:800;letter-spacing:.5px}
       .ilc-form input,.ilc-form textarea,.ilc-form select{width:100%;box-sizing:border-box;min-height:42px;border:1px solid #31535a;border-radius:9px;background:#061115;color:#fff;padding:10px;font:13px Arial,sans-serif}
@@ -202,8 +202,12 @@
     form.elements.video_file.disabled=type!=="recorded";
     form.elements.duration_minutes.disabled=type!=="recorded";
   }
-  function openManager(){
-    ensureManager();manager.classList.add("is-open");manager.setAttribute("aria-hidden","false");loadAuthority();
+  function openManager(event){
+    if(event){event.preventDefault();event.stopPropagation();}
+    ensureManager();
+    if(manager.parentElement!==document.body)document.body.appendChild(manager);
+    manager.classList.add("is-open");manager.setAttribute("aria-hidden","false");
+    loadAuthority();
   }
   function closeManager(){if(!manager)return;if(activeBroadcast)stopActiveBroadcast();if(!window.__ioneNavigationClosingFromHistory)window.__ioneNavigationSkipNextPopstateClose=true;manager.classList.remove("is-open");manager.setAttribute("aria-hidden","true");}
   async function uploadTus(file,uploadUrl,onProgress){
@@ -270,7 +274,7 @@
         line="Draft saved. Interactive classroom support will be enabled in a later stage.";
       }
       form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();if(type==="live_broadcast"&&data.class){if(data.class.scheduled_start&&new Date(data.class.scheduled_start)>new Date())status(message,"Live class scheduled. Open the Live Studio at the scheduled start time.",false);else await openLiveStudio(data.class);}
-    }catch(e){status(message,e.message||"Could not create class.",true);}
+    }catch(e){const detail=e?.message||"Could not create class.";status(message,activeDraftId?"Draft saved. "+detail:detail,true);}
     finally{busy=false;button.disabled=false;}
   }
   function stopActiveBroadcast(){
@@ -395,7 +399,7 @@
         }
         list.appendChild(card);
       });
-    }catch(e){list.innerHTML='<div class="ilc-empty">Live Class management is waiting for its dedicated Supabase service and Cloudflare Stream setup. Existing I|ONE features remain available.</div>';}
+    }catch(e){list.innerHTML='<div class="ilc-empty">' + esc(e?.message||"Could not load Live Class management.") + '</div>';}
   }
   function installAuthoritySection(){
     const panel=$("authorityPressPanel");
@@ -404,7 +408,7 @@
     section.innerHTML='<div class="authority-section-kicker">LEARNING & SKILLS</div><h3>I|ONE LIVE CLASS</h3><p class="authority-section-note">Create recorded training, schedule live broadcasts, manage pricing and control publication. Video and broadcast credentials are handled by the secure server.</p><button type="button" id="ioneAuthorityManageLiveClass" class="authority-save-button">MANAGE LIVE CLASS</button>';
     const anchor=$("ioneOpportunitiesAuthoritySection");
     if(anchor&&anchor.parentElement)anchor.insertAdjacentElement("afterend",section);else panel.appendChild(section);
-    $("ioneAuthorityManageLiveClass").addEventListener("click",openManager);
+    $("ioneAuthorityManageLiveClass").addEventListener("click",function(event){event.preventDefault();event.stopPropagation();openManager(event);});
   }
   function installTile(){
     const tile=$("openIoneLiveClass");
