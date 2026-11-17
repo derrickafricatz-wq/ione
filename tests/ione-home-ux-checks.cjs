@@ -59,7 +59,7 @@ assert.ok(html.includes('<option value="hospitality">HOSPITALITY</option>'));
 assert.ok(html.includes('aflOpenWorld("hospitality")'));
 assert.ok(hospitality.includes("hospitality_slides_save"));
 assert.ok(hospitality.includes("ioneOpenHospitalityMarket"));
-assert.ok(hospitality.includes("GET IN"));
+assert.ok(hospitality.includes("GETIN"));
 assert.ok(edge.includes("hospitality_slides_save"));
 assert.ok(edge.includes("validAuthoritySession"));
 assert.ok(edge.includes("ione-hospitality-showcase"));
