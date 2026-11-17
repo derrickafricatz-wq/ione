@@ -19,8 +19,16 @@
     if(!client)throw new Error("I|ONE connection is not ready. Reload and try again.");
     const body=Object.assign({action},extra||{});
     if(action.startsWith("authority_"))body.authority_session=sessionStorage.getItem("ioneAuthoritySession")||"";
-    return client.functions.invoke(FN,{body}).then(r=>{
-      if(r.error||!r.data||!r.data.success)throw new Error(r.data?.error||r.error?.message||"Live Class request failed.");
+    return client.functions.invoke(FN,{body}).then(async r=>{
+      let serverMessage=r.data?.error||"";
+      if(r.error){
+        const context=r.error.context;
+        if(context&&typeof context.clone==="function"){
+          try{const payload=await context.clone().json();serverMessage=payload?.error||payload?.message||serverMessage;}catch(_){}
+        }
+        throw new Error(serverMessage||r.error.message||"Live Class request failed.");
+      }
+      if(!r.data||!r.data.success)throw new Error(serverMessage||"Live Class request failed.");
       return r.data;
     });
   }
@@ -274,7 +282,14 @@
         line="Draft saved. Interactive classroom support will be enabled in a later stage.";
       }
       form.reset();activeDraftId=null;activeDraftType=null;updateAdminFields();status(message,line);await loadAuthority();if(type==="live_broadcast"&&data.class){if(data.class.scheduled_start&&new Date(data.class.scheduled_start)>new Date())status(message,"Live class scheduled. Open the Live Studio at the scheduled start time.",false);else await openLiveStudio(data.class);}
-    }catch(e){const detail=e?.message||"Could not create class.";status(message,activeDraftId?"Draft saved. "+detail:detail,true);}
+    }catch(e){
+      const detail=e?.message||"Could not create class.";
+      if(activeDraftId&&/Cloudflare Stream is not configured/i.test(detail)){
+        status(message,"Draft saved successfully. Video upload is waiting for Cloudflare Stream setup. Your class details are safe; upload the video after Stream is configured.",true);
+      }else{
+        status(message,activeDraftId?"Draft saved. "+detail:detail,true);
+      }
+    }
     finally{busy=false;button.disabled=false;}
   }
   function stopActiveBroadcast(){
@@ -372,7 +387,7 @@
           retry.addEventListener("click",()=>picker.click());card.append(retry,picker);
         }
         if(item.class_type==="live_broadcast"&&item.live_input_uid){
-          const help=document.createElement("p");help.className="ilc-meta";help.textContent="Start a live broadcast directly from your browser camera and microphone. Cloudflare WebRTC broadcasts are live-only in this release; automatic recording/replay is not supported.";card.append(help);
+          const help=document.createElement("p");help.className="ilc-meta";help.textContent=item.stream_status==="not_configured"?"Live broadcast setup is waiting for Cloudflare Stream credentials. Your class draft is saved; connect Stream before creating the live input.":"Start a live broadcast directly from your browser camera and microphone. Cloudflare WebRTC broadcasts are live-only in this release; automatic recording/replay is not supported.";card.append(help);
           const studio=document.createElement("button");studio.className="ilc-action secondary";studio.textContent="OPEN LIVE STUDIO";studio.addEventListener("click",()=>openLiveStudio(item));card.append(studio);
         }
         if(item.status==="draft"&&((item.class_type==="recorded"&&item.stream_status==="ready")||(item.class_type==="live_broadcast"&&item.live_input_uid))){
