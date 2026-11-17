@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
 
     if (action === "get") {
       const { data,error } = await admin.from("ione_app_banners")
-        .select("id,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,feature_slides,updated_at")
+        .select("id,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,feature_slides,hospitality_slides,updated_at")
         .eq("id",1).maybeSingle();
       if(error) return json({success:false,error:"Could not load I|ONE communication data."},500);
       const banners=Array.isArray(data?.banners)?data.banners.map((x:unknown)=>String(x||"").trim()).filter(Boolean):[];
@@ -78,7 +78,15 @@ Deno.serve(async (req: Request) => {
         caption:String(item.caption||"").slice(0,48),
         url:admin.storage.from("ione-feature-showcase").getPublicUrl(String(item.path||"")).data.publicUrl
       })).filter((item:any)=>item.path&&item.caption);
-      return json({success:true,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,feature_slides});
+      const hospitality_slides=(Array.isArray(data?.hospitality_slides)?data.hospitality_slides:[]).map((item:any)=>({
+        id:String(item.id||item.path||""),
+        path:String(item.path||""),
+        brand_name:String(item.brand_name||"").trim().slice(0,70),
+        headline:String(item.headline||"").trim().slice(0,90),
+        message:String(item.message||"").trim().slice(0,160),
+        url:admin.storage.from("ione-hospitality-showcase").getPublicUrl(String(item.path||"")).data.publicUrl
+      })).filter((item:any)=>item.path&&item.brand_name&&item.headline&&item.message);
+      return json({success:true,banners,word_of_day,word_of_day_style,top_trending,new_books,ione_update,important_notice,feature_slides,hospitality_slides});
     }
 
     if(action==="feature_slides_save"){
@@ -125,6 +133,54 @@ Deno.serve(async (req: Request) => {
       if(removed.length)await admin.storage.from("ione-feature-showcase").remove(removed);
       const feature_slides=saved.map((item:any)=>({...item,url:admin.storage.from("ione-feature-showcase").getPublicUrl(item.path).data.publicUrl}));
       return json({success:true,feature_slides});
+    }
+
+    if(action==="hospitality_slides_save"){
+      if(!(await validAuthoritySession(admin,body?.authority_session || req.headers.get("x-ione-authority-session")))) return json({success:false,error:"Authority Press session expired. Unlock again."},401);
+      const incoming=Array.isArray(body?.slides)?body.slides:[];
+      if(incoming.length>10)return json({success:false,error:"A maximum of 10 hospitality images is allowed."},400);
+      const {data:current,error:readError}=await admin.from("ione_app_banners").select("hospitality_slides").eq("id",1).maybeSingle();
+      if(readError)return json({success:false,error:"Could not read the current hospitality showcase."},500);
+      const previous=Array.isArray(current?.hospitality_slides)?current.hospitality_slides:[];
+      const allowedPaths=new Set(previous.map((x:any)=>String(x.path||"")));
+      const saved:any[]=[];const uploaded:string[]=[];
+      try{
+        for(const raw of incoming){
+          const brand_name=String(raw?.brand_name||"").trim().slice(0,70);
+          const headline=String(raw?.headline||"").trim().slice(0,90);
+          const message=String(raw?.message||"").trim().slice(0,160);
+          if(!brand_name||!headline||!message)throw new Error("Every hospitality image needs a brand name, headline and message.");
+          if(raw?.data_base64){
+            if(String(raw.content_type||"")!=="image/jpeg")throw new Error("Hospitality images must be JPEG files.");
+            const encoded=String(raw.data_base64);
+            if(encoded.length>2450000)throw new Error("An image is too large. Please compress it and try again.");
+            const binary=atob(encoded);const bytes=new Uint8Array(binary.length);
+            for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+            if(bytes.length>1800000)throw new Error("An image is too large. Please choose a smaller image.");
+            const path="hospitality/"+crypto.randomUUID()+".jpg";
+            const up=await admin.storage.from("ione-hospitality-showcase").upload(path,bytes,{contentType:"image/jpeg",cacheControl:"31536000",upsert:false});
+            if(up.error)throw new Error("Could not upload a hospitality image.");
+            uploaded.push(path);saved.push({id:crypto.randomUUID(),path,brand_name,headline,message});
+          }else{
+            const path=String(raw?.path||"");
+            if(!allowedPaths.has(path))throw new Error("A saved hospitality image is no longer available. Refresh the page and try again.");
+            saved.push({id:String(raw.id||path),path,brand_name,headline,message});
+          }
+        }
+      }catch(error){
+        if(uploaded.length)await admin.storage.from("ione-hospitality-showcase").remove(uploaded);
+        throw error;
+      }
+      const {error:saveError}=await admin.from("ione_app_banners").upsert({id:1,hospitality_slides:saved,updated_at:new Date().toISOString()},{onConflict:"id"});
+      if(saveError){
+        if(uploaded.length)await admin.storage.from("ione-hospitality-showcase").remove(uploaded);
+        return json({success:false,error:"Could not publish hospitality showcase images."},500);
+      }
+      const keep=new Set(saved.map((x:any)=>x.path));
+      const removed=previous.map((x:any)=>String(x.path||"")).filter((path:string)=>path&&!keep.has(path));
+      if(removed.length)await admin.storage.from("ione-hospitality-showcase").remove(removed);
+      const hospitality_slides=saved.map((item:any)=>({...item,url:admin.storage.from("ione-hospitality-showcase").getPublicUrl(item.path).data.publicUrl}));
+      return json({success:true,hospitality_slides});
     }
 
     if(action==="update"){
