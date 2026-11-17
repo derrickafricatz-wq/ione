@@ -3358,7 +3358,7 @@ Install App
     <div class="afl-discovery-row">
       <input id="aflBillboardSearch" type="search" maxlength="120" placeholder="⌕ SEARCH…" autocomplete="off">
       <select id="aflBillboardCategory" aria-label="Billboard category">
-        <option value="all">ALL</option><option value="hotel">HOTELS</option><option value="real_estate">REAL ESTATE</option><option value="vehicles">CARS</option><option value="food">FOOD</option><option value="travel">TRAVEL</option><option value="products">SHOPS</option><option value="professional">PROFESSIONAL SERVICES</option><option value="health">HEALTH &amp; WELLNESS</option><option value="beauty">BEAUTY &amp; FASHION</option><option value="construction">CONSTRUCTION &amp; HOME</option><option value="education">EDUCATION &amp; TRAINING</option><option value="jobs">JOBS &amp; RECRUITMENT</option><option value="agriculture">AGRICULTURE</option><option value="technology">TECHNOLOGY &amp; ELECTRONICS</option><option value="events">EVENTS &amp; ENTERTAINMENT</option><option value="other">OTHER</option>
+        <option value="all">ALL</option><option value="hospitality">HOSPITALITY</option><option value="hotel">HOTELS</option><option value="real_estate">REAL ESTATE</option><option value="vehicles">CARS</option><option value="food">FOOD</option><option value="travel">TRAVEL</option><option value="products">SHOPS</option><option value="professional">PROFESSIONAL SERVICES</option><option value="health">HEALTH &amp; WELLNESS</option><option value="beauty">BEAUTY &amp; FASHION</option><option value="construction">CONSTRUCTION &amp; HOME</option><option value="education">EDUCATION &amp; TRAINING</option><option value="jobs">JOBS &amp; RECRUITMENT</option><option value="agriculture">AGRICULTURE</option><option value="technology">TECHNOLOGY &amp; ELECTRONICS</option><option value="events">EVENTS &amp; ENTERTAINMENT</option><option value="other">OTHER</option>
       </select>
     </div>
     <div class="afl-discovery-hint">FIND A BRAND FAST • FILTER THE LIVE I|ONE NETWORK</div>
@@ -3676,6 +3676,31 @@ function getMedia(id){
 <button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">SW</span><strong>SPACEWAY</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
 <button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
 </div></section></div>
+<style id="ione-hospitality-showcase-style-v1">
+#ioneHospitalityShowcase{display:block;position:relative;box-sizing:border-box;width:min(94vw,1040px);margin:14px auto 18px;padding:14px 0 16px;overflow:hidden;border:1px solid rgba(218,190,128,.24);border-radius:20px;background:linear-gradient(145deg,rgba(30,27,20,.96),rgba(10,17,18,.98));box-shadow:0 12px 30px rgba(0,0,0,.22)}
+#ioneHospitalityShowcase[hidden]{display:none!important}
+.ione-hospitality-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 15px 12px}
+.ione-hospitality-kicker{color:#e8cc8d;font:900 10px/1.2 Arial,sans-serif;letter-spacing:2px}
+.ione-hospitality-sub{margin-top:4px;color:#aebfba;font:500 11px/1.4 Arial,sans-serif}
+.ione-hospitality-viewport{width:100%;overflow:hidden;touch-action:pan-y;mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent)}
+.ione-hospitality-track{display:flex;align-items:stretch;gap:13px;width:max-content;padding:0 13px;animation:ioneHospitalityLoop var(--ione-hospitality-duration,40s) linear infinite;animation-play-state:running!important;will-change:transform}
+.ione-hospitality-card{position:relative;flex:0 0 clamp(265px,78vw,390px);width:clamp(265px,78vw,390px);height:clamp(190px,52vw,250px);overflow:hidden;border:1px solid rgba(235,213,160,.3);border-radius:17px;background:#172322}
+.ione-hospitality-card img{display:block;width:100%;height:100%;object-fit:cover}
+.ione-hospitality-card:after{content:"";position:absolute;inset:20% 0 0;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.82));pointer-events:none}
+.ione-hospitality-copy{position:absolute;z-index:1;left:14px;right:14px;bottom:13px;display:grid;gap:5px;text-shadow:0 1px 5px #000}
+.ione-hospitality-brand{color:#f7dfaa;font:900 10px/1.2 Arial,sans-serif;letter-spacing:1.7px;text-transform:uppercase}
+.ione-hospitality-headline{margin:0;color:#fff;font:800 clamp(17px,4vw,23px)/1.13 Georgia,serif}
+.ione-hospitality-message{color:#f0f0e9;font:500 11px/1.35 Arial,sans-serif}
+.ione-hospitality-getin{justify-self:start;min-height:34px;margin-top:4px;padding:8px 17px;border:1px solid #f4d99b;border-radius:999px;background:linear-gradient(135deg,#f8e7bd,#c79c52);color:#251b0c;font:900 10px/1 Arial,sans-serif;letter-spacing:1.1px;box-shadow:0 4px 12px rgba(0,0,0,.28);cursor:pointer}
+.ione-hospitality-getin:active{transform:translateY(1px)}
+@keyframes ioneHospitalityLoop{to{transform:translate3d(-50%,0,0)}}
+@media(prefers-reduced-motion:reduce){.ione-hospitality-track{animation-duration:calc(var(--ione-hospitality-duration,40s)*1.7)!important}}
+@media(max-width:420px){.ione-hospitality-card{flex-basis:82vw;width:82vw;height:54vw;min-height:190px}.ione-hospitality-copy{left:11px;right:11px;bottom:10px}.ione-hospitality-message{font-size:10px}}
+</style>
+<section id="ioneHospitalityShowcase" aria-label="I|ONE Hospitality Spotlight" hidden>
+  <div class="ione-hospitality-head"><div><div class="ione-hospitality-kicker">I|ONE HOSPITALITY SPOTLIGHT</div><div class="ione-hospitality-sub">Discover places to stay, dine and experience</div></div></div>
+  <div class="ione-hospitality-viewport"><div id="ioneHospitalityTrack" class="ione-hospitality-track"></div></div>
+</section>
 <div id="scrollBanner" aria-label="I|ONE scrolling information"><div class="ione-banner-frame"><span class="ione-banner-label">I|ONE</span><div id="scrollText"></div></div></div>
 
 <div id="authorityPasswordOverlay" aria-hidden="true">
@@ -4252,7 +4277,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=156", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=157", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -5036,7 +5061,7 @@ function aflBusinessLabel(type){return ({hotel:"HOTEL / LODGE",restaurant:"RESTA
 
 function aflCategoryLabel(category){return ({hotel:"HOTELS & LODGES",real_estate:"REAL ESTATE & LAND",vehicles:"CARS & TRANSPORT",food:"FOOD & RESTAURANTS",travel:"TOURS & TRAVEL",products:"PRODUCTS & SHOPS",professional:"PROFESSIONAL SERVICES",health:"HEALTH & WELLNESS",beauty:"BEAUTY & FASHION",construction:"CONSTRUCTION & HOME",education:"EDUCATION & TRAINING",jobs:"JOBS & RECRUITMENT",agriculture:"AGRICULTURE",technology:"TECHNOLOGY & ELECTRONICS",events:"EVENTS & ENTERTAINMENT",other:"OTHER"}[category]||"OTHER");}
 function aflDefaultCategoryForType(type){return ({hotel:"hotel",restaurant:"food",real_estate_land:"real_estate",real_estate_house:"real_estate",vehicle:"vehicles",transport:"vehicles",service:"professional",repair:"technology",construction:"construction",package:"travel",event:"events",product:"products",electronics:"technology",education:"education",health:"health",beauty:"beauty",agriculture:"agriculture",jobs:"jobs"}[type]||"professional");}
-function aflApplyFeedFilter(){const q=String(aflFeedSearch||"").trim().toLowerCase(),cat=aflFeedCategory||"all";let shown=0;aflFeedRows.forEach(row=>{const b=row.billboard||{};const hay=[b.brand_name,b.content,b.address,b.business_type,b.category,aflCategoryLabel(b.category),aflBusinessLabel(b.business_type)].join(" ").toLowerCase();const okQ=!q||hay.includes(q),okC=cat==="all"||String(b.category||"")===cat;row.wrap.style.display=okQ&&okC?"":"none";if(okQ&&okC)shown++;});let empty=document.getElementById("aflFilterEmpty");if(!shown&&aflFeedRows.length){if(!empty){empty=document.createElement("div");empty.id="aflFilterEmpty";empty.className="afl-filter-empty";aflFeed.appendChild(empty);}empty.textContent="NO BILLBOARD MATCHED YOUR SEARCH OR CATEGORY.";}else if(empty)empty.remove();}
+function aflApplyFeedFilter(){const q=String(aflFeedSearch||"").trim().toLowerCase(),cat=aflFeedCategory||"all";let shown=0;const hospitalityCategories=new Set(["hotel","food","travel","events"]);aflFeedRows.forEach(row=>{const b=row.billboard||{};const hay=[b.brand_name,b.content,b.address,b.business_type,b.category,aflCategoryLabel(b.category),aflBusinessLabel(b.business_type)].join(" ").toLowerCase();const category=String(b.category||"");const okQ=!q||hay.includes(q),okC=cat==="all"||(cat==="hospitality"?hospitalityCategories.has(category):category===cat);row.wrap.style.display=okQ&&okC?"":"none";if(okQ&&okC)shown++;});let empty=document.getElementById("aflFilterEmpty");if(!shown&&aflFeedRows.length){if(!empty){empty=document.createElement("div");empty.id="aflFilterEmpty";empty.className="afl-filter-empty";aflFeed.appendChild(empty);}empty.textContent="NO BILLBOARD MATCHED YOUR SEARCH OR CATEGORY.";}else if(empty)empty.remove();}
 
 async function aflUploadFile(file, userId){
   const safe=String(file.name||"image").replace(/[^a-zA-Z0-9._-]/g,"_").slice(-90);
@@ -6058,7 +6083,8 @@ function aflStartLoops(){
 }
 
 let aflFeedLoadPending=false;
-function aflOpenWorld(){
+function aflOpenWorld(category){
+  if(category){aflFeedCategory=String(category);const categorySelect=document.getElementById("aflBillboardCategory");if(categorySelect)categorySelect.value=aflFeedCategory;aflFeedSearch="";const searchInput=document.getElementById("aflBillboardSearch");if(searchInput)searchInput.value="";}
   ioneSetHomeControls(false);
   smartPanel.classList.remove("show");
   aflOverlay.style.display="flex";
@@ -6071,9 +6097,11 @@ function aflOpenWorld(){
   if(aflFeedLoadPending)return;
   aflFeedLoadPending=true;
   requestAnimationFrame(()=>{
-    Promise.resolve(aflLoadFeed()).finally(()=>{aflFeedLoadPending=false;});
+    Promise.resolve(aflLoadFeed()).finally(()=>{aflFeedLoadPending=false;aflApplyFeedFilter();});
   });
 }
+
+window.ioneOpenHospitalityMarket=()=>aflOpenWorld("hospitality");
 
 function aflCloseWorld(){
   aflOverlay.style.display="none";
@@ -13765,6 +13793,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-expert.js?v=6" defer></script>
 <script src="./ione-register.js?v=1" defer></script>
 <script src="./ione-feature-showcase.js?v=1" defer></script>
+<script src="./ione-hospitality-showcase.js?v=1" defer></script>
 <script src="./ione-live-class.js?v=3" defer></script>
 <script src="./ione-navigation.js?v=6" defer></script>
 <script>
