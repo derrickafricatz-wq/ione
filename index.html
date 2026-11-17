@@ -3662,7 +3662,12 @@ function getMedia(id){
 @media(prefers-reduced-motion:reduce){.ione-books-showcase-track{will-change:auto}}
 </style>
 
-<section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div><div class="smart-grid">
+<section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div>
+<section id="ioneHospitalityShowcase" aria-label="I|ONE Hospitality Spotlight" hidden>
+  <div class="ione-hospitality-head"><div><div class="ione-hospitality-kicker">I|ONE HOSPITALITY SPOTLIGHT</div><div class="ione-hospitality-sub">Discover places to stay, dine and experience</div></div></div>
+  <div class="ione-hospitality-viewport"><div id="ioneHospitalityTrack" class="ione-hospitality-track"></div></div>
+</section>
+<div class="smart-grid">
 <button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item ione-special ione-sokoni-tile" id="openSokoni" type="button"><span class="smart-icon" aria-hidden="true">S</span><strong>I|ONE SOKONI</strong><small>SOKO LA KARIBU • WAFANYABIASHARA</small></button>
 <button class="smart-item ione-opportunities-tile" id="openIoneOpportunities" type="button"><span class="smart-icon" aria-hidden="true">✦</span><strong>I|ONE OPPORTUNITIES</strong><small>JOBS • SCHOLARSHIPS • TRAINING</small></button>
@@ -3677,7 +3682,7 @@ function getMedia(id){
 <button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
 </div></section></div>
 <style id="ione-hospitality-showcase-style-v1">
-#ioneHospitalityShowcase{display:block;position:relative;box-sizing:border-box;width:min(94vw,1040px);margin:14px auto 18px;padding:14px 0 16px;overflow:hidden;border:1px solid rgba(218,190,128,.24);border-radius:20px;background:linear-gradient(145deg,rgba(30,27,20,.96),rgba(10,17,18,.98));box-shadow:0 12px 30px rgba(0,0,0,.22)}
+#ioneHospitalityShowcase{display:block;position:relative;grid-column:1/-1;box-sizing:border-box;width:100%;max-width:none;margin:8px 0 12px;padding:10px 0 12px;overflow:hidden;border:1px solid rgba(218,190,128,.24);border-radius:20px;background:linear-gradient(145deg,rgba(30,27,20,.96),rgba(10,17,18,.98));box-shadow:0 12px 30px rgba(0,0,0,.22)}
 #ioneHospitalityShowcase[hidden]{display:none!important}
 .ione-hospitality-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 15px 12px}
 .ione-hospitality-kicker{color:#e8cc8d;font:900 10px/1.2 Arial,sans-serif;letter-spacing:2px}
@@ -3697,10 +3702,7 @@ function getMedia(id){
 @media(prefers-reduced-motion:reduce){.ione-hospitality-track{animation-duration:calc(var(--ione-hospitality-duration,40s)*1.7)!important}}
 @media(max-width:420px){.ione-hospitality-card{flex-basis:82vw;width:82vw;height:54vw;min-height:190px}.ione-hospitality-copy{left:11px;right:11px;bottom:10px}.ione-hospitality-message{font-size:10px}}
 </style>
-<section id="ioneHospitalityShowcase" aria-label="I|ONE Hospitality Spotlight" hidden>
-  <div class="ione-hospitality-head"><div><div class="ione-hospitality-kicker">I|ONE HOSPITALITY SPOTLIGHT</div><div class="ione-hospitality-sub">Discover places to stay, dine and experience</div></div></div>
-  <div class="ione-hospitality-viewport"><div id="ioneHospitalityTrack" class="ione-hospitality-track"></div></div>
-</section>
+
 <div id="scrollBanner" aria-label="I|ONE scrolling information"><div class="ione-banner-frame"><span class="ione-banner-label">I|ONE</span><div id="scrollText"></div></div></div>
 
 <div id="authorityPasswordOverlay" aria-hidden="true">
@@ -13793,7 +13795,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-expert.js?v=6" defer></script>
 <script src="./ione-register.js?v=1" defer></script>
 <script src="./ione-feature-showcase.js?v=1" defer></script>
-<script src="./ione-hospitality-showcase.js?v=1" defer></script>
+<script src="./ione-hospitality-showcase.js?v=2" defer></script>
 <script src="./ione-live-class.js?v=3" defer></script>
 <script src="./ione-navigation.js?v=6" defer></script>
 <script>
