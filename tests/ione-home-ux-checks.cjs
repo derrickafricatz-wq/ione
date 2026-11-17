@@ -9,7 +9,7 @@ const hospitality=fs.readFileSync("ione-hospitality-showcase.js","utf8");
 const navigation=fs.readFileSync("ione-navigation.js","utf8");
 const edge=fs.readFileSync("supabase/functions/ione-app-banners/index.ts","utf8");
 const migration=fs.readFileSync("supabase/migrations/20261116090000_ione_home_feature_showcase.sql","utf8");
-const hospitalityMigration=fs.readFileSync("supabase/migrations/20261117130000_ione_hospitality_spotlight.sql","utf8");
+const hospitalityMigration=fs.readFileSync("supabase/migrations/20261117103600_ione_hospitality_spotlight.sql","utf8");
 new vm.Script(showcase,{filename:"ione-feature-showcase.js"});
 new vm.Script(hospitality,{filename:"ione-hospitality-showcase.js"});
 new vm.Script(navigation,{filename:"ione-navigation.js"});
