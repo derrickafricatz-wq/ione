@@ -264,7 +264,7 @@ Deno.serve(async(req:Request)=>{
     return json(req,{success:false,error:"Unknown Live Class action."},400);
   }catch(error){
     const message=error instanceof Error?error.message:"Unexpected Live Class error.";
-    const status=/Authority Press session expired/i.test(message)?401:500;
+    const status=/Authority Press session expired/i.test(message)?401:/Cloudflare Stream is not configured/i.test(message)?503:500;
     return json(req,{success:false,error:message},status);
   }
 });

@@ -1,5 +1,5 @@
 {
-  "version": "1.0.334",
-  "message": "Fix I|ONE Live Class Authority manager and service activation",
+  "version": "1.0.335",
+  "message": "Clarify saved Live Class drafts while Cloudflare Stream is pending",
   "force": true
 }
