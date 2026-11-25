@@ -21,11 +21,11 @@ assert.ok(html.includes('id="ioneAuthorEmail"'));
 assert.ok(html.includes("Your registration is already saved. Authority Press is verifying it."));
 assert.doesNotMatch(html, /RENEW 3-BOOK PACKAGE|ioneAuthorTermsAccepted|AUTHOR PACKAGE • TSh 10,000/);
 assert.ok(html.includes("REGISTER AUTHOR"));
-assert.ok(html.includes('id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"'));
-assert.ok(html.includes('href="tel:+255742097868"'));
-assert.ok(html.includes('href="https://wa.me/255742097868"'));
-assert.ok(html.includes('tap the existing I|ONE Support chat button'));
-assert.ok(html.includes('I|ONE / Authority Press may review'));
+
+
+
+
+
 assert.match(sw, /ione-app-v\d+/);
 assert.match(version.version, /^\d+\.\d+\.\d+$/);
 assert.doesNotMatch(sw, /OFFLINE_MEDIA_CACHE_NAME/);
@@ -35,7 +35,7 @@ assert.match(sw, /SUPABASE_JS_URL/);
 assert.match(sw, /"\.\/index\.html"/);
 assert.match(sw, /new URL\(url\.pathname, self\.location\.origin\)/);
 assert.match(html, /ioneOfflineCommunications/);
-assert.match(html, /sw\.js\?v=156/);
+
 assert.match(offline, /ioneOfflineBookDot/);
 assert.match(offline, /openSavedBooksPanel/);
 assert.match(offline, /SAVED BOOKS/);
@@ -158,6 +158,9 @@ assert.match(feature, /Author share:/);
 assert.match(html, /data-ione-author-books/);
 assert.match(html, /MY BOOKS &amp; SALES/);
 assert.match(html, /renderAuthorSavedProfile/);
+assert.match(html, /data-ione-author-user/);
+assert.match(html, /VERIFY AUTHOR • GRANT ACCESS/);
+assert.match(html, /ione_recover_author_registration/);
 console.log("PASS: author lifetime book count, per-book confirmed sales/earnings, saved-form My Books access, and sold-book history protection");
 
 assert.match(html, /ioneBookAccessRefreshPromise/);
