@@ -16,12 +16,18 @@ new vm.Script(feature, { filename: "book-to-pdf.js" });
 new vm.Script(offline, { filename: "ione-offline-books.js" });
 console.log("PASS: Book to PDF and offline storage JavaScript parse");
 
-assert.ok(html.includes('id="ioneAuthorTermsPanel"'));
-assert.ok(html.includes('id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"'));
-assert.ok(html.includes('href="tel:+255742097868"'));
-assert.ok(html.includes('href="https://wa.me/255742097868"'));
-assert.ok(html.includes('tap the existing I|ONE Support chat button'));
-assert.ok(html.includes('I|ONE / Authority Press may review'));
+assert.ok(html.includes('id="ioneAuthorKnownName"'));
+assert.ok(html.includes('id="ioneAuthorEmail"'));
+assert.ok(html.includes('id="ioneAuthorRecover"'));
+assert.match(html, /signInWithOtp\(\{email/);
+assert.ok(html.includes("Your registration is already saved. Authority Press is verifying it."));
+assert.doesNotMatch(html, /RENEW 3-BOOK PACKAGE|ioneAuthorTermsAccepted|AUTHOR PACKAGE • TSh 10,000/);
+assert.ok(html.includes("REGISTER AUTHOR"));
+
+
+
+
+
 assert.match(sw, /ione-app-v\d+/);
 assert.match(version.version, /^\d+\.\d+\.\d+$/);
 assert.doesNotMatch(sw, /OFFLINE_MEDIA_CACHE_NAME/);
@@ -31,7 +37,9 @@ assert.match(sw, /SUPABASE_JS_URL/);
 assert.match(sw, /"\.\/index\.html"/);
 assert.match(sw, /new URL\(url\.pathname, self\.location\.origin\)/);
 assert.match(html, /ioneOfflineCommunications/);
-assert.match(html, /sw\.js\?v=156/);
+assert.ok(html.includes('sw.js?v=159'));
+assert.equal(version.version, "1.0.338");
+
 assert.match(offline, /ioneOfflineBookDot/);
 assert.match(offline, /openSavedBooksPanel/);
 assert.match(offline, /SAVED BOOKS/);
@@ -43,7 +51,7 @@ assert.doesNotMatch(offline, /cacheMediaUrl/);
 assert.match(sw, /Do not wrap Supabase API\/REST\/function GET requests/);
 console.log("PASS: offline shell, book-only persistence, tiny saved-books dot, and online-only live features");
 console.log("PASS: Supabase CDN fallback, query-string asset fallback, and app shell caching");
-console.log("PASS: Author Studio consent, support links, and cache/version checks");
+console.log("PASS: four-field author registration, Authority verification, email recovery, and PWA cache/version checks");
 
 
 const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
@@ -154,6 +162,9 @@ assert.match(feature, /Author share:/);
 assert.match(html, /data-ione-author-books/);
 assert.match(html, /MY BOOKS &amp; SALES/);
 assert.match(html, /renderAuthorSavedProfile/);
+assert.match(html, /data-ione-author-user/);
+assert.match(html, /VERIFY AUTHOR • GRANT ACCESS/);
+assert.match(html, /ione_recover_author_registration/);
 console.log("PASS: author lifetime book count, per-book confirmed sales/earnings, saved-form My Books access, and sold-book history protection");
 
 assert.match(html, /ioneBookAccessRefreshPromise/);

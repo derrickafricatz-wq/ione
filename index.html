@@ -3288,56 +3288,19 @@ Install App
 
 <!-- MINISTRY AUTHOR ACCESS -->
 <div id="ministryAccessOverlay" class="ministry-access-overlay" aria-hidden="true">
-  <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle" style="max-height:92dvh;overflow:auto">
-    <div class="ministry-kicker">I|ONE • AUTHOR STUDIO</div>
-    <h2 id="ministryAccessTitle">AUTHOR STUDIO ACCESS FORM</h2>
-    <p>Complete this form once. Your details are saved for future three-book packages. No separate author password is required.</p>
-    <div id="ioneAuthorAccessSaved" style="display:none;margin:10px 0;padding:12px;border:1px solid #32766d;border-radius:12px;background:#0a2826;color:#dffff7;line-height:1.5"></div>
-    <form id="ioneAuthorAccessForm" style="display:grid;gap:10px;text-align:left">
-      <label class="ministry-access-label" for="ioneAuthorRealName">FULL REAL NAME</label>
-      <input id="ioneAuthorRealName" class="ministry-access-input" maxlength="120" autocomplete="name" required placeholder="Enter your real name">
-      <label class="ministry-access-label" for="ioneAuthorPhone">MOBILE NUMBER</label>
-      <input id="ioneAuthorPhone" class="ministry-access-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" required placeholder="e.g. 07XXXXXXXX">
-      <div style="padding:12px;border:1px solid #365f67;border-radius:12px;background:#0a1820;color:#d6e9ef;font-size:13px;line-height:1.6">
-        <strong style="color:#82f3db">AUTHOR PACKAGE • TSh 10,000</strong><br>
-        Payment is made outside the app. Merchant: <strong>DERRICK KIPAJI OF AFRIKA &amp; CO</strong><br>
-        Network: <strong><span class="ione-halopesa-provider"><span class="ione-halopesa-mark" aria-hidden="true">HP</span>HaloPesa</span></strong><br>Merchant number: <strong>23544652</strong><br>
-        One confirmed package covers up to <strong>3 published books</strong>. When all three are published, Author Studio locks until the next package payment is confirmed by Authority Press.
-      </div>
-      <section id="ioneAuthorTermsPanel" aria-labelledby="ioneAuthorTermsHeading">
-        <strong id="ioneAuthorTermsHeading" class="ione-terms-heading">AUTHOR STUDIO • TERMS &amp; CONDITIONS</strong>
-        <div class="ione-terms-scroll" tabindex="0" aria-label="Scrollable Author Studio terms">
-          <ol>
-            <li><strong>Original work and rights:</strong> You must submit work you own or are authorized to publish. You are responsible for the accuracy of your information and for respecting other people's rights.</li>
-            <li><strong>Review and publishing:</strong> I|ONE / Authority Press may review your details and book submissions before approving publication.</li>
-            <li><strong>Package fee:</strong> The TSh 10,000 package covers up to three published books. Payment is made outside the app to the merchant details shown above. Publishing access is activated only after Authority Press confirms payment.</li>
-            <li><strong>Renewal:</strong> After three books have been published, the package locks. A new package payment must be confirmed before publishing more books. Your saved details may be reused for renewal.</li>
-            <li><strong>Author payouts:</strong> Author earnings are normally paid monthly through the available payout process. An exceptional payout may be considered when an author has a serious issue; Authority Press reviews and decides each request.</li>
-            <li><strong>Responsible use:</strong> Submit truthful details, keep your contact number current, and contact I|ONE support if you need help with access, payment confirmation, or an author payout.</li>
-          </ol>
-        </div>
-      </section>
-      <label id="ioneAuthorConsentRow" for="ioneAuthorTermsAccepted">
-        <input id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true">
-        <span>I have read and agree to the Author Studio Terms &amp; Conditions above.</span>
-      </label>
-      <section id="ioneAuthorSupportPanel" aria-label="Contact I|ONE support">
-        <div class="ione-support-title">NEED HELP? CONTACT I|ONE</div>
-        <div class="ione-support-actions">
-          <a href="tel:+255742097868" aria-label="Call I|ONE support">CALL I|ONE</a>
-          <a class="ione-whatsapp" href="https://wa.me/255742097868" target="_blank" rel="noopener noreferrer" aria-label="Chat with I|ONE on WhatsApp">CHAT ON WHATSAPP</a>
-        </div>
-        <div class="ione-support-note">For in-app support chat, close this form, return to the I|ONE homepage, and tap the existing I|ONE Support chat button.</div>
-      </section>
-      <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button>
-        <button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">SAVE FORM &amp; REQUEST ACCESS</button>
-        <button id="ioneAuthorRenew" class="ministry-unlock" type="button" style="display:none">RENEW 3-BOOK PACKAGE</button>
-        <button id="ioneAuthorEnterStudio" class="ministry-unlock" type="button" style="display:none">ENTER AUTHOR STUDIO</button>
-      </div>
-      <div id="ministryAccessStatus" class="ministry-access-status" role="status"></div>
-    </form>
-  </div>
+ <div class="ministry-access-card" role="dialog" aria-modal="true" aria-labelledby="ministryAccessTitle" style="max-height:92dvh;overflow:auto">
+  <div class="ministry-kicker">I|ONE • AUTHOR STUDIO</div><h2 id="ministryAccessTitle">AUTHOR REGISTRATION</h2>
+  <p>Register once. Authority Press verifies your details. Your saved registration remains linked to your I|ONE account.</p>
+  <div id="ioneAuthorAccessSaved" style="display:none;margin:10px 0;padding:12px;border:1px solid #32766d;border-radius:12px;background:#0a2826;color:#dffff7;line-height:1.5"></div>
+  <form id="ioneAuthorAccessForm" style="display:grid;gap:10px;text-align:left">
+   <label class="ministry-access-label" for="ioneAuthorRealName">FULL NAME</label><input id="ioneAuthorRealName" class="ministry-access-input" maxlength="120" autocomplete="name" required placeholder="Your official full name">
+   <label class="ministry-access-label" for="ioneAuthorKnownName">KNOWN AUTHOR NAME</label><input id="ioneAuthorKnownName" class="ministry-access-input" maxlength="120" autocomplete="nickname" required placeholder="Name shown on your books">
+   <label class="ministry-access-label" for="ioneAuthorPhone">PHONE NUMBER</label><input id="ioneAuthorPhone" class="ministry-access-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" required placeholder="e.g. 07XXXXXXXX">
+   <label class="ministry-access-label" for="ioneAuthorEmail">EMAIL ADDRESS</label><input id="ioneAuthorEmail" class="ministry-access-input" type="email" autocomplete="email" maxlength="254" required placeholder="Your reachable email">
+   <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button><button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">REGISTER AUTHOR</button><button id="ioneAuthorRecover" class="ministry-unlock" type="button">RECOVER EXISTING AUTHOR</button><button id="ioneAuthorEnterStudio" class="ministry-unlock" type="button" style="display:none">ENTER AUTHOR STUDIO</button></div>
+   <div id="ministryAccessStatus" class="ministry-access-status" role="status"></div>
+  </form>
+ </div>
 </div>
 
 <!-- I|ONE • HOME OF MARKETING -->
@@ -3771,7 +3734,7 @@ function getMedia(id){
       <button type="button" id="authoritySavePrices" class="authority-save-button">SAVE PRICES</button>
       <div id="authoritySaveStatus" class="authority-save-status"></div>
     <div class="authority-panel-section" id="ioneAuthorAccessAuthoritySection">
-      <div class="authority-section-kicker">AUTHOR STUDIO • PAYMENT & ACCESS CONTROL</div>
+      <div class="authority-section-kicker">AUTHOR STUDIO • AUTHORITY VERIFICATION</div>
       <h3>AUTHOR ACCESS FORMS</h3>
       <p class="authority-section-note">Review saved author forms. Confirm payment only after checking the merchant transaction. Activation unlocks the next three-book package; locking does not delete the author's saved details.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0">
@@ -4017,7 +3980,7 @@ const guideItems=[
 
 ["find","⌕","FIND IT FOR ME","PRODUCT • SERVICE REQUESTS","Use FIND IT FOR ME inside Marketing when you cannot find a product or service. Describe what you need and add requested details such as type, location or budget. Submit, then reopen the panel to check status and read private team replies in that request thread.","Tumia FIND IT FOR ME ndani ya Masoko unapokosa bidhaa au huduma. Eleza unachohitaji na ongeza maelezo yanayoombwa kama aina, eneo au bajeti. Tuma ombi, kisha fungua paneli tena kuona hali na kusoma majibu binafsi ya timu ndani ya ombi hilo.","NITAFUTIE","MAOMBI YA BIDHAA • HUDUMA"],
 ["receipts","▤","ORDERS & RECEIPTS","VIEW • DOWNLOAD","Where a ChapChap order provides a receipt, use VIEW RECEIPT to review the transaction and DOWNLOAD to save it as a PDF. Keep it for follow-up. Options depend on the transaction and your role.","Pale oda ya ChapChap inapokuwa na risiti, tumia VIEW RECEIPT kukagua muamala na DOWNLOAD kuhifadhi PDF. Hifadhi kwa ajili ya ufuatiliaji. Chaguo hutegemea muamala na nafasi yako.","ODA NA RISITI","ANGALIA • PAKUA"],
-["studio","✎","AUTHOR’S STUDIO","RECORD • WRITE • CREATE BOOKS","Complete the author access form and follow the in-app instructions. Record/transcribe words, edit and save writing, organize chapters, add covers or chapter images, and create books. A confirmed package covers up to three published books. MY BOOKS lets you review work and available price/access and insight settings; request narration where offered.","Jaza fomu ya ufikiaji wa mwandishi na ufuate maelekezo ya app. Rekodi/badili sauti kuwa maandishi, hariri na hifadhi, panga sura, ongeza majalada au picha na tengeneza vitabu. Kifurushi kilichothibitishwa kinajumuisha hadi vitabu vitatu vilivyochapishwa. MY BOOKS hukuwezesha kukagua kazi na mipangilio ya bei/ufikiaji na maelezo; omba usomaji wa sauti pale unapopatikana.","STUDIO YA WAANDISHI","REKODI • ANDIKA • TENGENEZA VITABU"],
+["studio","✎","AUTHOR’S STUDIO","RECORD • WRITE • CREATE BOOKS","Register once with your full name, known author name, phone and email. Authority Press verifies your profile before publishing access is opened. Return to Author Studio to continue without registering again. MY BOOKS lets you review your work, sales, pricing and insight settings; request narration where offered.","Jisajili mara moja kwa jina lako kamili, jina lako la uandishi, simu na barua pepe. Authority Press itathibitisha taarifa zako kabla ya kufungua ruhusa ya kuchapisha. Ukirudi Author Studio, endelea bila kujisajili tena. MY BOOKS hukuwezesha kuona kazi zako, mauzo na mipangilio ya vitabu.","STUDIO YA WAANDISHI","REKODI • ANDIKA • TENGENEZA VITABU"],
 ["expert","EX","I|ONE EXPERT","ASK • ANSWER • SHARE KNOWLEDGE","Open I|ONE Expert to browse community questions and expert advice. You can publish a question with details. People with expertise can submit an application with their specialty and supporting credentials for review. Only approved experts can publish expert answers. Return to the question thread to read replies.","Fungua I|ONE Expert kuvinjari maswali ya jamii na ushauri wa wataalamu. Unaweza kuchapisha swali lenye maelezo. Wenye utaalamu wanaweza kutuma maombi yenye taaluma na uthibitisho unaohitajika ili yakaguliwe. Wataalamu walioidhinishwa pekee ndio wanaoweza kuchapisha majibu ya kitaalamu. Rudi kwenye swali husika kusoma majibu.","I|ONE EXPERT","ULIZA • JIBU • SHIRIKI UJUZI"],
 ["discover","▤","DISCOVER & EXPLORE","BOOKS • LESSONS • DOCUMENTARIES","Open EXPLORE to browse/search published books. If payment is required, follow the access step shown before reading. Lessons are in the learning area; use ROTATE where shown. Published documentaries open from their list. Green 5$ ACCESS is for documentary publishing: US$5 covers one month from publication; arrange payment manually outside the app through I1 Support.","Fungua EXPLORE kuvinjari/kutafuta vitabu vilivyochapishwa. Ikiwa malipo yanahitajika, fuata hatua ya ufikiaji kabla ya kusoma. Masomo yako kwenye eneo la kujifunzia; tumia ROTATE pale inapoonekana. Documentary zilizochapishwa hufunguliwa kutoka kwenye orodha. 5$ ACCESS ya kijani ni ya uchapishaji wa documentary: US$5 hulipia mwezi mmoja kuanzia kuchapishwa; panga malipo nje ya app kupitia I1 Support.","GUNDUA NA VINJARI","VITABU • MASOMO • DOCUMENTARY"],
 ["offline","●","SAVED OFFLINE BOOKS","READ WITHOUT INTERNET","Books opened for online reading are saved for offline reading when browser storage is supported and saving succeeds. Tap the small dot near the home notification control to open saved books. Red means saving; green means saved books are available. Only books are saved offline; live billboards, marketplace requests, messages and documentaries need internet.","Vitabu vinavyofunguliwa kusomwa mtandaoni huhifadhiwa kwa usomaji bila intaneti ikiwa kivinjari kinaunga mkono na uhifadhi umefanikiwa. Gusa nukta ndogo karibu na kitufe cha arifa kufungua vitabu vilivyohifadhiwa. Nyekundu humaanisha uhifadhi unaendelea; kijani humaanisha vitabu vimehifadhiwa. Vitabu pekee ndivyo huhifadhiwa; matangazo hai, maombi ya sokoni, ujumbe na documentary vinahitaji intaneti.","VITABU VILIVYOHIFADHIWA","SOMA BILA INTANETI"],
@@ -4279,7 +4242,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=158", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=159", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -4604,96 +4567,54 @@ const ministryAccessOverlay=document.getElementById("ministryAccessOverlay");
 const ministryAccessStatus=document.getElementById("ministryAccessStatus");
 const authorForm=document.getElementById("ioneAuthorAccessForm");
 const authorSaved=document.getElementById("ioneAuthorAccessSaved");
-const authorNameInput=document.getElementById("ioneAuthorRealName");
-const authorPhoneInput=document.getElementById("ioneAuthorPhone");
-const authorTermsInput=document.getElementById("ioneAuthorTermsAccepted");
-const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit");
-const authorRenewButton=document.getElementById("ioneAuthorRenew");
-const authorEnterButton=document.getElementById("ioneAuthorEnterStudio");
+const authorNameInput=document.getElementById("ioneAuthorRealName"),authorKnownNameInput=document.getElementById("ioneAuthorKnownName"),authorPhoneInput=document.getElementById("ioneAuthorPhone"),authorEmailInput=document.getElementById("ioneAuthorEmail");
+const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit"),authorEnterButton=document.getElementById("ioneAuthorEnterStudio"),authorRecoverButton=document.getElementById("ioneAuthorRecover");
 let authorAccessRequest=null;
 function renderAuthorSavedProfile(){
-  if(!authorAccessRequest){authorSaved.style.display="none";return;}
-  const packageNumber=Math.max(0,Number(authorAccessRequest.package_number||0));
-  const booksUsed=Math.max(0,Number(authorAccessRequest.books_used||0));
-  const lifetimeBooks=Math.max((packageNumber-1)*3+booksUsed,Number(authorAccessRequest.lifetime_books_published||0));
-  const status=String(authorAccessRequest.status||"saved").replace(/</g,"&lt;").toUpperCase();
-  authorSaved.style.display="block";
-  authorSaved.innerHTML="<strong>YOUR SAVED AUTHOR PROFILE</strong><br>Status: "+status+"<br>Package: "+packageNumber+" • This package: "+booksUsed+"/3 books • Lifetime published: "+lifetimeBooks+
-    '<div style="display:flex;justify-content:flex-start;margin-top:10px"><button type="button" data-ione-author-books style="display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #48d7a0;border-radius:9px;background:#103a2b;color:#dffff5;font-size:11px;font-weight:900"><span aria-hidden="true" style="color:#65f0b6;font-size:16px;line-height:1">●</span> MY BOOKS &amp; SALES</button></div>';
+ if(!authorAccessRequest){authorSaved.style.display="none";return;}
+ const safe=v=>String(v||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+ const ver=String(authorAccessRequest.verification_status||authorAccessRequest.status||"pending_verification").replace(/_/g," ").toUpperCase();
+ authorSaved.style.display="block";
+ authorSaved.innerHTML="<strong>SAVED AUTHOR REGISTRATION</strong><br>"+safe(authorAccessRequest.real_name)+" • "+safe(authorAccessRequest.known_author_name)+"<br>"+safe(authorAccessRequest.phone)+" • "+safe(authorAccessRequest.email)+"<br>Authority verification: <strong>"+safe(ver)+"</strong>"+
+ (authorAccessRequest.status==="active"?'<div style="margin-top:10px"><button type="button" data-ione-author-books style="padding:8px 11px;border:1px solid #48d7a0;border-radius:9px;background:#103a2b;color:#dffff5;font-size:11px;font-weight:900">MY BOOKS &amp; SALES</button></div>':"");
 }
 const ministryAccessClose=(restoreHome=true)=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");if(restoreHome)window.ioneRestoreHome?.();heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
 function showAuthorAccessStatus(message,bad=false){ministryAccessStatus.textContent=message||"";ministryAccessStatus.style.color=bad?"#ff9f9f":"#8ffcff";}
 async function openAuthorAccessForm(){
-  ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
-  showAuthorAccessStatus("Loading your saved Author Studio form…");
-  authorSubmitButton.style.display="";authorRenewButton.style.display="none";authorEnterButton.style.display="none";
-  authorSaved.style.display="none";
-  try{
-    const data=await authorAccessCall({action:"my_status"});
-    authorAccessRequest=data.request||null;
-    if(authorAccessRequest?.status==="active"){
-      ministryAccessClose(false);
-      openTranscriptAfterAuthorization();
-      return;
-    }
-    if(authorAccessRequest){
-      authorNameInput.value=authorAccessRequest.real_name||"";
-      authorPhoneInput.value=authorAccessRequest.phone||"";
-      authorTermsInput.checked=false;
-      authorSaved.style.display="block";
-      renderAuthorSavedProfile();
-      if(authorAccessRequest.status==="active"){
-        authorSubmitButton.style.display="none";authorEnterButton.style.display="";
-        showAuthorAccessStatus("Your Author Studio access is active.");
-      }else if(authorAccessRequest.status==="locked"){
-        authorSubmitButton.style.display="none";authorRenewButton.style.display="";
-        showAuthorAccessStatus("This package is complete. Renew for the next three books.");
-      }else if(authorAccessRequest.status==="pending_payment"){
-        authorSubmitButton.style.display="";
-        authorSubmitButton.textContent="UPDATE SAVED FORM";
-        showAuthorAccessStatus("Your form is saved. Pay TSh 10,000 to the merchant shown above, then wait for Authority Press to confirm payment.");
-      }else{
-        showAuthorAccessStatus("Review your details and submit your Author Studio access request.");
-      }
-    }else{
-      showAuthorAccessStatus("Complete the form and accept the terms to request Author Studio access.");
-    }
-  }catch(err){showAuthorAccessStatus(err.message||"Could not load your saved form.",true);}
+ ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");showAuthorAccessStatus("Checking your saved author registration…");authorSubmitButton.style.display="";authorSubmitButton.disabled=false;authorSaved.style.display="none";
+ try{
+  const data=await authorAccessCall({action:"my_status"});authorAccessRequest=data.request||null;
+  if(authorAccessRequest?.status==="active"){ministryAccessClose(false);openTranscriptAfterAuthorization();return;}
+  if(authorAccessRequest){
+   authorNameInput.value=authorAccessRequest.real_name||"";authorKnownNameInput.value=authorAccessRequest.known_author_name||"";authorPhoneInput.value=authorAccessRequest.phone||"";authorEmailInput.value=authorAccessRequest.email||"";renderAuthorSavedProfile();
+   if(authorAccessRequest.status==="pending_verification"){authorSubmitButton.style.display="none";showAuthorAccessStatus("Your registration is already saved. Authority Press is verifying it. You do not need to register again.");}
+   else if(authorAccessRequest.status==="rejected"){authorSubmitButton.textContent="UPDATE DETAILS & RESUBMIT";showAuthorAccessStatus("Authority Press requested a correction. Update your details and submit again.");}
+   else if(authorAccessRequest.status==="locked"){authorSubmitButton.style.display="none";showAuthorAccessStatus("Author access is locked by Authority Press. Contact support for review.",true);}
+   else{authorSubmitButton.style.display="none";showAuthorAccessStatus("Your author profile is saved. Status: "+String(authorAccessRequest.status||"pending").toUpperCase());}
+  }else showAuthorAccessStatus("Enter your four details once to register as an I|ONE author.");
+ }catch(err){showAuthorAccessStatus(err.message||"Could not load your saved registration.",true);}
 }
-openTranscript.onclick=()=>{
-  smartPanel.classList.remove("show");
-  openAuthorAccessForm();
-};
+openTranscript.onclick=()=>{smartPanel.classList.remove("show");openAuthorAccessForm();};
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
-authorSaved.addEventListener("click",event=>{
-  const trigger=event.target?.closest?.("[data-ione-author-books]");
-  if(!trigger)return;
-  event.preventDefault();
-  ministryAccessClose(false);
-  if(typeof window.openMyPublishedBooksPanel==="function")window.openMyPublishedBooksPanel();
-  else showAuthorAccessStatus("My Books is not ready yet. Close and reopen Author Studio, then try again.",true);
-});
+authorSaved.addEventListener("click",event=>{const trigger=event.target?.closest?.("[data-ione-author-books]");if(!trigger)return;event.preventDefault();ministryAccessClose(false);if(typeof window.openMyPublishedBooksPanel==="function")window.openMyPublishedBooksPanel();else showAuthorAccessStatus("My Books is not ready yet. Close and reopen Author Studio, then try again.",true);});
 ministryAccessOverlay.addEventListener("click",e=>{if(e.target===ministryAccessOverlay)ministryAccessClose();});
 authorForm.addEventListener("submit",async event=>{
-  event.preventDefault();
-  if(!authorForm.reportValidity())return;
-  authorSubmitButton.disabled=true;showAuthorAccessStatus("Saving your form securely…");
-  try{
-    const d=await authorAccessCall({action:"submit",real_name:authorNameInput.value.trim(),phone:authorPhoneInput.value.trim(),terms_accepted:authorTermsInput.checked});
-    authorAccessRequest=d.request;
-    renderAuthorSavedProfile();
-    showAuthorAccessStatus(d.message||"Form saved. Awaiting Authority Press payment confirmation.");
-    authorSubmitButton.textContent="UPDATE SAVED FORM";
-  }catch(err){showAuthorAccessStatus(err.message||"Could not save your form.",true);}
-  finally{authorSubmitButton.disabled=false;}
+ event.preventDefault();if(!authorForm.reportValidity())return;authorSubmitButton.disabled=true;showAuthorAccessStatus("Saving your registration securely…");
+ try{const d=await authorAccessCall({action:"submit",real_name:authorNameInput.value.trim(),known_author_name:authorKnownNameInput.value.trim(),phone:authorPhoneInput.value.trim(),email:authorEmailInput.value.trim()});authorAccessRequest=d.request;renderAuthorSavedProfile();authorSubmitButton.style.display="none";showAuthorAccessStatus(d.message||"Registration saved. Authority Press will verify your details.");}
+ catch(err){showAuthorAccessStatus(err.message||"Could not save your registration.",true);}finally{authorSubmitButton.disabled=false;}
 });
-authorRenewButton.addEventListener("click",async()=>{
-  authorRenewButton.disabled=true;showAuthorAccessStatus("Saving your renewal request…");
-  try{const d=await authorAccessCall({action:"renew"});authorAccessRequest=d.request;authorRenewButton.style.display="none";renderAuthorSavedProfile();showAuthorAccessStatus(d.message||"Renewal requested. Await payment confirmation.");}
-  catch(err){showAuthorAccessStatus(err.message||"Renewal request failed.",true);}
-  finally{authorRenewButton.disabled=false;}
+authorRecoverButton.addEventListener("click",async()=>{
+ const email=authorEmailInput.value.trim().toLowerCase();
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAuthorAccessStatus("Enter the email address used for your existing author registration.",true);authorEmailInput.focus();return;}
+ authorRecoverButton.disabled=true;showAuthorAccessStatus("Sending a secure author-recovery link…");
+ try{
+  const result=await heavensSupabase.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href.split("#")[0]}});
+  if(result.error)throw result.error;
+  showAuthorAccessStatus("Recovery link sent. Open it from this email address, return to I|ONE and tap Author Studio. Your saved author profile and book records will be restored.");
+ }catch(error){showAuthorAccessStatus(error.message||"Could not send the recovery link.",true);}
+ finally{authorRecoverButton.disabled=false;}
 });
-authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must activate your package first.",true);return;}ministryAccessClose(false);openTranscriptAfterAuthorization();});
+authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must verify your author profile first.",true);return;}ministryAccessClose(false);openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
 
   document.getElementById("saveTranscript").onclick = (event) => {
@@ -12089,79 +12010,55 @@ function ioneRunBackgroundMediaPreload(){ return; }
 
 <script id="ioneAuthorAccessAuthorityUI">
 (function(){
-  "use strict";
-  if(window.__ioneAuthorAccessAuthorityUI)return;window.__ioneAuthorAccessAuthorityUI=true;
-  const $=id=>document.getElementById(id);
-  const esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
-  async function call(body){
-    const password=String($("authorityPasswordInput")?.value||"").trim();
-    const result=await heavensSupabase.functions.invoke("ione-author-access",{body:Object.assign({password},body)});
-    if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Author access request failed.");
-    return result.data;
-  }
-  async function refresh(){
-    const status=$("ioneAuthorAccessAuthorityStatus"),list=$("ioneAuthorAccessAuthorityList");
-    if(!list||!status)return;
-    status.textContent="Loading saved author forms…";list.innerHTML="";
-    try{
-      const data=await call({action:"authority_list"});
-      if(!data.requests?.length){list.innerHTML='<div class="authority-section-note">No Author Studio forms have been submitted yet.</div>';status.textContent="0 forms";return;}
-      list.innerHTML=data.requests.map(r=>{
-        const canActivate=r.status==="pending_payment";
-        return '<article data-ione-author-user="'+esc(r.user_id)+'" style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:13px;display:grid;gap:7px">'+
-          '<strong style="font-size:15px">'+esc(r.real_name)+'</strong>'+
-          '<div style="font-size:12px;line-height:1.65;color:#bdd3ce">Phone: '+esc(r.phone)+'<br>State: <b>'+esc(String(r.status).toUpperCase())+'</b> • Package: '+Number(r.package_number||0)+' • Books used: '+Number(r.books_used||0)+'/3'+(r.renewal_requested?' • RENEWAL':'')+'<br>Fee: TSh '+Number(r.fee_tzs||10000).toLocaleString("en-US")+'<br>Merchant: '+esc(r.merchant_name)+' • '+(String(r.merchant_network)==="HaloPesa"?'<span class="ione-halopesa-provider"><span class="ione-halopesa-mark" aria-hidden="true">HP</span>HaloPesa</span>':esc(r.merchant_network))+' • '+esc(r.merchant_number)+'<br>Terms accepted: '+(r.terms_accepted?"YES":"NO")+' • Last submitted: '+esc(r.submitted_at||"—")+'</div>'+
-          '<textarea class="ione-author-authority-notes" rows="2" maxlength="1000" placeholder="Authority note (optional)" style="width:100%;box-sizing:border-box;border-radius:8px;padding:9px;background:#081113;color:#fff;border:1px solid #34534d">'+esc(r.authority_notes||"")+'</textarea>'+
-          '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
-          (canActivate?'<button type="button" data-ione-author-action="active" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">PAYMENT VERIFIED • ACTIVATE 3 BOOKS</button>':'')+
-          (r.status!=="locked"?'<button type="button" data-ione-author-action="locked" style="border:1px solid #b68b53;border-radius:8px;padding:10px;background:#302313;color:#ffe4b7;font-weight:800">LOCK ACCESS</button>':'')+
-          (r.status==="pending_payment"?'<button type="button" data-ione-author-action="rejected" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT REQUEST</button>':'')+
-          '</div></article>';
-      }).join("");
-      status.textContent=data.requests.length+" saved form(s)";
-    }catch(e){status.textContent=e.message||"Could not load forms.";status.style.color="#ff9f9f";}
-  }
-  document.addEventListener("click",async event=>{
-    if(event.target.closest("#ioneManualRequestsRefresh")){window.ioneLoadManualSubscriptionRequests?.();return;}
-    const accessBtn=event.target.closest("[data-manual-access]");
-    const rejectBtn=event.target.closest("[data-manual-reject]");
-    if(accessBtn||rejectBtn){
-      const btn=accessBtn||rejectBtn;
-      const card=btn.closest("[data-manual-request-id]");
-      const requestId=card?.dataset.manualRequestId;
-      if(!requestId)return;
-      const approving=!!accessBtn;
-      if(approving&&!confirm("Confirm you personally verified the manual payment in the I|ONE receiving account. This grants publishing access for the selected plan."))return;
-      if(rejectBtn&&!confirm("Reject this manual subscription request?"))return;
-      btn.disabled=true;
-      const note=card.querySelector("[data-manual-note]")?.value||"";
-      try{
-        const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:approving?"approve":"reject",request_id:requestId,admin_note:note}});
-        if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not update this request.");
-        await window.ioneLoadManualSubscriptionRequests?.();
-      }catch(e){alert(e?.message||"Could not update manual subscription request.");btn.disabled=false;}
-      return;
-    }
-    const refreshBtn=event.target.closest("#ioneAuthorAccessRefresh");
-    if(refreshBtn){refresh();return;}
-    const btn=event.target.closest("[data-ione-author-action]");
-    if(!btn)return;
-    const card=btn.closest("[data-ione-author-user]");if(!card)return;
-    const next=btn.getAttribute("data-ione-author-action");
-    const userId=card.getAttribute("data-ione-author-user");
-    const note=card.querySelector(".ione-author-authority-notes")?.value||"";
-    if(next==="active"&&!confirm("Confirm you personally verified the TSh 10,000 payment to DERRICK KIPAJI OF AFRIKA & CO, HaloPesa 23544652? This activates the next three-book package."))return;
-    if(next==="locked"&&!confirm("Lock this author's publishing access? The saved form and book records will remain."))return;
-    btn.disabled=true;
-    try{await call({action:"authority_set_status",user_id:userId,status:next,payment_confirmed:next==="active",authority_notes:note});await refresh();}
-    catch(e){alert(e.message||"Could not update author access.");btn.disabled=false;}
-  });
-  document.addEventListener("click",event=>{
-    if(event.target.closest("#authorityPasswordUnlock"))setTimeout(()=>{const p=$("authorityPressPanel");if(p&&p.getAttribute("aria-hidden")==="false")refresh();},350);
-  });
-  document.addEventListener("click",event=>{if(event.target.closest("#authorityNarrationRefresh"))setTimeout(refresh,250);});
-  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",()=>{}, {once:true});
-})()
+ "use strict";if(window.__ioneAuthorAccessAuthorityUI)return;window.__ioneAuthorAccessAuthorityUI=true;
+ const $=id=>document.getElementById(id),esc=v=>String(v==null?"":v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[ch]);
+ async function call(body){const result=await heavensSupabase.functions.invoke("ione-author-access",{body});if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Author verification request failed.");return result.data;}
+ async function refresh(){
+  const status=$("ioneAuthorAccessAuthorityStatus"),list=$("ioneAuthorAccessAuthorityList");if(!list||!status)return;
+  status.textContent="Loading saved author registrations…";list.innerHTML="";
+  try{
+   const data=await call({action:"authority_list"});
+   if(!data.requests?.length){list.innerHTML='<div class="authority-section-note">No author registrations yet.</div>';status.textContent="0 authors";return;}
+   list.innerHTML=data.requests.map(r=>{
+    const eligible=["pending_verification","rejected"].includes(r.status);
+    return '<article data-ione-author-user="'+esc(r.user_id)+'" style="border:1px solid #31594c;background:#0b1718;color:#e8fff8;border-radius:13px;padding:13px;display:grid;gap:8px">'+
+     '<strong style="font-size:16px">'+esc(r.real_name)+'</strong>'+
+     '<div style="font-size:13px;line-height:1.7;color:#bdd3ce">Known author name: <b>'+esc(r.known_author_name||"—")+'</b><br>Phone: <b>'+esc(r.phone)+'</b><br>Email: <b>'+esc(r.email)+'</b><br>Verification: <b>'+esc(String(r.verification_status||r.status).replace(/_/g," ").toUpperCase())+'</b><br>Registered: '+esc(r.submitted_at||"—")+(r.verified_at?'<br>Verified on: '+esc(r.verified_at):"")+'</div>'+
+     '<textarea class="ione-author-authority-notes" rows="2" maxlength="1000" placeholder="Authority verification note (optional)" style="width:100%;box-sizing:border-box;border-radius:8px;padding:9px;background:#081113;color:#fff;border:1px solid #34534d">'+esc(r.authority_notes||"")+'</textarea>'+
+     '<div style="display:flex;gap:7px;flex-wrap:wrap">'+
+     (eligible?'<button type="button" data-ione-author-action="active" style="border:0;border-radius:8px;padding:10px;background:#a8f1ca;color:#09241b;font-weight:900">VERIFY AUTHOR • GRANT ACCESS</button>':'')+
+     (r.status!=="locked"?'<button type="button" data-ione-author-action="locked" style="border:1px solid #b68b53;border-radius:8px;padding:10px;background:#302313;color:#ffe4b7;font-weight:800">LOCK ACCESS</button>':'')+
+     (r.status!=="rejected"?'<button type="button" data-ione-author-action="rejected" style="border:1px solid #87555b;border-radius:8px;padding:10px;background:#2a1418;color:#ffd9dd;font-weight:800">REJECT / REQUEST CORRECTION</button>':'')+
+     '</div></article>';
+   }).join("");status.textContent=data.requests.length+" saved author(s)";
+  }catch(e){status.textContent=e.message||"Could not load registrations.";status.style.color="#ff9f9f";}
+ }
+ document.addEventListener("click",async event=>{
+  if(event.target.closest("#ioneManualRequestsRefresh")){window.ioneLoadManualSubscriptionRequests?.();return;}
+  const accessBtn=event.target.closest("[data-manual-access]"),rejectBtn=event.target.closest("[data-manual-reject]");
+  if(!accessBtn&&!rejectBtn)return;
+  const btn=accessBtn||rejectBtn,card=btn.closest("[data-manual-request-id]"),requestId=card?.dataset.manualRequestId;if(!requestId)return;
+  const approving=!!accessBtn;
+  if(approving&&!confirm("Confirm you personally verified the manual payment in the I|ONE receiving account. This grants publishing access for the selected plan."))return;
+  if(rejectBtn&&!confirm("Reject this manual subscription request?"))return;
+  btn.disabled=true;const note=card.querySelector("[data-manual-note]")?.value||"";
+  try{const r=await heavensSupabase.functions.invoke("ione-manual-subscriptions",{body:{action:approving?"approve":"reject",request_id:requestId,admin_note:note}});
+   if(r.error||!r.data?.success)throw new Error(r.data?.error||r.error?.message||"Could not update this request.");
+   await window.ioneLoadManualSubscriptionRequests?.();
+  }catch(e){alert(e?.message||"Could not update manual subscription request.");btn.disabled=false;}
+ });
+ document.addEventListener("click",async event=>{
+  if(event.target.closest("#ioneAuthorAccessRefresh")){refresh();return;}
+  const btn=event.target.closest("[data-ione-author-action]");if(!btn)return;
+  const card=btn.closest("[data-ione-author-user]");if(!card)return;
+  const next=btn.getAttribute("data-ione-author-action"),userId=card.getAttribute("data-ione-author-user"),note=card.querySelector(".ione-author-authority-notes")?.value||"";
+  const message=next==="active"?"Verify this author's name, known author name, phone and email, then grant unlimited publishing access?":next==="locked"?"Lock this author's publishing access? Existing books and sales remain unchanged.":"Reject this registration or request correction? Existing book and sales records will remain.";
+  if(!confirm(message))return;btn.disabled=true;
+  try{await call({action:"authority_set_status",user_id:userId,status:next,authority_notes:note});await refresh();}
+  catch(e){alert(e.message||"Could not update author verification.");btn.disabled=false;}
+ });
+ document.addEventListener("click",event=>{if(event.target.closest("#authorityPasswordUnlock"))setTimeout(()=>{const p=$("authorityPressPanel");if(p&&p.getAttribute("aria-hidden")==="false")refresh();},350);});
+})();
 </script>
 
 
