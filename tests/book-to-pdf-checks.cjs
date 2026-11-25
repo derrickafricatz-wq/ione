@@ -18,6 +18,8 @@ console.log("PASS: Book to PDF and offline storage JavaScript parse");
 
 assert.ok(html.includes('id="ioneAuthorKnownName"'));
 assert.ok(html.includes('id="ioneAuthorEmail"'));
+assert.ok(html.includes('id="ioneAuthorRecover"'));
+assert.match(html, /signInWithOtp\(\{email/);
 assert.ok(html.includes("Your registration is already saved. Authority Press is verifying it."));
 assert.doesNotMatch(html, /RENEW 3-BOOK PACKAGE|ioneAuthorTermsAccepted|AUTHOR PACKAGE • TSh 10,000/);
 assert.ok(html.includes("REGISTER AUTHOR"));
