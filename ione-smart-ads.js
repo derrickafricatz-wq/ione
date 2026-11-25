@@ -439,7 +439,7 @@
     }
   }
   function installTile() {
-    const grid = document.querySelector("#smartPanel .smart-grid");
+    const grid = document.querySelector("#ioneSecondaryServices .ione-secondary-grid");
     if (!grid || document.getElementById("openIoneSmartAds")) return;
     const tile = document.createElement("button");
     tile.className = "smart-item";
