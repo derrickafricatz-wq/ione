@@ -4242,7 +4242,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=159", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=160", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -12058,6 +12058,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
   catch(e){alert(e.message||"Could not update author verification.");btn.disabled=false;}
  });
  document.addEventListener("click",event=>{if(event.target.closest("#authorityPasswordUnlock"))setTimeout(()=>{const p=$("authorityPressPanel");if(p&&p.getAttribute("aria-hidden")==="false")refresh();},350);});
+ document.addEventListener("click",event=>{if(event.target.closest("#authorityNarrationRefresh"))setTimeout(refresh,250);});
 })();
 </script>
 
