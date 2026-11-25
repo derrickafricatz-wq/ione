@@ -3297,7 +3297,7 @@ Install App
    <label class="ministry-access-label" for="ioneAuthorKnownName">KNOWN AUTHOR NAME</label><input id="ioneAuthorKnownName" class="ministry-access-input" maxlength="120" autocomplete="nickname" required placeholder="Name shown on your books">
    <label class="ministry-access-label" for="ioneAuthorPhone">PHONE NUMBER</label><input id="ioneAuthorPhone" class="ministry-access-input" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" required placeholder="e.g. 07XXXXXXXX">
    <label class="ministry-access-label" for="ioneAuthorEmail">EMAIL ADDRESS</label><input id="ioneAuthorEmail" class="ministry-access-input" type="email" autocomplete="email" maxlength="254" required placeholder="Your reachable email">
-   <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button><button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">REGISTER AUTHOR</button><button id="ioneAuthorEnterStudio" class="ministry-unlock" type="button" style="display:none">ENTER AUTHOR STUDIO</button></div>
+   <div class="ministry-access-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button id="ministryAccessCancel" class="ministry-cancel" type="button">CLOSE</button><button id="ioneAuthorAccessSubmit" class="ministry-unlock" type="submit">REGISTER AUTHOR</button><button id="ioneAuthorRecover" class="ministry-unlock" type="button">RECOVER EXISTING AUTHOR</button><button id="ioneAuthorEnterStudio" class="ministry-unlock" type="button" style="display:none">ENTER AUTHOR STUDIO</button></div>
    <div id="ministryAccessStatus" class="ministry-access-status" role="status"></div>
   </form>
  </div>
@@ -4568,7 +4568,7 @@ const ministryAccessStatus=document.getElementById("ministryAccessStatus");
 const authorForm=document.getElementById("ioneAuthorAccessForm");
 const authorSaved=document.getElementById("ioneAuthorAccessSaved");
 const authorNameInput=document.getElementById("ioneAuthorRealName"),authorKnownNameInput=document.getElementById("ioneAuthorKnownName"),authorPhoneInput=document.getElementById("ioneAuthorPhone"),authorEmailInput=document.getElementById("ioneAuthorEmail");
-const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit"),authorEnterButton=document.getElementById("ioneAuthorEnterStudio");
+const authorSubmitButton=document.getElementById("ioneAuthorAccessSubmit"),authorEnterButton=document.getElementById("ioneAuthorEnterStudio"),authorRecoverButton=document.getElementById("ioneAuthorRecover");
 let authorAccessRequest=null;
 function renderAuthorSavedProfile(){
  if(!authorAccessRequest){authorSaved.style.display="none";return;}
@@ -4602,6 +4602,17 @@ authorForm.addEventListener("submit",async event=>{
  event.preventDefault();if(!authorForm.reportValidity())return;authorSubmitButton.disabled=true;showAuthorAccessStatus("Saving your registration securely…");
  try{const d=await authorAccessCall({action:"submit",real_name:authorNameInput.value.trim(),known_author_name:authorKnownNameInput.value.trim(),phone:authorPhoneInput.value.trim(),email:authorEmailInput.value.trim()});authorAccessRequest=d.request;renderAuthorSavedProfile();authorSubmitButton.style.display="none";showAuthorAccessStatus(d.message||"Registration saved. Authority Press will verify your details.");}
  catch(err){showAuthorAccessStatus(err.message||"Could not save your registration.",true);}finally{authorSubmitButton.disabled=false;}
+});
+authorRecoverButton.addEventListener("click",async()=>{
+ const email=authorEmailInput.value.trim().toLowerCase();
+ if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){showAuthorAccessStatus("Enter the email address used for your existing author registration.",true);authorEmailInput.focus();return;}
+ authorRecoverButton.disabled=true;showAuthorAccessStatus("Sending a secure author-recovery link…");
+ try{
+  const result=await heavensSupabase.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href.split("#")[0]}});
+  if(result.error)throw result.error;
+  showAuthorAccessStatus("Recovery link sent. Open it from this email address, return to I|ONE and tap Author Studio. Your saved author profile and book records will be restored.");
+ }catch(error){showAuthorAccessStatus(error.message||"Could not send the recovery link.",true);}
+ finally{authorRecoverButton.disabled=false;}
 });
 authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must verify your author profile first.",true);return;}ministryAccessClose(false);openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
