@@ -1,5 +1,5 @@
 {
-  "version": "1.0.339",
-  "message": "Preserve Authority refresh behavior in author verification update",
+  "version": "1.0.340",
+  "message": "Automatically open Author Studio after email recovery",
   "force": true
 }
