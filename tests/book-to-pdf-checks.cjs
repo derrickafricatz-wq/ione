@@ -37,8 +37,8 @@ assert.match(sw, /SUPABASE_JS_URL/);
 assert.match(sw, /"\.\/index\.html"/);
 assert.match(sw, /new URL\(url\.pathname, self\.location\.origin\)/);
 assert.match(html, /ioneOfflineCommunications/);
-assert.ok(html.includes('sw.js?v=159'));
-assert.equal(version.version, "1.0.338");
+assert.ok(html.includes('sw.js?v=160'));
+assert.equal(version.version, "1.0.339");
 
 assert.match(offline, /ioneOfflineBookDot/);
 assert.match(offline, /openSavedBooksPanel/);
