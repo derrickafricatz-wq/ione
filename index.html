@@ -4242,7 +4242,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=161", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=162", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -4608,11 +4608,11 @@ authorForm.addEventListener("submit",async event=>{
 authorRecoverButton.textContent="RECOVER WITH CODE";
 authorRecoverButton.addEventListener("click",()=>{
  authorSubmitButton.style.display="none";authorRecoverButton.style.display="none";
- [authorNameInput,authorKnownNameInput,authorPhoneInput,authorEmailInput].forEach(el=>{el.closest("label")?.style.setProperty("display","none");el.style.display="none";});
+ [authorNameInput,authorKnownNameInput,authorPhoneInput,authorEmailInput].forEach(el=>{const label=authorForm.querySelector('label[for="'+el.id+'"]');if(label)label.style.display="none";el.style.display="none";});
  const panel=document.createElement("section");panel.id="ioneAuthorCodeRecovery";panel.style.cssText="display:grid;gap:12px;margin-top:14px;padding:15px;border:1px solid #27bfc3;border-radius:15px;background:#07191d";
  panel.innerHTML='<strong style="color:#8ffff7;text-align:center">RECOVER AUTHOR STUDIO</strong><p style="margin:0;color:#bfd2d7;font:13px/1.5 Arial;text-align:center">Enter the recovery code you saved or downloaded. Your existing author profile and books will be restored.</p><input id="ioneRecoveryCodeInput" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I1-XXXX-XXXX-…" style="height:52px;padding:0 12px;border:1px solid #3d666d;border-radius:11px;background:#02090b;color:#fff;font:700 16px monospace;letter-spacing:1px"><button id="ioneRecoveryCodeSubmit" type="button" style="height:48px;border:1px solid #00ffff;border-radius:11px;background:linear-gradient(135deg,#00ffff,#008fba);color:#03191c;font-weight:900">RESTORE MY AUTHOR</button><button id="ioneRecoveryCodeBack" type="button" style="height:42px;border:1px solid #39545a;border-radius:11px;background:#102126;color:#fff;font-weight:800">BACK</button>';
  authorForm.appendChild(panel);
- panel.querySelector("#ioneRecoveryCodeBack").onclick=()=>{panel.remove();authorSubmitButton.style.display="";authorRecoverButton.style.display="";[authorNameInput,authorKnownNameInput,authorPhoneInput,authorEmailInput].forEach(el=>el.style.display="");showAuthorAccessStatus("Choose recovery or register with your current account.");};
+ panel.querySelector("#ioneRecoveryCodeBack").onclick=()=>{panel.remove();authorSubmitButton.style.display="";authorRecoverButton.style.display="";[authorNameInput,authorKnownNameInput,authorPhoneInput,authorEmailInput].forEach(el=>{el.style.display="";const label=authorForm.querySelector('label[for="'+el.id+'"]');if(label)label.style.display="";});showAuthorAccessStatus("Choose recovery or register with your current account.");};
  panel.querySelector("#ioneRecoveryCodeSubmit").onclick=async()=>{
   const submit=panel.querySelector("#ioneRecoveryCodeSubmit");submit.disabled=true;showAuthorAccessStatus("Checking your recovery code securely…");
   try{const result=await authorAccessCall({action:"redeem_recovery_code",recovery_code:panel.querySelector("#ioneRecoveryCodeInput").value});authorAccessRequest=result.request||null;panel.remove();ministryAccessClose(false);showAuthorAccessStatus(result.message||"Recovery complete.");openTranscriptAfterAuthorization();}
