@@ -35,6 +35,8 @@ assert.match(sw, /SUPABASE_JS_URL/);
 assert.match(sw, /"\.\/index\.html"/);
 assert.match(sw, /new URL\(url\.pathname, self\.location\.origin\)/);
 assert.match(html, /ioneOfflineCommunications/);
+assert.match(html, /sw\\.js\\?v=159/);
+assert.equal(version.version, "1.0.338");
 
 assert.match(offline, /ioneOfflineBookDot/);
 assert.match(offline, /openSavedBooksPanel/);
@@ -47,7 +49,7 @@ assert.doesNotMatch(offline, /cacheMediaUrl/);
 assert.match(sw, /Do not wrap Supabase API\/REST\/function GET requests/);
 console.log("PASS: offline shell, book-only persistence, tiny saved-books dot, and online-only live features");
 console.log("PASS: Supabase CDN fallback, query-string asset fallback, and app shell caching");
-console.log("PASS: Author Studio consent, support links, and cache/version checks");
+console.log("PASS: four-field author registration, Authority verification, email recovery, and PWA cache/version checks");
 
 
 const inlineScripts = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
