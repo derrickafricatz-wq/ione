@@ -146,7 +146,7 @@
     }
 
     const launch=target.closest(
-      "#smartPanel .smart-item,#settingsBtn,.ione-lib-content-button,#ioneDocAccessLaunch,[data-ione-open-feature]"
+      "#smartPanel .smart-item:not(#openIoneServices),#settingsBtn,.ione-lib-content-button,#ioneDocAccessLaunch,[data-ione-open-feature]"
     );
     if(launch){
       pendingLaunches++;
