@@ -4605,7 +4605,7 @@ authorForm.addEventListener("submit",async event=>{
 });
 authorRecoverButton.addEventListener("click",async()=>{
  const email=authorEmailInput.value.trim().toLowerCase();
- if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)){showAuthorAccessStatus("Enter the email address used for your existing author registration.",true);authorEmailInput.focus();return;}
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAuthorAccessStatus("Enter the email address used for your existing author registration.",true);authorEmailInput.focus();return;}
  authorRecoverButton.disabled=true;showAuthorAccessStatus("Sending a secure author-recovery link…");
  try{
   const result=await heavensSupabase.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href.split("#")[0]}});
