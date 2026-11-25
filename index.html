@@ -232,6 +232,9 @@
 #ioneNetworkBoot .ione-network-nodes{fill:#00ffff!important;filter:none!important}
 #ioneNetworkBoot .ione-service-symbols{fill:#00ffff!important;filter:none!important}
 #ioneNetworkBoot .ione-from-derrick,#ioneNetworkBoot .ione-from-derrick span,#ioneNetworkBoot .ione-from-derrick strong{color:#00ffff!important;text-shadow:none!important;filter:none!important}
+
+/* Author recovery action sits inside the transcript action grid, never beneath the close control. */
+#transcriptControls #ioneAuthorRecoveryControl{grid-column:1/-1!important;justify-self:center!important;width:min(100%,360px)!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important;margin:0 0 2px!important;padding:10px 12px!important;font-size:11px!important;line-height:1.25!important;letter-spacing:.65px!important;white-space:normal!important;overflow-wrap:anywhere!important;text-align:center!important;}
 </style>
 
 <link rel="manifest" href="manifest.json">
@@ -4562,7 +4565,7 @@ function openTranscriptAfterAuthorization(){
   ioneSetHomeControls(false);
   transcriptPanel.style.display="block";
   let recoveryControl=document.getElementById("ioneAuthorRecoveryControl");
-  if(!recoveryControl){recoveryControl=document.createElement("button");recoveryControl.id="ioneAuthorRecoveryControl";recoveryControl.type="button";recoveryControl.textContent="MY RECOVERY CODE";recoveryControl.style.cssText="display:block;width:calc(100% - 24px);margin:10px 12px;padding:13px;border:1px solid #00dcca;border-radius:12px;background:linear-gradient(135deg,#113c3a,#0b2229);color:#cffff7;font:900 12px Arial;letter-spacing:1px";recoveryControl.onclick=openAuthorRecoveryCodePanel;transcriptPanel.insertBefore(recoveryControl,transcriptPanel.firstChild);}
+  if(!recoveryControl){recoveryControl=document.createElement("button");recoveryControl.id="ioneAuthorRecoveryControl";recoveryControl.type="button";recoveryControl.textContent="MY RECOVERY CODE";recoveryControl.style.cssText="display:block;grid-column:1/-1;justify-self:center;width:min(100%,360px);min-width:0;box-sizing:border-box;margin:0 0 2px;padding:10px 12px;border:1px solid #00dcca;border-radius:12px;background:linear-gradient(135deg,#113c3a,#0b2229);color:#cffff7;font:900 11px/1.25 Arial,sans-serif;letter-spacing:.65px;white-space:normal;overflow-wrap:anywhere;text-align:center";recoveryControl.onclick=openAuthorRecoveryCodePanel;const controls=document.getElementById("transcriptControls");if(controls)controls.insertBefore(recoveryControl,controls.firstChild);else transcriptPanel.insertBefore(recoveryControl,transcriptPanel.firstChild);}
   transcriptText.scrollTop=0;
 }
 const ministryAccessOverlay=document.getElementById("ministryAccessOverlay");
@@ -4583,10 +4586,14 @@ function renderAuthorSavedProfile(){
 const ministryAccessClose=(restoreHome=true)=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");if(restoreHome)window.ioneRestoreHome?.();heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
 function showAuthorAccessStatus(message,bad=false){ministryAccessStatus.textContent=message||"";ministryAccessStatus.style.color=bad?"#ff9f9f":"#8ffcff";}
 async function openAuthorAccessForm(){
- ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");showAuthorAccessStatus("Checking your saved author registration…");authorSubmitButton.style.display="";authorSubmitButton.disabled=false;authorSaved.style.display="none";
+ // Resolve the author's status before showing the registration overlay. Verified
+ // authors go straight into Studio with no visible form/loading flash.
+ ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");
+ authorSubmitButton.style.display="";authorSubmitButton.disabled=false;authorSubmitButton.textContent="SUBMIT REGISTRATION";authorSaved.style.display="none";
  try{
   const data=await authorAccessCall({action:"my_status"});authorAccessRequest=data.request||null;
-  if(authorAccessRequest?.status==="active"){ministryAccessClose(false);openTranscriptAfterAuthorization();return;}
+  if(authorAccessRequest?.status==="active"){openTranscriptAfterAuthorization();return;}
+  ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
   if(authorAccessRequest){
    authorNameInput.value=authorAccessRequest.real_name||"";authorKnownNameInput.value=authorAccessRequest.known_author_name||"";authorPhoneInput.value=authorAccessRequest.phone||"";authorEmailInput.value=authorAccessRequest.email||"";renderAuthorSavedProfile();
    if(authorAccessRequest.status==="pending_verification"){authorSubmitButton.style.display="none";showAuthorAccessStatus("Your registration is already saved. Authority Press is verifying it. You do not need to register again.");}
@@ -4594,7 +4601,10 @@ async function openAuthorAccessForm(){
    else if(authorAccessRequest.status==="locked"){authorSubmitButton.style.display="none";showAuthorAccessStatus("Author access is locked by Authority Press. Contact support for review.",true);}
    else{authorSubmitButton.style.display="none";showAuthorAccessStatus("Your author profile is saved. Status: "+String(authorAccessRequest.status||"pending").toUpperCase());}
   }else showAuthorAccessStatus("Enter your four details once to register as an I|ONE author.");
- }catch(err){showAuthorAccessStatus(err.message||"Could not load your saved registration.",true);}
+ }catch(err){
+  ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
+  showAuthorAccessStatus(err.message||"Could not load your saved registration.",true);
+ }
 }
 openTranscript.onclick=()=>{smartPanel.classList.remove("show");openAuthorAccessForm();};
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
