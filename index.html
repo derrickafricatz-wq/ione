@@ -4561,6 +4561,8 @@ async function authorAccessCall(payload){
 function openTranscriptAfterAuthorization(){
   ioneSetHomeControls(false);
   transcriptPanel.style.display="block";
+  let recoveryControl=document.getElementById("ioneAuthorRecoveryControl");
+  if(!recoveryControl){recoveryControl=document.createElement("button");recoveryControl.id="ioneAuthorRecoveryControl";recoveryControl.type="button";recoveryControl.textContent="MY RECOVERY CODE";recoveryControl.style.cssText="display:block;width:calc(100% - 24px);margin:10px 12px;padding:13px;border:1px solid #00dcca;border-radius:12px;background:linear-gradient(135deg,#113c3a,#0b2229);color:#cffff7;font:900 12px Arial;letter-spacing:1px";recoveryControl.onclick=openAuthorRecoveryCodePanel;transcriptPanel.insertBefore(recoveryControl,transcriptPanel.firstChild);}
   transcriptText.scrollTop=0;
 }
 const ministryAccessOverlay=document.getElementById("ministryAccessOverlay");
@@ -4603,31 +4605,32 @@ authorForm.addEventListener("submit",async event=>{
  try{const d=await authorAccessCall({action:"submit",real_name:authorNameInput.value.trim(),known_author_name:authorKnownNameInput.value.trim(),phone:authorPhoneInput.value.trim(),email:authorEmailInput.value.trim()});authorAccessRequest=d.request;renderAuthorSavedProfile();authorSubmitButton.style.display="none";showAuthorAccessStatus(d.message||"Registration saved. Authority Press will verify your details.");}
  catch(err){showAuthorAccessStatus(err.message||"Could not save your registration.",true);}finally{authorSubmitButton.disabled=false;}
 });
-authorRecoverButton.addEventListener("click",async()=>{
- const email=authorEmailInput.value.trim().toLowerCase();
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAuthorAccessStatus("Enter the email address used for your existing author registration.",true);authorEmailInput.focus();return;}
- authorRecoverButton.disabled=true;showAuthorAccessStatus("Sending a secure author-recovery link…");
- try{
-  const result=await heavensSupabase.auth.signInWithOtp({email,options:{emailRedirectTo:(window.location.origin+"/?ione_author_recovery=1")}});
-  if(result.error)throw result.error;
-  showAuthorAccessStatus("Recovery link sent. Open it from this email address, return to I|ONE and tap Author Studio. Your saved author profile and book records will be restored.");
- }catch(error){showAuthorAccessStatus(error.message||"Could not send the recovery link.",true);}
- finally{authorRecoverButton.disabled=false;}
+authorRecoverButton.textContent="RECOVER WITH CODE";
+authorRecoverButton.addEventListener("click",()=>{
+ authorSubmitButton.style.display="none";authorRecoverButton.style.display="none";
+ [authorNameInput,authorKnownNameInput,authorPhoneInput,authorEmailInput].forEach(el=>{el.closest("label")?.style.setProperty("display","none");el.style.display="none";});
+ const panel=document.createElement("section");panel.id="ioneAuthorCodeRecovery";panel.style.cssText="display:grid;gap:12px;margin-top:14px;padding:15px;border:1px solid #27bfc3;border-radius:15px;background:#07191d";
+ panel.innerHTML='<strong style="color:#8ffff7;text-align:center">RECOVER AUTHOR STUDIO</strong><p style="margin:0;color:#bfd2d7;font:13px/1.5 Arial;text-align:center">Enter the recovery code you saved or downloaded. Your existing author profile and books will be restored.</p><input id="ioneRecoveryCodeInput" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="I1-XXXX-XXXX-…" style="height:52px;padding:0 12px;border:1px solid #3d666d;border-radius:11px;background:#02090b;color:#fff;font:700 16px monospace;letter-spacing:1px"><button id="ioneRecoveryCodeSubmit" type="button" style="height:48px;border:1px solid #00ffff;border-radius:11px;background:linear-gradient(135deg,#00ffff,#008fba);color:#03191c;font-weight:900">RESTORE MY AUTHOR</button><button id="ioneRecoveryCodeBack" type="button" style="height:42px;border:1px solid #39545a;border-radius:11px;background:#102126;color:#fff;font-weight:800">BACK</button>';
+ authorForm.appendChild(panel);
+ panel.querySelector("#ioneRecoveryCodeBack").onclick=()=>{panel.remove();authorSubmitButton.style.display="";authorRecoverButton.style.display="";[authorNameInput,authorKnownNameInput,authorPhoneInput,authorEmailInput].forEach(el=>el.style.display="");showAuthorAccessStatus("Choose recovery or register with your current account.");};
+ panel.querySelector("#ioneRecoveryCodeSubmit").onclick=async()=>{
+  const submit=panel.querySelector("#ioneRecoveryCodeSubmit");submit.disabled=true;showAuthorAccessStatus("Checking your recovery code securely…");
+  try{const result=await authorAccessCall({action:"redeem_recovery_code",recovery_code:panel.querySelector("#ioneRecoveryCodeInput").value});authorAccessRequest=result.request||null;panel.remove();ministryAccessClose(false);showAuthorAccessStatus(result.message||"Recovery complete.");openTranscriptAfterAuthorization();}
+  catch(error){showAuthorAccessStatus(error.message||"Recovery code was not accepted.",true);}finally{submit.disabled=false;}
+ };
+ showAuthorAccessStatus("Enter your saved recovery code below.");
 });
-// Supabase magic-link callback: restore the author session, then launch Author Studio automatically.
-window.addEventListener("load",async()=>{
- const url=new URL(window.location.href);if(url.searchParams.get("ione_author_recovery")!=="1")return;
- url.searchParams.delete("ione_author_recovery");history.replaceState(history.state,"",url.pathname+url.search+url.hash);
- ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
- showAuthorAccessStatus("Email link accepted. Restoring your saved author profile…");
- try{
-  let sessionResult=await heavensSupabase.auth.getSession(),session=sessionResult.data?.session;
-  for(let i=0;!session&&i<12;i++){await new Promise(resolve=>setTimeout(resolve,400));sessionResult=await heavensSupabase.auth.getSession();session=sessionResult.data?.session;}
-  if(!session){showAuthorAccessStatus("The recovery link opened I|ONE, but no sign-in session was found. Open the newest recovery email and tap its sign-in link again.",true);return;}
-  showAuthorAccessStatus("Signed in securely. Opening your saved Author Studio registration…");
-  await openAuthorAccessForm();
- }catch(error){showAuthorAccessStatus(error.message||"Email recovery could not finish. Please reopen the latest recovery link.",true);}
-});
+function openAuthorRecoveryCodePanel(){
+ let panel=document.getElementById("ioneAuthorRecoveryCodePanel");if(panel){panel.remove();return;}
+ panel=document.createElement("section");panel.id="ioneAuthorRecoveryCodePanel";panel.style.cssText="position:relative;z-index:5000;margin:12px 12px 16px;padding:16px;border:1px solid rgba(0,255,255,.4);border-radius:16px;background:linear-gradient(145deg,#10272d,#061216);color:#fff;display:grid;gap:12px";
+ panel.innerHTML='<strong style="color:#8ffff7;font:900 13px Arial;letter-spacing:1px">MY RECOVERY CODE</strong><p style="margin:0;color:#c4d6da;font:13px/1.55 Arial">Keep this code somewhere safe, away from your phone. It restores your existing author profile if you lose your device. The code is displayed only when issued.</p><button id="ioneIssueRecoveryCode" type="button" style="min-height:46px;border:1px solid #00ffff;border-radius:11px;background:linear-gradient(135deg,#00ffff,#008fba);color:#03191c;font-weight:900">CREATE / REPLACE RECOVERY CODE</button><div id="ioneIssuedRecoveryCode" style="display:none;padding:13px;border:1px dashed #51e4d7;border-radius:11px;background:#020a0c;color:#eaffff;font:800 15px/1.7 monospace;overflow-wrap:anywhere;text-align:center"></div><div id="ioneRecoveryCodeActions" style="display:none;grid-template-columns:1fr 1fr;gap:9px"><button id="ioneCopyRecoveryCode" type="button" style="min-height:44px;border:1px solid #3bd9b3;border-radius:10px;background:#10372d;color:#dffff4;font-weight:900">COPY CODE</button><button id="ioneDownloadRecoveryCode" type="button" style="min-height:44px;border:1px solid #4bb6d2;border-radius:10px;background:#102d3a;color:#e6fbff;font-weight:900">DOWNLOAD CODE</button></div><small style="color:#9bb6bd;font:11px/1.5 Arial">Creating a new code immediately invalidates the previous one. Store the new code before closing this panel.</small>';
+ transcriptPanel.insertBefore(panel,transcriptPanel.firstChild);
+ panel.querySelector("#ioneIssueRecoveryCode").onclick=async()=>{
+  const b=panel.querySelector("#ioneIssueRecoveryCode");b.disabled=true;b.textContent="SECURELY GENERATING…";
+  try{const result=await authorAccessCall({action:"issue_recovery_code"});const code=result.recovery_code;panel.querySelector("#ioneIssuedRecoveryCode").textContent=code;panel.querySelector("#ioneIssuedRecoveryCode").style.display="block";panel.querySelector("#ioneRecoveryCodeActions").style.display="grid";b.textContent="GENERATE NEW CODE (REPLACES THIS ONE)";panel.querySelector("#ioneCopyRecoveryCode").onclick=async()=>{try{await navigator.clipboard.writeText(code);panel.querySelector("#ioneCopyRecoveryCode").textContent="COPIED ✓";}catch(_){const t=document.createElement("textarea");t.value=code;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();panel.querySelector("#ioneCopyRecoveryCode").textContent="COPIED ✓";}};panel.querySelector("#ioneDownloadRecoveryCode").onclick=()=>{const blob=new Blob(["I|ONE AUTHOR STUDIO RECOVERY CODE\n\n"+code+"\n\nKeep this code private and safe. Anyone with this code may recover your author profile.\n"],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ione-author-recovery-code.txt";a.click();URL.revokeObjectURL(a.href);};}
+  catch(error){b.textContent="TRY AGAIN";showAuthorAccessStatus(error.message||"Recovery code could not be created.",true);}finally{b.disabled=false;}
+ };
+}
 authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must verify your author profile first.",true);return;}ministryAccessClose(false);openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
 
