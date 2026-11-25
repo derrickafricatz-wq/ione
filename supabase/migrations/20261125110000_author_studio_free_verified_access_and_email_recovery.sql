@@ -8,17 +8,18 @@ alter table public.ione_author_access
 alter table public.ione_author_access drop constraint if exists ione_author_access_fee_tzs_check;
 alter table public.ione_author_access drop constraint if exists ione_author_access_status_check;
 alter table public.ione_author_access alter column fee_tzs set default 0;
-alter table public.ione_author_access add constraint ione_author_access_fee_tzs_check check (fee_tzs=0);
+update public.ione_author_access set fee_tzs=0;
 alter table public.ione_author_access add constraint ione_author_access_status_check check (status in ('pending_verification','pending_payment','active','locked','rejected'));
 update public.ione_author_access set email=a.email
 from public.authors a where a.user_id=ione_author_access.user_id and ione_author_access.email is null and nullif(trim(a.email),'') is not null;
-update public.ione_author_access set status='pending_verification',fee_tzs=0,verification_status='pending_verification'
+update public.ione_author_access set status='pending_verification',verification_status='pending_verification'
 where status='pending_payment';
-update public.ione_author_access set status='active',fee_tzs=0,verification_status='verified',verified_at=coalesce(payment_confirmed_at,now()),verified_by=coalesce(payment_confirmed_by,'Previously approved')
+update public.ione_author_access set status='active',verification_status='verified',verified_at=coalesce(payment_confirmed_at,now()),verified_by=coalesce(payment_confirmed_by,'Previously approved')
 where status='locked';
-update public.ione_author_access set fee_tzs=0,verification_status='verified',verified_at=coalesce(payment_confirmed_at,now()),verified_by=coalesce(payment_confirmed_by,'Previously approved')
+update public.ione_author_access set verification_status='verified',verified_at=coalesce(payment_confirmed_at,now()),verified_by=coalesce(payment_confirmed_by,'Previously approved')
 where status='active';
 update public.ione_author_access set verification_status='rejected' where status='rejected';
+alter table public.ione_author_access add constraint ione_author_access_fee_tzs_check check (fee_tzs=0);
 create unique index if not exists ione_author_access_email_unique on public.ione_author_access(lower(email)) where email is not null and trim(email)<>'';
 drop trigger if exists trg_ione_author_package_guard on public.heavens_books;
 create or replace function public.ione_guard_author_package_publish()
