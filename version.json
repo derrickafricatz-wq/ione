@@ -1,5 +1,5 @@
 {
-  "version": "1.0.340",
-  "message": "Automatically open Author Studio after email recovery",
+  "version": "1.0.341",
+  "message": "Author recovery code and direct verified Studio access",
   "force": true
 }
