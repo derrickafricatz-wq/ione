@@ -16,7 +16,11 @@ new vm.Script(feature, { filename: "book-to-pdf.js" });
 new vm.Script(offline, { filename: "ione-offline-books.js" });
 console.log("PASS: Book to PDF and offline storage JavaScript parse");
 
-assert.ok(html.includes('id="ioneAuthorTermsPanel"'));
+assert.ok(html.includes('id="ioneAuthorKnownName"'));
+assert.ok(html.includes('id="ioneAuthorEmail"'));
+assert.ok(html.includes("Your registration is already saved. Authority Press is verifying it."));
+assert.doesNotMatch(html, /RENEW 3-BOOK PACKAGE|ioneAuthorTermsAccepted|AUTHOR PACKAGE • TSh 10,000/);
+assert.ok(html.includes("REGISTER AUTHOR"));
 assert.ok(html.includes('id="ioneAuthorTermsAccepted" type="checkbox" required aria-required="true"'));
 assert.ok(html.includes('href="tel:+255742097868"'));
 assert.ok(html.includes('href="https://wa.me/255742097868"'));
