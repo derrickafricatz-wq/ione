@@ -9577,7 +9577,7 @@ function markBookPaid(book){
   localStorage.setItem(HEAVENS_PAID_KEY,JSON.stringify(paid));
 }
 
-async function openHeavensBookstore(){
+async function openHeavensBookstore(targetBook){
   document.body.classList.add("ione-books-open");
   const existing=document.getElementById("heavensBookstore"); if(existing) existing.remove();
   const store=document.createElement("div"); store.id="heavensBookstore";
@@ -9760,6 +9760,18 @@ async function openHeavensBookstore(){
     try{ restoreIoneHomeBanner(); }catch(e){ console.warn("I|ONE home banner restore:",e); }
   };
   render();
+  // When a homepage cover is selected, open Explore with that exact title in focus.
+  if(targetBook&&String(targetBook.title||"").trim()){
+    search.value=String(targetBook.title).trim();
+    render();
+    requestAnimationFrame(()=>{
+      const wanted=search.value.toLowerCase();
+      const selected=Array.from(grid.querySelectorAll(".hb-card")).find(card=>
+        String(card.querySelector(".hb-card-title")?.textContent||"").trim().toLowerCase()===wanted
+      );
+      if(selected)selected.scrollIntoView({block:"center",behavior:"smooth"});
+    });
+  }
 
   // Fetch the catalogue without waiting for access/ownership checks.
   loadHeavensServerBooks().then(serverBooks=>{
@@ -12285,7 +12297,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
     card.appendChild(cover);
     var author=el("span","ione-books-showcase-author",b.authorName||"Independent author");
     card.appendChild(author);
-    card.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var btn=document.getElementById("openHealth");if(btn)btn.click();}});
+    card.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore({id:b.id||b.supabaseId||"",title:b.title||""});else{var btn=document.getElementById("openHealth");if(btn)btn.click();}});
     return card;
   }
   function stop(){if(raf)cancelAnimationFrame(raf);raf=0;last=0;}
