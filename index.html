@@ -4242,7 +4242,7 @@ installBtn.addEventListener("click", async () => {
 
 /* SERVICE WORKER */
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js?v=160", { updateViaCache: "none" })
+  navigator.serviceWorker.register("sw.js?v=161", { updateViaCache: "none" })
     .then(reg => reg.update())
     .then(() => console.log("SW ready"))
     .catch(err => console.log("SW error", err));
@@ -4608,11 +4608,25 @@ authorRecoverButton.addEventListener("click",async()=>{
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showAuthorAccessStatus("Enter the email address used for your existing author registration.",true);authorEmailInput.focus();return;}
  authorRecoverButton.disabled=true;showAuthorAccessStatus("Sending a secure author-recovery link…");
  try{
-  const result=await heavensSupabase.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href.split("#")[0]}});
+  const result=await heavensSupabase.auth.signInWithOtp({email,options:{emailRedirectTo:(window.location.origin+"/?ione_author_recovery=1")}});
   if(result.error)throw result.error;
   showAuthorAccessStatus("Recovery link sent. Open it from this email address, return to I|ONE and tap Author Studio. Your saved author profile and book records will be restored.");
  }catch(error){showAuthorAccessStatus(error.message||"Could not send the recovery link.",true);}
  finally{authorRecoverButton.disabled=false;}
+});
+// Supabase magic-link callback: restore the author session, then launch Author Studio automatically.
+window.addEventListener("load",async()=>{
+ const url=new URL(window.location.href);if(url.searchParams.get("ione_author_recovery")!=="1")return;
+ url.searchParams.delete("ione_author_recovery");history.replaceState(history.state,"",url.pathname+url.search+url.hash);
+ ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
+ showAuthorAccessStatus("Email link accepted. Restoring your saved author profile…");
+ try{
+  let sessionResult=await heavensSupabase.auth.getSession(),session=sessionResult.data?.session;
+  for(let i=0;!session&&i<12;i++){await new Promise(resolve=>setTimeout(resolve,400));sessionResult=await heavensSupabase.auth.getSession();session=sessionResult.data?.session;}
+  if(!session){showAuthorAccessStatus("The recovery link opened I|ONE, but no sign-in session was found. Open the newest recovery email and tap its sign-in link again.",true);return;}
+  showAuthorAccessStatus("Signed in securely. Opening your saved Author Studio registration…");
+  await openAuthorAccessForm();
+ }catch(error){showAuthorAccessStatus(error.message||"Email recovery could not finish. Please reopen the latest recovery link.",true);}
 });
 authorEnterButton.addEventListener("click",()=>{if(authorAccessRequest?.status!=="active"){showAuthorAccessStatus("Authority Press must verify your author profile first.",true);return;}ministryAccessClose(false);openTranscriptAfterAuthorization();});
   setupTranscriptMedia(transcriptText);
