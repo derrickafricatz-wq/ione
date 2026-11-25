@@ -28,6 +28,9 @@
     .it-service .it-emoji{font-size:25px}
     .it-service strong{display:block;margin:8px 0 5px;font-size:13px;color:#f4fff7}
     .it-service span{display:block;color:#b4cfbd;font-size:11px;line-height:1.5}
+    .it-service.it-spaceway{border-color:#8b7448;background:linear-gradient(145deg,#30291b,#171b17)}
+    .it-service.it-spaceway .it-emoji{color:#f4d28e}
+    .it-service.it-spaceway .it-btn{min-height:34px;margin-top:10px;padding:8px 10px;font-size:9px;border-color:#b89553;background:linear-gradient(135deg,#f2d79d,#b88c45);color:#241b0c}
     .it-note{padding:14px 16px;border:1px solid #315b42;border-radius:14px;background:#0c2017;color:#c9e5d1;font-size:13px;line-height:1.6;margin:14px 0}
     .it-card{padding:19px;border:1px solid #294e3a;border-radius:18px;background:#0b1d15;margin-top:14px}
     .it-card h2{margin:0 0 8px;font-size:20px;color:#f2fff7}
@@ -86,6 +89,7 @@
         <article class="it-service"><div class="it-emoji">🚌</div><strong>Bus</strong><span>Private bus hire, group travel and transfers</span></article>
         <article class="it-service"><div class="it-emoji">🛺</div><strong>Bajaji</strong><span>Three-wheel passenger trips and local rides</span></article>
         <article class="it-service"><div class="it-emoji">🏍️</div><strong>Boda Boda</strong><span>Motorcycle passenger trips and local rides</span></article>
+        <article class="it-service it-spaceway"><div class="it-emoji">✈️</div><strong>Spaceway • Flights</strong><span>Flight booking service • COMING SOON</span><button type="button" class="it-btn" id="itSpacewayComingSoon">VIEW COMING SOON</button></article>
       </section>
       <div class="it-note"><strong>Verified-driver standard:</strong> Submitting an application does not make a driver active. Authority Press must review the driver's details and driving-licence document and approve the application first.</div>
       <section class="it-card" id="itDriverRegistration" style="display:none">
@@ -173,6 +177,7 @@
     document.body.style.overflow = "";
   }
   $("itClose").addEventListener("click", close);
+  $("itSpacewayComingSoon")?.addEventListener("click", () => $("openFlightBooking")?.click());
   overlay.addEventListener("click", event => { if (event.target === overlay) close(); });
   document.addEventListener("keydown", event => { if (event.key === "Escape" && overlay.style.display === "block") close(); });
   function openRegistration() { open(); overlay.classList.add("it-registration-only"); const registration = $("itDriverRegistration"); if (registration) { registration.style.display = "block"; registration.scrollIntoView({ behavior: "smooth", block: "start" }); } }
