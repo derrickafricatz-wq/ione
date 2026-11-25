@@ -3633,20 +3633,26 @@ function getMedia(id){
   <div class="ione-hospitality-head"><div><div class="ione-hospitality-kicker">I|ONE HOSPITALITY SPOTLIGHT</div><div class="ione-hospitality-sub">Discover places to stay, dine and experience</div></div></div>
   <div class="ione-hospitality-viewport"><div id="ioneHospitalityTrack" class="ione-hospitality-track"></div></div>
 </section>
-<div class="smart-grid">
+<div class="smart-grid ione-primary-grid" aria-label="I|ONE main destinations">
+<button class="smart-item ione-primary-author" id="openTranscript" type="button"><span class="smart-icon" aria-hidden="true">✦</span><strong>AUTHOR STUDIO</strong><small>WRITE • PUBLISH • GROW</small></button>
+<button class="smart-item ione-primary-class" id="openIoneLiveClass" type="button"><span class="smart-icon" aria-hidden="true">▶</span><strong>I|ONE LIVE CLASS</strong><small>RECORDED TRAINING • LIVE CLASSES</small></button>
+<button class="smart-item ione-primary-explore" id="openIoneServices" type="button" aria-expanded="false" aria-controls="ioneSecondaryServices"><span class="smart-icon" aria-hidden="true">▦</span><strong>EXPLORE I|ONE SERVICES</strong><small>DISCOVER THE FULL PLATFORM</small></button>
+<button class="smart-item ione-primary-authority" id="openAuthority" type="button"><span class="smart-icon" aria-hidden="true">◆</span><strong>AUTHORITY PRESS</strong><small>AUTHORIZED ACCESS ONLY</small></button>
+</div>
+<section class="ione-secondary-services" id="ioneSecondaryServices" hidden aria-label="More I|ONE services">
+  <div class="ione-secondary-head"><div><span>THE I|ONE NETWORK</span><strong>Explore more services</strong></div><small>All your familiar destinations, still here.</small></div>
+  <div class="smart-grid ione-secondary-grid">
 <button class="smart-item" id="openAfrilink"><span class="smart-icon">I|M</span><strong>HOME OF MARKETING</strong><small>LIVE BUSINESS SPACE</small></button>
 <button class="smart-item ione-special ione-sokoni-tile" id="openSokoni" type="button"><span class="smart-icon" aria-hidden="true">S</span><strong>I|ONE SOKONI</strong><small>SOKO LA KARIBU • WAFANYABIASHARA</small></button>
 <button class="smart-item ione-opportunities-tile" id="openIoneOpportunities" type="button"><span class="smart-icon" aria-hidden="true">✦</span><strong>I|ONE OPPORTUNITIES</strong><small>JOBS • SCHOLARSHIPS • TRAINING</small></button>
-<button class="smart-item ione-live-class-tile" id="openIoneLiveClass" type="button"><span class="smart-icon" aria-hidden="true">▶</span><strong>I|ONE LIVE CLASS</strong><small>RECORDED TRAINING • LIVE CLASSES</small></button>
 <button class="smart-item" id="openHealth"><span class="smart-icon">◎</span><strong>DOCUMENTARIES</strong><small>EXPLORE FILMS & STORIES</small></button>
-<button class="smart-item" id="openTranscript"><span class="smart-icon">✦</span><strong>AUTHOR'S STUDIO</strong><small>RECORD • WRITE • CREATE BOOKS</small></button>
 <button class="smart-item ione-expert-tile" id="openIoneExpert" type="button"><span class="smart-icon" aria-hidden="true">EX</span><strong>I|ONE EXPERT</strong><small>ASK • ANSWER • SHARE KNOWLEDGE</small></button>
 <button class="smart-item ione-special ione-gift" id="openIoneGift" type="button"><span class="ione-service-art" aria-hidden="true"><svg viewBox="0 0 80 80"><path d="M12 31h56v38H12z" fill="none" stroke="currentColor" stroke-width="5"/><path d="M8 22h64v14H8z" fill="none" stroke="currentColor" stroke-width="5"/><path d="M40 22v47M40 22c-2-12-12-18-18-12-7 7 6 15 18 12Zm0 0c2-12 12-18 18-12 7 7-6 15-18 12Z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/></svg></span><strong>GIFT</strong><small>INVITE A BRAND • EARN $1</small></button>
 <button class="smart-item ione-special ione-support" id="openIoneSupport" type="button"><span class="ione-service-art" aria-hidden="true"><svg viewBox="0 0 80 80"><path d="M10 12h60v43H36L20 68V55H10z" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"/><path d="M24 30h32M24 41h21" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/></svg></span><strong>I1 SUPPORT</strong><small>PRIVATE LIVE SUPPORT</small></button>
 <button class="smart-item ione-transport-tile" id="openBusBooking" type="button"><span class="smart-icon" aria-hidden="true">🚕</span><strong>i1 TRANSPORT</strong><small>TAXI • SPECIAL HIRE • SHUTTLE • BUS • BAJAJI • BODA</small></button>
-<button class="smart-item smart-coming-soon" id="openFlightBooking" type="button"><span class="smart-icon">SW</span><strong>SPACEWAY</strong><small>FLIGHT BOOKING • COMING SOON</small></button>
-<button class="smart-item" id="openAuthority"><span class="smart-icon">◆</span><strong>AUTHORITY PRESS</strong><small>CONTROL CENTER</small></button>
-</div></section></div>
+  </div>
+</section>
+<button type="button" id="openFlightBooking" hidden aria-hidden="true" tabindex="-1"></button></section></div>
 <style id="ione-hospitality-showcase-style-v1">
 #ioneHospitalityShowcase{display:block;position:relative;grid-column:1/-1;box-sizing:border-box;width:100%;max-width:none;margin:8px 0 12px;padding:10px 0 12px;overflow:hidden;border:1px solid rgba(218,190,128,.24);border-radius:20px;background:linear-gradient(145deg,rgba(30,27,20,.96),rgba(10,17,18,.98));box-shadow:0 12px 30px rgba(0,0,0,.22)}
 #ioneHospitalityShowcase[hidden]{display:none!important}
@@ -12457,6 +12463,50 @@ function ioneRunBackgroundMediaPreload(){ return; }
   window.ioneLoadManualBookPayments=refresh;
 })();
 
+</script>
+
+<style id="ione-books-first-home-layout-v1">
+#smartPanel .ione-primary-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;margin:12px 0 16px!important}
+#smartPanel .ione-primary-grid>.smart-item{position:relative!important;display:flex!important;min-width:0!important;min-height:126px!important;padding:18px 12px!important;gap:9px!important;border:1px solid rgba(255,255,255,.3)!important;border-radius:20px!important;box-shadow:0 9px 22px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.18)!important;text-align:center!important;transition:transform .16s ease,filter .16s ease!important}
+#smartPanel .ione-primary-grid>.smart-item:active{transform:translateY(2px) scale(.99)!important;filter:brightness(1.08)!important}
+#smartPanel .ione-primary-grid .smart-icon{display:flex!important;align-items:center!important;justify-content:center!important;width:42px!important;height:42px!important;margin-bottom:2px!important;border:1px solid rgba(255,255,255,.28)!important;border-radius:14px!important;background:rgba(0,0,0,.16)!important;color:#fff!important;font-size:23px!important}
+#smartPanel .ione-primary-grid strong{font-size:clamp(11px,2.9vw,14px)!important;line-height:1.2!important;letter-spacing:.65px!important}
+#smartPanel .ione-primary-grid small{font-size:9px!important;line-height:1.35!important;letter-spacing:.45px!important}
+#smartPanel .ione-primary-author{background:linear-gradient(145deg,#e5b76b,#9a5b2d 58%,#58351f)!important;color:#fff!important}
+#smartPanel .ione-primary-class{background:linear-gradient(145deg,#59d9a0,#16765c 62%,#0c463e)!important;color:#fff!important}
+#smartPanel .ione-primary-explore{background:linear-gradient(145deg,#36d4d5,#087b91 60%,#064b68)!important;color:#fff!important}
+#smartPanel .ione-primary-authority{background:linear-gradient(145deg,#594c49,#302625 62%,#171b1c)!important;color:#f9e2b5!important;border-color:rgba(232,198,137,.55)!important}
+#smartPanel .ione-secondary-services{grid-column:1/-1;box-sizing:border-box;width:100%;margin:10px 0 18px;padding:15px;border:1px solid rgba(104,217,205,.24);border-radius:20px;background:linear-gradient(145deg,rgba(14,39,42,.96),rgba(7,19,23,.98));box-shadow:0 12px 28px rgba(0,0,0,.2)}
+#smartPanel .ione-secondary-services[hidden]{display:none!important}
+.ione-secondary-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 13px;padding:0 2px 12px;border-bottom:1px solid rgba(126,226,219,.17)}
+.ione-secondary-head div{display:grid;gap:4px}.ione-secondary-head span{color:#73e5d9;font:900 8px Arial,sans-serif;letter-spacing:1.8px}.ione-secondary-head strong{color:#f1fffd;font:800 17px Georgia,serif}.ione-secondary-head>small{max-width:42%;color:#a7c3c3;font:10px/1.4 Arial,sans-serif;text-align:right}
+#smartPanel .ione-secondary-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;margin:0!important}
+#smartPanel .ione-secondary-grid>.smart-item{display:flex!important;min-width:0!important;min-height:105px!important;padding:13px 9px!important;border:1px solid rgba(143,220,209,.24)!important;border-radius:15px!important;background:linear-gradient(145deg,#164a4b,#103139 70%,#0b2229)!important;color:#f2fffd!important;box-shadow:0 5px 14px rgba(0,0,0,.2)!important}
+#smartPanel .ione-secondary-grid .smart-icon{font-size:22px!important;color:#b6fff0!important}
+#smartPanel .ione-secondary-grid strong{font-size:10px!important;line-height:1.25!important}
+#smartPanel .ione-secondary-grid small{font-size:8px!important;line-height:1.35!important}
+#smartPanel #openFlightBooking[hidden]{display:none!important}
+@media(max-width:360px){#smartPanel .ione-primary-grid{gap:9px!important}#smartPanel .ione-primary-grid>.smart-item{min-height:116px!important;padding:14px 7px!important}.ione-secondary-head>small{font-size:9px}}
+</style>
+<script id="ione-home-services-toggle-v1">
+(function(){
+  function bind(){
+    var button=document.getElementById("openIoneServices");
+    var panel=document.getElementById("ioneSecondaryServices");
+    if(!button||!panel||button.dataset.bound==="1")return;
+    button.dataset.bound="1";
+    button.addEventListener("click",function(){
+      var opening=panel.hidden;
+      panel.hidden=!opening;
+      button.setAttribute("aria-expanded",opening?"true":"false");
+      var title=button.querySelector("strong"),caption=button.querySelector("small");
+      if(title)title.textContent=opening?"CLOSE SERVICES":"EXPLORE I|ONE SERVICES";
+      if(caption)caption.textContent=opening?"RETURN TO THE MAIN HOMEPAGE":"DISCOVER THE FULL PLATFORM";
+      if(opening)setTimeout(function(){panel.scrollIntoView({behavior:"smooth",block:"nearest"});},40);
+    });
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});else bind();
+})();
 </script>
 </body>
 
