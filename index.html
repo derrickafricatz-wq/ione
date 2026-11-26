@@ -2789,6 +2789,39 @@ body.ione-gentle-boot #ioneTopActions{
 
 </style>
 
+<style id="ione-reader-full-page-scroll-v1">
+/* Keep enlarged book text and wide content reachable inside each page. */
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-page-inner{
+  width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
+  overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;
+  touch-action:pan-x pan-y!important;scrollbar-width:thin!important;
+}
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-page-text,
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-rich-content{
+  box-sizing:border-box!important;min-width:0!important;max-width:100%!important;
+  overflow-wrap:anywhere!important;word-break:normal!important;
+}
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-rich-content img,
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-rich-content video,
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-rich-content iframe{
+  max-width:100%!important;height:auto!important;
+}
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-rich-content table{
+  width:max-content!important;max-width:none!important;border-collapse:collapse;
+}
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-rich-content pre{
+  max-width:none!important;white-space:pre!important;
+}
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-page-inner::-webkit-scrollbar{width:5px;height:5px}
+#heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-page-inner::-webkit-scrollbar-thumb{background:rgba(30,110,112,.35);border-radius:8px}
+@media(max-width:600px){
+  #heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-page-inner{
+    touch-action:pan-x pan-y!important;scroll-padding:12px!important;
+  }
+}
+</style>
+
 <style id="ione-explore-card-layout-v2">
 @media(max-width:699px){
 #heavensBookstore .hb-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;padding:10px 12px calc(20px + env(safe-area-inset-bottom))!important;align-items:stretch!important}
@@ -10755,9 +10788,17 @@ function openBookReader(book,store){
     else if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault();prev()}
     else if(e.key==="Escape"){e.preventDefault();closeReader()}
   });
-  let startX=0,startY=0;
-  reader.addEventListener("touchstart",e=>{const t=e.changedTouches[0];startX=t.screenX;startY=t.screenY},{passive:true});
-  reader.addEventListener("touchend",e=>{const t=e.changedTouches[0],dx=t.screenX-startX,dy=t.screenY-startY;if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2){dx<0?next():prev()}},{passive:true});
+  let startX=0,startY=0,gestureStartedInScrollablePage=false;
+  reader.addEventListener("touchstart",e=>{
+    const t=e.changedTouches[0];startX=t.screenX;startY=t.screenY;
+    const target=e.target&&e.target.closest?e.target.closest(".hr-page-inner"):null;
+    gestureStartedInScrollablePage=!!(target&&(target.scrollHeight>target.clientHeight+2||target.scrollWidth>target.clientWidth+2));
+  },{passive:true});
+  reader.addEventListener("touchend",e=>{
+    const t=e.changedTouches[0],dx=t.screenX-startX,dy=t.screenY-startY;
+    if(!gestureStartedInScrollablePage&&Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2){dx<0?next():prev()}
+    gestureStartedInScrollablePage=false;
+  },{passive:true});
   reader.addEventListener("contextmenu",e=>e.preventDefault());
   reader.addEventListener("copy",e=>e.preventDefault());
   reader.addEventListener("cut",e=>e.preventDefault());
