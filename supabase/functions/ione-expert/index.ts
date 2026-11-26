@@ -44,6 +44,20 @@ Deno.serve(async (req) => {
     try { body = await req.json(); } catch { return json({ success: false, error: "Invalid request." }, 400); }
     const action = clean(body?.action, 80).toLowerCase();
 
+    if (action === "expert_access_status") {
+      const { data, error } = await admin.from("ione_expert_access_control").select("is_locked").eq("singleton", true).maybeSingle();
+      if (error) return json({ success: false, error: "Could not check Expert Services availability." }, 500);
+      return json({ success: true, is_locked: data?.is_locked !== false });
+    }
+
+    const customerExpertActions = ["my_status", "apply", "list_feed", "ask", "reply"];
+    if (customerExpertActions.includes(action)) {
+      const { data: access, error: accessError } = await admin.from("ione_expert_access_control").select("is_locked").eq("singleton", true).maybeSingle();
+      if (accessError || access?.is_locked !== false) {
+        return json({ success: false, locked: true, error: "Books are taking the spotlight right now. Explore the I1 Shelf, discover something inspiring, and enjoy the books. I|ONE Expert Services will be back soon." }, 423);
+      }
+    }
+
     if (action === "my_status") {
       const user = await getUser(admin, req);
       if (!user) return json({ success: false, error: "Sign in to use I|ONE Expert." }, 401);
@@ -130,7 +144,7 @@ Deno.serve(async (req) => {
       return json({ success: true, message: "Expert reply published." });
     }
 
-    const authorityActions = ["authority_dashboard", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"];
+    const authorityActions = ["authority_dashboard", "authority_set_access", "approve_expert", "reject_expert", "authority_reply", "publish_advice", "delete_advice"];
     if (authorityActions.includes(action)) {
       if (!(await authorityValid(admin, body?.authority_session || req.headers.get("x-ione-authority-session")))) {
         return json({ success: false, error: "Authority Press session expired. Unlock Authority Press again." }, 401);
@@ -163,7 +177,17 @@ Deno.serve(async (req) => {
         const questionsWithReplies = (questions || []).map((question: any) => ({
           ...question, replies: replies.filter((reply: any) => reply.question_id === question.id)
         }));
-        return json({ success: true, applications: safeApplications, questions: questionsWithReplies, advice: advice || [] });
+        const { data: accessControl, error: accessError } = await admin.from("ione_expert_access_control").select("is_locked,updated_at,updated_by").eq("singleton", true).maybeSingle();
+        if (accessError) return json({ success: false, error: "Could not load Expert access setting." }, 500);
+        return json({ success: true, applications: safeApplications, questions: questionsWithReplies, advice: advice || [], access_control: accessControl || { is_locked: true } });
+      }
+      if (action === "authority_set_access") {
+        if (typeof body?.is_locked !== "boolean") return json({ success: false, error: "Choose whether Expert Services should be locked or unlocked." }, 400);
+        const saved = await admin.from("ione_expert_access_control").upsert({
+          singleton: true, is_locked: body.is_locked, updated_at: new Date().toISOString(), updated_by: "Authority Press"
+        }, { onConflict: "singleton" }).select("is_locked,updated_at").single();
+        if (saved.error) return json({ success: false, error: "Could not save Expert access setting." }, 500);
+        return json({ success: true, is_locked: saved.data.is_locked, message: saved.data.is_locked ? "I|ONE Expert Services locked. Customers will be guided to the books." : "I|ONE Expert Services unlocked." });
       }
       if (action === "approve_expert" || action === "reject_expert") {
         const applicationId = clean(body?.application_id, 80);
