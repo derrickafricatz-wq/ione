@@ -1,5 +1,5 @@
 {
-  "version": "1.0.354",
-  "message": "Replace book-cover shadows with continuously flowing water background",
+  "version": "1.0.355",
+  "message": "Improve two-direction scrolling for enlarged book pages",
   "force": true
 }
