@@ -2761,8 +2761,9 @@ body.ione-gentle-boot #ioneTopActions{
 #heavensReader .hr-page{inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important}
 #heavensReader .hr-pdf-page{padding:0!important}
 #heavensReader .hr-pdf-page .hr-page-inner{
-  display:flex!important;align-items:center!important;justify-content:center!important;
+  display:block!important;align-items:initial!important;justify-content:initial!important;
   width:100%!important;height:100%!important;overflow:auto!important;padding:0!important;
+  -webkit-overflow-scrolling:touch!important;touch-action:pan-x pan-y!important;
 }
 #heavensReader .hr-reading-size{
   order:2!important;position:relative!important;left:auto!important;right:auto!important;top:auto!important;bottom:auto!important;
@@ -2792,6 +2793,7 @@ body.ione-gentle-boot #ioneTopActions{
 <style id="ione-reader-full-page-scroll-v1">
 /* Keep enlarged book text and wide content reachable inside each page. */
 #heavensReader .hr-page:not(.hr-page-cover-wrap) .hr-page-inner{
+  display:block!important;position:relative!important;
   width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;
   overflow:auto!important;overflow-x:auto!important;overflow-y:auto!important;
   -webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;
@@ -10784,21 +10786,10 @@ function openBookReader(book,store){
   reader.querySelector(".hr-back").onclick=e=>{e.stopPropagation();closeReader()};
   reader.tabIndex=0;reader.focus();
   reader.addEventListener("keydown",e=>{
-    if(e.key==="ArrowRight"||e.key==="ArrowDown"){e.preventDefault();next()}
-    else if(e.key==="ArrowLeft"||e.key==="ArrowUp"){e.preventDefault();prev()}
-    else if(e.key==="Escape"){e.preventDefault();closeReader()}
+    if(e.key==="Escape"){e.preventDefault();closeReader()}
   });
-  let startX=0,startY=0,gestureStartedInScrollablePage=false;
-  reader.addEventListener("touchstart",e=>{
-    const t=e.changedTouches[0];startX=t.screenX;startY=t.screenY;
-    const target=e.target&&e.target.closest?e.target.closest(".hr-page-inner"):null;
-    gestureStartedInScrollablePage=!!(target&&(target.scrollHeight>target.clientHeight+2||target.scrollWidth>target.clientWidth+2));
-  },{passive:true});
-  reader.addEventListener("touchend",e=>{
-    const t=e.changedTouches[0],dx=t.screenX-startX,dy=t.screenY-startY;
-    if(!gestureStartedInScrollablePage&&Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)*1.2){dx<0?next():prev()}
-    gestureStartedInScrollablePage=false;
-  },{passive:true});
+  // Page changes are controlled only by the visible Previous/Next buttons.
+  // Touch gestures inside the page are reserved for scrolling its content.
   reader.addEventListener("contextmenu",e=>e.preventDefault());
   reader.addEventListener("copy",e=>e.preventDefault());
   reader.addEventListener("cut",e=>e.preventDefault());
