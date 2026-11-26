@@ -3636,8 +3636,11 @@ function getMedia(id){
 <div class="smart-grid ione-primary-grid" aria-label="I|ONE main destinations">
 <button class="smart-item ione-primary-author" id="openTranscript" type="button"><span class="smart-icon" aria-hidden="true">✦</span><strong>AUTHOR STUDIO</strong><small>WRITE • PUBLISH • GROW</small></button>
 <button class="smart-item ione-primary-class" id="openIoneLiveClass" type="button"><span class="smart-icon" aria-hidden="true">▶</span><strong>I|ONE LIVE CLASS</strong><small>RECORDED TRAINING • LIVE CLASSES</small></button>
-<button class="smart-item ione-primary-explore" id="openIoneServices" type="button" aria-expanded="false" aria-controls="ioneSecondaryServices"><span class="smart-icon" aria-hidden="true">▦</span><strong>EXPLORE I|ONE SERVICES</strong><small>DISCOVER THE FULL PLATFORM</small></button>
-<button class="smart-item ione-primary-authority" id="openAuthority" type="button"><span class="smart-icon" aria-hidden="true">◆</span><strong>AUTHORITY PRESS</strong><small>AUTHORIZED ACCESS ONLY</small></button>
+</div>
+<div class="ione-home-quick-toggles" aria-label="Quick homepage shortcuts">
+<button class="ione-home-quick-toggle ione-author-request-toggle" id="ioneAuthorRequestShortcut" type="button"><span aria-hidden="true">✎</span><strong>AUTHOR REQUEST</strong><small>REGISTER • CHECK STATUS</small></button>
+<button class="ione-home-quick-toggle ione-authority-toggle" id="openAuthority" type="button"><span aria-hidden="true">◆</span><strong>AUTHORITY PRESS</strong><small>AUTHORIZED ACCESS</small></button>
+<button class="ione-home-quick-toggle ione-services-toggle" id="openIoneServices" type="button" aria-expanded="false" aria-controls="ioneSecondaryServices"><span aria-hidden="true">▦</span><strong>EXPLORE SERVICES</strong><small>ALL I|ONE FEATURES</small></button>
 </div>
 <section class="ione-secondary-services" id="ioneSecondaryServices" hidden aria-label="More I|ONE services">
   <div class="ione-secondary-head"><div><span>THE I|ONE NETWORK</span><strong>Explore more services</strong></div><small>All your familiar destinations, still here.</small></div>
@@ -9229,7 +9232,54 @@ printBtn.onclick = () => {
 
     html += "<hr><p>Heaven On Earth</p>";
 
-    html += "</body></html>";
+    html += "<style id="ione-home-polished-layout-v1">
+/* Focused homepage refresh: keep feature behavior and carousel scripts untouched. */
+#smartPanel .ione-primary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:clamp(10px,2.8vw,16px)!important;margin:18px 0 13px!important}
+#smartPanel .ione-primary-grid>.smart-item{min-height:clamp(145px,34vw,190px)!important;padding:clamp(16px,4vw,25px) 12px!important;border-radius:24px!important;gap:11px!important;box-shadow:0 12px 28px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.24)!important}
+#smartPanel .ione-primary-grid .smart-icon{width:clamp(46px,12vw,58px)!important;height:clamp(46px,12vw,58px)!important;border-radius:17px!important;font-size:clamp(25px,6vw,31px)!important}
+#smartPanel .ione-primary-grid strong{font-size:clamp(12px,3.2vw,16px)!important;letter-spacing:.7px!important}
+#smartPanel .ione-primary-grid small{font-size:clamp(9px,2.3vw,11px)!important;letter-spacing:.5px!important}
+.ione-home-quick-toggles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box;margin:0 0 17px;padding:0}
+.ione-home-quick-toggle{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-width:0;min-height:76px;padding:10px 5px;border:1px solid rgba(150,226,220,.22);border-radius:15px;background:linear-gradient(145deg,rgba(24,52,56,.95),rgba(8,23,28,.98));color:#eafffb;text-align:center;box-shadow:0 5px 13px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.08);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ione-home-quick-toggle>span{display:flex;align-items:center;justify-content:center;width:25px;height:25px;border-radius:8px;background:rgba(255,255,255,.07);color:#b8fff1;font:900 15px/1 Arial,sans-serif}
+.ione-home-quick-toggle strong{font:900 clamp(8px,2.2vw,10px)/1.2 Arial,sans-serif;letter-spacing:.35px;overflow-wrap:anywhere}
+.ione-home-quick-toggle small{color:#a8c7c8;font:700 clamp(7px,1.8vw,8px)/1.25 Arial,sans-serif;letter-spacing:.15px}
+.ione-home-quick-toggle:active{transform:translateY(2px);filter:brightness(1.13)}
+.ione-author-request-toggle{border-color:rgba(230,188,116,.3);background:linear-gradient(145deg,rgba(67,47,28,.9),rgba(24,24,23,.98))}
+.ione-author-request-toggle>span{color:#ffe2a8}
+.ione-authority-toggle{border-color:rgba(220,199,153,.3);background:linear-gradient(145deg,rgba(49,43,39,.95),rgba(17,20,21,.98))}
+.ione-authority-toggle>span{color:#ead3a0}
+.ione-services-toggle{border-color:rgba(88,227,220,.32);background:linear-gradient(145deg,rgba(15,65,68,.95),rgba(7,30,37,.98))}
+.ione-services-toggle>span{color:#92fff4}
+#ioneBooksShowcase{margin:19px 0 23px!important;padding:18px 0 16px!important;border:1px solid rgba(110,225,221,.22)!important;border-radius:22px!important;background:radial-gradient(ellipse at 50% 0%,rgba(35,102,105,.24),transparent 67%),linear-gradient(180deg,rgba(15,39,44,.9),rgba(7,18,22,.76))!important;box-shadow:0 13px 30px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.05)!important}
+.ione-books-showcase-head{padding:0 16px 16px!important;align-items:center!important}
+.ione-books-showcase-head h2{font-size:clamp(22px,5.7vw,29px)!important;letter-spacing:-.35px!important}
+.ione-books-showcase-head p{font-size:12px!important}
+.ione-books-showcase-kicker{font-size:10px!important;letter-spacing:2px!important}
+#ioneBooksShowcaseExplore{padding:11px 14px!important;font-size:10px!important;box-shadow:0 4px 10px rgba(0,0,0,.2)!important}
+.ione-books-showcase-window{padding:3px 16px 10px!important;scroll-padding-inline:16px!important}
+.ione-books-showcase-track{gap:14px!important}
+.ione-books-showcase-card{flex-basis:142px!important;width:142px!important;gap:9px!important}
+.ione-books-showcase-cover{width:142px!important;height:194px!important;border-radius:12px!important;border-color:rgba(151,239,226,.4)!important;box-shadow:0 9px 20px rgba(0,0,0,.36),0 0 0 1px rgba(255,255,255,.035)!important}
+.ione-books-showcase-author{padding:7px 8px!important;border-radius:9px!important;font-size:11px!important;letter-spacing:.4px!important}
+@media(min-width:700px){.ione-books-showcase-card{flex-basis:172px!important;width:172px!important}.ione-books-showcase-cover{width:172px!important;height:234px!important}.ione-books-showcase-track{gap:17px!important}.ione-books-showcase-head{padding-left:25px!important;padding-right:25px!important}.ione-books-showcase-window{padding-left:25px!important;padding-right:25px!important}}
+@media(max-width:360px){.ione-books-showcase-card{flex-basis:126px!important;width:126px!important}.ione-books-showcase-cover{width:126px!important;height:174px!important}.ione-home-quick-toggles{gap:6px}.ione-home-quick-toggle{min-height:72px;padding:8px 3px}}
+</style>
+<script id="ione-author-request-shortcut-v1">
+(function(){
+ function bind(){
+  var shortcut=document.getElementById("ioneAuthorRequestShortcut");
+  var author=document.getElementById("openTranscript");
+  if(shortcut&&author&&shortcut.dataset.bound!=="1"){
+   shortcut.dataset.bound="1";
+   shortcut.addEventListener("click",function(){author.click();});
+  }
+ }
+ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});else bind();
+})();
+</script>
+
+</body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
     printWindow.focus();
