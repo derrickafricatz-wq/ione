@@ -137,7 +137,20 @@
     }
     ensureOverlay(); registrationOnly = false; root.classList.remove("iex-registration-only"); const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh();
   }
-  function openRegistration() { ensureOverlay(); registrationOnly = true; root.classList.add("iex-registration-only"); root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = expertStatus.is_expert ? "none" : "block"; const message = $("ioneExpertApplicationStatus", root); if (message) message.textContent = expertStatus.is_expert ? "Your I|ONE Expert account is already verified." : ""; }
+  async function openRegistration() {
+    try {
+      if (!heavensSupabase) throw new Error("I|ONE connection is not ready.");
+      const access = await heavensSupabase.functions.invoke("ione-expert", { body: { action: "expert_access_status" } });
+      if (access.error || !access.data?.success) throw new Error(access.data?.error || "Could not check Expert Services availability.");
+      if (access.data.is_locked) { showBooksFocusMessage(); return; }
+    } catch (_) {
+      const notice = showBooksFocusMessage();
+      const paragraph = notice.querySelector("p");
+      if (paragraph) paragraph.textContent = "I|ONE Expert Services availability could not be checked right now. Please try again shortly, and enjoy exploring the I1 Shelf in the meantime.";
+      return;
+    }
+    ensureOverlay(); registrationOnly = true; root.classList.add("iex-registration-only"); root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = expertStatus.is_expert ? "none" : "block"; const message = $("ioneExpertApplicationStatus", root); if (message) message.textContent = expertStatus.is_expert ? "Your I|ONE Expert account is already verified." : "";
+  }
   async function invoke(action, extra = {}) {
     if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
     const payload = { action, ...extra };
