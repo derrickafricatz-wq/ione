@@ -107,11 +107,40 @@
     if (el) { el.textContent = message || ""; el.classList.toggle("error", !!error); }
   }
   function close() { if (root) { root.style.display = "none"; root.setAttribute("aria-hidden", "true"); } document.body.style.overflow = ""; }
-  function open() { ensureOverlay(); registrationOnly = false; root.classList.remove("iex-registration-only"); const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh(); }
+  function showBooksFocusMessage() {
+    let panel = document.getElementById("ioneExpertBooksFocusNotice");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.id = "ioneExpertBooksFocusNotice";
+      panel.setAttribute("role", "dialog");
+      panel.setAttribute("aria-modal", "true");
+      panel.setAttribute("aria-labelledby", "ioneExpertBooksFocusTitle");
+      panel.style.cssText = "position:fixed;inset:0;z-index:2147482500;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(3,13,15,.78);backdrop-filter:blur(7px);font-family:Arial,sans-serif";
+      panel.innerHTML = '<section style="width:min(420px,100%);box-sizing:border-box;padding:27px 22px;border:1px solid rgba(24,182,164,.5);border-radius:22px;background:linear-gradient(145deg,#103b38,#071c20);color:#effffb;text-align:center;box-shadow:0 18px 55px rgba(0,0,0,.38)"><div style="font-size:10px;font-weight:900;letter-spacing:2.4px;color:#8ce7d5">I|ONE • A LITTLE NOTE</div><h2 id="ioneExpertBooksFocusTitle" style="margin:13px 0 10px;font-size:25px;line-height:1.2;color:#fff">Books are taking the spotlight.</h2><p style="margin:0 0 21px;font-size:14px;line-height:1.7;color:#c8e5df">For now, explore the I1 Shelf, discover something inspiring, and enjoy the books. I|ONE Expert Services will be back soon.</p><button type="button" id="ioneExpertBooksFocusClose" style="width:100%;min-height:46px;border:0;border-radius:12px;background:linear-gradient(135deg,#a6f0df,#43d6bd);color:#073e3c;font-weight:900;letter-spacing:.7px">GOT IT — ENJOY THE BOOKS</button></section>';
+      document.body.appendChild(panel);
+      panel.querySelector("#ioneExpertBooksFocusClose").addEventListener("click", () => panel.remove());
+      panel.addEventListener("click", event => { if (event.target === panel) panel.remove(); });
+    }
+    return panel;
+  }
+  async function open() {
+    try {
+      if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Please try again.");
+      const result = await heavensSupabase.functions.invoke("ione-expert", { body: { action: "expert_access_status" } });
+      if (result.error || !result.data?.success) throw new Error(result.data?.error || "Could not check Expert Services availability.");
+      if (result.data.is_locked) { showBooksFocusMessage(); return; }
+    } catch (error) {
+      const notice = showBooksFocusMessage();
+      const paragraph = notice.querySelector("p");
+      if (paragraph) paragraph.textContent = "I|ONE Expert Services availability could not be checked right now. Please try again shortly, and enjoy exploring the I1 Shelf in the meantime.";
+      return;
+    }
+    ensureOverlay(); registrationOnly = false; root.classList.remove("iex-registration-only"); const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = "none"; root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; refresh();
+  }
   function openRegistration() { ensureOverlay(); registrationOnly = true; root.classList.add("iex-registration-only"); root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = expertStatus.is_expert ? "none" : "block"; const message = $("ioneExpertApplicationStatus", root); if (message) message.textContent = expertStatus.is_expert ? "Your I|ONE Expert account is already verified." : ""; }
   async function invoke(action, extra = {}) {
     if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
-    const result = await heavensSupabase.functions.invoke("ione-expert", { body: { action, ...extra } });
+    const payload = { action, ...extra };\n    if (String(action).startsWith("authority_")) { try { payload.authority_session = sessionStorage.getItem("ioneAuthoritySession") || ""; } catch (_) {} }\n    const result = await heavensSupabase.functions.invoke("ione-expert", { body: payload });
     if (result.error) {
       let message = result.data?.error || result.error.message || "Request failed.";
       try { const payload = await result.error.context?.clone?.().json(); message = payload?.error || payload?.message || message; } catch (_) {}
@@ -228,6 +257,7 @@
     const section = document.createElement("section");
     section.id = "ioneExpertAuthority"; section.className = "authority-panel-section";
     section.innerHTML = `<div class="authority-section-kicker">I|ONE EXPERT • AUTHORITY ONLY</div>
+      <div class="iex-access-control" style="margin:10px 0 18px;padding:14px;border:1px solid #b9d4b2;border-radius:13px;background:#f3faf0"><h3 style="margin:0 0 7px">I|ONE EXPERT ACCESS</h3><p id="ioneExpertAccessState" style="margin:0 0 9px">Checking access setting…</p><button type="button" id="ioneExpertAccessToggle">LOADING…</button></div>
       <h3>VERIFY EXPERTS & PUBLISH OFFICIAL ADVICE</h3>
       <p class="authority-section-note">Review credentials before enabling expert replies. Official advice is displayed to I|ONE Expert users.</p>
       <button type="button" id="ioneExpertAuthorityRefresh">REFRESH EXPERT CONTROLS</button>
@@ -241,6 +271,22 @@
         <button type="submit">PUBLISH ADVICE</button></form><div id="ioneExpertAuthorityAdvice"></div>`;
     host.appendChild(section);
     $("ioneExpertAuthorityRefresh").addEventListener("click", loadAuthority);
+    $("ioneExpertAccessToggle").addEventListener("click", async () => {
+      const button = $("ioneExpertAccessToggle"), state = $("ioneExpertAccessState");
+      const currentlyLocked = button.dataset.locked === "true";
+      button.disabled = true; button.textContent = "SAVING…";
+      try {
+        const saved = await invoke("authority_set_access", { is_locked: !currentlyLocked });
+        state.textContent = saved.is_locked ? "LOCKED — Customers are guided to enjoy the books." : "UNLOCKED — I|ONE Expert Services are available.";
+        button.dataset.locked = String(!!saved.is_locked);
+        button.textContent = saved.is_locked ? "UNLOCK EXPERT SERVICES" : "LOCK EXPERT SERVICES";
+        button.style.background = saved.is_locked ? "#fff0ec" : "#eaf4e4";
+        button.style.color = saved.is_locked ? "#9c332a" : "#315b38";
+      } catch (error) {
+        state.textContent = error.message || "Could not save the access setting.";
+        button.textContent = currentlyLocked ? "UNLOCK EXPERT SERVICES" : "LOCK EXPERT SERVICES";
+      } finally { button.disabled = false; }
+    });
     $("ioneExpertAdviceForm").addEventListener("submit", async (event) => {
       event.preventDefault(); const button = event.currentTarget.querySelector("button"); button.disabled = true;
       try {
@@ -257,6 +303,15 @@
     try {
       const data = await invoke("authority_dashboard");
       status.textContent = "Expert controls loaded.";
+      const accessState = $("ioneExpertAccessState"), accessButton = $("ioneExpertAccessToggle");
+      const isLocked = data.access_control?.is_locked !== false;
+      if (accessState && accessButton) {
+        accessState.textContent = isLocked ? "LOCKED — Customers are guided to enjoy the books." : "UNLOCKED — I|ONE Expert Services are available.";
+        accessButton.dataset.locked = String(isLocked);
+        accessButton.textContent = isLocked ? "UNLOCK EXPERT SERVICES" : "LOCK EXPERT SERVICES";
+        accessButton.style.background = isLocked ? "#fff0ec" : "#eaf4e4";
+        accessButton.style.color = isLocked ? "#9c332a" : "#315b38";
+      }
       const apps = $("ioneExpertAuthorityApplications"); apps.replaceChildren();
       (data.applications || []).forEach((app) => {
         const card = document.createElement("article"); card.className = "iex-admin-card";
