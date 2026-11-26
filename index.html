@@ -10770,8 +10770,11 @@ function openBookReader(book,store){
     reader.querySelector("#hrPrev").disabled=currentPage===0;
     reader.querySelector("#hrNext").disabled=currentPage===pages.length-1;
   }
-  function turnTo(nextPage,direction){
-    if(turning||nextPage<0||nextPage>=pages.length||nextPage===currentPage)return;
+  function turnTo(nextPage,direction,controlButton,clickEvent){
+    // Only a trusted click on the matching bottom button can turn a page.
+    const allowedButton=direction>0?reader.querySelector("#hrNext"):reader.querySelector("#hrPrev");
+    if(controlButton!==allowedButton||!clickEvent||!clickEvent.isTrusted||
+       turning||nextPage<0||nextPage>=pages.length||nextPage===currentPage)return;
     turning=true;
     const old=pages[currentPage],next=pages[nextPage];
     next.style.display="block";next.style.zIndex="19";old.style.zIndex="20";
@@ -10779,9 +10782,12 @@ function openBookReader(book,store){
     clearTimeout(turnTimer);
     turnTimer=setTimeout(()=>{currentPage=nextPage;turning=false;updateReader();},560);
   }
-  const next=()=>turnTo(currentPage+1,1),prev=()=>turnTo(currentPage-1,-1);
-  reader.querySelector("#hrNext").onclick=e=>{e.stopPropagation();next()};
-  reader.querySelector("#hrPrev").onclick=e=>{e.stopPropagation();prev()};
+  const nextButton=reader.querySelector("#hrNext"),prevButton=reader.querySelector("#hrPrev");
+  nextButton.onclick=e=>{e.stopPropagation();turnTo(currentPage+1,1,e.currentTarget,e)};
+  prevButton.onclick=e=>{e.stopPropagation();turnTo(currentPage-1,-1,e.currentTarget,e)};
+  reader.querySelector("#hrStage").style.touchAction="pan-x pan-y";
+  reader.querySelector("#hrBook").style.touchAction="pan-x pan-y";
+  [nextButton,prevButton].forEach(button=>button.style.touchAction="manipulation");
   const closeReader=()=>{clearTimeout(turnTimer);reader.remove();document.body.style.overflow="";heavensNormalizeViewport();};
   reader.querySelector(".hr-back").onclick=e=>{e.stopPropagation();closeReader()};
   reader.tabIndex=0;reader.focus();
