@@ -1,5 +1,5 @@
 {
-  "version": "1.0.353",
-  "message": "Fill bookshelf frames while preserving full original book covers",
+  "version": "1.0.354",
+  "message": "Replace book-cover shadows with continuously flowing water background",
   "force": true
 }
