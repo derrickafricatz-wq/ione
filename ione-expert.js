@@ -269,10 +269,24 @@
   function ensureAuthorityPanel() {
     const host = document.querySelector("#authorityPressPanel .authority-panel-inner");
     if (!host || $("ioneExpertAuthority")) return;
+    if (!$("ioneExpertAccessAuthority")) {
+      const accessSection = document.createElement("section");
+      accessSection.id = "ioneExpertAccessAuthority";
+      accessSection.className = "authority-panel-section";
+      accessSection.innerHTML = `<div class="authority-section-kicker">I|ONE • HOMEPAGE CONTROL</div>
+        <div class="iex-access-control" style="margin:10px 0 4px;padding:14px;border:1px solid rgba(75,190,255,.45);border-radius:13px;background:linear-gradient(145deg,#102f54,#071b36);color:#eef8ff">
+          <h3 style="margin:0 0 7px;color:#d9f1ff">EXPLORE I|ONE SERVICES ACCESS</h3>
+          <p id="ioneExpertAccessState" style="margin:0 0 9px;color:#c5e2f5">Checking access setting…</p>
+          <button type="button" id="ioneExpertAccessToggle" class="authority-save-button" style="background:linear-gradient(135deg,#36c8ff,#1479d4 60%,#164c9b);color:#fff;border:1px solid #83dcff">LOADING…</button>
+        </div>`;
+      const head = host.querySelector(".authority-panel-head");
+      if (head) head.insertAdjacentElement("afterend", accessSection);
+      else host.insertBefore(accessSection, host.firstChild);
+    }
     const section = document.createElement("section");
     section.id = "ioneExpertAuthority"; section.className = "authority-panel-section";
     section.innerHTML = `<div class="authority-section-kicker">I|ONE EXPERT • AUTHORITY ONLY</div>
-      <div class="iex-access-control" style="margin:10px 0 18px;padding:14px;border:1px solid rgba(75,190,255,.45);border-radius:13px;background:linear-gradient(145deg,#102f54,#071b36);color:#eef8ff"><h3 style="margin:0 0 7px;color:#d9f1ff">I|ONE SERVICES ACCESS</h3><p id="ioneExpertAccessState" style="margin:0 0 9px;color:#c5e2f5">Checking access setting…</p><button type="button" id="ioneExpertAccessToggle" class="authority-save-button" style="background:linear-gradient(135deg,#36c8ff,#1479d4 60%,#164c9b);color:#fff;border:1px solid #83dcff">LOADING…</button></div>
+      
       <h3>VERIFY EXPERTS & PUBLISH OFFICIAL ADVICE</h3>
       <p class="authority-section-note">Review credentials before enabling expert replies. Official advice is displayed to I|ONE Expert users.</p>
       <button type="button" id="ioneExpertAuthorityRefresh">REFRESH EXPERT CONTROLS</button>
