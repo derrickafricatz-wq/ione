@@ -140,7 +140,9 @@
   function openRegistration() { ensureOverlay(); registrationOnly = true; root.classList.add("iex-registration-only"); root.style.display = "block"; root.setAttribute("aria-hidden", "false"); document.body.style.overflow = "hidden"; const registration = $("ioneExpertRegistration", root); if (registration) registration.style.display = expertStatus.is_expert ? "none" : "block"; const message = $("ioneExpertApplicationStatus", root); if (message) message.textContent = expertStatus.is_expert ? "Your I|ONE Expert account is already verified." : ""; }
   async function invoke(action, extra = {}) {
     if (!heavensSupabase) throw new Error("I|ONE connection is not ready. Reload and try again.");
-    const payload = { action, ...extra };\n    if (String(action).startsWith("authority_")) { try { payload.authority_session = sessionStorage.getItem("ioneAuthoritySession") || ""; } catch (_) {} }\n    const result = await heavensSupabase.functions.invoke("ione-expert", { body: payload });
+    const payload = { action, ...extra };
+    if (String(action).startsWith("authority_")) { try { payload.authority_session = sessionStorage.getItem("ioneAuthoritySession") || ""; } catch (_) {} }
+    const result = await heavensSupabase.functions.invoke("ione-expert", { body: payload });
     if (result.error) {
       let message = result.data?.error || result.error.message || "Request failed.";
       try { const payload = await result.error.context?.clone?.().json(); message = payload?.error || payload?.message || message; } catch (_) {}
