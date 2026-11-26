@@ -272,7 +272,7 @@
     const section = document.createElement("section");
     section.id = "ioneExpertAuthority"; section.className = "authority-panel-section";
     section.innerHTML = `<div class="authority-section-kicker">I|ONE EXPERT • AUTHORITY ONLY</div>
-      <div class="iex-access-control" style="margin:10px 0 18px;padding:14px;border:1px solid #b9d4b2;border-radius:13px;background:#f3faf0"><h3 style="margin:0 0 7px">I|ONE EXPERT ACCESS</h3><p id="ioneExpertAccessState" style="margin:0 0 9px">Checking access setting…</p><button type="button" id="ioneExpertAccessToggle">LOADING…</button></div>
+      <div class="iex-access-control" style="margin:10px 0 18px;padding:14px;border:1px solid rgba(75,190,255,.45);border-radius:13px;background:linear-gradient(145deg,#102f54,#071b36);color:#eef8ff"><h3 style="margin:0 0 7px;color:#d9f1ff">I|ONE SERVICES ACCESS</h3><p id="ioneExpertAccessState" style="margin:0 0 9px;color:#c5e2f5">Checking access setting…</p><button type="button" id="ioneExpertAccessToggle" class="authority-save-button" style="background:linear-gradient(135deg,#36c8ff,#1479d4 60%,#164c9b);color:#fff;border:1px solid #83dcff">LOADING…</button></div>
       <h3>VERIFY EXPERTS & PUBLISH OFFICIAL ADVICE</h3>
       <p class="authority-section-note">Review credentials before enabling expert replies. Official advice is displayed to I|ONE Expert users.</p>
       <button type="button" id="ioneExpertAuthorityRefresh">REFRESH EXPERT CONTROLS</button>
@@ -284,9 +284,7 @@
         <input id="ioneExpertAdviceCategory" maxlength="80" placeholder="Category (optional)">
         <textarea id="ioneExpertAdviceBody" maxlength="5000" required placeholder="Clear practical advice"></textarea>
         <button type="submit">PUBLISH ADVICE</button></form><div id="ioneExpertAuthorityAdvice"></div>`;
-    const panelHead = host.querySelector(".authority-panel-head");
-    if (panelHead) panelHead.insertAdjacentElement("afterend", section);
-    else host.insertBefore(section, host.firstChild);
+    host.appendChild(section);
     $("ioneExpertAuthorityRefresh").addEventListener("click", loadAuthority);
     $("ioneExpertAccessToggle").addEventListener("click", async () => {
       const button = $("ioneExpertAccessToggle"), state = $("ioneExpertAccessState");
@@ -294,14 +292,14 @@
       button.disabled = true; button.textContent = "SAVING…";
       try {
         const saved = await invoke("authority_set_access", { is_locked: !currentlyLocked });
-        state.textContent = saved.is_locked ? "LOCKED — Customers are guided to enjoy the books." : "UNLOCKED — I|ONE Expert Services are available.";
+        state.textContent = saved.is_locked ? "LOCKED — Explore services menu is closed on the homepage." : "UNLOCKED — Explore services menu is available.";
         button.dataset.locked = String(!!saved.is_locked);
-        button.textContent = saved.is_locked ? "UNLOCK EXPERT SERVICES" : "LOCK EXPERT SERVICES";
+        button.textContent = saved.is_locked ? "UNLOCK EXPLORE SERVICES" : "LOCK EXPLORE SERVICES";
         button.style.background = saved.is_locked ? "#fff0ec" : "#eaf4e4";
         button.style.color = saved.is_locked ? "#9c332a" : "#315b38";
       } catch (error) {
         state.textContent = error.message || "Could not save the access setting.";
-        button.textContent = currentlyLocked ? "UNLOCK EXPERT SERVICES" : "LOCK EXPERT SERVICES";
+        button.textContent = currentlyLocked ? "UNLOCK EXPLORE SERVICES" : "LOCK EXPLORE SERVICES";
       } finally { button.disabled = false; }
     });
     $("ioneExpertAdviceForm").addEventListener("submit", async (event) => {
@@ -323,9 +321,9 @@
       const accessState = $("ioneExpertAccessState"), accessButton = $("ioneExpertAccessToggle");
       const isLocked = data.access_control?.is_locked !== false;
       if (accessState && accessButton) {
-        accessState.textContent = isLocked ? "LOCKED — Customers are guided to enjoy the books." : "UNLOCKED — I|ONE Expert Services are available.";
+        accessState.textContent = isLocked ? "LOCKED — Explore services menu is closed on the homepage." : "UNLOCKED — Explore services menu is available.";
         accessButton.dataset.locked = String(isLocked);
-        accessButton.textContent = isLocked ? "UNLOCK EXPERT SERVICES" : "LOCK EXPERT SERVICES";
+        accessButton.textContent = isLocked ? "UNLOCK EXPLORE SERVICES" : "LOCK EXPLORE SERVICES";
         accessButton.style.background = isLocked ? "#fff0ec" : "#eaf4e4";
         accessButton.style.color = isLocked ? "#9c332a" : "#315b38";
       }
@@ -448,7 +446,18 @@
       if (close) close.addEventListener("click", () => { const section = $("ioneExpertAuthority"); if (section) section.remove(); });
     }
   }
-  window.IoneExpert = Object.freeze({ open, close, openRegistration, refresh });
+  async function checkExploreAccess() { const result = await invoke("expert_access_status"); return result.is_locked === true; }
+  function showBooksFocusMessage() {
+    let dialog = $("ioneBooksFocusNotice");
+    if (!dialog) {
+      dialog = document.createElement("div"); dialog.id = "ioneBooksFocusNotice";
+      dialog.style.cssText = "position:fixed;inset:0;z-index:101500;display:grid;place-items:center;padding:22px;background:rgba(2,10,18,.78);backdrop-filter:blur(5px);font-family:Arial,sans-serif;";
+      dialog.innerHTML = '<div role="dialog" aria-modal="true" aria-labelledby="ioneBooksFocusTitle" style="width:min(390px,100%);padding:25px 22px;border:1px solid rgba(95,218,255,.5);border-radius:22px;background:linear-gradient(150deg,#102b43,#071722);color:#f3fbff;text-align:center"><div style="font-size:11px;font-weight:900;letter-spacing:2px;color:#7fe4ff">I|ONE • BOOKS FIRST</div><h2 id="ioneBooksFocusTitle" style="margin:13px 0 9px;font-size:23px;color:#fff">Books are taking the spotlight.</h2><p style="margin:0 0 20px;color:#c6dce8;font-size:14px;line-height:1.6">For now, discover something inspiring on the I1 Shelf and enjoy the books. More I|ONE services will return soon.</p><button type="button" id="ioneBooksFocusOk" style="width:100%;min-height:46px;border:0;border-radius:12px;background:linear-gradient(135deg,#36c8ff,#1479d4);color:#fff;font-weight:900">GOT IT — ENJOY THE BOOKS</button></div>';
+      document.body.appendChild(dialog); $("ioneBooksFocusOk").addEventListener("click", () => dialog.remove());
+      dialog.addEventListener("click", event => { if (event.target === dialog) dialog.remove(); });
+    } return dialog;
+  }
+  window.IoneExpert = Object.freeze({ open, close, openRegistration, refresh, checkExploreAccess, showBooksFocusMessage });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind, { once: true }); else bind();
   window.addEventListener("load", bind, { once: true });
 })();
