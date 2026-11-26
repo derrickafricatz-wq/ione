@@ -3618,13 +3618,13 @@ function getMedia(id){
 .ione-books-showcase-window::-webkit-scrollbar{display:none}
 .ione-books-showcase-window:active{cursor:grabbing}
 .ione-books-showcase-track{display:flex;align-items:stretch;gap:12px;width:max-content;min-width:100%;padding:0 1px;will-change:scroll-position}
-.ione-books-showcase-card{display:flex;flex-direction:column;flex:0 0 112px;width:112px;min-width:0;gap:7px;border:0;background:transparent;color:#f2f7f8;text-align:left;padding:0;cursor:pointer}
-.ione-books-showcase-cover{position:relative;width:112px;height:154px;overflow:hidden;border-radius:9px;border:1px solid rgba(137,220,220,.3);background:linear-gradient(145deg,#18343a,#081116);box-shadow:0 6px 15px rgba(0,0,0,.28)}
-.ione-books-showcase-cover img{display:block;width:100%;height:100%;object-fit:cover}
+.ione-books-showcase-card{display:flex;flex-direction:column;flex:0 0 clamp(265px,78vw,390px);width:clamp(265px,78vw,390px);min-width:0;gap:9px;border:0;background:transparent;color:#f2f7f8;text-align:left;padding:0;cursor:pointer}
+.ione-books-showcase-cover{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:clamp(190px,52vw,250px);box-sizing:border-box;overflow:hidden;border:1px solid rgba(235,213,160,.3);border-radius:17px;background:linear-gradient(145deg,rgba(30,27,20,.96),rgba(10,17,18,.98));box-shadow:0 12px 30px rgba(0,0,0,.22);padding:10px}
+.ione-books-showcase-cover img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;background:rgba(0,0,0,.16);border-radius:9px}
 .ione-books-showcase-cover-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%;padding:10px;color:#d5fffb;text-align:center;font-size:13px;font-weight:900;line-height:1.25;overflow-wrap:anywhere}
 .ione-books-showcase-book-title{display:none!important}
 .ione-books-showcase-author{display:block;max-width:100%;overflow:hidden;padding:5px 7px 6px;border:1px solid rgba(90,222,213,.2);border-radius:7px;background:linear-gradient(135deg,rgba(21,65,67,.82),rgba(9,27,32,.92));color:#e2fffa;font-size:10px;font-weight:900;letter-spacing:.45px;line-height:1.25;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6);box-shadow:0 3px 8px rgba(0,0,0,.18)}
-@media(min-width:700px){.ione-books-showcase-card{flex-basis:136px;width:136px}.ione-books-showcase-cover{width:136px;height:184px}.ione-books-showcase-head{padding-left:20px;padding-right:20px}.ione-books-showcase-window{padding-left:20px;padding-right:20px}}
+@media(min-width:700px){.ione-books-showcase-head{padding-left:20px;padding-right:20px}.ione-books-showcase-window{padding-left:20px;padding-right:20px}}
 @media(prefers-reduced-motion:reduce){.ione-books-showcase-track{will-change:auto}}
 </style>
 
