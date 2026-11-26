@@ -1,5 +1,5 @@
 {
-  "version": "1.0.356",
-  "message": "Make enlarged book pages scroll in both directions; page turns use buttons only",
+  "version": "1.0.357",
+  "message": "Only trusted bottom navigation button clicks can turn book pages",
   "force": true
 }
