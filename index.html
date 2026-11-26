@@ -3660,6 +3660,26 @@ function getMedia(id){
 .ione-books-showcase-author{display:block;max-width:100%;overflow:hidden;padding:5px 7px 6px;border:1px solid rgba(90,222,213,.2);border-radius:7px;background:linear-gradient(135deg,rgba(21,65,67,.82),rgba(9,27,32,.92));color:#e2fffa;font-size:10px;font-weight:900;letter-spacing:.45px;line-height:1.25;text-align:center;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6);box-shadow:0 3px 8px rgba(0,0,0,.18)}
 @media(min-width:700px){.ione-books-showcase-head{padding-left:20px;padding-right:20px}.ione-books-showcase-window{padding-left:20px;padding-right:20px}}
 @media(prefers-reduced-motion:reduce){.ione-books-showcase-track{will-change:auto}}
+/* I|ONE bookshelf: jewel-toned flowing-water backdrop; preserve original cover artwork */
+.ione-books-showcase-cover{
+ background:linear-gradient(145deg,#182b35 0%,#243346 28%,#302b43 58%,#183b3b 100%)!important;
+ border-color:rgba(226,207,167,.62)!important;
+ box-shadow:0 13px 30px rgba(7,13,22,.24),inset 0 1px 0 rgba(255,255,255,.12)!important;
+}
+.ione-books-showcase-cover:before{
+ background:
+ radial-gradient(ellipse at 18% 30%,rgba(111,235,213,.58) 0%,rgba(63,179,174,.28) 22%,transparent 48%),
+ radial-gradient(ellipse at 78% 26%,rgba(184,151,231,.48) 0%,rgba(112,91,169,.24) 25%,transparent 52%),
+ radial-gradient(ellipse at 68% 78%,rgba(235,190,137,.34) 0%,rgba(167,115,104,.17) 24%,transparent 50%),
+ radial-gradient(ellipse at 28% 82%,rgba(100,163,211,.35) 0%,transparent 44%),
+ linear-gradient(125deg,#1b3c45 0%,#29394b 34%,#3b3049 62%,#1c4542 100%)!important;
+ filter:blur(20px) saturate(1.14)!important;
+}
+.ione-books-showcase-cover:after{
+ background:repeating-linear-gradient(112deg,transparent 0 29px,rgba(221,255,245,.12) 31px,rgba(190,167,233,.09) 37px,transparent 47px 78px),linear-gradient(115deg,transparent 28%,rgba(240,211,166,.08) 46%,transparent 62%)!important;
+ filter:blur(8px)!important;
+ mix-blend-mode:screen!important;
+}
 </style>
 
 <section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div>
