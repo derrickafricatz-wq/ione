@@ -457,7 +457,7 @@
         if (panel.getAttribute("aria-hidden") === "false" || getComputedStyle(panel).display !== "none") loadAuthority();
       }, 100));
       const close = $("authorityPressClose");
-      if (close) close.addEventListener("click", () => { const section = $("ioneExpertAuthority"); if (section) section.remove(); });
+      if (close) close.addEventListener("click", () => { const section = $("ioneExpertAuthority"); if (section) section.remove(); const accessSection = $("ioneExpertAccessAuthority"); if (accessSection) accessSection.remove(); });
     }
   }
   async function checkExploreAccess() { const result = await invoke("expert_access_status"); return result.is_locked === true; }
