@@ -682,17 +682,19 @@
       reader.querySelector(".hr-back").onclick = event => { event.stopPropagation(); closeReader(); };
       reader.tabIndex = 0;
       reader.focus();
+      // Keyboard and screen gestures never change PDF pages. Only the visible
+      // bottom Previous/Next controls below are allowed to call turnTo().
       reader.addEventListener("keydown", event => {
-        if (event.key === "ArrowRight" || event.key === "ArrowDown") { event.preventDefault(); nextPage(); }
-        else if (event.key === "ArrowLeft" || event.key === "ArrowUp") { event.preventDefault(); prevPage(); }
-        else if (event.key === "Escape") { event.preventDefault(); closeReader(); }
+        if (event.key === "Escape") { event.preventDefault(); closeReader(); }
       });
-      let startX = 0, startY = 0;
-      reader.addEventListener("touchstart", event => { const touch = event.changedTouches[0]; startX = touch.screenX; startY = touch.screenY; }, { passive: true });
-      reader.addEventListener("touchend", event => {
-        const touch = event.changedTouches[0], dx = touch.screenX - startX, dy = touch.screenY - startY;
-        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.2) dx < 0 ? nextPage() : prevPage();
-      }, { passive: true });
+      // Keep normal scrolling and native pinch zoom available on the page.
+      stage.style.touchAction = "pan-x pan-y pinch-zoom";
+      bookEl.style.touchAction = "pan-x pan-y pinch-zoom";
+      reader.querySelectorAll(".hr-pdf-page .hr-page-inner").forEach(inner => {
+        inner.style.touchAction = "pan-x pan-y pinch-zoom";
+        inner.style.overflow = "auto";
+        inner.style.webkitOverflowScrolling = "touch";
+      });
       reader.addEventListener("contextmenu", event => event.preventDefault());
       reader.addEventListener("copy", event => event.preventDefault());
       reader.addEventListener("cut", event => event.preventDefault());
