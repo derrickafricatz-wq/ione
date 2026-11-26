@@ -284,7 +284,9 @@
         <input id="ioneExpertAdviceCategory" maxlength="80" placeholder="Category (optional)">
         <textarea id="ioneExpertAdviceBody" maxlength="5000" required placeholder="Clear practical advice"></textarea>
         <button type="submit">PUBLISH ADVICE</button></form><div id="ioneExpertAuthorityAdvice"></div>`;
-    host.appendChild(section);
+    const panelHead = host.querySelector(".authority-panel-head");
+    if (panelHead) panelHead.insertAdjacentElement("afterend", section);
+    else host.insertBefore(section, host.firstChild);
     $("ioneExpertAuthorityRefresh").addEventListener("click", loadAuthority);
     $("ioneExpertAccessToggle").addEventListener("click", async () => {
       const button = $("ioneExpertAccessToggle"), state = $("ioneExpertAccessState");
