@@ -12581,7 +12581,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     var initials=document.getElementById("ioneBookStoryInitials"),title=document.getElementById("ioneBookStoryTitle"),excerpt=document.getElementById("ioneBookStoryExcerpt");
     clearInterval(storyTimer);storyTimer=0;if(!storyBooks.length){frame.hidden=true;return;}frame.hidden=false;
     var idleTimer=0,paused=false,modalOpen=false;
-    function authorInitials(name){var parts=String(name||"").trim().split(/\\s+/).filter(Boolean);if(!parts.length)return "I1";var first=Array.from(parts[0])[0]||"",last=parts.length>1?(Array.from(parts[parts.length-1])[0]||""):"";return (first+last).toUpperCase();}
+    function authorInitials(name){var parts=String(name||"").trim().split(/\s+/).filter(Boolean);if(!parts.length)return "I1";var first=Array.from(parts[0])[0]||"",last=parts.length>1?(Array.from(parts[parts.length-1])[0]||""):"";return (first+last).toUpperCase();}
     function paint(){var book=storyBooks[storyIndex%storyBooks.length];if(!book)return;frame.classList.add("is-changing");setTimeout(function(){title.textContent=book.title||"Book Story";excerpt.textContent=String(book.bookStory||"");excerpt.scrollTop=0;initials.textContent=authorInitials(book.authorName);initials.setAttribute("aria-label","Author initials "+initials.textContent);frame.dataset.storyKey=bookKey(book);frame.classList.remove("is-changing");},160);}
     function advance(){if(storyBooks.length<2||paused||modalOpen||document.visibilityState!=="visible")return;storyIndex=(storyIndex+1)%storyBooks.length;paint();}
     function startLoop(){clearInterval(storyTimer);storyTimer=0;if(storyBooks.length>1&&!paused&&!modalOpen)storyTimer=setInterval(advance,15000);}
