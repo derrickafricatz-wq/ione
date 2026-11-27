@@ -1,5 +1,5 @@
 {
-  "version": "1.0.374",
-  "message": "Remove Book Story cover image element completely; initials badge and cache refresh",
+  "version": "1.0.375",
+  "message": "Refine compact 3D Book Story billboard; bold story, clear title, cycling author initials, remove byline extras",
   "force": true
 }
