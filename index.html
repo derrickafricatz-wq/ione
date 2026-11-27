@@ -14542,83 +14542,10 @@ window.openHeavensBookstore = openHeavensBookstore;
 }
 </style>
 
-<style id="ione-book-story-billboard-contained-layout-v4">
-/* Actual correction: a generous auto-height card, grid tracks that cannot overflow,
-   and a clipped outer border while the full text expands the card vertically. */
-#ioneBookStoryBillboard{
-  appearance:none!important;-webkit-appearance:none!important;
-  display:grid!important;
-  grid-template-columns:58px minmax(0,1fr)!important;
-  grid-template-rows:auto!important;
-  align-items:start!important;
-  column-gap:16px!important;row-gap:0!important;
-  position:relative!important;isolation:isolate!important;
-  width:calc(100% - 24px)!important;max-width:760px!important;
-  min-width:0!important;min-height:150px!important;
-  height:auto!important;max-height:none!important;
-  margin:12px auto 24px!important;padding:22px!important;
-  box-sizing:border-box!important;
-  border:2px solid rgba(225,195,132,.82)!important;border-radius:22px!important;
-  background:linear-gradient(145deg,#30291d 0%,#1b2020 48%,#0b1418 100%)!important;
-  color:#fff!important;text-align:left!important;
-  white-space:normal!important;line-height:normal!important;
-  overflow:hidden!important;
-  box-shadow:0 8px 0 #050708,0 18px 32px #0008,inset 0 1px 0 #fff3d72b!important;
-}
-#ioneBookStoryBillboard[hidden]{display:none!important}
-#ioneBookStoryInitials{
-  position:relative!important;z-index:1;
-  display:flex!important;flex:0 0 58px!important;
-  width:58px!important;min-width:0!important;max-width:58px!important;
-  height:58px!important;min-height:58px!important;max-height:58px!important;
-  margin:0!important;padding:0 3px!important;box-sizing:border-box!important;
-  align-items:center!important;justify-content:center!important;
-  border:1px solid #e4c47c!important;border-radius:15px!important;
-  background:linear-gradient(145deg,#51402a,#201d18 70%)!important;
-  color:#ffe7ad!important;font:900 15px/1 Arial,sans-serif!important;
-  letter-spacing:.2px!important;text-align:center!important;
-  white-space:normal!important;overflow-wrap:anywhere!important;word-break:break-word!important;
-}
-#ioneBookStoryBillboard .ione-book-story-copy{
-  position:relative!important;z-index:1;
-  display:flex!important;flex:1 1 0!important;
-  flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;
-  width:auto!important;min-width:0!important;max-width:100%!important;
-  height:auto!important;min-height:0!important;max-height:none!important;
-  margin:0!important;padding:0!important;box-sizing:border-box!important;
-  gap:10px!important;overflow:visible!important;white-space:normal!important;
-}
-#ioneBookStoryTitle,#ioneBookStoryExcerpt{
-  display:block!important;position:static!important;
-  flex:0 0 auto!important;width:auto!important;min-width:0!important;max-width:100%!important;
-  height:auto!important;min-height:0!important;max-height:none!important;
-  margin:0!important;padding:0!important;box-sizing:border-box!important;
-  overflow:visible!important;text-overflow:clip!important;
-  -webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;
-  white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;
-}
-#ioneBookStoryTitle{
-  color:#ffe7b0!important;font:900 clamp(17px,4.2vw,23px)/1.3 Georgia,serif!important;
-  letter-spacing:.1px!important;text-shadow:0 1px 5px #0008!important;
-}
-#ioneBookStoryExcerpt{
-  color:#f5f2e9!important;font:700 clamp(14px,3.5vw,17px)/1.65 Georgia,serif!important;
-  letter-spacing:.05px!important;text-shadow:0 1px 3px #0005!important;
-}
-@media(max-width:520px){
-  #ioneBookStoryBillboard{
-    grid-template-columns:42px minmax(0,1fr)!important;
-    column-gap:12px!important;min-height:170px!important;
-    margin:12px 10px 24px!important;width:calc(100% - 20px)!important;
-    padding:17px!important;border-radius:19px!important;
-  }
-  #ioneBookStoryInitials{
-    flex-basis:42px!important;width:42px!important;max-width:42px!important;
-    height:42px!important;min-height:42px!important;max-height:42px!important;
-    border-radius:12px!important;font-size:13px!important;
-  }
-  #ioneBookStoryBillboard .ione-book-story-copy{gap:8px!important}
-  #ioneBookStoryTitle{font-size:clamp(15px,4.5vw,19px)!important;line-height:1.3!important}
-  #ioneBookStoryExcerpt{font-size:clamp(13px,3.7vw,15px)!important;line-height:1.6!important}
-}
+<style id="ione-book-story-billboard-full-text-wrap-v5">
+#ioneBookStoryBillboard{grid-template-columns:58px minmax(0,1fr)!important;grid-template-rows:max-content!important;grid-auto-rows:max-content!important;align-content:start!important;align-items:start!important;height:auto!important;min-height:170px!important;max-height:none!important;overflow:hidden!important}
+#ioneBookStoryBillboard .ione-book-story-copy{display:grid!important;grid-template-columns:minmax(0,1fr)!important;grid-template-rows:max-content max-content!important;grid-auto-rows:max-content!important;align-content:start!important;align-items:stretch!important;flex:initial!important;width:100%!important;min-width:0!important;height:auto!important;max-height:none!important;overflow:visible!important}
+#ioneBookStoryTitle,#ioneBookStoryExcerpt{display:block!important;grid-column:1!important;width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;max-height:none!important;flex:initial!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;-webkit-line-clamp:unset!important;-webkit-box-orient:initial!important;overflow-wrap:anywhere!important;word-break:break-word!important}
+#ioneBookStoryExcerpt{line-height:1.7!important;padding-bottom:2px!important}
+@media(max-width:520px){#ioneBookStoryBillboard{grid-template-columns:42px minmax(0,1fr)!important;min-height:180px!important}#ioneBookStoryBillboard .ione-book-story-copy{grid-template-rows:max-content max-content!important}}
 </style>
