@@ -1,5 +1,5 @@
 {
-  "version": "1.0.369",
-  "message": "Fix homepage JavaScript parse error blocking book and author interactions",
+  "version": "1.0.370",
+  "message": "Fix Author Studio Book to PDF and My Books overlay stacking",
   "force": true
 }
