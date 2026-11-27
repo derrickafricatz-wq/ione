@@ -1,5 +1,5 @@
 {
-  "version": "1.0.383",
-  "message": "Use a native scrollable Book Story reading area and keep the empty feature showcase hidden.",
+  "version": "1.0.384",
+  "message": "Give the Book Story text a definite-height native touch-scroll viewport.",
   "force": true
 }
