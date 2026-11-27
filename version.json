@@ -1,5 +1,5 @@
 {
-  "version": "1.0.373",
-  "message": "Compact Book Story panel with author initials and uncropped story text",
+  "version": "1.0.374",
+  "message": "Remove Book Story cover image element completely; initials badge and cache refresh",
   "force": true
 }
