@@ -1,5 +1,5 @@
 {
-  "version": "1.0.388",
-  "message": "Fix Book Story touch scrolling inside the homepage panel and refresh the installed app shell.",
+  "version": "1.0.389",
+  "message": "Center the Book Story title while preserving author initials and story text position",
   "force": true
 }
