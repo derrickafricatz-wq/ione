@@ -43,7 +43,7 @@
     if (old) old.remove();
     const panel = document.createElement("div");
     panel.id = "ioneMyPublishedBooks";
-    panel.style.cssText = "position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;";
+    panel.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;";
     panel.innerHTML = "<section style=\"width:min(760px,100%);max-height:92dvh;overflow:auto;background:#071711;border:1px solid #2a604b;border-radius:18px;padding:16px;box-sizing:border-box;color:#eafff4;font-family:Arial,sans-serif;\"><div style=\"display:flex;align-items:center;justify-content:space-between;gap:10px;\"><div><div style=\"font-size:20px;font-weight:900;\">MY PUBLISHED BOOKS</div><div style=\"font-size:12px;color:#9dbdaf;margin-top:5px;\">Manage your books, prices and free/paid access.</div></div><button id=\"ioneBooksManagerClose\" type=\"button\" style=\"border:0;background:#173529;color:#fff;border-radius:10px;width:38px;height:38px;font-size:22px;\">×</button></div><div id=\"ioneBooksManagerStatus\" role=\"status\" style=\"font-size:13px;line-height:1.5;margin:12px 0;color:#bfe8d7;\">Loading your books and confirmed sales…</div><div id=\"ioneBooksManagerSummary\" style=\"display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 14px;\"></div><div id=\"ioneBooksManagerList\" style=\"display:grid;gap:10px;\"></div></section>";
     document.body.appendChild(panel);
     const status = panel.querySelector("#ioneBooksManagerStatus");
@@ -235,7 +235,7 @@
 
     const panel = document.createElement("div");
     panel.id = "bookToPdfPanel";
-    panel.style.cssText = "position:fixed;inset:0;z-index:1000001;background:rgba(0,0,0,.76);display:flex;align-items:center;justify-content:center;padding:16px;";
+    panel.style.cssText = "position:fixed;inset:0;z-index:2147482500;background:rgba(0,0,0,.76);display:flex;align-items:center;justify-content:center;padding:16px;";
     panel.innerHTML = `
       <section style="width:min(100%,440px);max-height:90dvh;overflow:auto;background:#0b1714;color:#f2fff9;border:1px solid #285447;border-radius:18px;padding:20px;box-shadow:0 20px 70px #0009;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;"><div style="font-size:20px;font-weight:800;">Book to PDF</div><button type="button" onclick="openMyPublishedBooksPanel()" style="border:1px solid #31594c;background:#173529;color:#eafff8;border-radius:9px;padding:8px;font-size:11px;font-weight:800;">MY BOOKS</button><button type="button" id="b2pClose" aria-label="Close" style="border:0;background:#19342c;color:#fff;border-radius:10px;width:36px;height:36px;font-size:22px;">×</button></div>
