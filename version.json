@@ -1,5 +1,5 @@
 {
-  "version": "1.0.378",
-  "message": "Fix Book Story billboard containment: keep author initials and every story line inside the panel border; responsive full-story layout.",
+  "version": "1.0.379",
+  "message": "Enlarge Book Story billboard and contain author initials, title, and complete story within its border.",
   "force": true
 }
