@@ -1,5 +1,5 @@
 {
-  "version": "1.0.375",
-  "message": "Refine compact 3D Book Story billboard; bold story, clear title, cycling author initials, remove byline extras",
+  "version": "1.0.376",
+  "message": "Fix Book Story billboard height and text clipping; preserve existing story features",
   "force": true
 }
