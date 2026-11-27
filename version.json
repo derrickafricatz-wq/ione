@@ -1,5 +1,5 @@
 {
-  "version": "1.0.393",
-  "message": "Repair I1 Lib entry visibility, cover clicks, and Author Studio launch",
+  "version": "1.0.394",
+  "message": "Fix homepage script parse error blocking bookshelf, Explore All, and Author Studio",
   "force": true
 }
