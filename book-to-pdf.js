@@ -92,19 +92,20 @@
       insight2Input.style.cssText = insightInput.style.cssText;
       const insight3Input = document.createElement("textarea"); insight3Input.maxLength = 12000; insight3Input.rows = 3; insight3Input.value = String(book.book_insight_3 || ""); insight3Input.placeholder = "Insight 03 — optional";
       insight3Input.style.cssText = insightInput.style.cssText;
+      const storyInput = document.createElement("textarea"); storyInput.maxLength = 900; storyInput.rows = 4; storyInput.value = String(book.book_story || ""); storyInput.placeholder = "Homepage Book Story (optional)"; storyInput.style.cssText = insightInput.style.cssText;
       const saveInsight = document.createElement("button"); saveInsight.type = "button"; saveInsight.textContent = "SAVE AUTHOR & INSIGHTS";
       saveInsight.style.cssText = "padding:10px 12px;border:1px solid #2a6b54;border-radius:9px;background:#102a20;color:#bffff0;font-weight:900;font-size:11px;";
       saveInsight.onclick = async () => {
-        const nextAuthor = authorNameInput.value.trim(), nextInsight = insightInput.value.trim(), nextInsight2 = insight2Input.value.trim(), nextInsight3 = insight3Input.value.trim();
+        const nextAuthor = authorNameInput.value.trim(), nextInsight = insightInput.value.trim(), nextInsight2 = insight2Input.value.trim(), nextInsight3 = insight3Input.value.trim(), nextStory = storyInput.value.trim().slice(0,900);
         if (!nextAuthor) { status.textContent = "Enter the author's name."; authorNameInput.focus(); return; }
         if (!nextInsight) { status.textContent = "Write Insight 01."; insightInput.focus(); return; }
         saveInsight.disabled = true; saveInsight.textContent = "SAVING…";
         try {
           const session = await ensureHeavensAnonymousSession();
           if (!session?.user?.id) throw new Error("Please reconnect before saving book details.");
-          const saved = await heavensSupabase.from("heavens_books").update({ author_name: nextAuthor, book_insight: nextInsight, book_insight_2: nextInsight2, book_insight_3: nextInsight3 }).eq("id", String(book.id)).eq("author_id", String(session.user.id)).select("id").single();
+          const saved = await heavensSupabase.from("heavens_books").update({ author_name: nextAuthor, book_insight: nextInsight, book_insight_2: nextInsight2, book_insight_3: nextInsight3, book_story: nextStory }).eq("id", String(book.id)).eq("author_id", String(session.user.id)).select("id").single();
           if (saved.error) throw saved.error;
-          book.author_name = nextAuthor; book.book_insight = nextInsight; book.book_insight_2 = nextInsight2; book.book_insight_3 = nextInsight3;
+          book.author_name = nextAuthor; book.book_insight = nextInsight; book.book_insight_2 = nextInsight2; book.book_insight_3 = nextInsight3; book.book_story = nextStory;
           status.textContent = "Author name and all three insight fields saved for “" + String(book.title || "your book") + "”. You can now request narration.";
           saveInsight.textContent = "SAVED";
         } catch (error) {
@@ -187,7 +188,7 @@
       const insightOneLabel=document.createElement("label");insightOneLabel.textContent="INSIGHT 01";insightOneLabel.style.cssText="display:block;font-size:10px;color:#9dbdaf;font-weight:800;margin-top:8px;";
       const insightTwoLabel=document.createElement("label");insightTwoLabel.textContent="INSIGHT 02 (OPTIONAL)";insightTwoLabel.style.cssText=insightOneLabel.style.cssText;
       const insightThreeLabel=document.createElement("label");insightThreeLabel.textContent="INSIGHT 03 (OPTIONAL)";insightThreeLabel.style.cssText=insightOneLabel.style.cssText;
-      details.append(title, kind, sales, authorNameInput, insightOneLabel, insightInput, insightTwoLabel, insight2Input, insightThreeLabel, insight3Input, saveInsight, controls, actions, requestAudio); card.append(cover, details);
+      details.append(title, kind, sales, authorNameInput, insightOneLabel, insightInput, insightTwoLabel, insight2Input, insightThreeLabel, insight3Input, storyInput, saveInsight, controls, actions, requestAudio); card.append(cover, details);
       return card;
     };
 
@@ -243,7 +244,7 @@
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">AUTHOR NAME</label><input id="b2pAuthorName" maxlength="160" placeholder="Name of the person who wrote this book" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">INSIGHT 01</label><textarea id="b2pInsight" maxlength="12000" rows="3" placeholder="Insight 1 — the first takeaway." style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;resize:vertical;"></textarea>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:10px 0 6px;">INSIGHT 02 (OPTIONAL)</label><textarea id="b2pInsight2" maxlength="12000" rows="3" placeholder="Insight 2 — another valuable idea." style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;resize:vertical;"></textarea>
-        <label style="display:block;font-size:12px;color:#b9d7cc;margin:10px 0 6px;">INSIGHT 03 (OPTIONAL)</label><textarea id="b2pInsight3" maxlength="12000" rows="3" placeholder="Insight 3 — a final takeaway." style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;resize:vertical;"></textarea>
+        <label style="display:block;font-size:12px;color:#e2c27e;font-weight:800;margin:12px 0 6px;">BOOK STORY • HOMEPAGE BILLBOARD (OPTIONAL)</label><textarea id="b2pStory" maxlength="900" rows="4" placeholder="Short story about this book. Rotates silently on the homepage every 15 seconds; touch the frame to read." style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #8b7044;background:#10231d;color:#fff;resize:vertical;"></textarea><label style="display:block;font-size:12px;color:#b9d7cc;margin:10px 0 6px;">INSIGHT 03 (OPTIONAL)</label><textarea id="b2pInsight3" maxlength="12000" rows="3" placeholder="Insight 3 — a final takeaway." style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;resize:vertical;"></textarea>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">CATEGORY</label><select id="b2pCategory" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;"><option>SERMONS</option><option>BIBLE</option><option>PRAYER</option><option>TEACHING</option><option>WORSHIP</option><option>PROPHECY</option><option>SPIRITUAL GROWTH</option></select>
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PRICE (TZS)</label><input id="b2pPrice" type="number" min="1" step="1" inputmode="numeric" placeholder="e.g. 2500" style="width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #31594c;background:#10231d;color:#fff;">
         <label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">FRONT COVER IMAGE (OPTIONAL)</label><input id="b2pCover" type="file" accept="image/*" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;"><div id="b2pCoverPreview" style="display:none;margin-top:9px;max-width:150px;aspect-ratio:3/4;overflow:hidden;border-radius:10px;border:1px solid #31594c;"></div><div style="margin-top:15px;padding:12px;border:1px solid #31594c;border-radius:12px;background:#0e211b;"><label style="display:block;font-size:12px;color:#b9d7cc;margin:0 0 7px;">UPDATE COVER FOR AN EXISTING PDF BOOK</label><select id="b2pExistingBook" style="width:100%;box-sizing:border-box;padding:11px;border-radius:9px;border:1px solid #31594c;background:#10231d;color:#fff;"><option value="">Loading your published PDF books…</option></select><button id="b2pUpdateCover" type="button" style="width:100%;margin-top:9px;padding:11px;border:1px solid #2a6b54;border-radius:9px;background:#163c2f;color:#dffff2;font-weight:800;">UPDATE COVER ONLY</button><div style="font-size:11px;color:#9dbdaf;line-height:1.45;margin-top:7px;">Choose a book you already published and upload its new front cover above. Its PDF, title, price, and payment records will stay unchanged.</div></div><label style="display:block;font-size:12px;color:#b9d7cc;margin:12px 0 6px;">PDF FILE (MAX 50 MB)</label><input id="b2pFile" type="file" accept="application/pdf,.pdf" style="width:100%;box-sizing:border-box;padding:10px;border-radius:10px;border:1px dashed #31594c;background:#10231d;color:#d9eee5;">
@@ -369,6 +370,7 @@
       const bookInsight = panel.querySelector("#b2pInsight").value.trim();
       const bookInsight2 = panel.querySelector("#b2pInsight2").value.trim();
       const bookInsight3 = panel.querySelector("#b2pInsight3").value.trim();
+      const bookStory = panel.querySelector("#b2pStory").value.trim().slice(0,900);
       const price = Number(panel.querySelector("#b2pPrice").value.trim());
       const file = fileInput.files && fileInput.files[0];
       const coverFile = coverInput.files && coverInput.files[0];
@@ -402,8 +404,8 @@
         status.textContent = "File uploaded securely. Publishing bookstore listing…";
         const inserted = await heavensSupabase.from("heavens_books").insert({
           title, category, price, currency: "TZS", front_cover: frontCover, back_cover: null,
-          contents: "", chapters: [], author_id: session.user.id, author_name: authorName, book_insight: bookInsight, book_insight_2: bookInsight2, book_insight_3: bookInsight3, active: true, payment_required: true, pdf_path: path, pdf_cover_page: pdfCoverPage
-        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,pdf_cover_page,author_name,book_insight,book_insight_2,book_insight_3,created_at").single();
+          contents: "", chapters: [], author_id: session.user.id, author_name: authorName, book_insight: bookInsight, book_insight_2: bookInsight2, book_insight_3: bookInsight3, book_story: bookStory, active: true, payment_required: true, pdf_path: path, pdf_cover_page: pdfCoverPage
+        }).select("id,title,category,price,currency,front_cover,pdf_path,payment_required,pdf_cover_page,author_name,book_insight,book_insight_2,book_insight_3,book_story,created_at").single();
         if (inserted.error) throw inserted.error;
         published = true;
 
@@ -411,7 +413,7 @@
         const book = {
           id: "HB-SERVER-" + row.id, supabaseId: row.id, title: row.title,
           category: row.category, price: Number(row.price), currency: row.currency || "TZS",
-          contents: "", authorName: row.author_name || authorName, bookInsight: row.book_insight || bookInsight, bookInsight2: row.book_insight_2 || bookInsight2, bookInsight3: row.book_insight_3 || bookInsight3, narrationPath: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
+          contents: "", authorName: row.author_name || authorName, bookInsight: row.book_insight || bookInsight, bookInsight2: row.book_insight_2 || bookInsight2, bookInsight3: row.book_insight_3 || bookInsight3, bookStory: row.book_story || bookStory, narrationPath: "", frontCover: row.front_cover || frontCover, backCover: "", pdfPath: row.pdf_path,
           pdfCoverPage: row.pdf_cover_page === true, chapters: [], paymentRequired: row.payment_required !== false, isAuthor: true,
           date: row.created_at ? new Date(row.created_at).toLocaleDateString() : ""
         };
