@@ -753,7 +753,7 @@ window.ioneEnsureBookPdfLibraries = async function(){
       ioneNewBooksCache=String(r.data.new_books||"").trim();
       ioneUpdateCache=String(r.data.ione_update||"").trim();
       ioneImportantNoticeCache=String(r.data.important_notice||"").trim();
-      renderIoneBanners(banners);renderWordOfDay(r.data.word_of_day||"",r.data.word_of_day_style||"modern");
+      renderIoneBanners(banners);renderWordOfDay(r.data.word_of_day||"",r.data.word_of_day_style||"modern");const registerButton=document.getElementById("ioneRegisterBtn");if(registerButton)registerButton.style.display=r.data.register_visible===false?"none":"";
       [1,2,3].forEach((i)=>{const el=document.getElementById("authorityBanner"+i);if(el)el.value=banners[i-1]||"";});
       const word=document.getElementById("authorityWordOfDay");if(word)word.value=String(r.data.word_of_day||"");
       const trending=document.getElementById("authorityTopTrending");if(trending)trending.value=ioneTopTrendingCache;
@@ -1027,6 +1027,39 @@ window.ioneEnsureBookPdfLibraries = async function(){
 
     const save=document.getElementById("authoritySavePrices");
     if(save)save.onclick=saveAuthorityPrices;
+    async function setAuthorityRegisterVisibility(visible){
+      const status=document.getElementById("ioneAuthorityRegisterVisibilityStatus");
+      const hide=document.getElementById("ioneAuthorityHideRegister"),show=document.getElementById("ioneAuthorityUnhideRegister");
+      const button=visible?show:hide;
+      const token=String(sessionStorage.getItem("ioneAuthoritySession")||"");
+      if(!token){if(status)status.textContent="Authority session expired. Unlock Authority Press again.";return;}
+      if(hide)hide.disabled=true;if(show)show.disabled=true;
+      if(status)status.textContent=visible?"Publishing REGISTER entrance…":"Hiding homepage REGISTER…";
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-app-banners",{body:{action:"register_visibility",visible,authority_session:token}});
+        if(result.error||!result.data?.success)throw new Error(result.data?.error||result.error?.message||"Could not update REGISTER visibility.");
+        const registerButton=document.getElementById("ioneRegisterBtn");
+        if(registerButton)registerButton.style.display=result.data.register_visible===false?"none":"";
+        if(status)status.textContent=visible?"REGISTER is visible on the homepage • LIVE":"REGISTER is hidden from the homepage • LIVE";
+      }catch(error){if(status)status.textContent=error?.message||"Visibility setting could not be saved.";}
+      finally{if(hide)hide.disabled=false;if(show)show.disabled=false;}
+    }
+    const hideRegister=document.getElementById("ioneAuthorityHideRegister");
+    const unhideRegister=document.getElementById("ioneAuthorityUnhideRegister");
+    if(hideRegister)hideRegister.onclick=()=>setAuthorityRegisterVisibility(false);
+    if(unhideRegister)unhideRegister.onclick=()=>setAuthorityRegisterVisibility(true);
+    async function loadAuthorityRegisterVisibility(){
+      const status=document.getElementById("ioneAuthorityRegisterVisibilityStatus");
+      try{
+        const result=await heavensSupabase.functions.invoke("ione-app-banners",{body:{action:"get"}});
+        if(result.error||!result.data?.success)throw new Error("Could not load the homepage visibility setting.");
+        const visible=result.data.register_visible!==false;
+        const registerButton=document.getElementById("ioneRegisterBtn");
+        if(registerButton)registerButton.style.display=visible?"":"none";
+        if(status)status.textContent=visible?"REGISTER is visible on the homepage • LIVE":"REGISTER is hidden from the homepage • LIVE";
+      }catch(_){if(status)status.textContent="Could not confirm the live setting. Homepage button state is unchanged.";}
+    }
+    loadAuthorityRegisterVisibility();
 
     const saveBanners=document.getElementById("authoritySaveBanners");
     function ensureWordOfDayEditor(){
@@ -3622,7 +3655,7 @@ function getMedia(id){
 <div id="ioneTopActions" aria-label="I|ONE controls">
   <button id="ioneNotificationBtn" type="button" data-state="off" aria-label="ACCESS DENIED INACTIVE" title="ACCESS DENIED INACTIVE — press once to turn on"><span class="ione-notification-main">ACCESS DENIED</span><span id="ioneNotificationState">INACTIVE</span></button>
   <button id="settingsBtn" aria-label="Open guide">GUIDE</button>
-  <button id="ioneRegisterBtn" type="button" aria-haspopup="dialog" aria-controls="ioneRegisterOverlay">REGISTER</button>
+  <button id="ioneRegisterBtn" type="button" aria-haspopup="dialog" aria-controls="ioneRegisterOverlay" style="display:none">REGISTER</button>
 </div>
 <div id="clockBox" aria-hidden="true" style="display:none"></div>
 <div id="lessonLabel" aria-hidden="true" style="display:none"></div>
@@ -3755,6 +3788,15 @@ function getMedia(id){
       <div class="authority-section-kicker">I|ONE CONTROL CENTER</div>
       <h3>UPLOAD SUBSCRIPTION PRICES</h3>
       <p class="authority-section-note">These are the live prices used by I|ONE users and by the BLMPay payment server.</p>
+      <div id="ioneAuthorityRegisterVisibility" style="display:grid;gap:10px;margin:0 0 18px;padding:14px;border:1px solid rgba(0,255,255,.26);border-radius:14px;background:linear-gradient(145deg,#10272b,#071114)">
+        <div style="font:900 10px/1.3 Arial,sans-serif;letter-spacing:1.5px;color:#8ef9ef">HOMEPAGE SPOTLIGHT • REGISTER</div>
+        <div style="font:12px/1.5 Arial,sans-serif;color:#c4d9dc">Temporarily hide the homepage REGISTER entrance while the book showcase takes the spotlight. Registration forms and approvals remain available through this centre.</div>
+        <div style="display:flex;gap:9px;flex-wrap:wrap">
+          <button type="button" id="ioneAuthorityHideRegister" class="authority-save-button" style="flex:1;min-width:130px;background:linear-gradient(145deg,#c9a66b,#8e682f);border-color:#f1d39b;color:#1e1607">HIDE REGISTER</button>
+          <button type="button" id="ioneAuthorityUnhideRegister" class="authority-save-button" style="flex:1;min-width:130px">UNHIDE REGISTER</button>
+        </div>
+        <div id="ioneAuthorityRegisterVisibilityStatus" role="status" aria-live="polite" style="min-height:16px;color:#9fbfc4;font:700 11px/1.4 Arial,sans-serif">Loading homepage setting…</div>
+      </div>
 
       <div class="authority-price-grid">
         <label class="authority-price-card">
