@@ -14479,3 +14479,65 @@ window.openHeavensBookstore = openHeavensBookstore;
 #ioneHomeContactActions .ione-home-support-shortcut:active{transform:scale(.97);filter:brightness(1.12)}
 @media(max-width:380px){#ioneHomeContactActions .ione-home-support-shortcut{gap:8px;min-height:58px;padding:10px 14px}}
 </style>
+
+
+<style id="ione-book-story-billboard-final-expand-v2">
+/* Final cascade correction: the homepage billboard must show the whole saved story. */
+#ioneBookStoryBillboard{
+  display:grid!important;
+  grid-template-columns:32px minmax(0,1fr)!important;
+  align-items:start!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:12px!important;
+  box-sizing:border-box!important;
+}
+#ioneBookStoryBillboard .ione-book-story-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  justify-content:flex-start!important;
+  min-width:0!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  white-space:normal!important;
+}
+#ioneBookStoryTitle{
+  display:block!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  -webkit-line-clamp:unset!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#ioneBookStoryExcerpt{
+  display:block!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:visible!important;
+  -webkit-line-clamp:unset!important;
+  -webkit-box-orient:initial!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  line-height:1.55!important;
+}
+@media(max-width:420px){
+  #ioneBookStoryBillboard{
+    grid-template-columns:30px minmax(0,1fr)!important;
+    gap:8px!important;
+    height:auto!important;
+    max-height:none!important;
+    padding:10px!important;
+  }
+  #ioneBookStoryExcerpt{
+    font-size:12px!important;
+    line-height:1.5!important;
+  }
+}
+</style>
