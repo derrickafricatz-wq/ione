@@ -1,5 +1,5 @@
 {
-  "version": "1.0.366",
-  "message": "Homepage bookshelf adds rotating 3D Book Story billboard",
+  "version": "1.0.367",
+  "message": "Fix Author Studio foreground opening; hide unpublished hospitality and place story billboard below bookshelf",
   "force": true
 }
