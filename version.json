@@ -1,5 +1,5 @@
 {
-  "version": "1.0.391",
-  "message": "Correct author monogram, compact story panel, and repair showcase and Author Studio navigation",
+  "version": "1.0.392",
+  "message": "Restore Explore All and book cover navigation, repair Author Studio entry, compact story scroll",
   "force": true
 }
