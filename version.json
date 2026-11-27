@@ -1,5 +1,5 @@
 {
-  "version": "1.0.367",
-  "message": "Fix Author Studio foreground opening; hide unpublished hospitality and place story billboard below bookshelf",
+  "version": "1.0.368",
+  "message": "Repair bookstore navigation, Author Studio entry state, and hospitality empty-state visibility",
   "force": true
 }
