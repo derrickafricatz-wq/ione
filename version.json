@@ -1,5 +1,5 @@
 {
-  "version": "1.0.387",
-  "message": "Fix Book Story touch scrolling and refresh the installed app shell.",
+  "version": "1.0.388",
+  "message": "Fix Book Story touch scrolling inside the homepage panel and refresh the installed app shell.",
   "force": true
 }
