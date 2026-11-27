@@ -24,9 +24,12 @@
   }
   function render(){
     const section=$("ioneHospitalityShowcase"),track=$("ioneHospitalityTrack");if(!section||!track)return;
-    track.replaceChildren();if(!slides.length){section.hidden=true;return;}
-    section.hidden=false;slides.forEach(x=>track.appendChild(makeSlide(x,false)));slides.forEach(x=>track.appendChild(makeSlide(x,true)));
-    track.style.setProperty("--ione-hospitality-duration",Math.max(24,(slides.length*410)/32)+"s");
+    track.replaceChildren();section.hidden=true;
+    const published=slides.filter(x=>/^https?:\/\//i.test(String(x.url||""))&&String(x.brand_name||"").trim());
+    if(!published.length)return;
+    published.forEach(x=>track.appendChild(makeSlide(x,false)));published.forEach(x=>track.appendChild(makeSlide(x,true)));
+    track.style.setProperty("--ione-hospitality-duration",Math.max(24,(published.length*410)/32)+"s");
+    section.hidden=false;
   }
   async function loadSlides(){
     try{
