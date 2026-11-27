@@ -3630,7 +3630,7 @@ function getMedia(id){
 <div id="ioneHomeShell">
 <section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText" class="ione-word-loading">Loading today's word…</div></section>
 <section id="ioneFeatureShowcase" aria-label="Explore I|ONE features"><div class="ione-feature-showcase-head"><span>DISCOVER I|ONE</span><small>Explore what you can do</small></div><div class="ione-feature-showcase-viewport"><div class="ione-feature-showcase-track" id="ioneFeatureShowcaseTrack"></div></div></section>
-<div id="ioneHomeContactActions" aria-label="Contact I|ONE support"><a id="ioneHomeCallButton" href="tel:+255742097868" aria-label="Call I1 support at 0742097868">☎ CALL I1 <span>+255 742 097 868</span></a><button id="openIoneSupport" class="ione-home-support-shortcut" type="button" aria-label="Open I1 Support chat" title="I1 Support"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4.5h16v12H11l-5 3v-3H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><strong>I1 SUPPORT</strong></button></div><style>#ioneHomeCallButton{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;box-sizing:border-box;width:calc(100% - 28px);max-width:560px;margin:12px auto 16px;padding:12px 16px;border:1px solid rgba(114,244,218,.48);border-radius:14px;background:linear-gradient(110deg,#123f3d,#10272c 65%,#0b1a20);color:#eafff7;text-decoration:none;font:900 13px/1.2 Arial,sans-serif;letter-spacing:1px;box-shadow:0 5px 14px rgba(0,0,0,.22)}#ioneHomeCallButton span{color:#9fffe0;font-size:12px;letter-spacing:.6px}#ioneHomeCallButton:active{transform:scale(.99)}</style>
+<div id="ioneHomeContactActions" aria-label="Contact I|ONE support"><button id="openIoneSupport" class="ione-home-support-shortcut" type="button" aria-label="Open I1 Support chat" title="I1 Support"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4.5h16v12H11l-5 3v-3H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><strong>I1 SUPPORT</strong></button></div>
 
 <section id="ioneBooksShowcase" aria-label="Discover published books" hidden>
   <div class="ione-books-showcase-head">
@@ -14355,12 +14355,11 @@ function ioneRunBackgroundMediaPreload(){ return; }
 }
 </style>
 <style id="ione-home-support-shortcut-v1">
-#ioneHomeContactActions{display:flex;align-items:stretch;justify-content:center;gap:9px;width:calc(100% - 28px);max-width:560px;margin:12px auto 16px}
-#ioneHomeContactActions #ioneHomeCallButton{flex:1 1 auto;min-width:0;width:auto;max-width:none;margin:0;min-height:54px;padding:11px 13px}
-#ioneHomeContactActions .ione-home-support-shortcut{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:6px;min-width:76px;min-height:54px;padding:8px 10px;border:1px solid rgba(114,244,218,.48);border-radius:14px;background:linear-gradient(145deg,#183b39,#10272c 70%,#0b1a20);color:#dffcf4;font:900 8px/1.15 Arial,sans-serif;letter-spacing:.35px;cursor:pointer;box-shadow:0 5px 14px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent}
+#ioneHomeContactActions{display:flex;align-items:center;justify-content:center;width:100%;max-width:100%;margin:16px auto 20px;padding:0 14px;box-sizing:border-box}
+#ioneHomeContactActions .ione-home-support-shortcut{flex:0 1 360px;width:100%;max-width:360px;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;min-height:62px;padding:12px 20px;border:1px solid rgba(114,244,218,.48);border-radius:14px;background:linear-gradient(145deg,#183b39,#10272c 70%,#0b1a20);color:#dffcf4;font:900 8px/1.15 Arial,sans-serif;letter-spacing:.35px;cursor:pointer;box-shadow:0 5px 14px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.08);-webkit-tap-highlight-color:transparent}
 #ioneHomeContactActions .ione-home-support-shortcut span{display:flex;align-items:center;justify-content:center;width:24px;height:24px;color:#9fffe0}
 #ioneHomeContactActions .ione-home-support-shortcut svg{display:block;width:24px;height:24px}
 #ioneHomeContactActions .ione-home-support-shortcut strong{font:900 8px/1.15 Arial,sans-serif;white-space:nowrap}
 #ioneHomeContactActions .ione-home-support-shortcut:active{transform:scale(.97);filter:brightness(1.12)}
-@media(max-width:380px){#ioneHomeContactActions{gap:6px}#ioneHomeContactActions #ioneHomeCallButton{gap:5px;padding:9px 8px;font-size:11px}#ioneHomeContactActions #ioneHomeCallButton span{font-size:10px}#ioneHomeContactActions .ione-home-support-shortcut{gap:4px;min-width:70px;padding:7px 6px}}
+@media(max-width:380px){#ioneHomeContactActions .ione-home-support-shortcut{gap:8px;min-height:58px;padding:10px 14px}}
 </style>
