@@ -1,5 +1,5 @@
 {
-  "version": "1.0.372",
-  "message": "Fix opened Book Story panel: compact cover thumbnail and fully readable story",
+  "version": "1.0.373",
+  "message": "Compact Book Story panel with author initials and uncropped story text",
   "force": true
 }
