@@ -1,5 +1,5 @@
 {
-  "version": "1.0.368",
-  "message": "Repair bookstore navigation, Author Studio entry state, and hospitality empty-state visibility",
+  "version": "1.0.369",
+  "message": "Fix homepage JavaScript parse error blocking book and author interactions",
   "force": true
 }
