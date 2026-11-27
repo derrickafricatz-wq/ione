@@ -1,5 +1,5 @@
 {
-  "version": "1.0.371",
-  "message": "Refine Book Story billboard thumbnail and make short story text easier to read",
+  "version": "1.0.372",
+  "message": "Fix opened Book Story panel: compact cover thumbnail and fully readable story",
   "force": true
 }
