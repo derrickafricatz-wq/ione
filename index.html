@@ -9401,6 +9401,70 @@ printBtn.onclick = () => {
 #ioneFeatureShowcase[hidden],#ioneFeatureShowcase:not(:has(.ione-feature-slide)){display:none!important}
 @media(max-width:520px){#ioneBookStoryBillboard{max-height:59vh!important}#ioneBookStoryExcerpt{height:clamp(145px,38vh,270px)!important;max-height:42vh!important}}
 </style>
+
+<style id="ione-book-story-definite-scroll-v9">
+/* Give the text viewport a definite height; a max-height on an auto-sized flex child
+   does not reliably create a touch-scroll container on mobile browsers. */
+#ioneBookStoryBillboard{
+  display:grid!important;
+  grid-template-rows:minmax(0,1fr)!important;
+  grid-template-columns:38px minmax(0,1fr)!important;
+  align-items:stretch!important;
+  height:42vh!important;
+  min-height:230px!important;
+  max-height:54vh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  touch-action:pan-y!important;
+}
+#ioneBookStoryBillboard .ione-book-story-copy{
+  display:grid!important;
+  grid-template-rows:max-content minmax(0,1fr)!important;
+  align-self:stretch!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+}
+#ioneBookStoryTitle{
+  display:block!important;
+  min-width:0!important;
+  max-height:none!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+#ioneBookStoryExcerpt{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+  pointer-events:auto!important;
+  user-select:text!important;
+  -webkit-user-select:text!important;
+  white-space:pre-wrap!important;
+  overflow-wrap:anywhere!important;
+  word-break:break-word!important;
+  padding:4px 10px 14px 0!important;
+  scrollbar-width:thin!important;
+  scrollbar-color:rgba(166,235,213,.85) rgba(4,16,18,.35)!important;
+}
+#ioneBookStoryExcerpt::-webkit-scrollbar{width:7px!important}
+#ioneBookStoryExcerpt::-webkit-scrollbar-thumb{background:rgba(166,235,213,.85)!important;border-radius:9px!important}
+#ioneBookStoryBillboard.is-changing #ioneBookStoryExcerpt{overflow-y:hidden!important}
+@media(max-width:520px){
+  #ioneBookStoryBillboard{height:44vh!important;min-height:215px!important;max-height:57vh!important;grid-template-columns:32px minmax(0,1fr)!important}
+}
+</style>
 </body></html>";
     printWindow.document.write(html);
     printWindow.document.close();
