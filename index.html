@@ -3672,8 +3672,9 @@ function getMedia(id){
   </div>
   <div class="ione-books-showcase-window" id="ioneBooksShowcaseWindow" tabindex="0" aria-label="Books carousel. Swipe or scroll to browse books">
     <div class="ione-books-showcase-track" id="ioneBooksShowcaseTrack"></div>
-  </div><button type="button" id="ioneBookStoryBillboard" class="ione-book-story-billboard" hidden aria-label="Read this book story"><span class="ione-book-story-cover" id="ioneBookStoryCover"></span><span class="ione-book-story-copy"><span class="ione-book-story-kicker">BOOK STORY • AUTHOR SPOTLIGHT</span><strong id="ioneBookStoryTitle"></strong><span id="ioneBookStoryExcerpt"></span><span class="ione-book-story-credit" id="ioneBookStoryCredit"></span></span><span class="ione-book-story-gem" aria-hidden="true">✦</span></button>
+  </div>
 </section>
+<button type="button" id="ioneBookStoryBillboard" class="ione-book-story-billboard" hidden aria-label="Read this book story"><span class="ione-book-story-cover" id="ioneBookStoryCover"></span><span class="ione-book-story-copy"><span class="ione-book-story-kicker">BOOK STORY • AUTHOR SPOTLIGHT</span><strong id="ioneBookStoryTitle"></strong><span id="ioneBookStoryExcerpt"></span><span class="ione-book-story-credit" id="ioneBookStoryCredit"></span></span><span class="ione-book-story-gem" aria-hidden="true">✦</span></button>
 <style id="ione-books-showcase-style-v1">
 #ioneBooksShowcase{display:block;position:relative;flex:0 0 auto;width:100%;max-width:100%;min-width:0;box-sizing:border-box;align-self:stretch;margin:16px 0 20px;padding:14px 0 12px;border:1px solid rgba(113,220,220,.16);border-left:0;border-right:0;border-radius:0;background:linear-gradient(180deg,rgba(13,34,39,.72),rgba(7,17,21,.48));overflow:hidden}
 #ioneBooksShowcase[hidden]{display:none!important}
@@ -3699,7 +3700,7 @@ function getMedia(id){
 </style>
 
 <section id="smartPanel" aria-label="I|ONE smart services"><div class="smart-panel-heading">I|ONE SMART SERVICES</div>
-<section id="ioneHospitalityShowcase" aria-label="I|ONE Hospitality Spotlight">
+<section id="ioneHospitalityShowcase" aria-label="I|ONE Hospitality Spotlight" hidden>
   <div class="ione-hospitality-head"><div><div class="ione-hospitality-kicker">I|ONE HOSPITALITY SPOTLIGHT</div><div class="ione-hospitality-sub">Discover places to stay, dine and experience</div></div></div>
   <div class="ione-hospitality-viewport"><div id="ioneHospitalityTrack" class="ione-hospitality-track"></div></div>
 </section>
@@ -4629,6 +4630,8 @@ const closeTranscript = document.getElementById("closeTranscript");
 
 closeTranscript.onclick = () => {
   transcriptPanel.style.display = "none";
+  transcriptPanel.setAttribute("aria-hidden","true");
+  transcriptPanel.style.zIndex="";
   ioneSetHomeControls(true);
 
   // The guide/settings button belongs to the main screen,
@@ -4649,8 +4652,12 @@ async function authorAccessCall(payload){
   return result.data;
 }
 function openTranscriptAfterAuthorization(){
-  ioneSetHomeControls(false);
+  // Bring the approved Author Studio to the foreground after homepage clicks.
+  transcriptPanel.hidden=false;
+  transcriptPanel.setAttribute("aria-hidden","false");
   transcriptPanel.style.display="block";
+  transcriptPanel.style.zIndex="2147482000";
+  ioneSetHomeControls(false);
   let recoveryControl=document.getElementById("ioneAuthorRecoveryControl");
   if(!recoveryControl){recoveryControl=document.createElement("button");recoveryControl.id="ioneAuthorRecoveryControl";recoveryControl.type="button";recoveryControl.textContent="MY RECOVERY CODE";recoveryControl.style.cssText="display:block;grid-column:1/-1;justify-self:center;width:min(100%,360px);min-width:0;box-sizing:border-box;margin:0 0 2px;padding:10px 12px;border:1px solid #00dcca;border-radius:12px;background:linear-gradient(135deg,#113c3a,#0b2229);color:#cffff7;font:900 11px/1.25 Arial,sans-serif;letter-spacing:.65px;white-space:normal;overflow-wrap:anywhere;text-align:center";recoveryControl.onclick=openAuthorRecoveryCodePanel;const controls=document.getElementById("transcriptControls");if(controls)controls.insertBefore(recoveryControl,controls.firstChild);else transcriptPanel.insertBefore(recoveryControl,transcriptPanel.firstChild);}
   transcriptText.scrollTop=0;
