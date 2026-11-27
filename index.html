@@ -4752,7 +4752,7 @@ async function openAuthorAccessForm(){
   showAuthorAccessStatus(err.message||"Could not load your saved registration.",true);
  }
 }
-openTranscript.onclick=()=>{smartPanel.classList.remove("show");openAuthorAccessForm();};
+openTranscript.onclick=()=>{try{smartPanel.classList.remove("show");ioneSetHomeControls(false);ministryAccessOverlay.hidden=false;ministryAccessOverlay.style.display="flex";ministryAccessOverlay.style.visibility="visible";ministryAccessOverlay.style.pointerEvents="auto";ministryAccessOverlay.style.zIndex="2147483000";ministryAccessOverlay.setAttribute("aria-hidden","false");requestAnimationFrame(()=>{const heading=document.getElementById("ministryAccessTitle");if(heading)heading.scrollIntoView({block:"center"});});openAuthorAccessForm();}catch(error){console.error("I|ONE Author Studio launch failed:",error);ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");showAuthorAccessStatus("Author Studio could not load its access check. Please try again.",true);}};
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
 authorSaved.addEventListener("click",event=>{const trigger=event.target?.closest?.("[data-ione-author-books]");if(!trigger)return;event.preventDefault();ministryAccessClose(false);if(typeof window.openMyPublishedBooksPanel==="function")window.openMyPublishedBooksPanel();else showAuthorAccessStatus("My Books is not ready yet. Close and reopen Author Studio, then try again.",true);});
 ministryAccessOverlay.addEventListener("click",e=>{if(e.target===ministryAccessOverlay)ministryAccessClose();});
@@ -12540,7 +12540,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     card.appendChild(cover);
     var author=el("span","ione-books-showcase-author",b.authorName||"Independent author");
     card.appendChild(author);
-    card.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore({id:b.id||b.supabaseId||"",title:b.title||""});else{var btn=document.getElementById("openHealth");if(btn)btn.click();}});
+    card.addEventListener("click",function(){try{openHeavensBookstore({id:b.id||"",supabaseId:b.supabaseId||b.id||"",title:String(b.title||"").trim()});}catch(error){console.error("I|ONE selected book could not open:",error);var explore=document.getElementById("ioneBooksShowcaseExplore");if(explore)explore.textContent="BOOKS TEMPORARILY UNAVAILABLE";}});
     return card;
   }
   function stop(){if(raf)cancelAnimationFrame(raf);raf=0;last=0;}
@@ -12581,7 +12581,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     var initials=document.getElementById("ioneBookStoryInitials"),title=document.getElementById("ioneBookStoryTitle"),excerpt=document.getElementById("ioneBookStoryExcerpt");
     clearInterval(storyTimer);storyTimer=0;if(!storyBooks.length){frame.hidden=true;return;}frame.hidden=false;
     var idleTimer=0,paused=false,modalOpen=false;
-    function authorInitials(name){var parts=String(name||"").trim().split(/\\s+/).filter(Boolean);return (parts.length>1?(parts[0].charAt(0)+parts[parts.length-1].charAt(0)):((parts[0]||"I|ONE").slice(0,2))).toUpperCase();}
+    function authorInitials(name){var parts=String(name||"").trim().split(/\\s+/).filter(Boolean);if(!parts.length)return "I1";var first=Array.from(parts[0])[0]||"",last=parts.length>1?(Array.from(parts[parts.length-1])[0]||""):"";return (first+last).toUpperCase();}
     function paint(){var book=storyBooks[storyIndex%storyBooks.length];if(!book)return;frame.classList.add("is-changing");setTimeout(function(){title.textContent=book.title||"Book Story";excerpt.textContent=String(book.bookStory||"");excerpt.scrollTop=0;initials.textContent=authorInitials(book.authorName);initials.setAttribute("aria-label","Author initials "+initials.textContent);frame.dataset.storyKey=bookKey(book);frame.classList.remove("is-changing");},160);}
     function advance(){if(storyBooks.length<2||paused||modalOpen||document.visibilityState!=="visible")return;storyIndex=(storyIndex+1)%storyBooks.length;paint();}
     function startLoop(){clearInterval(storyTimer);storyTimer=0;if(storyBooks.length>1&&!paused&&!modalOpen)storyTimer=setInterval(advance,15000);}
@@ -12616,7 +12616,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     root=document.getElementById("ioneBooksShowcase");viewport=document.getElementById("ioneBooksShowcaseWindow");
     var explore=document.getElementById("ioneBooksShowcaseExplore");
     if(!root||!viewport)return;
-    if(explore)explore.addEventListener("click",function(){if(typeof window.openHeavensBookstore==="function")window.openHeavensBookstore();else{var b=document.getElementById("openHealth");if(b)b.click();}});
+    if(explore)explore.addEventListener("click",function(){try{openHeavensBookstore();}catch(error){console.error("I|ONE Explore All could not open I1 Lib:",error);explore.textContent="LIBRARY UNAVAILABLE";}});
     ["pointerdown","touchstart","wheel","keydown"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=true;pause();},{passive:true});});
     ["pointerup","pointercancel","touchend","touchcancel"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=false;pause();},{passive:true});});
     viewport.addEventListener("pointerleave",function(){dragging=false;pause();});
@@ -14781,5 +14781,60 @@ window.openHeavensBookstore = openHeavensBookstore;
   justify-self:stretch!important;
   align-self:stretch!important;
   margin-inline:0!important;
+}
+</style>
+
+<style id="ione-book-story-initials-fit-scroll-v13">
+/* Compact author monogram; keep the story in its own independently scrollable viewport. */
+#ioneBookStoryBillboard{
+  grid-template-columns:clamp(26px,7.5vw,32px) minmax(0,1fr)!important;
+  gap:12px!important;
+  height:clamp(190px,34vh,290px)!important;
+  min-height:190px!important;
+  max-height:42vh!important;
+  align-items:stretch!important;
+}
+#ioneBookStoryInitials{
+  width:clamp(26px,7.5vw,32px)!important;
+  height:clamp(26px,7.5vw,32px)!important;
+  min-width:0!important;
+  min-height:0!important;
+  flex:0 0 clamp(26px,7.5vw,32px)!important;
+  box-sizing:border-box!important;
+  margin:5px 0 0!important;
+  font-size:10px!important;
+  letter-spacing:0!important;
+  overflow:hidden!important;
+}
+#ioneBookStoryBillboard .ione-book-story-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  gap:7px!important;
+  overflow:hidden!important;
+}
+#ioneBookStoryBillboard #ioneBookStoryTitle{
+  flex:0 0 auto!important;
+  text-align:center!important;
+  padding:0 2px!important;
+}
+#ioneBookStoryBillboard #ioneBookStoryExcerpt{
+  flex:1 1 0!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;
+  user-select:text!important;
+  -webkit-user-select:text!important;
+}
+@media(max-width:520px){
+  #ioneBookStoryBillboard{grid-template-columns:26px minmax(0,1fr)!important;gap:10px!important;height:clamp(190px,34vh,270px)!important;max-height:42vh!important;padding:10px!important}
+  #ioneBookStoryInitials{width:26px!important;height:26px!important;flex-basis:26px!important;font-size:9px!important}
 }
 </style>
