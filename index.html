@@ -3368,6 +3368,13 @@ body.ione-gentle-boot #ioneTopActions{animation-delay:.58s!important;animation-d
 #ioneBookStoryExcerpt{display:block!important;flex:1 1 auto!important;min-height:0!important;height:0!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;line-height:1.45!important;padding:0 3px 4px 0!important}
 @media(max-width:420px){#ioneBookStoryBillboard{height:clamp(150px,24vh,184px)!important;min-height:150px!important;max-height:184px!important;grid-template-columns:27px minmax(0,1fr)!important;gap:8px!important;padding:9px 10px!important}#ioneBookStoryBillboard .ione-book-story-author-initials{width:27px!important;height:27px!important;flex-basis:27px!important;font-size:9px!important}#ioneBookStoryExcerpt{font-size:11px!important;line-height:1.42!important}}
 </style>
+<!-- I|ONE navigation foreground + reliable entry binding -->
+<style id="ione-navigation-entry-repair-v15">
+#heavensBookstore{position:fixed!important;inset:0!important;z-index:2147482500!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+#heavensBookstore[hidden]{display:flex!important}
+.ministry-access-overlay[aria-hidden="false"]{position:fixed!important;inset:0!important;z-index:2147483000!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+#transcriptPanel[aria-hidden="false"]{position:fixed!important;inset:0!important;z-index:2147482000!important;display:block!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+</style>
 </head>
 
 <body class="ione-gentle-boot"><div id="ioneNetworkBoot" aria-hidden="true">
@@ -4761,7 +4768,7 @@ async function openAuthorAccessForm(){
   showAuthorAccessStatus(err.message||"Could not load your saved registration.",true);
  }
 }
-openTranscript.onclick=async()=>{try{smartPanel.classList.remove("show");ioneSetHomeControls(false);ministryAccessOverlay.hidden=false;ministryAccessOverlay.style.cssText+=";position:fixed!important;inset:0!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483000!important";ministryAccessOverlay.setAttribute("aria-hidden","false");const heading=document.getElementById("ministryAccessTitle");if(heading)heading.scrollIntoView({block:"center"});await openAuthorAccessForm();}catch(error){console.error("I|ONE Author Studio launch failed:",error);ministryAccessOverlay.hidden=false;ministryAccessOverlay.style.display="flex";ministryAccessOverlay.style.visibility="visible";ministryAccessOverlay.style.pointerEvents="auto";ministryAccessOverlay.style.zIndex="2147483000";ministryAccessOverlay.setAttribute("aria-hidden","false");showAuthorAccessStatus("Author Studio could not complete its secure access check. Please retry.",true);}};
+async function ioneLaunchAuthorStudio(){try{smartPanel.classList.remove("show");ioneSetHomeControls(false);ministryAccessOverlay.hidden=false;ministryAccessOverlay.setAttribute("aria-hidden","false");ministryAccessOverlay.style.cssText+=";position:fixed!important;inset:0!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483000!important";const heading=document.getElementById("ministryAccessTitle");if(heading)heading.scrollIntoView({block:"center"});showAuthorAccessStatus("Opening Author Studio securely…");await openAuthorAccessForm();}catch(error){console.error("I|ONE Author Studio launch failed:",error);ministryAccessOverlay.hidden=false;ministryAccessOverlay.setAttribute("aria-hidden","false");ministryAccessOverlay.style.cssText+=";position:fixed!important;inset:0!important;display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;z-index:2147483000!important";showAuthorAccessStatus("Author Studio access check failed: "+String(error?.message||"Please retry."),true);}}window.ioneLaunchAuthorStudio=ioneLaunchAuthorStudio;openTranscript.onclick=ioneLaunchAuthorStudio;
 document.getElementById("ministryAccessCancel").onclick=ministryAccessClose;
 authorSaved.addEventListener("click",event=>{const trigger=event.target?.closest?.("[data-ione-author-books]");if(!trigger)return;event.preventDefault();ministryAccessClose(false);if(typeof window.openMyPublishedBooksPanel==="function")window.openMyPublishedBooksPanel();else showAuthorAccessStatus("My Books is not ready yet. Close and reopen Author Studio, then try again.",true);});
 ministryAccessOverlay.addEventListener("click",e=>{if(e.target===ministryAccessOverlay)ministryAccessClose();});
@@ -12560,7 +12567,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     card.appendChild(cover);
     var author=el("span","ione-books-showcase-author",b.authorName||"Independent author");
     card.appendChild(author);
-    card.addEventListener("click",function(){var target={id:b.id||"",supabaseId:b.supabaseId||b.id||"",title:String(b.title||"").trim()};try{var opening=window.openHeavensBookstore(target);if(opening&&typeof opening.then==="function")opening.catch(function(error){console.error("I|ONE could not open the selected book in I1 Lib:",error);});}catch(error){console.error("I|ONE could not open the selected book in I1 Lib:",error);}});
+    card.addEventListener("click",function(event){event.preventDefault();event.stopPropagation();var target={id:b.id||"",supabaseId:b.supabaseId||b.id||"",title:String(b.title||"").trim()};if(typeof window.openHeavensBookstore!=="function"){console.error("I|ONE bookstore entry point is missing.");return;}try{var opening=window.openHeavensBookstore(target);if(opening&&typeof opening.then==="function")opening.catch(function(error){console.error("I|ONE selected book launch failed:",error);});}catch(error){console.error("I|ONE selected book launch failed:",error);}});
     return card;
   }
   function stop(){if(raf)cancelAnimationFrame(raf);raf=0;last=0;}
@@ -12636,7 +12643,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     root=document.getElementById("ioneBooksShowcase");viewport=document.getElementById("ioneBooksShowcaseWindow");
     var explore=document.getElementById("ioneBooksShowcaseExplore");
     if(!root||!viewport)return;
-    if(explore)explore.addEventListener("click",function(){try{var opening=window.openHeavensBookstore();if(opening&&typeof opening.then==="function")opening.catch(function(error){console.error("I|ONE Explore All failed to open I1 Lib:",error);});}catch(error){console.error("I|ONE Explore All failed to open I1 Lib:",error);}});
+    if(explore)explore.addEventListener("click",function(event){event.preventDefault();event.stopPropagation();if(typeof window.openHeavensBookstore!=="function"){console.error("I|ONE Explore All: bookstore entry point is not available.");return;}try{var opening=window.openHeavensBookstore();if(opening&&typeof opening.then==="function")opening.catch(function(error){console.error("I|ONE Explore All launch failed:",error);});}catch(error){console.error("I|ONE Explore All launch failed:",error);}});
     ["pointerdown","touchstart","wheel","keydown"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=true;pause();},{passive:true});});
     ["pointerup","pointercancel","touchend","touchcancel"].forEach(function(ev){viewport.addEventListener(ev,function(){dragging=false;pause();},{passive:true});});
     viewport.addEventListener("pointerleave",function(){dragging=false;pause();});
