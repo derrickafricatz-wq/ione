@@ -1,5 +1,5 @@
 {
-  "version": "1.0.382",
-  "message": "Fix inner Book Story scrolling and hide empty homepage feature showcase until images are published.",
+  "version": "1.0.383",
+  "message": "Use a native scrollable Book Story reading area and keep the empty feature showcase hidden.",
   "force": true
 }
