@@ -4680,13 +4680,13 @@ function renderAuthorSavedProfile(){
 const ministryAccessClose=(restoreHome=true)=>{ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");if(restoreHome)window.ioneRestoreHome?.();heavensNormalizeViewport();setTimeout(heavensNormalizeViewport,120);};
 function showAuthorAccessStatus(message,bad=false){ministryAccessStatus.textContent=message||"";ministryAccessStatus.style.color=bad?"#ff9f9f":"#8ffcff";}
 async function openAuthorAccessForm(){
- // Resolve the author's status before showing the registration overlay. Verified
- // authors go straight into Studio with no visible form/loading flash.
- ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");
+ // Keep the entry surface visible while author status is checked.
+ ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
+ showAuthorAccessStatus("Opening Author Studio securely…");
  authorSubmitButton.style.display="";authorSubmitButton.disabled=false;authorSubmitButton.textContent="SUBMIT REGISTRATION";authorSaved.style.display="none";
  try{
   const data=await authorAccessCall({action:"my_status"});authorAccessRequest=data.request||null;
-  if(authorAccessRequest?.status==="active"){openTranscriptAfterAuthorization();return;}
+  if(authorAccessRequest?.status==="active"){ministryAccessOverlay.style.display="none";ministryAccessOverlay.setAttribute("aria-hidden","true");openTranscriptAfterAuthorization();return;}
   ministryAccessOverlay.style.display="flex";ministryAccessOverlay.setAttribute("aria-hidden","false");
   if(authorAccessRequest){
    authorNameInput.value=authorAccessRequest.real_name||"";authorKnownNameInput.value=authorAccessRequest.known_author_name||"";authorPhoneInput.value=authorAccessRequest.phone||"";authorEmailInput.value=authorAccessRequest.email||"";renderAuthorSavedProfile();
@@ -12372,6 +12372,9 @@ function ioneRunBackgroundMediaPreload(){ return; }
   #heavensBookstore .hb-cover{aspect-ratio:3/3.5!important}
 }
 </style>
+<script>
+window.openHeavensBookstore = openHeavensBookstore;
+</script>
 <script id="ione-books-showcase-runtime-v1">
 (function(){
   if(window.__ioneBooksShowcaseInstalled)return;
@@ -13906,7 +13909,7 @@ function ioneRunBackgroundMediaPreload(){ return; }
 <script src="./ione-expert.js?v=9" defer></script>
 <script src="./ione-register.js?v=1" defer></script>
 <script src="./ione-feature-showcase.js?v=1" defer></script>
-<script src="./ione-hospitality-showcase.js?v=2" defer></script>
+<script src="./ione-hospitality-showcase.js?v=3" defer></script>
 <script src="./ione-live-class.js?v=3" defer></script>
 <script src="./ione-navigation.js?v=6" defer></script>
 <script>
