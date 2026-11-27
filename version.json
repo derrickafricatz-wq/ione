@@ -1,5 +1,5 @@
 {
-  "version": "1.0.376",
-  "message": "Fix Book Story billboard height and text clipping; preserve existing story features",
+  "version": "1.0.377",
+  "message": "Correct final CSS cascade so homepage Book Story billboard expands to show the complete short story; remove height and text clamps.",
   "force": true
 }
