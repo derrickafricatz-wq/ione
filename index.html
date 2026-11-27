@@ -3714,7 +3714,7 @@ function getMedia(id){
 <div id="adImage" aria-hidden="true" style="display:none"><img id="adImg"></div>
 <div id="ioneHomeShell">
 <section id="wordOfDayPanel" aria-live="polite"><div class="word-day-kicker">WORD OF THE DAY</div><div id="wordOfDayText" class="ione-word-loading">Loading today's word…</div></section>
-<section id="ioneFeatureShowcase" aria-label="Explore I|ONE features"><div class="ione-feature-showcase-head"><span>DISCOVER I|ONE</span><small>Explore what you can do</small></div><div class="ione-feature-showcase-viewport"><div class="ione-feature-showcase-track" id="ioneFeatureShowcaseTrack"></div></div></section>
+<section id="ioneFeatureShowcase" aria-label="Explore I|ONE features" hidden><div class="ione-feature-showcase-head"><span>DISCOVER I|ONE</span><small>Explore what you can do</small></div><div class="ione-feature-showcase-viewport"><div class="ione-feature-showcase-track" id="ioneFeatureShowcaseTrack"></div></div></section>
 <div id="ioneHomeContactActions" aria-label="Contact I|ONE support"><button id="openIoneSupport" class="ione-home-support-shortcut" type="button" aria-label="Open I1 Support chat" title="I1 Support"><span aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 4.5h16v12H11l-5 3v-3H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><strong>I1 SUPPORT</strong></button></div>
 
 <section id="ioneBooksShowcase" aria-label="Discover published books" hidden>
@@ -9380,6 +9380,16 @@ printBtn.onclick = () => {
 #ioneBookStoryExcerpt{display:block!important;box-sizing:border-box!important;width:100%!important;max-height:clamp(115px,38vh,360px)!important;height:auto!important;min-height:0!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;padding:2px 7px 9px 0!important;scrollbar-width:thin!important}
 #ioneBookStoryBillboard.is-changing #ioneBookStoryExcerpt{overflow-y:hidden!important}
 @media(max-width:520px){#ioneBookStoryBillboard{max-height:55vh!important}#ioneBookStoryExcerpt{max-height:clamp(110px,39vh,320px)!important}}
+</style>
+
+<style id="ione-book-story-scroll-reliable-v7">
+#ioneBookStoryBillboard{display:grid!important;grid-template-rows:auto!important;grid-auto-rows:auto!important;align-items:start!important;max-height:56vh!important;overflow:hidden!important}
+#ioneBookStoryBillboard .ione-book-story-copy{display:flex!important;flex-direction:column!important;min-height:0!important;max-height:100%!important;overflow:hidden!important}
+#ioneBookStoryExcerpt{display:block!important;flex:0 1 auto!important;height:clamp(145px,34vh,300px)!important;min-height:0!important;max-height:38vh!important;overflow-y:scroll!important;overflow-x:hidden!important;overscroll-behavior-y:contain!important;-webkit-overflow-scrolling:touch!important;touch-action:pan-y!important;white-space:pre-wrap!important;overflow-wrap:anywhere!important;word-break:break-word!important;scrollbar-width:thin!important;scrollbar-color:rgba(166,235,213,.75) rgba(4,16,18,.35)!important}
+#ioneBookStoryExcerpt::-webkit-scrollbar{width:6px!important}
+#ioneBookStoryExcerpt::-webkit-scrollbar-thumb{background:rgba(166,235,213,.75)!important;border-radius:8px!important}
+@media(max-width:520px){#ioneBookStoryBillboard{max-height:58vh!important}#ioneBookStoryExcerpt{height:clamp(140px,35vh,260px)!important;max-height:40vh!important}}
+#ioneFeatureShowcase[hidden]{display:none!important}
 </style>
 </body></html>";
     printWindow.document.write(html);
