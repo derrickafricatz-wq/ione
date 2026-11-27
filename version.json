@@ -1,5 +1,5 @@
 {
-  "version": "1.0.386",
-  "message": "I|ONE update: refresh the installed app and load the latest Book Story panel.",
+  "version": "1.0.387",
+  "message": "Fix Book Story touch scrolling and refresh the installed app shell.",
   "force": true
 }
