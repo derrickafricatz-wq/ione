@@ -1,5 +1,5 @@
 {
-  "version": "1.0.377",
-  "message": "Correct final CSS cascade so homepage Book Story billboard expands to show the complete short story; remove height and text clamps.",
+  "version": "1.0.378",
+  "message": "Fix Book Story billboard containment: keep author initials and every story line inside the panel border; responsive full-story layout.",
   "force": true
 }
