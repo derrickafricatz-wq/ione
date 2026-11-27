@@ -9997,18 +9997,27 @@ async function openHeavensBookstore(targetBook){
     try{ restoreIoneHomeBanner(); }catch(e){ console.warn("I|ONE home banner restore:",e); }
   };
   render();
-  // When a homepage cover is selected, open Explore with that exact title in focus.
-  if(targetBook&&String(targetBook.title||"").trim()){
+  // Keep the selected showcase book focused after cache and live catalogue updates.
+  function focusTargetBook(){
+    if(!targetBook||!String(targetBook.title||"").trim())return;
+    const wanted=String(targetBook.title).trim().toLowerCase();
+    activeCat="ALL";
+    catsEl.querySelectorAll(".hb-cat").forEach(x=>x.classList.toggle("active",x.textContent==="ALL"));
     search.value=String(targetBook.title).trim();
     render();
     requestAnimationFrame(()=>{
-      const wanted=search.value.toLowerCase();
       const selected=Array.from(grid.querySelectorAll(".hb-card")).find(card=>
         String(card.querySelector(".hb-card-title")?.textContent||"").trim().toLowerCase()===wanted
       );
-      if(selected)selected.scrollIntoView({block:"center",behavior:"smooth"});
+      if(selected){
+        selected.scrollIntoView({block:"center",behavior:"smooth"});
+        selected.style.outline="2px solid #a6f0df";
+        selected.style.outlineOffset="4px";
+        setTimeout(()=>{if(selected.isConnected){selected.style.outline="";selected.style.outlineOffset="";}},2400);
+      }
     });
   }
+  if(targetBook)focusTargetBook();
 
   // Fetch the catalogue without waiting for access/ownership checks.
   loadHeavensServerBooks().then(serverBooks=>{
@@ -10027,10 +10036,12 @@ async function openHeavensBookstore(targetBook){
     });
     books = Array.from(merged.values());
     render();
+    if(targetBook)focusTargetBook();
     ioneBookAccessRefreshPromise.then(access=>{
-      if(!store.isConnected||!access?.purchased)return;
-      books=books.map(b=>({...b,isPurchased:access.purchased.has(String(b.supabaseId||"")),isAuthor:!!access.authorId&&String(b.authorId||"")===access.authorId}));
+      if(!store.isConnected||!access)return;
+      if(access.purchased)books=books.map(b=>({...b,isPurchased:access.purchased.has(String(b.supabaseId||"")),isAuthor:!!access.authorId&&String(b.authorId||"")===access.authorId}));
       render();
+      if(targetBook)focusTargetBook();
     });
   });
   resumeHeavensPendingPayment(store, books);
