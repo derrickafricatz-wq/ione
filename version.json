@@ -1,5 +1,5 @@
 {
-  "version": "1.0.381",
-  "message": "Show complete book stories in an inner scroll panel; pause rotation during reading.",
+  "version": "1.0.382",
+  "message": "Fix inner Book Story scrolling and hide empty homepage feature showcase until images are published.",
   "force": true
 }
