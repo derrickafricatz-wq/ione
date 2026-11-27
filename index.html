@@ -12589,7 +12589,7 @@ window.openHeavensBookstore = openHeavensBookstore;
     function resumeAfterQuiet(){clearTimeout(idleTimer);idleTimer=0;if(modalOpen)return;idleTimer=setTimeout(function(){idleTimer=0;paused=false;advance();startLoop();},15000);}
     function interact(){paused=true;stopLoop();clearTimeout(idleTimer);idleTimer=0;}
     storyIndex%=storyBooks.length;paint();startLoop();
-    if(!frame.dataset.storyInteractionBound){frame.dataset.storyInteractionBound="1";frame.addEventListener("pointerenter",interact);frame.addEventListener("pointerdown",interact);frame.addEventListener("touchstart",interact,{passive:true});frame.addEventListener("wheel",interact,{passive:true});excerpt.addEventListener("scroll",interact,{passive:true});frame.addEventListener("pointerleave",function(){if(!modalOpen)resumeAfterQuiet();});frame.addEventListener("touchend",function(){if(!modalOpen)resumeAfterQuiet();},{passive:true});frame.addEventListener("touchcancel",function(){if(!modalOpen)resumeAfterQuiet();},{passive:true});}
+    if(!frame.dataset.storyInteractionBound){frame.dataset.storyInteractionBound="1";frame.addEventListener("pointerenter",interact);frame.addEventListener("pointerdown",interact);frame.addEventListener("touchstart",interact,{passive:true});frame.addEventListener("wheel",interact,{passive:true});excerpt.addEventListener("scroll",interact,{passive:true});frame.addEventListener("pointerleave",function(){if(!modalOpen)resumeAfterQuiet();});frame.addEventListener("touchend",function(){if(!modalOpen)resumeAfterQuiet();},{passive:true});frame.addEventListener("touchcancel",function(){if(!modalOpen)resumeAfterQuiet();},{passive:true});excerpt.addEventListener("click",function(event){event.stopPropagation();});excerpt.addEventListener("pointerdown",interact,{passive:true});}
     frame.onkeydown=function(event){if((event.key==="Enter"||event.key===" ")&&event.target===frame){event.preventDefault();frame.click();}};
     frame.onclick=function(){var book=storyBooks.find(function(b){return bookKey(b)===frame.dataset.storyKey;})||storyBooks[storyIndex];if(!book)return;interact();modalOpen=true;if(storyOverlay)storyOverlay.remove();
       var overlay=document.createElement("div");overlay.className="ione-book-story-reader";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");var panel=document.createElement("article");panel.className="ione-book-story-reader-panel";
@@ -14731,3 +14731,45 @@ window.openHeavensBookstore = openHeavensBookstore;
 }
 </style>
 
+
+
+<style id="ione-book-story-scroll-final-v11">
+/* Keep the billboard from shrinking inside the fixed, vertically scrolling home flex shell. */
+#ioneHomeShell #ioneBookStoryBillboard{
+  flex:0 0 clamp(210px,44vh,360px)!important;
+  height:clamp(210px,44vh,360px)!important;
+  min-height:210px!important;
+  max-height:58vh!important;
+  align-self:center!important;
+  touch-action:pan-y!important;
+}
+#ioneHomeShell #ioneBookStoryBillboard .ione-book-story-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:100%!important;
+  overflow:hidden!important;
+}
+#ioneHomeShell #ioneBookStoryTitle{
+  flex:0 0 auto!important;
+}
+#ioneHomeShell #ioneBookStoryExcerpt{
+  flex:1 1 0!important;
+  height:0!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+  overscroll-behavior-y:contain!important;
+  touch-action:pan-y!important;
+  pointer-events:auto!important;
+}
+@media(max-width:520px){
+  #ioneHomeShell #ioneBookStoryBillboard{
+    flex-basis:clamp(210px,44vh,340px)!important;
+    height:clamp(210px,44vh,340px)!important;
+  }
+}
+</style>
