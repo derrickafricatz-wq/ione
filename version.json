@@ -1,5 +1,5 @@
 {
-  "version": "1.0.379",
-  "message": "Enlarge Book Story billboard and contain author initials, title, and complete story within its border.",
+  "version": "1.0.380",
+  "message": "Ensure complete Book Story text wraps across lines and the panel expands without clipping.",
   "force": true
 }
