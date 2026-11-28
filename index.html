@@ -9873,7 +9873,7 @@ async function openHeavensBookstore(targetBook){
     });
     if(!filtered.length){grid.innerHTML=`<div class="hb-empty">No books found.<br><br>Try another search or category.</div>`;return;}
     filtered.forEach(book=>{
-      const paid=isBookPaid(book); const card=document.createElement("div"); card.className="hb-card"; card.dataset.bookId=String(book.id);
+      const paid=isBookPaid(book); const card=document.createElement("div"); card.className="hb-card"; card.dataset.bookId=String(book.id); card.__ioneBook=book; card.__ioneBookStore=store;
       const cover=book.frontCover?`<img src="${book.frontCover}" alt="">`:`<div class="hb-cover-empty">${escapeBookHtml(book.title||"BOOK")}</div>`;
       const pending=(()=>{
         try{
@@ -12562,6 +12562,35 @@ function ioneRunBackgroundMediaPreload(){ return; }
 </style>
 <script>
 window.openHeavensBookstore = openHeavensBookstore;
+</script>
+<script id="ione-books-action-capture-v1">
+/* Reliable capture for dynamically-created PAY/READ controls. This runs before
+   element handlers, so stale/overwritten inline handlers cannot swallow taps. */
+(function(){
+  if(window.__ioneBooksActionCaptureV1)return;
+  window.__ioneBooksActionCaptureV1=true;
+  document.addEventListener("click",function(event){
+    var button=event.target&&event.target.closest?event.target.closest("#heavensBookstore .hb-card .hb-actions button.hb-btn"):null;
+    if(!button||button.matches(".hb-check-payment,.hb-manual-payment,.hb-book-recovery"))return;
+    var card=button.closest(".hb-card"),book=card&&card.__ioneBook,store=card&&card.__ioneBookStore;
+    if(!book||book._metadataOnly||button.disabled)return;
+    event.preventDefault();event.stopImmediatePropagation();
+    if(button.__ioneActionBusy)return;
+    button.__ioneActionBusy=true;button.disabled=true;
+    try{
+      var action=isBookPaid(book)?openBookReader(book,store):startBookPayment(book,store);
+      if(action&&typeof action.then==="function")action.catch(function(error){
+        console.error("I|ONE captured book action failed:",error);
+        alert(error&&error.message?error.message:"The book action failed. Please try again.");
+      });
+    }catch(error){
+      console.error("I|ONE captured book action failed:",error);
+      alert(error&&error.message?error.message:"The book action failed. Please try again.");
+    }finally{
+      setTimeout(function(){button.__ioneActionBusy=false;if(button.isConnected)button.disabled=false;},900);
+    }
+  },true);
+})();
 </script>
 <script id="ione-books-showcase-runtime-v1">
 (function(){
