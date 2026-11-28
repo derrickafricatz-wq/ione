@@ -1,5 +1,5 @@
 {
-  "version": "1.0.394",
-  "message": "Fix homepage script parse error blocking bookshelf, Explore All, and Author Studio",
+  "version": "1.0.395",
+  "message": "Restore book payment phone prompt and responsive paid PDF reader",
   "force": true
 }

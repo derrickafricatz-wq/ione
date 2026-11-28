@@ -504,6 +504,20 @@
       bookId = String(book.supabaseId || book.id || "");
       if (!bookId) throw new Error("This book is missing its library ID.");
 
+      // Keep READ visibly responsive while secure access and PDF.js load.
+      reader = document.createElement("div");
+      reader.id = "heavensReader";
+      reader.style.cssText = "position:fixed;inset:0;z-index:700;background:#070a0c;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font:700 15px Arial,sans-serif;text-align:center;";
+      reader.innerHTML = '<div style="display:grid;gap:18px;justify-items:center;"><div id="ionePdfOpeningStatus"></div><button id="ionePdfOpeningClose" type="button" style="padding:11px 24px;border:1px solid #00eaff;border-radius:10px;background:#102027;color:#eaffff;font-weight:900;">CLOSE</button></div>';
+      reader.querySelector("#ionePdfOpeningStatus").textContent = "Opening “" + String(book.title || "your book") + "”…";
+      reader.querySelector("#ionePdfOpeningClose").onclick = () => {
+        closed = true; reader.remove(); document.body.style.overflow = "";
+        if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
+      };
+      document.body.appendChild(reader);
+      document.body.style.overflow = "hidden";
+      if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
+
       if (book.offlineSaved || !navigator.onLine) {
         const savedBook = window.IoneOfflineBooks && await window.IoneOfflineBooks.get(bookId);
         if (!savedBook || !savedBook.blob) {
@@ -532,8 +546,6 @@
 
       const pdfjs = await loadPdfJs();
       if (closed) return;
-      reader = document.createElement("div");
-      reader.id = "heavensReader";
       reader.innerHTML = `
         <div class="hr-head">
           <button class="hr-back" type="button" aria-label="Close book">×</button>
@@ -550,7 +562,6 @@
           </div>
         </div>`;
       reader.querySelector(".hr-name").textContent = String(book.title || "Untitled Book");
-      document.body.appendChild(reader);
       document.body.style.overflow = "hidden";
       if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
 
