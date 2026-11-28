@@ -507,7 +507,7 @@
       // Keep READ visibly responsive while secure access and PDF.js load.
       reader = document.createElement("div");
       reader.id = "heavensReader";
-      reader.style.cssText = "position:fixed;inset:0;z-index:700;background:#070a0c;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font:700 15px Arial,sans-serif;text-align:center;";
+      reader.style.cssText = "position:fixed;inset:0;z-index:2147482999;background:#070a0c;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font:700 15px Arial,sans-serif;text-align:center;";
       reader.innerHTML = '<div style="display:grid;gap:18px;justify-items:center;"><div id="ionePdfOpeningStatus"></div><button id="ionePdfOpeningClose" type="button" style="padding:11px 24px;border:1px solid #00eaff;border-radius:10px;background:#102027;color:#eaffff;font-weight:900;">CLOSE</button></div>';
       reader.querySelector("#ionePdfOpeningStatus").textContent = "Opening “" + String(book.title || "your book") + "”…";
       reader.querySelector("#ionePdfOpeningClose").onclick = () => {

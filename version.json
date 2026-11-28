@@ -1,5 +1,5 @@
 {
-  "version": "1.0.396",
-  "message": "Repair captured mobile PAY and READ taps; force PWA refresh",
+  "version": "1.0.397",
+  "message": "Fix bookstore overlay stacking for payment and book reader",
   "force": true
 }
