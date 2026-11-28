@@ -9983,18 +9983,25 @@ async function openHeavensBookstore(targetBook){
             );
 
             if(localMatches){
-              await watchHeavensPayment(book,store,p.reference);
+              await watchHeavensPayment(book,store,p.reference,p.provider || "BLMPay");
               return;
             }
 
             // Important: payment references are normally stored server-side in book_orders.
             // This lets CHECK recover a payment even when localStorage was cleared,
             // the user changed browser/device, or the app was refreshed.
-            const serverCheck = await checkHeavensPaymentStatus("", book.supabaseId || book.id);
+            let serverCheck = null, serverProvider = "";
+            for (const candidateProvider of ["FastLipa","BLMPay"]) {
+              try {
+                const candidate = await checkHeavensPaymentStatus("", book.supabaseId || book.id, candidateProvider);
+                if (candidate?.success) { serverCheck = candidate; serverProvider = candidateProvider; break; }
+              } catch (lookupError) {
+                console.info("No "+candidateProvider+" order found for this book:",lookupError?.message || lookupError);
+              }
+            }
             console.log("Heaven's Books server payment lookup:", serverCheck);
 
-            const recoveredReference = getBlmPayReference(serverCheck) ||
-              serverCheck?.reference || serverCheck?.blmpay_reference || "";
+            const recoveredReference = serverCheck?.reference || serverCheck?.blmpay_reference || getBlmPayReference(serverCheck);
 
             if(serverCheck?.success && recoveredReference){
               localStorage.setItem("heavensPendingPayment",JSON.stringify({
@@ -10002,10 +10009,11 @@ async function openHeavensBookstore(targetBook){
                 supabaseId:String(book.supabaseId || book.id),
                 title:book.title,
                 reference:String(recoveredReference),
+                provider:serverProvider || serverCheck.provider || "BLMPay",
                 startedAt:Date.now(),
                 recovered:true
               }));
-              await watchHeavensPayment(book,store,String(recoveredReference));
+              await watchHeavensPayment(book,store,String(recoveredReference),serverProvider || serverCheck.provider || "BLMPay");
               return;
             }
 
@@ -10436,19 +10444,22 @@ function stopHeavensPaymentPolling(){
   }
 }
 
-async function checkHeavensPaymentStatus(reference, bookId){
+async function checkHeavensPaymentStatus(reference, bookId, provider){
   const body = {};
   if(reference) body.reference = String(reference);
   if(bookId) body.book_id = String(bookId);
-  const {data,error} = await heavensSupabase.functions.invoke("heavens-blmpay-status",{
-    body
-  });
+  const functionName = String(provider || "BLMPay").toLowerCase() === "fastlipa"
+    ? "heavens-fastlipa-status"
+    : "heavens-blmpay-status";
+  const {data,error} = await heavensSupabase.functions.invoke(functionName,{body});
   if(error) throw error;
   return data || {};
 }
 
-async function watchHeavensPayment(book,store,reference){
+async function watchHeavensPayment(book,store,reference,provider){
   stopHeavensPaymentPolling();
+  provider = provider || "BLMPay";
+  const providerLabel = provider === "FastLipa" ? "FastLipa" : "BLMPay";
   const started=Date.now();
   const timeout=5*60*1000;
   const ref=String(reference||"").trim();
@@ -10474,14 +10485,15 @@ async function watchHeavensPayment(book,store,reference){
 
   const poll=async()=>{
     try{
-      console.log("Heaven's Books: checking BLMPay reference",ref);
-      const result=await checkHeavensPaymentStatus(ref, book.supabaseId || book.id);
-      console.log("Heaven's Books BLMPay status response:",result);
+      console.log("Heaven's Books: checking "+providerLabel+" reference",ref);
+      const result=await checkHeavensPaymentStatus(ref, book.supabaseId || book.id, provider);
+      console.log("Heaven's Books "+providerLabel+" status response:",result);
 
       // BLMPay can use a top-level "success" as an API response envelope.
       // That does NOT mean the customer's payment is completed. Prefer the
       // actual payment status nested in the response.
       const status=String(
+        result?.status ||
         result?.blmpay_status ||
         result?.payment?.status ||
         result?.payment?.data?.status ||
@@ -10501,7 +10513,7 @@ async function watchHeavensPayment(book,store,reference){
         localStorage.removeItem("heavensPendingPayment");
         stopHeavensPaymentPolling();
         setCardState(true,"Payment confirmed — book unlocked");
-        alert("Payment confirmed by BLMPay. The book is now READ.");
+        alert("Payment confirmed by "+providerLabel+". The book is now READ.");
         return;
       }
 
@@ -10517,12 +10529,12 @@ async function watchHeavensPayment(book,store,reference){
         store.querySelectorAll('.hb-card').forEach(card=>{
           if(String(card.dataset.bookId)===String(book.id)){
             const lock=card.querySelector('.hb-lock');
-            if(lock) lock.textContent=status ? "Waiting for BLMPay confirmation…" : "Payment sent — checking BLMPay…";
+            if(lock) lock.textContent=status ? "Waiting for "+providerLabel+" confirmation…" : "Payment sent — checking "+providerLabel+"…";
           }
         });
       }
     }catch(err){
-      console.warn("BLMPay status check failed:",err);
+      console.warn(providerLabel+" status check failed:",err);
     }
 
     if(Date.now()-started >= timeout){
@@ -10531,11 +10543,11 @@ async function watchHeavensPayment(book,store,reference){
         store.querySelectorAll('.hb-card').forEach(card=>{
           if(String(card.dataset.bookId)===String(book.id)){
             const lock=card.querySelector('.hb-lock');
-            if(lock) lock.textContent="Still waiting for BLMPay confirmation — tap PAY/CHECK again later.";
+            if(lock) lock.textContent="Still waiting for "+providerLabel+" confirmation — tap PAY/CHECK again later.";
           }
         });
       }
-      alert("We are still waiting for BLMPay confirmation. Your payment was not marked as paid locally yet. You can open Heaven's Books again later to check the same payment.");
+      alert("We are still waiting for "+providerLabel+" confirmation. Your payment was not marked as paid locally yet. You can open Heaven's Books again later to check the same payment.");
       return;
     }
     heavensPaymentPollTimer=setTimeout(poll,3000);
@@ -10552,7 +10564,7 @@ async function resumeHeavensPendingPayment(store, books){
       String(b.id)===String(pending.id) ||
       String(b.supabaseId||"")===String(pending.supabaseId||"")
     );
-    if(book) watchHeavensPayment(book,store,pending.reference);
+    if(book) watchHeavensPayment(book,store,pending.reference,pending.provider || "BLMPay");
   }catch(e){
     console.warn("Could not resume pending Heaven's Books payment:",e);
   }
@@ -10717,76 +10729,74 @@ async function startBookPayment(book,store){
       alert("This book is not yet published to Heaven's Books server. Publish/sync the book first, then try PAY again.");
       return;
     }
-
     const amount = Number(book.price);
     if(!Number.isFinite(amount) || amount <= 0){
       alert("This book does not have a valid price yet. The author must set a price before it can be purchased.");
       return;
     }
-
-    // Display the mobile-money number/confirmation dialog before waiting for session refresh.
     const phoneNumber = await heavensPhonePaymentDialog(book, amount);
     if(!phoneNumber) return;
-
     const session = await ensureHeavensAnonymousSession();
-    if(!session || !session.access_token){
-      throw new Error("Could not create a Supabase login session. Your payment has not been sent.");
-    }
+    if(!session || !session.access_token) throw new Error("Could not create a Supabase login session. Your payment has not been sent.");
 
-    const {data,error} = await heavensSupabase.functions.invoke("heavens-blmpay-payment",{
-      body:{
-        book_id:String(supabaseBookId),
-        phone_number:phoneNumber.trim(),
-        firstname:"Heaven's Books",
-        lastname:"Customer",
-        email:(session.user && session.user.email) || "customer@heavens-books.local"
+    const requestBody = {
+      book_id:String(supabaseBookId), phone_number:phoneNumber.trim(),
+      firstname:"Heaven's Books", lastname:"Customer",
+      email:(session.user && session.user.email) || "customer@heavens-books.local"
+    };
+    async function invokePayment(functionName){
+      const result = await heavensSupabase.functions.invoke(functionName,{body:requestBody});
+      let payload = result.data || {};
+      if(result.error && result.error.context && typeof result.error.context.clone === "function"){
+        try{ payload = await result.error.context.clone().json(); }catch(_){}
       }
-    });
-
-    if(error){
-      console.error("Heaven's Books payment function error:",error);
-      alert("Payment request could not be sent. Check the function response/logs.");
-      return;
+      return {data:payload,error:result.error};
     }
 
-    console.log("Heaven's Books BLMPay response:",data);
-
-    if(data && data.success){
-      const reference=getBlmPayReference(data);
-      if(!reference){
-        console.error("BLMPay payment response has no payment reference:",data);
-        alert("BLMPay accepted the request, but no payment reference was returned. Do not pay again yet; check the payment function response.");
+    let provider = "FastLipa";
+    let result = await invokePayment("heavens-fastlipa-payment");
+    if(result.error || !result.data?.success){
+      if(result.data?.fallback_safe === true){
+        const useBackup = confirm("FastLipa explicitly declined this request before creating a payment. Would you like to try BLMPay as the backup provider?");
+        if(!useBackup) return;
+        provider = "BLMPay";
+        result = await invokePayment("heavens-blmpay-payment");
+      }else{
+        console.error("Heaven's Books FastLipa payment response:",result.error || result.data);
+        alert(result.data?.error || "FastLipa could not confirm whether the request was created. To avoid a duplicate charge, no automatic BLMPay fallback was started. Check payment status before trying again.");
         return;
       }
-
-      localStorage.setItem("heavensPendingPayment",JSON.stringify({
-        id:book.id,
-        supabaseId:String(supabaseBookId),
-        title:book.title,
-        reference,
-        startedAt:Date.now(),
-        blmpay:data.blmpay || data.payment || data
-      }));
-
-      // Do not call the bookstore's local render() here: this function is global
-      // and render() belongs to openHeavensBookstore(). Calling it caused the
-      // payment prompt to be sent successfully and then falsely showed
-      // "render is not defined". Update only this card instead.
-      if(store && document.body.contains(store)){
-        const card=store.querySelector(`.hb-card[data-book-id="${String(book.id).replace(/"/g,'&quot;')}"]`);
-        if(card){
-          const btn=card.querySelector('.hb-btn:not(.hb-check-payment)');
-          if(btn){ btn.className='hb-btn pay'; btn.textContent='PAY'; btn.disabled=false; }
-          const lock=card.querySelector('.hb-lock');
-          if(lock) lock.textContent='Payment sent — checking BLMPay…';
-        }
-      }
-      alert("BLMPay payment request sent. Complete the mobile-money prompt.\n\nWe will automatically check BLMPay and unlock this book only after BLMPay reports that the payment is completed.");
-      watchHeavensPayment(book,store,reference);
-    }else{
-      const msg=data && (data.error || data.message) ? (data.error || data.message) : "BLMPay did not accept the payment request.";
-      alert("Payment request failed: " + msg);
     }
+    const data = result.data || {};
+    if(result.error || !data.success){
+      console.error("Heaven's Books "+provider+" payment response:",result.error || data);
+      alert(data.error || (provider+" could not start the payment request."));
+      return;
+    }
+    const reference = provider === "FastLipa"
+      ? String(data.reference || "").trim()
+      : getBlmPayReference(data);
+    if(!reference){
+      console.error(provider+" payment response has no payment reference:",data);
+      alert(provider+" accepted the request, but no payment reference was returned. Do not pay again yet; contact I|ONE Care.");
+      return;
+    }
+    localStorage.setItem("heavensPendingPayment",JSON.stringify({
+      id:book.id, supabaseId:String(supabaseBookId), title:book.title,
+      reference, provider, startedAt:Date.now(),
+      payment:data.payment || data.blmpay || data
+    }));
+    if(store && document.body.contains(store)){
+      const card=store.querySelector(`.hb-card[data-book-id="${String(book.id).replace(/"/g,'&quot;')}"]`);
+      if(card){
+        const btn=card.querySelector('.hb-btn:not(.hb-check-payment)');
+        if(btn){ btn.className='hb-btn pay'; btn.textContent='PAY'; btn.disabled=false; }
+        const lock=card.querySelector('.hb-lock');
+        if(lock) lock.textContent='Payment sent — checking '+provider+'…';
+      }
+    }
+    alert(provider+" payment request sent. Complete the mobile-money prompt.\n\nI|ONE will unlock this book only after "+provider+" confirms the payment is completed.");
+    watchHeavensPayment(book,store,reference,provider);
   }catch(err){
     console.error("startBookPayment error:",err);
     alert("Could not start payment: " + (err && err.message ? err.message : err));
