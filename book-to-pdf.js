@@ -561,6 +561,9 @@
             <button class="hr-nav" id="hrNext" type="button" aria-label="Next page">›</button>
           </div>
         </div>`;
+      // The temporary opening screen is centered with padding. Reset the live
+      // reader to a true edge-to-edge column before the book layout is measured.
+      reader.style.cssText = "position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;box-sizing:border-box;z-index:2147482999;background:radial-gradient(circle at 50% 42%,#263237 0,#101518 48%,#070a0c 100%);color:#171717;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;overflow:hidden;padding:0;margin:0;";
       reader.querySelector(".hr-name").textContent = String(book.title || "Untitled Book");
       document.body.style.overflow = "hidden";
       if (typeof heavensNormalizeViewport === "function") heavensNormalizeViewport();
