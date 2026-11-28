@@ -9926,7 +9926,23 @@ async function openHeavensBookstore(targetBook){
           holder.innerHTML=`<div class="hb-cover-empty">${escapeBookHtml(book.title||'BOOK')}</div>`;
         };
       }
-      card.querySelector(".hb-btn:not(.hb-check-payment)").onclick=()=>{if(book._metadataOnly)return;isBookPaid(book)?openBookReader(book,store):startBookPayment(book,store);};
+      const primaryBookButton=card.querySelector(".hb-btn:not(.hb-check-payment):not(.hb-manual-payment):not(.hb-book-recovery)");
+      if(primaryBookButton){
+        primaryBookButton.onclick=async event=>{
+          event.preventDefault();event.stopPropagation();
+          if(book._metadataOnly||primaryBookButton.disabled)return;
+          primaryBookButton.disabled=true;
+          try{
+            if(isBookPaid(book))await openBookReader(book,store);
+            else await startBookPayment(book,store);
+          }catch(error){
+            console.error("I|ONE book action failed:",error);
+            alert(error&&error.message?error.message:"This book could not be opened. Please try again.");
+          }finally{
+            if(primaryBookButton.isConnected)primaryBookButton.disabled=false;
+          }
+        };
+      }
       const manualBtn=card.querySelector(".hb-manual-payment");
       if(manualBtn){
         manualBtn.onclick=()=>{if(!book._metadataOnly)startManualBookPayment(book,store);};
@@ -10682,11 +10698,6 @@ async function startManualBookPayment(book,store){
 
 async function startBookPayment(book,store){
   try{
-    const session = await ensureHeavensAnonymousSession();
-    if(!session || !session.access_token){
-      throw new Error("Could not create a Supabase login session.");
-    }
-
     const supabaseBookId = book.supabaseId || book.id;
     if(!supabaseBookId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(supabaseBookId))){
       alert("This book is not yet published to Heaven's Books server. Publish/sync the book first, then try PAY again.");
@@ -10699,8 +10710,14 @@ async function startBookPayment(book,store){
       return;
     }
 
+    // Display the mobile-money number/confirmation dialog before waiting for session refresh.
     const phoneNumber = await heavensPhonePaymentDialog(book, amount);
     if(!phoneNumber) return;
+
+    const session = await ensureHeavensAnonymousSession();
+    if(!session || !session.access_token){
+      throw new Error("Could not create a Supabase login session. Your payment has not been sent.");
+    }
 
     const {data,error} = await heavensSupabase.functions.invoke("heavens-blmpay-payment",{
       body:{
