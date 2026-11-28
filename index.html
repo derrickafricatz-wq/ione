@@ -2857,6 +2857,20 @@ body.ione-gentle-boot #ioneTopActions{
 }
 </style>
 
+<style id="ione-reader-centered-pdf-zoom-v1">
+/* Keep PDF pages centered at reduced and enlarged reading sizes. */
+#heavensReader .hr-pdf-page .hr-page-inner{
+  display:flex!important;flex-direction:row!important;align-items:flex-start!important;justify-content:center!important;
+  width:100%!important;height:100%!important;min-width:0!important;overflow:auto!important;
+  padding:0!important;-webkit-overflow-scrolling:touch!important;
+  scroll-padding-inline:50%!important;
+}
+#heavensReader .hr-pdf-page canvas{
+  display:block!important;flex:0 0 auto!important;max-width:none!important;max-height:none!important;
+  object-fit:initial!important;background:#fff!important;margin-inline:auto!important;
+}
+</style>
+
 <style id="ione-explore-card-layout-v2">
 @media(max-width:699px){
 #heavensBookstore .hb-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important;padding:10px 12px calc(20px + env(safe-area-inset-bottom))!important;align-items:stretch!important}

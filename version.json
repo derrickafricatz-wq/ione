@@ -1,5 +1,5 @@
 {
-  "version": "1.0.398",
-  "message": "Restore full-screen paid book reader layout",
+  "version": "1.0.399",
+  "message": "Center PDF pages when adjusting reading size",
   "force": true
 }
